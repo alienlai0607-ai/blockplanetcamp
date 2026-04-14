@@ -23,6 +23,7 @@ function doGet(e) {
       case 'status': return respond(getStatus());
       case 'claim':  return respond(claimCoupon(e.parameter.fp || '', e.parameter.phone || ''));
       case 'verify': return respond(verifyCode(e.parameter.code || ''));
+      case 'close':  return respond(closeCoupon(e.parameter.code || ''));
       default:       return respond({ success: false, error: '無效的操作' });
     }
   } finally {
@@ -130,6 +131,21 @@ function claimCoupon(fingerprint, phone) {
     }
   }
 
+  // 檢查此手機號碼是否已有有效的優惠券（防止同一人用不同裝置領多張）
+  if (phone) {
+    for (let i = 1; i < data.length; i++) {
+      if (data[i][6] === phone && data[i][2] === '已領取') {
+        const expires = new Date(data[i][4]);
+        if (expires > now) {
+          return {
+            success: false,
+            error: '此手機號碼已經領取過優惠券，請直接使用！優惠碼：' + data[i][1]
+          };
+        }
+      }
+    }
+  }
+
   // 找到第一張可領取的優惠券
   for (let i = 1; i < data.length; i++) {
     if (data[i][2] === '可領取') {
@@ -155,7 +171,7 @@ function claimCoupon(fingerprint, phone) {
   return { success: false, error: '優惠券已全部領完！' };
 }
 
-// ===== 驗證優惠碼 =====
+// ===== 驗證優惠碼（只查詢，不改狀態）=====
 function verifyCode(code) {
   const sheet = getSheet();
   const data = sheet.getDataRange().getValues();
@@ -164,25 +180,47 @@ function verifyCode(code) {
   for (let i = 1; i < data.length; i++) {
     if (data[i][1] === upperCode) {
       const status = data[i][2];
+      const phone = data[i][6] || '';
+      const claimedAt = data[i][3] ? new Date(data[i][3]).toLocaleString('zh-TW') : '';
+      const expiresAt = data[i][4] ? new Date(data[i][4]).toLocaleString('zh-TW') : '';
+
       if (status === '已領取') {
         const expires = new Date(data[i][4]);
-        if (expires > new Date()) {
-          // 標記為已使用
-          sheet.getRange(i + 1, 3).setValue('已使用');
-          sheet.getRange(i + 1, 8).setValue(new Date());
-          return { success: true, valid: true, discount: '95折', status: '✅ 優惠碼有效！已標記為使用' };
+        // 給 10 分鐘的緩衝（防止剛好過期幾分鐘）
+        const buffer = new Date(expires.getTime() + 10 * 60 * 1000);
+        if (buffer > new Date()) {
+          return { success: true, valid: true, discount: '95折', status: '✅ 優惠碼有效', phone: phone, claimedAt: claimedAt, expiresAt: expiresAt };
         } else {
-          return { success: true, valid: false, status: '❌ 此優惠碼已過期' };
+          return { success: true, valid: false, status: '❌ 此優惠碼已過期', phone: phone };
         }
       } else if (status === '已使用') {
-        return { success: true, valid: false, status: '❌ 此優惠碼已被使用過' };
+        return { success: true, valid: false, status: '⚠️ 此優惠碼已結案', phone: phone };
       } else if (status === '已過期') {
-        return { success: true, valid: false, status: '❌ 此優惠碼已過期' };
+        return { success: true, valid: false, status: '❌ 此優惠碼已過期', phone: phone };
+      } else if (status === '可領取') {
+        return { success: true, valid: false, status: '❌ 此優惠碼尚未被領取' };
       }
     }
   }
 
   return { success: true, valid: false, status: '❌ 查無此優惠碼' };
+}
+
+// ===== 結案優惠碼（管理員手動關閉）=====
+function closeCoupon(code) {
+  const sheet = getSheet();
+  const data = sheet.getDataRange().getValues();
+  const upperCode = code.toUpperCase().trim();
+
+  for (let i = 1; i < data.length; i++) {
+    if (data[i][1] === upperCode && data[i][2] === '已領取') {
+      sheet.getRange(i + 1, 3).setValue('已使用');
+      sheet.getRange(i + 1, 8).setValue(new Date());
+      return { success: true, status: '✅ 已結案，優惠碼標記為已使用' };
+    }
+  }
+
+  return { success: false, status: '❌ 找不到可結案的優惠碼' };
 }
 
 // ===== 初始化（只需執行一次）=====

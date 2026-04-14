@@ -202,12 +202,26 @@
         priceCalc.style.display = 'none';
       }
 
-      // 從優惠券 Sheets 抓對應資料（透過 status API 拿不到個別資料，顯示基本資訊）
       infoGrid.innerHTML = `
         <div class="info-label">優惠碼</div><div class="info-value">${code}</div>
         <div class="info-label">狀態</div><div class="info-value">${data.status || '未知'}</div>
+        <div class="info-label">綁定手機</div><div class="info-value">${data.phone || '—'}</div>
+        ${data.claimedAt ? `<div class="info-label">領取時間</div><div class="info-value">${data.claimedAt}</div>` : ''}
+        ${data.expiresAt ? `<div class="info-label">到期時間</div><div class="info-value">${data.expiresAt}</div>` : ''}
         <div class="info-label">折扣</div><div class="info-value">${data.valid ? '95 折' : '—'}</div>
       `;
+
+      // 如果有效，顯示結案按鈕
+      if (data.valid) {
+        infoGrid.innerHTML += `
+          <div class="info-label"></div>
+          <div class="info-value">
+            <button onclick="closeCoupon('${code}')" style="margin-top:8px;padding:8px 20px;border-radius:50px;background:#C93A2A;color:white;font-weight:900;border:none;cursor:pointer;font-family:inherit;font-size:0.85rem;">
+              🔒 全部報名完成，結案此優惠碼
+            </button>
+          </div>
+        `;
+      }
 
     } catch(e) {
       statusBadge.innerHTML = '<span class="status-badge status-invalid">❌ 查詢失敗</span>';
@@ -247,13 +261,41 @@
     priceResult.style.display = 'block';
   }
 
+  // 結案優惠碼
+  async function closeCoupon(code) {
+    if (!confirm('確定要結案 ' + code + '？結案後此優惠碼將無法再使用。')) return;
+    try {
+      const res = await fetch(API + '?action=close&code=' + encodeURIComponent(code));
+      const data = await res.json();
+      alert(data.status);
+      verify(); // 重新查詢
+      loadStats();
+    } catch(e) {
+      alert('操作失敗，請再試一次');
+    }
+  }
+
   // Enter 鍵觸發核對
   document.getElementById('codeInput').addEventListener('keydown', e => {
     if (e.key === 'Enter') verify();
   });
 
+  // 密碼鎖
+  const ADMIN_PASS = 'bp2026admin';
+  function checkAuth() {
+    if (sessionStorage.getItem('bp_admin_auth') === 'ok') return true;
+    const pwd = prompt('請輸入管理員密碼：');
+    if (pwd === ADMIN_PASS) {
+      sessionStorage.setItem('bp_admin_auth', 'ok');
+      return true;
+    } else {
+      document.body.innerHTML = '<div style="text-align:center;padding:100px 20px;font-size:1.2rem;color:#C93A2A;font-weight:900">⛔ 密碼錯誤，請重新整理再試</div>';
+      return false;
+    }
+  }
+
   // 初始化
-  loadStats();
+  if (checkAuth()) loadStats();
 </script>
 </body>
 </html>
