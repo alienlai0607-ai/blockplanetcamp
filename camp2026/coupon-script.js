@@ -23,7 +23,7 @@ function doGet(e) {
       case 'status': return respond(getStatus());
       case 'claim':  return respond(claimCoupon(e.parameter.fp || '', e.parameter.phone || ''));
       case 'verify': return respond(verifyCode(e.parameter.code || ''));
-      case 'close':  return respond(closeCoupon(e.parameter.code || ''));
+      // close 保留但不常用，過期會自動處理
       default:       return respond({ success: false, error: '無效的操作' });
     }
   } finally {
@@ -53,7 +53,13 @@ function getNextNumber() {
 }
 
 function formatCode(num) {
-  return 'BP-' + String(num).padStart(3, '0');
+  // 產生隨機 4 碼英數字（不含易混淆字元 0OIl1）
+  const chars = 'ABCDEFGHJKMNPQRSTUVWXYZ23456789';
+  let rand = '';
+  for (let i = 0; i < 4; i++) {
+    rand += chars.charAt(Math.floor(Math.random() * chars.length));
+  }
+  return 'BP-' + rand;
 }
 
 // ===== 清理過期優惠券 =====
@@ -249,10 +255,14 @@ function initCoupons() {
   ]);
   couponSheet.getRange(1, 1, 1, 8).setFontWeight('bold').setBackground('#F5941E').setFontColor('white');
 
-  // 產生 200 張優惠券
+  // 產生優惠券（確保不重複）
   const coupons = [];
+  const usedCodes = new Set();
   for (let i = 1; i <= POOL_SIZE; i++) {
-    coupons.push([i, formatCode(i), '可領取', '', '', '', '', '']);
+    let code;
+    do { code = formatCode(i); } while (usedCodes.has(code));
+    usedCodes.add(code);
+    coupons.push([i, code, '可領取', '', '', '', '', '']);
   }
   couponSheet.getRange(2, 1, coupons.length, 7).setValues(coupons);
 

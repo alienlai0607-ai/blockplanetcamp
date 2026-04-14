@@ -113,7 +113,8 @@
   <div class="card">
     <div class="card-title">🔍 核對優惠碼</div>
     <div class="input-row">
-      <input type="text" id="codeInput" placeholder="輸入優惠碼（例如 BP-001）" />
+      <input type="text" id="codeInput" placeholder="輸入優惠碼（例如 BP-7A3X）" style="flex:1.2" />
+      <input type="tel" id="phoneCheck" placeholder="家長手機" style="flex:0.8" />
       <button class="verify-btn" onclick="verify()">核對</button>
     </div>
 
@@ -202,23 +203,32 @@
         priceCalc.style.display = 'none';
       }
 
+      const inputPhone = document.getElementById('phoneCheck').value.replace(/[-\s]/g, '').trim();
+      const boundPhone = (data.phone || '').replace(/[-\s]/g, '').trim();
+      let phoneMatch = '';
+
+      if (data.valid && inputPhone && boundPhone) {
+        if (inputPhone === boundPhone) {
+          phoneMatch = '<span style="color:#2E7D32;font-weight:900">✅ 手機吻合</span>';
+        } else {
+          phoneMatch = '<span style="color:#C93A2A;font-weight:900">❌ 手機不吻合！可能是盜用</span>';
+        }
+      }
+
       infoGrid.innerHTML = `
         <div class="info-label">優惠碼</div><div class="info-value">${code}</div>
         <div class="info-label">狀態</div><div class="info-value">${data.status || '未知'}</div>
-        <div class="info-label">綁定手機</div><div class="info-value">${data.phone || '—'}</div>
+        <div class="info-label">綁定手機</div><div class="info-value">${data.phone || '—'} ${phoneMatch}</div>
         ${data.claimedAt ? `<div class="info-label">領取時間</div><div class="info-value">${data.claimedAt}</div>` : ''}
         ${data.expiresAt ? `<div class="info-label">到期時間</div><div class="info-value">${data.expiresAt}</div>` : ''}
         <div class="info-label">折扣</div><div class="info-value">${data.valid ? '95 折' : '—'}</div>
       `;
 
-      // 如果有效，顯示結案按鈕
-      if (data.valid) {
+      if (data.valid && inputPhone && inputPhone === boundPhone) {
         infoGrid.innerHTML += `
           <div class="info-label"></div>
-          <div class="info-value">
-            <button onclick="closeCoupon('${code}')" style="margin-top:8px;padding:8px 20px;border-radius:50px;background:#C93A2A;color:white;font-weight:900;border:none;cursor:pointer;font-family:inherit;font-size:0.85rem;">
-              🔒 全部報名完成，結案此優惠碼
-            </button>
+          <div class="info-value" style="margin-top:8px;padding:12px;background:#E8F5E9;border-radius:10px;color:#2E7D32;font-weight:900;text-align:center">
+            ✅ 驗證通過！請給予 95 折優惠
           </div>
         `;
       }
