@@ -250,9 +250,10 @@
       position:absolute; top:-36px; left:50%; transform:translateX(-50%);
       width:32px; height:32px;
       background:url('posters/block/click.png') center/contain no-repeat;
-      animation:point-down 1s ease-in-out infinite;
+      transform:translateX(-50%) rotate(135deg);
+      animation:press-down 1s ease-in-out infinite;
     }
-    @keyframes point-down { 0%,100%{transform:translateX(-50%) translateY(0)} 50%{transform:translateX(-50%) translateY(6px)} }
+    @keyframes press-down { 0%,100%{transform:translateX(-50%) rotate(135deg) translateY(0)} 50%{transform:translateX(-50%) rotate(135deg) translateY(6px)} }
     .qn-item:hover { border-color:var(--orange); background:var(--bg-warm); }
     .qn-item.active { border-color:var(--orange); background:var(--bg-warm); box-shadow:0 4px 16px rgba(245,148,30,.1); }
     .qn-char {
