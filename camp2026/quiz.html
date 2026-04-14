@@ -1,0 +1,650 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>找到最適合的暑期營隊 | 布拉克星球 2026</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;700;900&family=Noto+Sans+TC:wght@400;700;900&display=swap" rel="stylesheet" />
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --orange: #F5941E;
+      --orange-dark: #E07A08;
+      --blue: #4B9CD3;
+      --green: #5BAD5B;
+      --yellow: #F5D021;
+      --teal: #4ECDC4;
+      --red: #C93A2A;
+      --purple: #8B5CF6;
+      --black: #2C2C2C;
+      --bg: #FFF8F0;
+      --text: #333;
+    }
+
+    html, body {
+      font-family: 'Noto Sans TC', 'Nunito', sans-serif;
+      background: var(--bg); color: var(--text);
+      min-height: 100vh; overflow-x: hidden;
+    }
+
+    .top-bar {
+      position: fixed; top: 0; left: 0; right: 0; z-index: 100;
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 12px 20px;
+      background: rgba(255,248,240,0.95);
+      backdrop-filter: blur(12px);
+      border-bottom: 2px solid rgba(245,148,30,0.2);
+    }
+    .top-bar-logo { display: flex; align-items: center; gap: 8px; text-decoration: none; }
+    .top-bar-logo img { width: 36px; height: 36px; border-radius: 50%; }
+    .top-bar-logo span { font-weight: 900; font-size: 0.95rem; color: var(--black); }
+    .top-bar-logo small { display: block; font-size: 0.7rem; color: var(--orange); font-weight: 700; }
+    .top-bar-badge {
+      background: linear-gradient(135deg, var(--orange), #F7C948); color: white;
+      border-radius: 50px; padding: 3px 10px; font-size: 0.65rem; font-weight: 700; margin-left: 4px;
+    }
+    .back-btn {
+      color: #888; font-size: 0.85rem; font-weight: 700;
+      text-decoration: none; padding: 6px 12px;
+      border-radius: 50px; background: rgba(0,0,0,0.05); transition: background 0.2s;
+    }
+    .back-btn:hover { background: rgba(0,0,0,0.1); }
+
+    .quiz-wrapper {
+      min-height: 100svh; padding: 96px 20px 48px;
+      display: flex; flex-direction: column; align-items: center; justify-content: center;
+    }
+    @media (max-width: 768px) { .quiz-wrapper { justify-content: flex-start; } }
+
+    .progress-area { width: 100%; max-width: 520px; margin-bottom: 24px; }
+    .progress-bar-wrap {
+      height: 6px; background: rgba(0,0,0,0.08); border-radius: 99px; overflow: hidden; margin-bottom: 10px;
+    }
+    .progress-bar-fill {
+      height: 100%; background: linear-gradient(90deg, var(--orange), #ffb347);
+      border-radius: 99px; transition: width 0.5s cubic-bezier(.4,0,.2,1);
+    }
+    .progress-label { display: flex; justify-content: space-between; font-size: 0.78rem; color: #aaa; font-weight: 700; }
+
+    .question-card {
+      width: 100%; max-width: 520px; background: white; border-radius: 28px;
+      padding: 36px 32px; box-shadow: 0 12px 48px rgba(0,0,0,0.10);
+      border: 2px solid rgba(245,148,30,0.1);
+      animation: cardIn 0.45s cubic-bezier(.4,0,.2,1) both;
+    }
+    @keyframes cardIn { from { opacity:0; transform:translateY(32px) scale(0.97); } to { opacity:1; transform:translateY(0) scale(1); } }
+    @keyframes cardOut { from { opacity:1; transform:translateY(0) scale(1); } to { opacity:0; transform:translateY(-24px) scale(0.97); } }
+    .question-card.leaving { animation: cardOut 0.3s cubic-bezier(.4,0,.2,1) both; }
+
+    .q-emoji { font-size: 2.2rem; margin-bottom: 12px; display: block; }
+    .q-text { font-size: 1.35rem; font-weight: 900; color: var(--black); line-height: 1.35; margin-bottom: 8px; }
+    .q-sub { font-size: 0.88rem; color: #888; margin-bottom: 28px; line-height: 1.6; }
+
+    .options-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+    .option-btn {
+      display: flex; flex-direction: column; align-items: center; gap: 8px;
+      padding: 18px 12px; border: 2.5px solid #f0f0f0; border-radius: 16px;
+      background: white; cursor: pointer; font-family: inherit; text-align: center;
+      transition: border-color 0.2s, background 0.2s, transform 0.15s;
+      position: relative; overflow: hidden;
+    }
+    .option-btn:hover { border-color: var(--orange); background: #FFF8F0; transform: translateY(-2px); }
+    .option-btn:active { transform: scale(0.97); }
+    .option-btn.selected { border-color: var(--orange); background: linear-gradient(135deg, #FFF3E0, #FFE0B2); }
+    .option-btn::after {
+      content: ''; position: absolute; inset: 0;
+      background: rgba(245,148,30,0.08); opacity: 0; transition: opacity 0.2s; border-radius: inherit;
+    }
+    .option-btn:hover::after { opacity: 1; }
+    .option-emoji { font-size: 1.8rem; line-height: 1; }
+    .option-text { font-size: 0.85rem; font-weight: 700; color: var(--black); line-height: 1.35; }
+
+    /* ── 結果頁 ── */
+    .result-card {
+      width: 100%; max-width: 580px; background: white; border-radius: 28px;
+      overflow: hidden; box-shadow: 0 16px 60px rgba(0,0,0,0.14);
+      animation: cardIn 0.55s cubic-bezier(.4,0,.2,1) both;
+    }
+    .result-header { padding: 40px 32px 28px; text-align: center; position: relative; }
+    .result-confetti { position: absolute; inset: 0; overflow: hidden; pointer-events: none; }
+    .confetti-dot { position: absolute; border-radius: 3px; animation: confettiFall linear infinite; }
+    @keyframes confettiFall { 0% { transform:translateY(-20px) rotate(0deg); opacity:1; } 100% { transform:translateY(140px) rotate(720deg); opacity:0; } }
+    @keyframes charBounce { 0%,100% { transform:translateY(0); } 50% { transform:translateY(-12px); } }
+    .result-top-icon {
+      width: 100px; height: 100px; object-fit: contain;
+      filter: drop-shadow(0 12px 24px rgba(0,0,0,0.18));
+      animation: charBounce 3s ease-in-out infinite; margin-bottom: 12px;
+    }
+    .result-badge {
+      display: inline-block; padding: 6px 20px; border-radius: 50px;
+      font-size: 0.78rem; font-weight: 900; letter-spacing: 2px;
+      color: white; margin-bottom: 16px; background: rgba(0,0,0,0.25);
+    }
+    .result-headline { font-size: 1.1rem; color: rgba(255,255,255,0.85); font-weight: 700; margin-bottom: 6px; }
+    .result-title { font-size: 1.8rem; font-weight: 900; color: white; line-height: 1.3; }
+
+    .result-body { padding: 28px 28px 32px; }
+
+    /* 分析區 */
+    .analysis-box {
+      background: linear-gradient(135deg, #FFF8F0, #FFF3E0); border-radius: 16px;
+      padding: 22px 20px; margin-bottom: 24px;
+      border: 1.5px solid rgba(245,148,30,0.15);
+    }
+    .analysis-title {
+      font-size: 0.82rem; font-weight: 900; color: var(--orange);
+      letter-spacing: 1px; margin-bottom: 12px; display: flex; align-items: center; gap: 6px;
+    }
+    .analysis-text { font-size: 0.92rem; color: #555; line-height: 1.85; }
+    .analysis-text strong { color: var(--orange); }
+
+    /* 推薦營隊列表 */
+    .rec-section { margin-bottom: 24px; }
+    .rec-label {
+      font-size: 0.78rem; font-weight: 900; color: #bbb;
+      letter-spacing: 1px; margin-bottom: 12px; text-transform: uppercase;
+    }
+    .rec-card {
+      border-radius: 16px; padding: 18px 18px; margin-bottom: 10px;
+      border: 2px solid #eee; background: white;
+      transition: border-color 0.2s;
+    }
+    .rec-card:hover { border-color: var(--orange); }
+    .rec-card-top { display: flex; align-items: center; gap: 12px; margin-bottom: 8px; }
+    .rec-card-rank {
+      width: 28px; height: 28px; border-radius: 50%; flex-shrink: 0;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 0.75rem; font-weight: 900; color: white;
+    }
+    .rec-card-name { font-size: 1rem; font-weight: 900; color: var(--black); }
+    .rec-card-meta { font-size: 0.78rem; color: #aaa; font-weight: 600; margin-bottom: 8px; padding-left: 40px; }
+    .rec-card-why {
+      font-size: 0.85rem; color: #666; line-height: 1.7; padding-left: 40px;
+      border-left: 3px solid #f0f0f0; margin-left: 12px; padding-top: 4px; padding-bottom: 4px;
+    }
+    .rec-card-why strong { color: var(--orange); }
+
+    .rec-card-best { border-color: var(--orange); background: #FFFBF5; }
+    .rec-card-best .rec-card-why { border-left-color: var(--orange); }
+
+    /* 包月提示 */
+    .monthly-tip {
+      background: linear-gradient(135deg, #FFF3E0, #FFE0B2); border-radius: 16px;
+      padding: 18px 20px; margin-bottom: 24px;
+      border: 2px solid var(--orange);
+      display: flex; align-items: flex-start; gap: 12px;
+    }
+    .monthly-tip-icon { font-size: 1.6rem; flex-shrink: 0; margin-top: 2px; }
+    .monthly-tip-text { font-size: 0.88rem; color: #555; line-height: 1.7; font-weight: 600; }
+    .monthly-tip-text strong { color: var(--orange-dark); }
+
+    .result-btns { display: flex; flex-direction: column; gap: 12px; }
+    .btn-primary-lg {
+      display: block; width: 100%; padding: 16px; border-radius: 50px; text-align: center;
+      background: linear-gradient(135deg, var(--orange), var(--orange-dark));
+      color: white; font-weight: 900; font-size: 1rem;
+      text-decoration: none; border: none; cursor: pointer; font-family: inherit;
+      box-shadow: 0 6px 24px rgba(245,148,30,0.4);
+      transition: transform 0.2s, box-shadow 0.2s;
+    }
+    .btn-primary-lg:hover { transform: translateY(-2px); box-shadow: 0 10px 32px rgba(245,148,30,0.5); }
+    .btn-outline-lg {
+      display: block; width: 100%; padding: 14px; border-radius: 50px; text-align: center;
+      background: white; color: var(--orange); border: 2.5px solid var(--orange);
+      font-weight: 900; font-size: 0.95rem;
+      text-decoration: none; cursor: pointer; font-family: inherit;
+      transition: background 0.2s, transform 0.2s;
+    }
+    .btn-outline-lg:hover { background: #FFF3E0; transform: translateY(-2px); }
+    .retry-btn {
+      display: block; text-align: center; margin-top: 16px; color: #bbb;
+      font-size: 0.82rem; font-weight: 700;
+      cursor: pointer; background: none; border: none; font-family: inherit;
+      transition: color 0.2s;
+    }
+    .retry-btn:hover { color: var(--orange); }
+
+    /* ── 起始畫面 ── */
+    .intro-card {
+      width: 100%; max-width: 520px; background: white; border-radius: 28px;
+      padding: 44px 32px; box-shadow: 0 12px 48px rgba(0,0,0,0.10);
+      text-align: center; animation: cardIn 0.45s cubic-bezier(.4,0,.2,1) both;
+    }
+    .intro-mascot {
+      width: 120px; height: 120px; object-fit: contain;
+      animation: charBounce 3s ease-in-out infinite; margin-bottom: 20px;
+    }
+    .intro-title { font-size: 1.6rem; font-weight: 900; color: var(--black); line-height: 1.3; margin-bottom: 14px; }
+    .intro-title em { font-style: normal; color: var(--orange); }
+    .intro-sub { font-size: 0.92rem; color: #666; line-height: 1.8; margin-bottom: 32px; }
+    .intro-tags { display: flex; flex-wrap: wrap; gap: 8px; justify-content: center; margin-bottom: 32px; }
+    .intro-tag {
+      background: var(--bg); border: 1.5px solid rgba(245,148,30,0.3);
+      border-radius: 50px; padding: 5px 14px; font-size: 0.8rem; font-weight: 700; color: #888;
+    }
+    .start-btn {
+      display: block; width: 100%; padding: 18px; border-radius: 50px;
+      background: linear-gradient(135deg, var(--orange), var(--orange-dark));
+      color: white; font-weight: 900; font-size: 1.05rem;
+      border: none; cursor: pointer; font-family: inherit;
+      box-shadow: 0 8px 28px rgba(245,148,30,0.4);
+      transition: transform 0.2s, box-shadow 0.2s;
+    }
+    .start-btn:hover { transform: translateY(-2px); box-shadow: 0 12px 36px rgba(245,148,30,0.5); }
+
+    @media (max-width: 480px) {
+      .quiz-wrapper { padding: 80px 16px 40px; }
+      .question-card { padding: 28px 20px; border-radius: 22px; }
+      .q-text { font-size: 1.2rem; }
+      .options-grid { gap: 10px; }
+      .option-btn { padding: 14px 8px; border-radius: 14px; }
+      .option-emoji { font-size: 1.6rem; }
+      .option-text { font-size: 0.78rem; }
+      .result-card { border-radius: 22px; }
+      .result-header { padding: 32px 20px 20px; }
+      .result-body { padding: 20px 18px 24px; }
+      .result-title { font-size: 1.5rem; }
+      .intro-card { padding: 36px 20px; border-radius: 22px; }
+      .rec-card-why { padding-left: 32px; margin-left: 8px; }
+      .rec-card-meta { padding-left: 32px; }
+    }
+  </style>
+</head>
+<body>
+
+<div class="top-bar">
+  <a class="top-bar-logo" href="index.html">
+    <img src="../assets/可愛的布拉克星球logo.png" alt="布拉克星球" />
+    <div>
+      <span>布拉克星球</span>
+      <small>Block Planet</small>
+    </div>
+    <span class="top-bar-badge">2026 暑期</span>
+  </a>
+  <a class="back-btn" href="index.html">← 回營隊首頁</a>
+</div>
+
+<div class="quiz-wrapper" id="quizWrapper"></div>
+
+<script>
+  // ═══════════════════════════════════════════════════════
+  //  題目設計邏輯（行銷分析角度）
+  //  ─ Q1 年齡篩選 → 排除不適齡營隊
+  //  ─ Q2 孩子個性 → 抓住家長對孩子的觀察
+  //  ─ Q3 暑假痛點 → 家長自己的焦慮和期待
+  //  ─ Q4 學習偏好 → 區分動手 vs 數位 vs 戶外
+  //  ─ Q5 預算/時間 → 導入包月 vs 單週選擇
+  // ═══════════════════════════════════════════════════════
+
+  const questions = [
+    {
+      emoji: '🎒',
+      text: '孩子今年升幾年級？',
+      sub: '不同年紀的孩子，適合的挑戰強度不一樣',
+      options: [
+        { emoji: '🐣', text: '大班升小一',   scores: { outdoor:2, maker:1, digital:0, design:1, drone:0, grade1:6 }, tag:'grade1' },
+        { emoji: '🌱', text: '小一～小二',    scores: { outdoor:3, maker:3, digital:1, design:2, drone:1, grade1:0 } },
+        { emoji: '⚡', text: '小三～小四',    scores: { outdoor:2, maker:4, digital:3, design:4, drone:3, grade1:0 } },
+        { emoji: '🚀', text: '小五以上',      scores: { outdoor:2, maker:3, digital:5, design:3, drone:5, grade1:0 } },
+      ]
+    },
+    {
+      emoji: '👀',
+      text: '你覺得孩子最像哪一種？',
+      sub: '爸媽最了解孩子，憑直覺選就好',
+      options: [
+        { emoji: '🐒', text: '精力旺盛，\n坐不住型',     scores: { outdoor:5, drone:3, maker:2 } },
+        { emoji: '🔍', text: '好奇寶寶，\n什麼都想拆',   scores: { maker:5, drone:2, design:1 } },
+        { emoji: '🎨', text: '有自己想法，\n喜歡創作',    scores: { design:5, digital:3 } },
+        { emoji: '🧩', text: '安靜專注，\n喜歡動腦',      scores: { digital:5, design:2, maker:1 } },
+      ]
+    },
+    {
+      emoji: '😰',
+      text: '這個暑假，最擔心什麼？',
+      sub: '說出來沒關係，很多家長都一樣',
+      options: [
+        { emoji: '📱', text: '整天滑手機\n打電動',       scores: { maker:4, outdoor:4, drone:2 } },
+        { emoji: '😴', text: '太無聊、\n浪費時間',       scores: { digital:3, design:3, maker:2, monthly:3 } },
+        { emoji: '🙈', text: '社交能力不夠、\n太內向',   scores: { outdoor:5, grade1:2 } },
+        { emoji: '📚', text: '想學東西\n但不知學什麼',   scores: { design:3, maker:3, digital:2, drone:2 } },
+      ]
+    },
+    {
+      emoji: '🔥',
+      text: '如果暑假只能學一件事，選哪個？',
+      sub: '這題幫你精準配對最適合的營隊',
+      options: [
+        { emoji: '🛠️', text: '親手做出\n一個作品',       scores: { maker:5, design:3 } },
+        { emoji: '💻', text: '學會寫程式\n或做遊戲',     scores: { digital:6 } },
+        { emoji: '✈️', text: '飛無人機、\n做實驗',       scores: { drone:5, maker:2 } },
+        { emoji: '🏕️', text: '獨立生活、\n交到好朋友',   scores: { outdoor:6, grade1:1 } },
+      ]
+    },
+    {
+      emoji: '📅',
+      text: '暑假的時間安排？',
+      sub: '這會影響我們推薦單週還是整月方案',
+      options: [
+        { emoji: '📦', text: '七月整個月\n都可以',       scores: { monthly:6, maker:1, outdoor:1 } },
+        { emoji: '🎯', text: '挑幾個有興趣\n的主題就好', scores: { maker:1, digital:1, design:1, drone:1 } },
+        { emoji: '🤔', text: '還不確定，\n先看看有什麼',  scores: { maker:1, digital:1, design:1, outdoor:1 } },
+        { emoji: '👶', text: '主要想找\n小一銜接',       scores: { grade1:6 } },
+      ]
+    }
+  ];
+
+  // ═══════════════════════════════════════════════════════
+  //  所有營隊資料（含報名連結）
+  // ═══════════════════════════════════════════════════════
+  const allCamps = {
+    outdoor: {
+      name: '猴囝仔露營趣',
+      week: '7/1～7/3、8/3～8/5',
+      color: '#5BAD5B',
+      img: 'posters/block/露營-02.png',
+      link: 'https://forms.gle/oDykyQqFqboFd4516'
+    },
+    maker_boat: {
+      name: 'MAKER 自造營｜造船大師',
+      week: '7/6～7/10',
+      color: '#F5941E',
+      img: 'posters/block/船.png',
+      link: 'https://forms.gle/Nfe7UNYQu8BMx6x38'
+    },
+    maker_water: {
+      name: '水上裝置實驗室',
+      week: '7/13～7/17',
+      color: '#4B9CD3',
+      img: 'posters/block/海浪.png'
+    },
+    drone_soccer: {
+      name: '空中競技計畫｜無人機足球',
+      week: '7/20～7/24、8/17～8/21',
+      color: '#C93A2A',
+      img: 'posters/block/無人機足球.png',
+      link: 'https://forms.gle/bFnsaTA5VULNwrYk7'
+    },
+    gamelab: {
+      name: 'Game Lab 遊戲設計師養成營',
+      week: '7/27～7/31',
+      color: '#8B5CF6',
+      img: 'posters/block/程式操作.png'
+    },
+    roblox: {
+      name: 'ROBLOX 實境創造計畫',
+      week: '7/27～7/31、8/10～8/14',
+      color: '#8B5CF6',
+      img: 'posters/block/roblox.png',
+      link: 'https://forms.gle/hZgAdgDWaLsTCkbT7'
+    },
+    lego: {
+      name: 'LEGO Ideas 玩具設計總監計畫',
+      week: '8/10～8/14、8/17～8/21',
+      color: '#4B9CD3',
+      img: 'posters/block/像素.png',
+      link: 'https://forms.gle/nfXiCeuh6QaXfGYp6'
+    },
+    hello_maker: {
+      name: 'HELLO MAKER 廢材機器人自造夢',
+      week: '8/10～8/14（北區）',
+      color: '#F5941E',
+      img: 'posters/block/垃圾收集機器.png'
+    },
+    flight: {
+      name: '飛行航空科學營',
+      week: '8/10～8/14、8/17～8/21',
+      color: '#C93A2A',
+      img: 'posters/block/飛行航空2.0.png'
+    },
+    science: {
+      name: '科學大師營',
+      week: '8/6～8/8（永康）',
+      color: '#5BAD5B',
+      img: 'posters/block/藥水.png'
+    },
+    print3d: {
+      name: '3D 列印工作坊',
+      week: '8/6～8/8（北區）',
+      color: '#4ECDC4',
+      img: 'posters/block/像素.png'
+    },
+    grade1: {
+      name: '太空人見習生──小一新生營',
+      week: '八月',
+      color: '#4ECDC4',
+      img: '../assets/char-astronaut-nobg.png',
+      link: 'https://forms.gle/U5RzfaWgQZMzJbUU7'
+    }
+  };
+
+  // 類型 → 推薦營隊 mapping
+  const typeMap = {
+    outdoor:  ['outdoor'],
+    maker:    ['maker_boat','maker_water','hello_maker','science','print3d'],
+    digital:  ['gamelab','roblox'],
+    design:   ['lego'],
+    drone:    ['drone_soccer','flight'],
+    grade1:   ['grade1']
+  };
+
+  // 類型顯示資料
+  const typeInfo = {
+    outdoor: { tag:'冒險探索型', name:'戶外探索 × 獨立成長', headerBg:'linear-gradient(135deg, #a8e6a3 0%, #5BAD5B 100%)', img:'posters/block/露營-02.png' },
+    maker:   { tag:'動手實作型', name:'科學手作 × 工程思維', headerBg:'linear-gradient(135deg, #ffe9b5 0%, #F5941E 100%)', img:'posters/block/垃圾收集機器.png' },
+    digital: { tag:'數位創造型', name:'程式設計 × 遊戲創作', headerBg:'linear-gradient(135deg, #d4b8f0 0%, #8B5CF6 100%)', img:'posters/block/roblox.png' },
+    design:  { tag:'創意設計型', name:'美感設計 × 創意表達', headerBg:'linear-gradient(135deg, #b8d4f0 0%, #4B9CD3 100%)', img:'posters/block/像素.png' },
+    drone:   { tag:'科技競技型', name:'飛行科技 × 極限挑戰', headerBg:'linear-gradient(135deg, #f0b8b8 0%, #C93A2A 100%)', img:'posters/block/無人機足球.png' },
+    grade1:  { tag:'小一新生專屬', name:'太空人見習生', headerBg:'linear-gradient(135deg, #b8f0e8 0%, #4ECDC4 100%)', img:'../assets/char-astronaut-nobg.png' },
+  };
+
+  // 「為什麼適合你」分析文案
+  const whyTexts = {
+    outdoor: {
+      analysis: '根據你的回答，孩子屬於<strong>精力充沛、喜歡探索</strong>的類型。研究顯示，這類孩子在戶外情境中學習效果最好——比起坐在教室，他們更需要<strong>用身體去感受、用行動去學習</strong>。露營趣讓孩子在三天兩夜中練習獨立、學會合作，這些是課本教不來的。',
+      campWhys: {
+        outdoor: '孩子需要<strong>離開螢幕、走進自然</strong>的機會，露營趣結合團隊任務和生活自理，最能釋放他的能量',
+      }
+    },
+    maker: {
+      analysis: '你的孩子是典型的<strong>「做中學」型</strong>——比起聽課，他更需要<strong>親手操作、看到成果</strong>。這類孩子最怕無聊，但一旦投入就會非常專注。手作營隊每天都有不同的實作挑戰，讓他的好奇心有地方安放，同時培養解決問題的能力。',
+      campWhys: {
+        maker_boat: '從設計到下水，<strong>一週完成一艘船</strong>，成就感直接拉滿',
+        maker_water: '水上實驗結合物理原理，<strong>邊玩水邊學科學</strong>，暑假最消暑的營隊',
+        hello_maker: '用廢材做機器人，<strong>創意沒有標準答案</strong>，最適合喜歡拆東西的孩子',
+        science: '三天密集科學實驗，<strong>每個實驗都能帶回家</strong>',
+        print3d: '從螢幕上的設計到<strong>真正印出來拿在手上</strong>，超有感',
+      }
+    },
+    digital: {
+      analysis: '你的孩子對<strong>數位世界充滿好奇</strong>，與其擔心他玩太多遊戲，不如讓他<strong>從「玩遊戲」變成「做遊戲」</strong>。程式設計營把孩子的興趣轉化為創造力，暑假結束時他會帶回一款自己做的遊戲——這比任何作業都有成就感。',
+      campWhys: {
+        gamelab: '零基礎也能上手，<strong>五天做出一款完整遊戲</strong>，直接分享給同學玩',
+        roblox: '全球超過 2 億人玩的平台，<strong>孩子學會在 Roblox 上創造自己的世界</strong>',
+      }
+    },
+    design: {
+      analysis: '你的孩子有<strong>自己的想法和美感</strong>，他需要的不是照著做，而是一個<strong>讓他自由發揮的舞台</strong>。LEGO Ideas 讓孩子當設計總監，從構思、設計到完成作品，體驗完整的創意流程——這種「我做到了」的感覺，會成為他一輩子的自信來源。',
+      campWhys: {
+        lego: '不只是拼樂高，而是<strong>當一個玩具設計師</strong>，從零開始把腦中的想法變成真實作品',
+      }
+    },
+    drone: {
+      analysis: '你的孩子喜歡<strong>刺激和挑戰</strong>，對科技有天生的敏感度。無人機和飛行營隊結合了<strong>操控技術、科學原理和團隊競技</strong>，是最能滿足這類孩子「想飛」的衝動的營隊。而且這些技能在未來只會越來越重要。',
+      campWhys: {
+        drone_soccer: '無人機 × 足球，<strong>全台最酷的團隊競技</strong>，飛行操控 + 戰術配合',
+        flight: '從紙飛機到真飛機原理，<strong>完整航空科學體驗</strong>，動手做 + 實際飛行',
+      }
+    },
+    grade1: {
+      analysis: '大班升小一是孩子<strong>人生第一個大轉變</strong>，比起提前學注音算數學，他更需要的是<strong>心理準備和生活能力</strong>。太空人見習生用任務情境讓孩子練習專注聽指令、跟新朋友合作、自己整理東西——用最好玩的方式，幫他準備好迎接小學生活。',
+      campWhys: {
+        grade1: '專為升小一設計，用<strong>太空人任務情境</strong>練習專注力、合作和獨立，開學不怕',
+      }
+    }
+  };
+
+  // ── 狀態 ──
+  let currentQ = 0;
+  const scores = { outdoor:0, maker:0, digital:0, design:0, drone:0, grade1:0, monthly:0 };
+  const wrapper = document.getElementById('quizWrapper');
+
+  function renderIntro() {
+    wrapper.innerHTML = `
+      <div class="intro-card">
+        <img class="intro-mascot" src="../assets/char-chicken-nobg.png" alt="布拉克星球" />
+        <h1 class="intro-title">不知道怎麼選？<br/>讓我們幫你<em>配對</em></h1>
+        <p class="intro-sub">回答 5 個簡單問題<br/>分析孩子的特質，推薦最適合的暑期營隊</p>
+        <div class="intro-tags">
+          <span class="intro-tag">⏱️ 只要 1 分鐘</span>
+          <span class="intro-tag">🔬 個性分析</span>
+          <span class="intro-tag">🎯 多營隊推薦</span>
+        </div>
+        <button class="start-btn" onclick="startQuiz()">開始配對 →</button>
+      </div>
+    `;
+  }
+
+  function renderQuestion() {
+    const q = questions[currentQ];
+    const pct = (currentQ / questions.length) * 100;
+    wrapper.innerHTML = `
+      <div class="progress-area">
+        <div class="progress-bar-wrap"><div class="progress-bar-fill" style="width:${pct}%"></div></div>
+        <div class="progress-label"><span>問題 ${currentQ+1} / ${questions.length}</span><span>${Math.round(pct)}%</span></div>
+      </div>
+      <div class="question-card" id="qCard">
+        <span class="q-emoji">${q.emoji}</span>
+        <div class="q-text">${q.text}</div>
+        <div class="q-sub">${q.sub}</div>
+        <div class="options-grid">
+          ${q.options.map((opt,i) => `
+            <button class="option-btn" onclick="selectOption(${i})">
+              <span class="option-emoji">${opt.emoji}</span>
+              <span class="option-text">${opt.text}</span>
+            </button>
+          `).join('')}
+        </div>
+      </div>
+    `;
+  }
+
+  function selectOption(idx) {
+    const opt = questions[currentQ].options[idx];
+    Object.entries(opt.scores).forEach(([k,v]) => { scores[k] = (scores[k]||0) + v; });
+
+    const btns = document.querySelectorAll('.option-btn');
+    btns[idx].classList.add('selected');
+    btns.forEach(b => b.style.pointerEvents = 'none');
+
+    setTimeout(() => {
+      const card = document.getElementById('qCard');
+      if (card) card.classList.add('leaving');
+      setTimeout(() => {
+        currentQ++;
+        currentQ < questions.length ? renderQuestion() : renderResult();
+      }, 300);
+    }, 320);
+  }
+
+  function getTopTypes(n) {
+    const validTypes = ['outdoor','maker','digital','design','drone','grade1'];
+    return validTypes
+      .map(k => ({ key: k, score: scores[k] || 0 }))
+      .sort((a,b) => b.score - a.score)
+      .slice(0, n)
+      .filter(t => t.score > 0);
+  }
+
+  function renderResult() {
+    const topTypes = getTopTypes(3);
+    const bestType = topTypes[0].key;
+    const info = typeInfo[bestType];
+    const why = whyTexts[bestType];
+    const showMonthly = scores.monthly >= 4;
+
+    const confettiColors = ['#F5941E','#4B9CD3','#5BAD5B','#F5D021','#C93A2A','#8B5CF6'];
+    const dots = Array.from({length:18},(_,i) => {
+      const c = confettiColors[i%confettiColors.length];
+      return `<div class="confetti-dot" style="left:${Math.random()*100}%;top:-10px;width:${6+Math.floor(Math.random()*8)}px;height:${6+Math.floor(Math.random()*8)}px;background:${c};border-radius:${Math.random()>.5?'50%':'2px'};animation-duration:${2+Math.random()*2}s;animation-delay:${Math.random()*2}s;"></div>`;
+    }).join('');
+
+    // 建立推薦營隊列表（前 2-3 類型的所有營隊）
+    let recHTML = '';
+    let rank = 1;
+    topTypes.forEach((t, ti) => {
+      const camps = typeMap[t.key] || [];
+      const whyData = whyTexts[t.key];
+      camps.forEach(cKey => {
+        const camp = allCamps[cKey];
+        if (!camp) return;
+        const isBest = ti === 0;
+        const campWhy = whyData?.campWhys?.[cKey] || '';
+        const linkBtn = camp.link
+          ? `<a href="${camp.link}" target="_blank" style="display:inline-block;margin-top:8px;margin-left:40px;font-size:.78rem;font-weight:800;color:white;background:${camp.color};border-radius:50px;padding:5px 14px;text-decoration:none;">立即報名 →</a>`
+          : '';
+        recHTML += `
+          <div class="rec-card ${isBest ? 'rec-card-best' : ''}">
+            <div class="rec-card-top">
+              <div class="rec-card-rank" style="background:${isBest ? 'var(--orange)' : '#ddd'}">${rank}</div>
+              <div class="rec-card-name">${camp.name}</div>
+            </div>
+            <div class="rec-card-meta">${camp.week}</div>
+            ${campWhy ? `<div class="rec-card-why">${campWhy}</div>` : ''}
+            ${linkBtn}
+          </div>
+        `;
+        rank++;
+      });
+    });
+
+    const monthlyHTML = showMonthly ? `
+      <div class="monthly-tip">
+        <div class="monthly-tip-icon">💰</div>
+        <div class="monthly-tip-text">
+          根據你的時間安排，<strong>七月包月營</strong>會是最划算的選擇！整個七月的營隊一次打包，不用一個一個選，而且<strong>比單週報名省更多</strong>。
+          <br/><a href="https://forms.gle/RxtsK5r4nvWyWMnw8" target="_blank" style="display:inline-block;margin-top:8px;color:var(--orange-dark);font-weight:900;text-decoration:underline;">查看七月包月方案 →</a>
+        </div>
+      </div>
+    ` : '';
+
+    wrapper.innerHTML = `
+      <div class="result-card">
+        <div class="result-header" style="background:${info.headerBg}">
+          <div class="result-confetti">${dots}</div>
+          <div class="result-badge">${info.tag}</div>
+          <img class="result-top-icon" src="${info.img}" alt="${info.name}" />
+          <div class="result-headline">分析完成！孩子最適合的方向是</div>
+          <div class="result-title">${info.name}</div>
+        </div>
+        <div class="result-body">
+          <div class="analysis-box">
+            <div class="analysis-title">🔬 為什麼這樣推薦？</div>
+            <div class="analysis-text">${why.analysis}</div>
+          </div>
+
+          ${monthlyHTML}
+
+          <div class="rec-section">
+            <div class="rec-label">🏆 為你推薦的營隊</div>
+            ${recHTML}
+          </div>
+
+          <div class="result-btns">
+            <a class="btn-primary-lg" href="index.html">🚀 前往營隊首頁看更多</a>
+            <a class="btn-outline-lg" href="https://lin.ee/zFqqFzQ" target="_blank">💬 LINE 諮詢，幫你選</a>
+          </div>
+          <button class="retry-btn" onclick="retryQuiz()">↺ 重新測驗</button>
+        </div>
+      </div>
+    `;
+  }
+
+  function startQuiz() { currentQ = 0; renderQuestion(); }
+  function retryQuiz() { Object.keys(scores).forEach(k => scores[k]=0); currentQ = 0; renderIntro(); }
+  renderIntro();
+</script>
+</body>
+</html>

@@ -1,0 +1,1183 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>2026 布拉克暑期活動 | 報名專頁</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;700;900&family=Noto+Sans+TC:wght@400;700;900&display=swap" rel="stylesheet">
+  <style>
+    /* ==============================================
+       布拉克星球 2026 暑期營隊
+       以家長瀏覽動線為核心的 UX 設計
+       ============================================== */
+
+    :root {
+      --orange:      #F5941E;
+      --orange-dark: #E07A08;
+      --orange-glow: rgba(245,148,30,.15);
+      --red:         #C93A2A;
+      --blue:        #4B9CD3;
+      --green:       #5BAD5B;
+      --yellow:      #F5D021;
+      --teal:        #4ECDC4;
+      --purple:      #8B5CF6;
+      --black:       #2C2C2C;
+      --bg-warm:     #FFF8F0;
+      --bg-cream:    #FFFBF5;
+      --text:        #333;
+      --text-light:  #888;
+      --shadow:      0 8px 32px rgba(0,0,0,.08);
+      --shadow-lg:   0 20px 60px rgba(0,0,0,.12);
+      --radius:      20px;
+      --radius-lg:   28px;
+      --nav-h:       76px;
+    }
+
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    html { scroll-behavior: smooth; overflow-x: hidden; }
+    body {
+      font-family: 'Noto Sans TC', 'Nunito', sans-serif;
+      background: var(--bg-warm); color: var(--text);
+      overflow-x: hidden; -webkit-font-smoothing: antialiased;
+    }
+    img { max-width: 100%; display: block; }
+    a { text-decoration: none; color: inherit; }
+
+    /* ===== 動畫 ===== */
+    @keyframes float2 { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-12px)} }
+    @keyframes slide-up { from{transform:translateY(40px);opacity:0} to{transform:translateY(0);opacity:1} }
+    @keyframes bounce-in { 0%{transform:scale(.3);opacity:0} 50%{transform:scale(1.05)} 100%{transform:scale(1);opacity:1} }
+    @keyframes star-twinkle { 0%,100%{opacity:.8;transform:scale(1)} 50%{opacity:.1;transform:scale(.3)} }
+    @keyframes gradient-shift { 0%{background-position:0% 50%} 50%{background-position:100% 50%} 100%{background-position:0% 50%} }
+    @keyframes rkt-fly { 0%{left:-80px;opacity:0} 8%{opacity:1} 88%{opacity:1} 100%{left:calc(100% + 80px);opacity:0} }
+    @keyframes rkt-bob { from{margin-top:-4px} to{margin-top:4px} }
+    @keyframes flap-up { from{transform:translateY(-10px);opacity:.8} to{transform:translateY(10px);opacity:.3} }
+    @keyframes flap-down { from{transform:translateY(10px);opacity:.8} to{transform:translateY(-10px);opacity:.3} }
+    @keyframes pulse-soft { 0%,100%{box-shadow:0 0 0 0 rgba(245,148,30,.3)} 50%{box-shadow:0 0 0 10px rgba(245,148,30,0)} }
+
+    .fade-in { opacity:0; transition: opacity .65s ease, transform .65s ease; }
+    .fade-in.visible { opacity:1; transform:none !important; }
+    .from-bottom { transform:translateY(36px); }
+    .delay-1{transition-delay:.1s} .delay-2{transition-delay:.2s} .delay-3{transition-delay:.3s}
+
+    /* ===== NAV ===== */
+    nav {
+      position:fixed; top:0; left:0; right:0; z-index:1000;
+      background:rgba(255,252,242,.93); backdrop-filter:blur(18px); -webkit-backdrop-filter:blur(18px);
+      border-bottom:3px solid var(--orange);
+      padding:0 5%; display:flex; align-items:center; justify-content:space-between;
+      height:var(--nav-h);
+      box-shadow:0 2px 24px rgba(245,148,30,.1);
+      overflow:hidden;
+    }
+    .nav-rocket-wrap {
+      position:absolute; top:50%; left:0; transform:translateY(-50%);
+      display:flex; align-items:center; pointer-events:none; z-index:20;
+      opacity:0; animation:rkt-fly 14s ease-in-out infinite 4s both;
+    }
+    .nav-rocket-img { height:40px; transform:rotate(90deg); filter:drop-shadow(0 2px 6px rgba(245,148,30,.5)); animation:rkt-bob .5s ease-in-out infinite alternate; }
+    .nav-star { flex-shrink:0; }
+    .nav-star.s1{height:20px;margin-right:-6px;animation:flap-up .5s ease-in-out infinite alternate}
+    .nav-star.s2{height:14px;margin-right:-5px;animation:flap-down .5s ease-in-out infinite alternate .1s}
+    .nav-star.s3{height:10px;margin-right:-4px;animation:flap-up .5s ease-in-out infinite alternate .2s}
+
+    .nav-logo { display:flex; align-items:center; gap:10px; }
+    .nav-logo img { height:54px; }
+    .nav-logo-text { font-weight:900; font-size:1.2rem; color:var(--black); line-height:1.2; }
+    .nav-logo-text span { color:var(--orange); font-size:.85rem; display:block; }
+    .nav-badge {
+      background:linear-gradient(135deg,var(--orange),#F7C948); color:white;
+      border-radius:50px; padding:5px 14px; font-size:.85rem; font-weight:700;
+      margin-left:10px; white-space:nowrap; box-shadow:0 2px 6px rgba(245,148,30,.3);
+    }
+    .nav-links { display:flex; gap:2px; list-style:none; }
+    .nav-links a {
+      color:var(--black); font-weight:700; font-size:.85rem;
+      padding:7px 13px; border-radius:50px;
+      transition:.2s; white-space:nowrap;
+    }
+    .nav-links a:hover { background:var(--orange); color:white; }
+    .nav-cta { background:var(--orange)!important; color:white!important; box-shadow:0 3px 12px rgba(245,148,30,.35); }
+
+    .nav-hamburger {
+      display:none; flex-direction:column; justify-content:center; align-items:center; gap:5px;
+      width:40px; height:40px; background:none; border:none; cursor:pointer; z-index:1001;
+    }
+    .nav-hamburger span { display:block; width:22px; height:2.5px; background:var(--black); border-radius:2px; transition:.3s; }
+    .nav-hamburger.open span:nth-child(1){transform:translateY(7.5px) rotate(45deg)}
+    .nav-hamburger.open span:nth-child(2){opacity:0}
+    .nav-hamburger.open span:nth-child(3){transform:translateY(-7.5px) rotate(-45deg)}
+
+    /* ===== HERO ===== */
+    .hero {
+      min-height:100vh; position:relative;
+      display:flex; align-items:center; justify-content:flex-start;
+      padding:calc(var(--nav-h) + 40px) 6% 80px;
+      overflow:hidden;
+    }
+    .hero-mascot {
+      position:absolute; inset:0; width:100%; height:100%;
+      object-fit:cover; object-position:center; pointer-events:none; z-index:0;
+    }
+    .hero::before {
+      content:''; position:absolute; inset:0; z-index:1;
+      background:linear-gradient(100deg,
+        rgba(255,248,220,.96) 0%,
+        rgba(255,248,220,.8) 32%,
+        rgba(255,248,220,.3) 58%,
+        transparent 78%);
+      pointer-events:none;
+    }
+    .hero::after {
+      content:''; position:absolute; bottom:0; left:0; right:0;
+      height:100px; z-index:2;
+      background:linear-gradient(to top,white,transparent);
+      pointer-events:none;
+    }
+
+    .hero-card {
+      position:relative; z-index:10; max-width:500px;
+      background:rgba(255,252,240,.88); backdrop-filter:blur(24px); -webkit-backdrop-filter:blur(24px);
+      border-radius:var(--radius-lg); padding:40px 44px;
+      box-shadow:0 16px 60px rgba(140,80,0,.13), 0 0 0 1px rgba(255,255,255,.5);
+      animation:slide-up .8s ease both;
+    }
+    .hero-badge {
+      display:inline-flex; align-items:center;
+      background:linear-gradient(135deg,var(--orange),#f0a030); color:white;
+      border-radius:50px; padding:4px 14px; font-size:.7rem; font-weight:700;
+      vertical-align:middle; margin-left:8px;
+      animation:bounce-in .6s ease both .3s;
+    }
+    .hero-card h1 {
+      font-size:clamp(1.9rem,4.2vw,2.8rem);
+      font-weight:900; line-height:1.3; color:var(--black); margin-bottom:12px;
+    }
+    .hero-card h1 em {
+      font-style:normal; color:var(--orange); position:relative;
+    }
+    .hero-card h1 em::after {
+      content:''; position:absolute; bottom:2px; left:0; right:0;
+      height:7px; background:var(--yellow); border-radius:4px; z-index:-1; opacity:.5;
+    }
+    .hero-subtitle {
+      font-size:1.05rem; font-weight:700; color:#444;
+      line-height:1.6; margin-bottom:10px;
+    }
+    .hero-tags {
+      font-size:.82rem; color:#888; line-height:1.8;
+      margin-bottom:6px; letter-spacing:.02em;
+    }
+    .hero-location {
+      font-size:.88rem; font-weight:700; color:var(--orange);
+      margin-bottom:20px;
+    }
+
+    /* 信任數字條 — Hero 內 */
+    .trust-strip {
+      display:flex; gap:16px; margin-bottom:22px;
+      padding:10px 0; border-top:1px solid rgba(0,0,0,.06); border-bottom:1px solid rgba(0,0,0,.06);
+    }
+    .trust-item { display:flex; align-items:center; gap:6px; }
+    .trust-num { font-size:1.1rem; font-weight:900; color:var(--orange); }
+    .trust-label { font-size:.72rem; color:#888; font-weight:600; line-height:1.2; }
+
+    .hero-badges { display:flex; gap:8px; flex-wrap:wrap; margin-bottom:24px; }
+    .hero-loc-badge {
+      display:flex; align-items:center; gap:5px;
+      background:white; border-radius:50px; padding:7px 14px;
+      font-size:.8rem; font-weight:700;
+      box-shadow:0 3px 12px rgba(0,0,0,.06);
+      border-left:3px solid var(--orange);
+    }
+    .hero-cta-row { display:flex; gap:12px; flex-wrap:wrap; }
+    .btn {
+      padding:13px 28px; border-radius:50px; font-size:.92rem; font-weight:700;
+      cursor:pointer; border:none; display:inline-block;
+      transition:transform .2s, box-shadow .2s;
+    }
+    .btn:hover { transform:translateY(-2px); }
+    .btn-primary {
+      background:linear-gradient(135deg,var(--orange),#f0a030); color:white;
+      box-shadow:0 6px 22px rgba(245,148,30,.35);
+    }
+    .btn-primary:hover { box-shadow:0 10px 30px rgba(245,148,30,.45); }
+    .btn-outline {
+      background:white; color:var(--orange);
+      border:2px solid var(--orange); box-shadow:var(--shadow);
+    }
+
+    /* ===== 快速導航條 ===== */
+    .quick-nav {
+      background:white; padding:20px 5%;
+      position:relative; z-index:5;
+    }
+    .quick-nav-inner {
+      max-width:900px; margin:0 auto;
+      display:grid; grid-template-columns:repeat(3,auto); justify-content:center; gap:16px;
+    }
+    .qn-item {
+      display:flex; align-items:center; gap:18px;
+      padding:22px 28px;
+      border-radius:16px;
+      border:2px solid #eee;
+      cursor:pointer; transition:.25s;
+      position:relative;
+      background:white;
+    }
+    .qn-item:hover { border-color:var(--orange); background:var(--bg-warm); }
+    .qn-item.active { border-color:var(--orange); background:var(--bg-warm); box-shadow:0 4px 16px rgba(245,148,30,.1); }
+    .qn-char {
+      width:80px; height:80px; flex-shrink:0;
+      object-fit:contain;
+      filter:drop-shadow(0 3px 6px rgba(0,0,0,.1));
+    }
+    .qn-text { line-height:1.3; }
+    .qn-title { font-size:1.15rem; font-weight:900; color:var(--black); }
+    .qn-sub { font-size:.88rem; color:var(--text-light); font-weight:600; }
+    .qn-rec {
+      position:absolute; top:-8px; right:8px;
+      background:var(--red); color:white;
+      font-size:.58rem; font-weight:800; padding:3px 10px; border-radius:50px;
+      letter-spacing:.03em;
+    }
+
+    /* ===== Section 通用 ===== */
+    .sec { padding:80px 5%; position:relative; overflow:hidden; }
+    .sec-header { text-align:center; margin-bottom:44px; }
+    .sec-tag {
+      display:inline-block; border-radius:50px; padding:5px 18px;
+      font-size:.76rem; font-weight:700; letter-spacing:.5px; margin-bottom:12px;
+    }
+    .sec-header h2 {
+      font-size:clamp(1.5rem,3.5vw,2.1rem);
+      font-weight:900; color:var(--black); margin-bottom:8px;
+    }
+    .sec-header p { color:var(--text-light); font-size:.92rem; line-height:1.8; }
+
+    /* ===== 七月包月 — 主推區 ===== */
+    #monthly {
+      background:white;
+      padding:80px 5% 90px;
+    }
+    #monthly .sec-tag { background:var(--orange); color:white; }
+
+    .monthly-hero {
+      max-width:1060px; margin:0 auto;
+      display:grid; grid-template-columns:1fr 1.15fr;
+      gap:36px; align-items:center;
+    }
+    .monthly-poster {
+      border-radius:var(--radius-lg); overflow:hidden;
+      box-shadow:var(--shadow-lg); cursor:zoom-in;
+      transition:transform .3s;
+      position:relative;
+    }
+    .monthly-poster:hover { transform:scale(1.015); }
+    .monthly-poster img { width:100%; height:auto; display:block; }
+    .zoom-hint {
+      position:absolute; top:16px; left:16px; z-index:5;
+      background:rgba(0,0,0,.55); color:white;
+      font-size:.72rem; font-weight:700; padding:6px 14px; border-radius:50px;
+      display:flex; align-items:center; gap:5px;
+      backdrop-filter:blur(4px); -webkit-backdrop-filter:blur(4px);
+      pointer-events:none;
+      transition:opacity .2s;
+    }
+    .zoom-hint svg { width:14px; height:14px; fill:white; flex-shrink:0; }
+    /* 所有可放大的容器 hover 時提示更亮 */
+    [onclick] .zoom-hint { opacity:.85; }
+    [onclick]:hover .zoom-hint { opacity:1; }
+
+    .monthly-info {
+      display:flex; flex-direction:column; gap:20px;
+    }
+    .monthly-title-row { display:flex; align-items:center; gap:12px; flex-wrap:wrap; }
+    .monthly-title { font-size:1.6rem; font-weight:900; color:var(--black); line-height:1.3; }
+    .monthly-rec {
+      background:linear-gradient(135deg,var(--red),#e04535); color:white;
+      font-size:.7rem; font-weight:800; padding:4px 12px; border-radius:50px;
+      animation:pulse-soft 2.5s ease-in-out infinite;
+    }
+    .monthly-sub { font-size:.88rem; color:#777; line-height:1.7; }
+
+    .monthly-highlights {
+      display:grid; grid-template-columns:1fr 1fr; gap:10px;
+    }
+    .mh-item {
+      display:flex; align-items:center; gap:10px;
+      background:var(--bg-warm); border-radius:14px;
+      padding:12px 16px;
+    }
+    .mh-icon { font-size:1.2rem; flex-shrink:0; }
+    .mh-text { font-size:.84rem; font-weight:700; color:#444; line-height:1.4; }
+
+    .monthly-meta {
+      display:flex; gap:10px; flex-wrap:wrap;
+    }
+    .meta-chip {
+      background:#f5f5f5; border-radius:50px;
+      padding:6px 16px; font-size:.78rem; font-weight:600; color:#666;
+    }
+    .monthly-cta {
+      display:inline-flex; align-items:center; justify-content:center; gap:8px;
+      padding:16px 36px; border-radius:50px;
+      font-size:1rem; font-weight:800; color:white;
+      background:linear-gradient(135deg,var(--orange),#f0a030);
+      box-shadow:0 6px 24px rgba(245,148,30,.35);
+      transition:transform .2s, box-shadow .2s;
+      align-self:flex-start;
+    }
+    .monthly-cta:hover { transform:translateY(-3px); box-shadow:0 10px 32px rgba(245,148,30,.45); }
+    .monthly-cta-note { font-size:.74rem; color:var(--orange); font-weight:700; }
+
+    /* ===== 主題週 — 七月+八月合併 ===== */
+    #weekly {
+      background:var(--bg-cream);
+      padding:80px 5% 90px;
+    }
+    #weekly .sec-tag { background:var(--teal); color:white; }
+
+    .weekly-tabs {
+      display:flex; flex-wrap:wrap; gap:8px; justify-content:center; margin-bottom:36px;
+      max-width:680px; margin-left:auto; margin-right:auto;
+    }
+    .weekly-tab {
+      padding:11px 28px; border-radius:50px;
+      font-size:.88rem; font-weight:700; cursor:pointer;
+      border:2px solid rgba(0,0,0,.08);
+      background:white; color:#888;
+      transition:.2s; font-family:inherit;
+    }
+    /* 第一個佔滿整行 */
+    .weekly-tab:first-child { flex:1 0 100%; text-align:center; }
+    /* 後兩個各佔一半 */
+    .weekly-tab:nth-child(2),
+    .weekly-tab:nth-child(3) { flex:1 1 0; text-align:center; }
+
+    .weekly-tab.active[data-color="teal"] { background:var(--teal); color:white; border-color:var(--teal); box-shadow:0 3px 14px rgba(78,205,196,.3); }
+    .weekly-tab.active[data-color="orange"] { background:var(--orange); color:white; border-color:var(--orange); box-shadow:0 3px 14px rgba(245,148,30,.3); }
+    .weekly-tab:hover:not(.active) { border-color:#bbb; color:#555; }
+    .weekly-pane { display:none; }
+    .weekly-pane.active { display:block; }
+
+    /* 七月/八月 — 統一卡片排版 */
+    .camp-card {
+      max-width:800px; margin:0 auto;
+      background:white; border-radius:var(--radius-lg);
+      box-shadow:var(--shadow); overflow:hidden;
+    }
+    .camp-card-head {
+      position:relative; height:320px; overflow:hidden; cursor:zoom-in;
+    }
+    .camp-card-head img {
+      width:100%; height:100%; object-fit:cover;
+      transition:transform .4s;
+    }
+    .camp-card-head:hover img { transform:scale(1.03); }
+    .camp-card-overlay {
+      position:absolute; inset:0;
+      background:linear-gradient(to top,rgba(0,0,0,.6),rgba(0,0,0,.05) 50%,transparent);
+      display:flex; flex-direction:column; justify-content:flex-end;
+      padding:22px 26px;
+    }
+    .camp-card-loc {
+      display:inline-block; width:fit-content;
+      font-size:.7rem; font-weight:800; padding:4px 12px; border-radius:50px;
+      color:white; margin-bottom:6px;
+    }
+    .camp-card-date { color:white; font-size:1rem; font-weight:800; text-shadow:0 1px 6px rgba(0,0,0,.3); }
+    /* camp-card-body grid defined below */
+
+
+    /* 共用的課程列表 */
+    .reg-list { display:flex; flex-direction:column; gap:6px; }
+    .reg-week-label {
+      font-size:.7rem; font-weight:700; color:#bbb;
+      letter-spacing:.06em; text-transform:uppercase;
+      margin-top:12px; padding-left:4px;
+    }
+    .reg-list > .reg-week-label:first-child { margin-top:6px; }
+    .reg-row {
+      display:flex; align-items:center; gap:12px;
+      background:white; border-radius:14px; padding:10px 14px;
+      box-shadow:0 1px 8px rgba(0,0,0,.04);
+      border:1.5px solid rgba(0,0,0,.04);
+      transition:.2s;
+    }
+    .reg-row:hover { transform:translateY(-2px); box-shadow:0 4px 16px rgba(0,0,0,.08); border-color:var(--orange-glow); }
+    .reg-thumb {
+      width:46px; height:46px; flex-shrink:0; border-radius:10px;
+      overflow:hidden; display:flex; align-items:center; justify-content:center;
+    }
+    .reg-thumb img { width:100%; height:100%; object-fit:contain; padding:3px; }
+    .reg-info { flex:1; min-width:0; }
+    .reg-name { font-size:.88rem; font-weight:900; color:var(--black); margin-bottom:1px; }
+    .reg-date { font-size:.72rem; color:#999; font-weight:600; }
+    .reg-btn {
+      flex-shrink:0; padding:7px 14px; border-radius:50px;
+      font-size:.78rem; font-weight:700;
+      background:var(--orange); color:white;
+      box-shadow:0 2px 8px rgba(245,148,30,.25);
+      transition:.15s;
+    }
+    .reg-btn:hover { transform:scale(1.05); box-shadow:0 4px 14px rgba(245,148,30,.35); }
+
+    /* 課程列表 */
+    .camp-card-body { padding:4px 20px 16px; }
+    .cmp-course-row {
+      display:grid; grid-template-columns:170px 1fr auto;
+      align-items:center; gap:12px;
+      padding:12px 0; border-bottom:1px solid #f5f5f5;
+    }
+    .camp-card-body > .cmp-course-row:last-child { border-bottom:none; }
+    .week-group .cmp-course-row:last-child { border-bottom:none; }
+    .cmp-course-week { font-size:.74rem; font-weight:700; color:#bbb; }
+    .cmp-course-name { font-size:.86rem; font-weight:600; color:#333; }
+
+    /* 同週框 — 框框包文字，文字位置不變 */
+    .week-group {
+      border:2px solid #eee; border-radius:14px;
+      padding:8px 14px;
+      margin:12px -14px;
+      position:relative;
+    }
+    .week-group .cmp-course-row { border-bottom:1px dashed #eee; }
+    .week-group .cmp-course-row:last-child { border-bottom:none; }
+    .week-group-label {
+      position:absolute; top:-10px; right:14px;
+      background:white; padding:0 8px;
+      font-size:.68rem; font-weight:800; color:#bbb;
+    }
+    .pick-one {
+      position:absolute; top:-10px; left:14px;
+      background:var(--red); color:white;
+      font-size:.6rem; font-weight:800;
+      padding:2px 10px; border-radius:50px;
+    }
+    .cmp-course-btn {
+      font-size:.72rem; font-weight:700; color:white;
+      background:var(--red); border:none; border-radius:20px;
+      padding:5px 13px;
+      cursor:pointer; white-space:nowrap;
+      transition:.15s; font-family:inherit;
+      justify-self:end; align-self:center;
+    }
+    .cmp-course-btn:hover { background:#a82e20; transform:scale(1.04); }
+
+    .weekly-cta-row { text-align:center; margin-top:32px; }
+    .weekly-cta {
+      display:inline-block; padding:14px 32px; border-radius:50px;
+      font-size:.95rem; font-weight:800; color:white;
+      background:linear-gradient(135deg,var(--teal),#3db8b0);
+      box-shadow:0 6px 22px rgba(78,205,196,.3);
+      transition:.2s;
+    }
+    .weekly-cta:hover { transform:translateY(-3px); box-shadow:0 10px 30px rgba(78,205,196,.4); }
+
+    /* 裝飾圖 */
+    .sec-deco {
+      position:absolute; pointer-events:none; z-index:0;
+      filter:drop-shadow(0 4px 12px rgba(0,0,0,.08));
+      opacity:.35;
+    }
+
+    /* ===== 小一新生 ===== */
+    #grade1 {
+      background:linear-gradient(150deg,#060a1f,#0e1a4a 40%,#1a2f6c 70%,#0a0f2e);
+      padding:100px 5%; position:relative; overflow:hidden;
+    }
+    #grade1 .stars-bg {
+      display:block!important; position:absolute; inset:0;
+      z-index:0; pointer-events:none;
+    }
+    #grade1 .star-dot {
+      display:block!important; position:absolute; border-radius:50%;
+      background:white; opacity:.8;
+      animation:star-twinkle 3s ease-in-out infinite;
+    }
+    #grade1 .star-dot:nth-child(4n){background:#c8e8ff}
+    #grade1 .star-dot:nth-child(7n){background:#fff5cc}
+    #grade1 .star-dot:nth-child(11n){background:#ffd0e8;width:1px!important;height:1px!important}
+    .stars-bg { display:none; }
+    .star-dot { display:none; }
+
+    #grade1 .sec-tag { background:rgba(255,255,255,.12); color:rgba(255,255,255,.85); backdrop-filter:blur(6px); }
+    #grade1 .sec-header h2 { color:white; }
+    #grade1 .sec-header p { color:rgba(255,255,255,.5); }
+
+    .grade1-card {
+      background:rgba(255,255,255,.06);
+      backdrop-filter:blur(24px); -webkit-backdrop-filter:blur(24px);
+      border:1px solid rgba(255,255,255,.12);
+      border-radius:var(--radius-lg);
+      max-width:800px; margin:0 auto;
+      overflow:hidden;
+      box-shadow:0 24px 60px rgba(0,0,0,.4);
+      position:relative; z-index:1;
+    }
+    .grade1-poster { overflow:hidden; cursor:zoom-in; max-height:420px; }
+    .grade1-poster img {
+      width:100%; height:100%; object-fit:cover;
+      transition:transform .4s;
+    }
+    .grade1-poster:hover img { transform:scale(1.03); }
+    .grade1-info { padding:32px 28px; display:flex; flex-direction:column; }
+    .grade1-info .info-block { flex:1; margin-bottom:24px; }
+
+    .info-block { display:flex; flex-direction:column; gap:10px; }
+    .info-row { display:flex; gap:12px; align-items:flex-start; }
+    .info-dot { width:10px; height:10px; border-radius:50%; flex-shrink:0; margin-top:5px; }
+    .info-label { font-size:.78rem; font-weight:700; color:rgba(255,255,255,.35); margin-bottom:1px; }
+    .info-val { font-size:.92rem; font-weight:700; color:white; }
+
+    .btn-star {
+      display:block; text-align:center; padding:15px 28px; border-radius:50px;
+      font-size:1rem; font-weight:900;
+      background:linear-gradient(135deg,var(--orange),#F7C948); color:var(--black);
+      box-shadow:0 6px 24px rgba(244,164,48,.4);
+      transition:.2s;
+    }
+    .btn-star:hover { transform:translateY(-3px); box-shadow:0 10px 32px rgba(244,164,48,.5); }
+
+    /* ===== Lightbox ===== */
+    .lightbox {
+      display:none; position:fixed; inset:0; z-index:9999;
+      background:rgba(0,0,0,.92); backdrop-filter:blur(6px);
+      align-items:center; justify-content:center;
+      cursor:zoom-out; padding:20px;
+    }
+    .lightbox.open { display:flex; }
+    .lightbox img {
+      max-width:92vw; max-height:92vh; object-fit:contain;
+      border-radius:14px; box-shadow:0 20px 60px rgba(0,0,0,.4);
+      animation:bounce-in .25s ease;
+    }
+    .lightbox-close {
+      position:absolute; top:20px; right:24px;
+      color:white; font-size:1.8rem; font-weight:700;
+      cursor:pointer; opacity:.7; transition:.2s;
+      width:44px; height:44px; display:flex; align-items:center; justify-content:center;
+      border-radius:50%; background:rgba(255,255,255,.1);
+    }
+    .lightbox-close:hover { opacity:1; transform:scale(1.1); }
+
+    /* ===== LINE 浮動按鈕 ===== */
+    .line-float {
+      position:fixed; bottom:30px; right:24px; z-index:997;
+      background:#06C755; color:white;
+      width:56px; height:56px; border-radius:50%;
+      display:flex; align-items:center; justify-content:center;
+      box-shadow:0 4px 20px rgba(6,199,85,.4);
+      transition:transform .2s, box-shadow .2s;
+    }
+    .line-float:hover { transform:scale(1.1); box-shadow:0 6px 28px rgba(6,199,85,.5); }
+
+    /* ===== 浮動報名（手機版） ===== */
+    .float-cta {
+      display:none; /* 桌機隱藏 */
+      position:fixed; bottom:0; left:0; right:0; z-index:998;
+      background:rgba(255,255,255,.95); backdrop-filter:blur(12px);
+      padding:10px 5%; border-top:1px solid rgba(0,0,0,.06);
+      box-shadow:0 -4px 20px rgba(0,0,0,.08);
+    }
+    .float-cta-btn {
+      display:block; width:100%; padding:14px;
+      border-radius:14px; border:none; cursor:pointer;
+      background:linear-gradient(135deg,var(--orange),#f0a030); color:white;
+      font-size:.95rem; font-weight:800; font-family:inherit;
+      box-shadow:0 4px 16px rgba(245,148,30,.3);
+    }
+
+    /* ===== Footer ===== */
+    footer {
+      background:linear-gradient(180deg,#1a1a1a,var(--black));
+      color:rgba(255,255,255,.7); padding:56px 6% 36px; position:relative;
+    }
+    footer::before {
+      content:''; position:absolute; top:0; left:0; right:0; height:4px;
+      background:linear-gradient(90deg,var(--orange),var(--red),var(--blue),var(--green),var(--yellow),var(--orange));
+      background-size:200% auto; animation:gradient-shift 6s ease infinite;
+    }
+    .footer-inner {
+      max-width:1000px; margin:0 auto;
+      display:grid; grid-template-columns:1.4fr 1fr 1fr 1fr; gap:36px;
+    }
+    .footer-logo img { height:44px; margin-bottom:14px; }
+    .footer-logo p { font-size:.8rem; color:rgba(255,255,255,.3); line-height:1.8; }
+    .footer-col h3 {
+      font-size:.86rem; font-weight:700; color:white; margin-bottom:12px;
+      padding-bottom:6px; border-bottom:2px solid var(--orange); display:inline-block;
+    }
+    .footer-col p, .footer-col a { font-size:.82rem; line-height:2.1; }
+    .footer-col a { color:var(--orange); transition:opacity .2s; }
+    .footer-col a:hover { opacity:.7; }
+    .footer-social { display:flex; flex-direction:column; gap:8px; margin-top:4px; }
+    .footer-social-btn {
+      display:inline-flex; align-items:center; gap:7px;
+      padding:8px 16px; border-radius:10px;
+      font-size:.78rem; font-weight:700; color:white;
+      transition:opacity .2s, transform .15s;
+    }
+    .footer-social-btn:hover { opacity:.85; transform:translateY(-1px); }
+    .footer-social-btn.fb { background:#1877F2; }
+    .footer-social-btn.line { background:#06C755; }
+    .footer-social-btn.ig { background:linear-gradient(45deg,#f09433,#e6683c,#dc2743,#cc2366,#bc1888); }
+    .footer-map-link {
+      display:inline-flex; align-items:center; gap:4px;
+      font-size:.76rem; color:rgba(255,255,255,.5);
+      margin-top:2px; transition:color .2s;
+    }
+    .footer-map-link:hover { color:var(--orange); }
+    .footer-bottom {
+      max-width:1000px; margin:28px auto 0; padding-top:20px;
+      border-top:1px solid rgba(255,255,255,.06);
+      font-size:.72rem; color:rgba(255,255,255,.2); text-align:center;
+    }
+
+    /* ===== 色塊 ===== */
+    .bg-orange{background:#FFF0DB} .bg-blue{background:#DBF0FF} .bg-red{background:#FFDBDE}
+    .bg-sky{background:#DBF3FF} .bg-yellow{background:#FFFADB} .bg-purple{background:#F0DBFF}
+    .bg-teal{background:#DBFAF8} .bg-green{background:#DDFADB} .bg-navy{background:#DBE5FF}
+
+    /* ===== RWD ===== */
+    @media(max-width:900px){
+      .nav-hamburger{display:flex}
+      .nav-links{
+        display:none; position:fixed; inset:var(--nav-h) 0 0 0; z-index:1999;
+        background:rgba(255,252,242,.98); backdrop-filter:blur(12px);
+        flex-direction:column; align-items:center; justify-content:center;
+        gap:24px; list-style:none;
+      }
+      .nav-links.open{display:flex}
+      .nav-links li a{font-size:1.1rem}
+
+      .quick-nav{padding:16px 4%}
+      .quick-nav-inner{grid-template-columns:repeat(3,1fr);gap:8px}
+      .quick-nav{padding:0 3% 8px;background:var(--bg-warm)}
+      .quick-nav-inner{gap:5px}
+      .qn-item{padding:8px 6px;gap:4px;flex-direction:column;text-align:center;border-radius:12px;border-width:1.5px}
+      .qn-char{width:32px;height:32px}
+      .qn-title{font-size:.72rem}
+      .qn-sub{font-size:.56rem;white-space:nowrap}
+      .qn-rec{top:-6px;right:4px;font-size:.52rem;padding:2px 7px}
+
+      .monthly-hero{grid-template-columns:1fr}
+      .camp-card-head{height:260px}
+      .grade1-poster{max-height:320px}
+
+      .footer-inner{grid-template-columns:1fr 1fr;gap:24px}
+    }
+    @media(max-width:600px){
+      :root{--nav-h:60px}
+      .sec{padding:40px 5%}
+
+      .hero{
+        min-height:auto; padding:0 0 0;
+        flex-direction:column; align-items:stretch; justify-content:flex-end;
+      }
+      .hero-mascot{position:relative;inset:auto;width:100%;height:62vw;object-position:center 30%;flex-shrink:0}
+      .hero::before{
+        position:absolute;inset:0;
+        background:linear-gradient(to bottom,
+          rgba(255,248,220,.3) 0%,
+          rgba(255,248,220,.1) 30%,
+          rgba(255,248,220,.7) 70%,
+          rgba(255,248,220,1) 100%);
+      }
+      .hero::after{display:none}
+      .hero-card{
+        max-width:100%;padding:20px 20px 16px;margin:0;
+        border-radius:0;background:var(--bg-warm);
+        box-shadow:none;backdrop-filter:none;-webkit-backdrop-filter:none;
+        position:relative;z-index:10;
+        margin-top:-30px;
+        border-radius:24px 24px 0 0;
+      }
+      .hero-card h1{font-size:1.35rem}
+      .hero-badge{font-size:.58rem;padding:3px 10px;margin-left:4px}
+      .hero-subtitle{font-size:.92rem}
+      .hero-tags{font-size:.74rem}
+      .hero-location{font-size:.8rem}
+      .trust-strip{gap:10px;flex-wrap:wrap}
+      .trust-num{font-size:.95rem}
+      .hero-loc-badge{font-size:.74rem;padding:5px 11px}
+      .btn{padding:11px 20px;font-size:.86rem}
+
+      .qn-item{padding:14px 16px;gap:10px}
+      .qn-icon{width:36px;height:36px;font-size:1rem}
+      .qn-title{font-size:.82rem}
+      .qn-sub{font-size:.66rem}
+      .qn-rec{font-size:.52rem;padding:2px 6px}
+
+      .monthly-info{gap:14px}
+      .monthly-title{font-size:1.2rem}
+      .monthly-highlights{grid-template-columns:1fr;gap:8px}
+      .mh-item{padding:10px 12px}
+      .monthly-cta{padding:13px 24px;font-size:.9rem;align-self:stretch;justify-content:center}
+
+      .weekly-tabs{gap:6px;max-width:100%}
+      .weekly-tab{padding:9px 12px;font-size:.8rem}
+      .camp-card-head{height:220px}
+      .camp-card-body{padding:4px 12px 12px}
+      .cmp-course-row{grid-template-columns:62px 1fr 48px;gap:6px;padding:10px 0}
+      .cmp-course-week{font-size:.66rem;white-space:nowrap}
+      .cmp-course-name{font-size:.76rem;line-height:1.3}
+      .cmp-course-btn{font-size:.66rem;padding:5px 0;width:48px;text-align:center;border-radius:8px}
+      .week-group{padding:8px 10px;margin:10px -10px}
+      .pick-one{left:8px;font-size:.56rem;padding:2px 8px}
+      .week-group-label{right:8px;font-size:.6rem}
+
+      .grade1-info{padding:24px 20px}
+      .info-val{font-size:.86rem}
+      .btn-star{font-size:.92rem;padding:13px 24px}
+
+      .sec-deco{opacity:.2!important}
+
+      .float-cta{display:block}
+      footer{padding-bottom:80px}
+      .line-float{bottom:76px;right:16px;width:50px;height:50px}
+      .line-float svg{width:24px;height:24px}
+
+      footer{padding:36px 5% 80px!important}
+      .footer-inner{grid-template-columns:1fr 1fr!important;gap:14px 16px!important}
+      .footer-logo{grid-column:1/-1;display:flex;align-items:center;gap:10px;padding-bottom:10px;border-bottom:1px solid rgba(255,255,255,.08);margin-bottom:4px}
+      .footer-logo img{height:30px;margin-bottom:0}
+      .footer-logo p{font-size:.7rem}
+      .footer-col h3{font-size:.76rem;margin-bottom:6px;padding-bottom:4px}
+      .footer-col p,.footer-col a{font-size:.7rem;line-height:1.6}
+      .footer-col:last-child{grid-column:1/-1}
+      .footer-social{flex-direction:row;flex-wrap:wrap;gap:6px}
+      .footer-social-btn{font-size:.66rem;padding:6px 10px;flex:1}
+      .footer-map-link{font-size:.66rem}
+      .footer-bottom{margin-top:14px;padding-top:12px;font-size:.64rem}
+    }
+  </style>
+</head>
+<body>
+
+<!-- ===== NAV ===== -->
+<nav>
+  <div class="nav-rocket-wrap">
+    <img src="../assets/deco-star.png" class="nav-star s3" alt="">
+    <img src="../assets/deco-star.png" class="nav-star s2" alt="">
+    <img src="../assets/deco-star.png" class="nav-star s1" alt="">
+    <img src="../assets/deco-rocket.png" class="nav-rocket-img" alt="">
+  </div>
+  <a href="index.html" class="nav-logo">
+    <img src="../assets/可愛的布拉克星球logo.png" alt="布拉克星球">
+    <div class="nav-logo-text">布拉克星球<span>Block Planet</span></div>
+    <span class="nav-badge">2026 暑期</span>
+  </a>
+  <button class="nav-hamburger" id="hamburger" aria-label="選單">
+    <span></span><span></span><span></span>
+  </button>
+  <ul class="nav-links" id="navLinks">
+    <li><a href="quiz.html">找營隊</a></li>
+    <li><a href="#monthly">七月包月</a></li>
+    <li><a href="#weekly">主題週</a></li>
+    <li><a href="#grade1">小一新生</a></li>
+    <li><a href="#footer" class="nav-cta">聯絡我們</a></li>
+  </ul>
+</nav>
+
+
+<!-- ===== HERO ===== -->
+<section class="hero" id="home">
+  <img src="posters/暑期2.png" class="hero-mascot" alt="2026布拉克暑期">
+  <div class="hero-card">
+    <h1><span style="font-size:.75em;font-weight:700;color:#555">布拉克星球｜</span><span class="hero-badge"><img src="../assets/deco-star.png" style="width:14px;height:14px;object-fit:contain;vertical-align:middle;margin-right:4px">2026 暑期活動正式開跑！</span><br><em>暑期營隊</em>開始報名</h1>
+    <p class="hero-subtitle">用一個夏天，打造孩子的學習挑戰</p>
+    <p class="hero-tags">科學實作 × 任務導向 × 創意發揮<br>程式邏輯思考 × 問題解決 × 美感設計</p>
+    <p class="hero-location">台南北區 ＆ 永康，雙教室同步招生中</p>
+
+    <div class="trust-strip">
+      <div class="trust-item"><span class="trust-num">10+</span><span class="trust-label">年教學<br>經驗</span></div>
+      <div class="trust-item"><span class="trust-num">2</span><span class="trust-label">間教室<br>台南</span></div>
+      <div class="trust-item"><span class="trust-num">5000+</span><span class="trust-label">學生<br>參與</span></div>
+    </div>
+
+    <div class="hero-badges">
+      <div class="hero-loc-badge"><img src="../assets/deco-planet.png" style="width:14px;height:14px;object-fit:contain;vertical-align:middle;margin-right:3px"> 永康教室</div>
+      <div class="hero-loc-badge"><img src="../assets/deco-planet.png" style="width:14px;height:14px;object-fit:contain;vertical-align:middle;margin-right:3px"> 北區教室</div>
+    </div>
+    <div class="hero-cta-row">
+      <a href="#monthly" class="btn btn-primary">查看課程方案</a>
+      <a href="quiz.html" class="btn btn-outline" style="border-color:var(--orange);color:var(--orange);">🎯 不知道選什麼？1 分鐘幫你配對</a>
+      <a href="#footer" class="btn btn-outline">聯絡詢問</a>
+    </div>
+  </div>
+</section>
+
+
+<!-- ===== 快速導航條 — 取代舊的「選擇模式」 ===== -->
+<div class="quick-nav">
+  <div class="quick-nav-inner">
+    <a href="#monthly" class="qn-item active" data-target="monthly">
+      <img src="../assets/mascot-illust2.png" class="qn-char" alt="">
+      <div class="qn-text">
+        <div class="qn-title">七月包月</div>
+        <div class="qn-sub">整月報名最划算</div>
+      </div>
+    </a>
+    <a href="#weekly" class="qn-item" data-target="weekly">
+      <img src="../assets/event-tryout.png" class="qn-char" alt="">
+      <div class="qn-text">
+        <div class="qn-title">主題週</div>
+        <div class="qn-sub">七月＋八月，自由選</div>
+      </div>
+    </a>
+    <a href="#grade1" class="qn-item" data-target="grade1">
+      <img src="../assets/char-astronaut-nobg.png" class="qn-char" alt="">
+      <div class="qn-text">
+        <div class="qn-title">小一新生營</div>
+        <div class="qn-sub">大班升小一專屬</div>
+      </div>
+    </a>
+  </div>
+</div>
+
+
+<!-- ===== 七月包月（主推） ===== -->
+<section class="sec" id="monthly">
+  <div class="sec-header fade-in from-bottom">
+    <span class="sec-tag">七月包月</span>
+    <h2>七月暑期包月營</h2>
+    <p>整個七月統一報名，每週換主題、天天有課，最省心的選擇</p>
+  </div>
+
+  <div class="monthly-hero fade-in from-bottom delay-1">
+    <div class="monthly-poster" onclick="openLightbox(this.querySelector('img').src)">
+      <img src="posters/2026暑期包月課表-02(1).jpg" alt="七月包月課表">
+      <div class="zoom-hint"><svg viewBox="0 0 24 24"><path d="M15.5 14h-.79l-.28-.27A6.47 6.47 0 0 0 16 9.5 6.5 6.5 0 1 0 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14zM12 10h-2v2H9v-2H7V9h2V7h1v2h2v1z"/></svg>點擊放大</div>
+    </div>
+    <div class="monthly-info">
+      <div class="monthly-title-row">
+        <div class="monthly-title">布拉克星球<br>七月暑期包月營</div>
+        <span class="monthly-rec">最多家長選擇</span>
+      </div>
+      <div class="monthly-sub">學習 × 職人 × 露營 × 水派對 × 科學<br>一次包下整個暑假，每週不重複！</div>
+
+      <div class="monthly-highlights">
+        <div class="mh-item"><span class="mh-icon">📅</span><span class="mh-text">7/7（一）– 7/31（五）</span></div>
+        <div class="mh-item"><span class="mh-icon">🏫</span><span class="mh-text">北區 ＆ 永康可選</span></div>
+        <div class="mh-item"><span class="mh-icon">🕘</span><span class="mh-text">09:00 – 17:00</span></div>
+        <div class="mh-item"><span class="mh-icon">🔄</span><span class="mh-text">每週換主題不無聊</span></div>
+      </div>
+
+      <div class="monthly-meta">
+        <span class="meta-chip">早去晚接 · 行程彈性</span>
+        <span class="meta-chip">十年以上口碑</span>
+      </div>
+
+      <a href="https://forms.gle/RxtsK5r4nvWyWMnw8" target="_blank" class="monthly-cta">立刻報名包月營 →</a>
+      <span class="monthly-cta-note">名額有限，額滿即止</span>
+    </div>
+  </div>
+</section>
+
+
+<!-- ===== 主題週（七月特色 + 八月特色合併） ===== -->
+<section class="sec" id="weekly">
+  <!-- 裝飾角色 -->
+  <img src="posters/block/船.png" class="sec-deco" style="left:5px;top:60px;height:180px;animation:float2 6.5s ease-in-out infinite .6s" alt="">
+  <img src="posters/block/研發.png" class="sec-deco" style="right:5px;top:60px;height:180px;animation:float2 7s ease-in-out infinite 1.2s" alt="">
+  <img src="posters/block/露營_工作區域 1.png" class="sec-deco" style="left:-60px;bottom:-40px;height:280px;opacity:.25;animation:float2 6s ease-in-out infinite" alt="">
+  <img src="posters/block/程式操作.png" class="sec-deco" style="right:-60px;bottom:-40px;height:280px;opacity:.25;animation:float2 5.5s ease-in-out infinite .8s" alt="">
+
+  <div class="sec-header fade-in from-bottom" style="position:relative;z-index:1">
+    <span class="sec-tag">主題週報名</span>
+    <h2>挑你最想玩的主題</h2>
+    <p>七月限北區單週報名 ／ 八月北區＋永康自由選課</p>
+  </div>
+
+  <!-- 三分頁切換 -->
+  <div class="weekly-tabs fade-in from-bottom delay-1" style="position:relative;z-index:1">
+    <button class="weekly-tab active" data-color="teal" onclick="switchWeekly('july',this)">七月特色（限定北區）</button>
+    <button class="weekly-tab" data-color="teal" onclick="switchWeekly('aug-north',this)">八月特色（北區教室）</button>
+    <button class="weekly-tab" data-color="orange" onclick="switchWeekly('aug-yk',this)">八月特色（永康教室）</button>
+  </div>
+
+  <!-- ── 七月（限定北區）── -->
+  <div id="pane-july" class="weekly-pane active" style="position:relative;z-index:1">
+    <div class="camp-card fade-in from-bottom delay-2">
+      <div class="camp-card-head" style="position:relative" onclick="openLightbox('posters/LINE_NOTE_260413_3.jpg')">
+        <div class="zoom-hint"><svg viewBox="0 0 24 24"><path d="M15.5 14h-.79l-.28-.27A6.47 6.47 0 0 0 16 9.5 6.5 6.5 0 1 0 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14zM12 10h-2v2H9v-2H7V9h2V7h1v2h2v1z"/></svg>點擊放大</div>
+        <img src="posters/LINE_NOTE_260413_3.jpg" alt="七月北區特色營">
+        <div class="camp-card-overlay">
+          <span class="camp-card-loc" style="background:var(--teal)">北區教室</span>
+          <div class="camp-card-date">7/1（三）─ 7/31（五）</div>
+        </div>
+      </div>
+      <div class="camp-card-body">
+        <div class="cmp-course-row"><span class="cmp-course-week">7/1（三）～7/3（五）</span><span class="cmp-course-name">猴囝仔露營趣</span><a href="https://forms.gle/oDykyQqFqboFd4516" target="_blank" class="cmp-course-btn">報名</a></div>
+        <div class="cmp-course-row"><span class="cmp-course-week">7/6（一）～7/10（五）</span><span class="cmp-course-name">MAKER 自造營</span><a href="https://forms.gle/Nfe7UNYQu8BMx6x38" target="_blank" class="cmp-course-btn">報名</a></div>
+        <div class="cmp-course-row"><span class="cmp-course-week">7/13（一）～7/17（五）</span><span class="cmp-course-name">水上裝置實驗室</span><a href="#" class="cmp-course-btn">報名</a></div>
+        <div class="cmp-course-row"><span class="cmp-course-week">7/20（一）～7/24（五）</span><span class="cmp-course-name">空中競技計畫｜無人機足球</span><a href="https://forms.gle/bFnsaTA5VULNwrYk7" target="_blank" class="cmp-course-btn">報名</a></div>
+        <div class="week-group">
+          <span class="week-group-label">7/27～7/31</span>
+          <span class="pick-one">二選一</span>
+          <div class="cmp-course-row"><span class="cmp-course-week">7/27（一）～7/31（五）</span><span class="cmp-course-name">Game Lab 遊戲設計師養成營</span><a href="#" class="cmp-course-btn">報名</a></div>
+          <div class="cmp-course-row"><span class="cmp-course-week">7/27（一）～7/31（五）</span><span class="cmp-course-name">ROBLOX 實境創造計畫</span><a href="https://forms.gle/hZgAdgDWaLsTCkbT7" target="_blank" class="cmp-course-btn">報名</a></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── 八月（北區教室）── -->
+  <div id="pane-aug-north" class="weekly-pane" style="position:relative;z-index:1">
+    <div class="camp-card">
+      <div class="camp-card-head" style="position:relative" onclick="openLightbox('posters/LINE_NOTE_260413_1.jpg')">
+        <div class="zoom-hint"><svg viewBox="0 0 24 24"><path d="M15.5 14h-.79l-.28-.27A6.47 6.47 0 0 0 16 9.5 6.5 6.5 0 1 0 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14zM12 10h-2v2H9v-2H7V9h2V7h1v2h2v1z"/></svg>點擊放大</div>
+        <img src="posters/LINE_NOTE_260413_1.jpg" alt="八月北區特色">
+        <div class="camp-card-overlay">
+          <span class="camp-card-loc" style="background:var(--teal)">北區教室</span>
+          <div class="camp-card-date">8/3（一）─ 8/25（五）</div>
+        </div>
+      </div>
+      <div class="camp-card-body">
+        <div class="cmp-course-row"><span class="cmp-course-week">8/3（一）～8/5（三）</span><span class="cmp-course-name">猴囝仔露營趣</span><a href="https://forms.gle/oDykyQqFqboFd4516" target="_blank" class="cmp-course-btn">報名</a></div>
+        <div class="cmp-course-row"><span class="cmp-course-week">8/6（四）～8/8（六）</span><span class="cmp-course-name">3D 列印工作坊</span><a href="#" class="cmp-course-btn">報名</a></div>
+        <div class="week-group">
+          <span class="week-group-label">8/10～8/14</span>
+          <span class="pick-one">二選一</span>
+          <div class="cmp-course-row"><span class="cmp-course-week">8/10（一）～8/14（五）</span><span class="cmp-course-name">HELLO MAKER 廢材機器人自造夢</span><a href="#" class="cmp-course-btn">報名</a></div>
+          <div class="cmp-course-row"><span class="cmp-course-week">8/10（一）～8/14（五）</span><span class="cmp-course-name">LEGO Ideas 玩具設計總監計畫</span><a href="https://forms.gle/nfXiCeuh6QaXfGYp6" target="_blank" class="cmp-course-btn">報名</a></div>
+        </div>
+        <div class="week-group">
+          <span class="week-group-label">8/17～8/21</span>
+          <span class="pick-one">二選一</span>
+          <div class="cmp-course-row"><span class="cmp-course-week">8/17（一）～8/21（五）</span><span class="cmp-course-name">空中競技計畫｜無人機足球</span><a href="https://forms.gle/bFnsaTA5VULNwrYk7" target="_blank" class="cmp-course-btn">報名</a></div>
+          <div class="cmp-course-row"><span class="cmp-course-week">8/17（一）～8/21（五）</span><span class="cmp-course-name">飛行航空科學營</span><a href="#" class="cmp-course-btn">報名</a></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── 八月（永康教室）── -->
+  <div id="pane-aug-yk" class="weekly-pane" style="position:relative;z-index:1">
+    <div class="camp-card">
+      <div class="camp-card-head" style="position:relative" onclick="openLightbox('posters/LINE_NOTE_260413_1.jpg')">
+        <div class="zoom-hint"><svg viewBox="0 0 24 24"><path d="M15.5 14h-.79l-.28-.27A6.47 6.47 0 0 0 16 9.5 6.5 6.5 0 1 0 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14zM12 10h-2v2H9v-2H7V9h2V7h1v2h2v1z"/></svg>點擊放大</div>
+        <img src="posters/LINE_NOTE_260413_1.jpg" alt="八月永康特色">
+        <div class="camp-card-overlay">
+          <span class="camp-card-loc" style="background:var(--orange)">永康教室</span>
+          <div class="camp-card-date">8/3（一）─ 8/25（五）</div>
+        </div>
+      </div>
+      <div class="camp-card-body">
+        <div class="cmp-course-row"><span class="cmp-course-week">8/3（一）～8/5（三）</span><span class="cmp-course-name">猴囝仔露營趣</span><a href="https://forms.gle/oDykyQqFqboFd4516" target="_blank" class="cmp-course-btn">報名</a></div>
+        <div class="cmp-course-row"><span class="cmp-course-week">8/6（四）～8/8（六）</span><span class="cmp-course-name">科學大師營</span><a href="#" class="cmp-course-btn">報名</a></div>
+        <div class="week-group">
+          <span class="week-group-label">8/10～8/14</span>
+          <span class="pick-one">二選一</span>
+          <div class="cmp-course-row"><span class="cmp-course-week">8/10（一）～8/14（五）</span><span class="cmp-course-name">ROBLOX 實境創造計畫</span><a href="https://forms.gle/hZgAdgDWaLsTCkbT7" target="_blank" class="cmp-course-btn">報名</a></div>
+          <div class="cmp-course-row"><span class="cmp-course-week">8/10（一）～8/14（五）</span><span class="cmp-course-name">飛行航空科學營</span><a href="#" class="cmp-course-btn">報名</a></div>
+        </div>
+        <div class="week-group">
+          <span class="week-group-label">8/17～8/21</span>
+          <span class="pick-one">二選一</span>
+          <div class="cmp-course-row"><span class="cmp-course-week">8/17（一）～8/21（五）</span><span class="cmp-course-name">LEGO Ideas 玩具設計總監計畫</span><a href="https://forms.gle/nfXiCeuh6QaXfGYp6" target="_blank" class="cmp-course-btn">報名</a></div>
+          <div class="cmp-course-row"><span class="cmp-course-week">8/17（一）～8/21（五）</span><span class="cmp-course-name">Game Lab 遊戲設計師養成營</span><a href="#" class="cmp-course-btn">報名</a></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+
+<!-- ===== 小一新生營 ===== -->
+<section class="sec" id="grade1">
+  <div class="stars-bg" id="stars2"></div>
+  <div style="position:relative;z-index:1">
+    <div class="sec-header fade-in from-bottom">
+      <span class="sec-tag">八月 · 小一新生專屬</span>
+      <h2>太空人見習生──小一新生營</h2>
+      <p>專為「大班升小一」設計，提前感受小學生活！</p>
+    </div>
+
+    <div class="grade1-card fade-in from-bottom delay-1">
+      <div class="grade1-poster" style="position:relative" onclick="openLightbox('posters/暑期小一新生2026.jpg')">
+        <div class="zoom-hint"><svg viewBox="0 0 24 24"><path d="M15.5 14h-.79l-.28-.27A6.47 6.47 0 0 0 16 9.5 6.5 6.5 0 1 0 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14zM12 10h-2v2H9v-2H7V9h2V7h1v2h2v1z"/></svg>點擊放大</div>
+        <img src="posters/暑期小一新生2026.jpg" alt="小一新生營">
+      </div>
+      <div class="grade1-info">
+        <div class="info-block">
+          <div class="info-row">
+            <span class="info-dot" style="background:var(--orange)"></span>
+            <div><div class="info-label">活動時間</div><div class="info-val">8/3（一）– 8/25（二）</div></div>
+          </div>
+          <div class="info-row">
+            <span class="info-dot" style="background:var(--blue)"></span>
+            <div><div class="info-label">上課時間</div><div class="info-val">09:00 – 17:00（最早 07:30 入校）</div></div>
+          </div>
+          <div class="info-row">
+            <span class="info-dot" style="background:var(--purple)"></span>
+            <div><div class="info-label">招生對象</div><div class="info-val">大班升小一</div></div>
+          </div>
+          <div class="info-row">
+            <span class="info-dot" style="background:var(--red)"></span>
+            <div><div class="info-label">地點</div><div class="info-val">北區 ／ 永康（報名時選擇）</div></div>
+          </div>
+          <div class="info-row">
+            <span class="info-dot" style="background:var(--green)"></span>
+            <div><div class="info-label">費用</div><div class="info-val">詳見報名表單</div></div>
+          </div>
+        </div>
+        <a href="https://forms.gle/U5RzfaWgQZMzJbUU7" target="_blank" class="btn-star">立即報名小一新生營 →</a>
+      </div>
+    </div>
+  </div>
+</section>
+
+
+<!-- Lightbox -->
+<div class="lightbox" id="lightbox" onclick="closeLightbox()">
+  <span class="lightbox-close" onclick="closeLightbox()">✕</span>
+  <img id="lightbox-img" src="" alt="海報放大">
+</div>
+
+<!-- LINE 浮動按鈕 -->
+<a href="https://lin.ee/zFqqFzQ" target="_blank" class="line-float" aria-label="加入LINE">
+  <svg viewBox="0 0 24 24" width="28" height="28" fill="white"><path d="M19.365 9.863c.349 0 .63.285.63.631 0 .345-.281.63-.63.63H17.61v1.125h1.755c.349 0 .63.283.63.63 0 .344-.281.629-.63.629h-2.386c-.345 0-.627-.285-.627-.629V8.108c0-.345.282-.63.63-.63h2.386c.346 0 .627.285.627.63 0 .349-.281.63-.63.63H17.61v1.125h1.755zm-3.855 3.016c0 .27-.174.51-.432.596-.064.021-.133.031-.199.031-.211 0-.391-.09-.51-.25l-2.443-3.317v2.94c0 .344-.279.629-.631.629-.346 0-.626-.285-.626-.629V8.108c0-.27.173-.51.43-.595.06-.023.136-.033.194-.033.195 0 .375.104.495.254l2.462 3.33V8.108c0-.345.282-.63.63-.63.345 0 .63.285.63.63v4.771zm-5.741 0c0 .344-.282.629-.631.629-.345 0-.627-.285-.627-.629V8.108c0-.345.282-.63.63-.63.346 0 .628.285.628.63v4.771zm-2.466.629H4.917c-.345 0-.63-.285-.63-.629V8.108c0-.345.285-.63.63-.63.348 0 .63.285.63.63v4.141h1.756c.348 0 .629.283.629.63 0 .344-.282.629-.629.629M24 10.314C24 4.943 18.615.572 12 .572S0 4.943 0 10.314c0 4.811 4.27 8.842 10.035 9.608.391.082.923.258 1.058.59.12.301.079.766.038 1.08l-.164 1.02c-.045.301-.24 1.186 1.049.645 1.291-.539 6.916-4.078 9.436-6.975C23.176 14.393 24 12.458 24 10.314"/></svg>
+</a>
+
+<!-- 浮動報名（手機版） -->
+<div class="float-cta" id="floatCta">
+  <button class="float-cta-btn" onclick="document.querySelector('#monthly').scrollIntoView({behavior:'smooth',block:'start'})">
+    查看課程方案・立刻報名
+  </button>
+</div>
+
+<!-- ===== FOOTER ===== -->
+<footer id="footer">
+  <div class="footer-inner">
+    <div class="footer-logo">
+      <img src="../assets/可愛的布拉克星球logo.png" alt="布拉克星球">
+      <p>© 2026 布拉克星球<br>台南最好玩的學習基地</p>
+    </div>
+    <div class="footer-col">
+      <h3>永康教室</h3>
+      <p>台南市永康區<br>東橋一路 558 號<br><a href="tel:+88662089382">06-2089382</a></p>
+      <a href="https://www.google.com/maps/search/台南市永康區東橋一路558號" target="_blank" class="footer-map-link">📍 Google Map 導航</a>
+    </div>
+    <div class="footer-col">
+      <h3>北區教室</h3>
+      <p>台南市北區<br>中華北路二段 113 號<br><a href="tel:+88663583735">06-3583735</a></p>
+      <a href="https://www.google.com/maps/search/台南市北區中華北路二段113號" target="_blank" class="footer-map-link">📍 Google Map 導航</a>
+    </div>
+    <div class="footer-col">
+      <h3>聯絡我們</h3>
+      <div class="footer-social">
+        <a href="https://www.facebook.com/blockplanet" target="_blank" class="footer-social-btn fb">📘 Facebook 粉專</a>
+        <a href="https://lin.ee/zFqqFzQ" target="_blank" class="footer-social-btn line">💬 LINE 官方帳號</a>
+        <a href="https://www.instagram.com/blockplanet_2021" target="_blank" class="footer-social-btn ig">📸 Instagram</a>
+      </div>
+    </div>
+  </div>
+  <div class="footer-bottom">報名相關問題歡迎私訊粉絲專頁或直接來電詢問</div>
+</footer>
+
+
+<script>
+  /* 漢堡選單 */
+  (function(){
+    const hb=document.getElementById('hamburger');
+    const nl=document.getElementById('navLinks');
+    function closeMenu(){ hb.classList.remove('open'); nl.classList.remove('open'); }
+    function toggleMenu(){ hb.classList.toggle('open'); nl.classList.toggle('open'); }
+    hb.addEventListener('click',toggleMenu);
+    // 點選單內連結後自動關閉
+    nl.querySelectorAll('a').forEach(a=>a.addEventListener('click',closeMenu));
+    // 點選單背景也關閉
+    nl.addEventListener('click',e=>{ if(e.target===nl) closeMenu(); });
+  })();
+
+  /* Lightbox */
+  function openLightbox(src){
+    document.getElementById('lightbox-img').src=src;
+    document.getElementById('lightbox').classList.add('open');
+    document.body.style.overflow='hidden';
+  }
+  function closeLightbox(){
+    document.getElementById('lightbox').classList.remove('open');
+    document.body.style.overflow='';
+  }
+  document.addEventListener('keydown',e=>{if(e.key==='Escape')closeLightbox()});
+
+  /* Stars */
+  (function(){
+    const c=document.getElementById('stars2'); if(!c) return;
+    for(let i=0;i<160;i++){
+      const d=document.createElement('div'); d.className='star-dot';
+      const s=Math.random()*3+1;
+      d.style.cssText=`width:${s}px;height:${s}px;left:${Math.random()*100}%;top:${Math.random()*100}%;animation-delay:${Math.random()*4}s;animation-duration:${2+Math.random()*3}s;`;
+      c.appendChild(d);
+    }
+  })();
+
+  /* Scroll fade-in */
+  const obs=new IntersectionObserver(entries=>{
+    entries.forEach(e=>{if(e.isIntersecting){e.target.classList.add('visible');obs.unobserve(e.target)}});
+  },{threshold:.1});
+  document.querySelectorAll('.fade-in').forEach(el=>obs.observe(el));
+
+  /* Weekly tabs (三分頁) */
+  function switchWeekly(id,btn){
+    document.querySelectorAll('.weekly-tab').forEach(b=>b.classList.remove('active'));
+    document.querySelectorAll('.weekly-pane').forEach(p=>p.classList.remove('active'));
+    btn.classList.add('active');
+    document.getElementById('pane-'+id).classList.add('active');
+  }
+
+  /* Quick nav highlight on scroll */
+  const sections=['monthly','weekly','grade1'];
+  const qnItems=document.querySelectorAll('.qn-item');
+  window.addEventListener('scroll',()=>{
+    const y=window.scrollY+200;
+    let active='monthly';
+    sections.forEach(id=>{
+      const el=document.getElementById(id);
+      if(el && el.offsetTop<=y) active=id;
+    });
+    qnItems.forEach(item=>{
+      item.classList.toggle('active',item.dataset.target===active);
+    });
+
+    // 浮動 CTA：手機版 + 滾過 hero 才顯示
+    const fc=document.getElementById('floatCta');
+    if(fc && window.innerWidth<=600){
+      fc.style.display=window.scrollY>window.innerHeight*.4?'block':'none';
+    }
+  });
+
+  /* 手機版縮短日期：7/1（三）～7/3（五） → 7/1–7/3 */
+  (function(){
+    if(window.innerWidth > 600) return;
+    document.querySelectorAll('.cmp-course-week').forEach(el=>{
+      el.textContent = el.textContent
+        .replace(/（[^）]*）/g,'')  // 去掉星期
+        .replace(/～/g,'–')         // 換破折號
+        .trim();
+    });
+  })();
+
+  /* Smooth scroll + 關閉漢堡 */
+  document.querySelectorAll('a[href^="#"]').forEach(a=>{
+    a.addEventListener('click',e=>{
+      const sel=a.getAttribute('href'); if(sel==='#') return;
+      const target=document.querySelector(sel);
+      if(target){
+        e.preventDefault();
+        document.querySelector('.nav-hamburger')?.classList.remove('open');
+        document.querySelector('.nav-links')?.classList.remove('open');
+        window.scrollTo({top:target.getBoundingClientRect().top+window.scrollY-70,behavior:'smooth'});
+      }
+    });
+  });
+</script>
+
+</body>
+</html>
