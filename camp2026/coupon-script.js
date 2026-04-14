@@ -376,9 +376,10 @@ function lookupByPhone(phone) {
     const phoneCol = findColumnIndex(headers, ['家長聯絡電話', '聯絡電話', '手機', '電話']);
     if (phoneCol < 0) continue;
 
-    const couponCol = findColumnIndex(headers, ['優惠碼', '優惠券', 'coupon']);
+    const couponCol = findColumnIndex(headers, ['優惠碼']);
     const nameCol = findColumnIndex(headers, ['寶貝姓名', '孩子姓名', '學生姓名', '姓名']);
     const sessionCol = findColumnIndex(headers, ['梯次', '選擇', '場次', '教室']);
+    const noteCol = findColumnIndex(headers, ['備註', '備注', '其他']);
 
     const data = sheet.getRange(2, 1, lastRow - 1, sheet.getLastColumn()).getValues();
 
@@ -397,6 +398,8 @@ function lookupByPhone(phone) {
         const couponCode = couponCol >= 0 ? String(data[i][couponCol] || '').trim() : '';
         const childName = nameCol >= 0 ? String(data[i][nameCol] || '').trim() : '';
         const session = sessionCol >= 0 ? String(data[i][sessionCol] || '').trim() : '';
+        const noteText = noteCol >= 0 ? String(data[i][noteCol] || '') : '';
+        const isDuo = duo && (noteText.includes('兩人同行') || noteText.includes('兩人') || noteText.includes('2人同行'));
 
         // 判斷價格
         let priceType = '早鳥價';
@@ -410,9 +413,26 @@ function lookupByPhone(phone) {
             const cPhone = coupon.phone;
             if (!cPhone || phoneMatch(cleanPhone, cPhone)) {
               hasCoupon = true;
-              finalPrice = Math.round(basePrice * 0.95);
             }
           }
+        }
+
+        // 兩人同行 vs 95折 取較低，不疊加
+        const couponPrice = hasCoupon ? Math.round(earlybird * 0.95) : earlybird;
+        if (hasCoupon && isDuo) {
+          if (couponPrice <= duo) {
+            finalPrice = couponPrice;
+            priceType = '95折（優於兩人同行）';
+          } else {
+            finalPrice = duo;
+            priceType = '兩人同行（優於95折）';
+          }
+        } else if (hasCoupon) {
+          finalPrice = couponPrice;
+          priceType = '95折';
+        } else if (isDuo) {
+          finalPrice = duo;
+          priceType = '兩人同行';
         }
 
         results.push({
@@ -421,11 +441,10 @@ function lookupByPhone(phone) {
           session: session,
           couponCode: couponCode || '無',
           hasCoupon: hasCoupon,
+          isDuo: isDuo,
           priceType: priceType,
-          basePrice: basePrice,
-          finalPrice: finalPrice,
-          duoPrice: duo,
-          duoDiscounted: duo ? Math.round(duo * 0.95) : null
+          basePrice: earlybird,
+          finalPrice: finalPrice
         });
       }
     }
@@ -583,19 +602,18 @@ function onFormSubmit(e) {
     const rowData = sheet.getRange(row, 1, 1, sheet.getLastColumn()).getValues()[0];
 
     // 找關鍵欄位
-    const couponCol = findColumnIndex(headers, ['優惠碼', '優惠券', 'coupon']);
+    const couponCol = findColumnIndex(headers, ['優惠碼']);
     const phoneCol = findColumnIndex(headers, ['家長聯絡電話', '聯絡電話', '手機', '電話']);
+    const noteCol = findColumnIndex(headers, ['備註', '備注', '其他']);
 
-    // 確保有「優惠碼狀態」「手機比對」「早鳥價」「應付金額」欄位
-    const resultCols = ['💰 早鳥價', '🎟️ 優惠碼狀態', '📱 手機比對', '💵 應付金額'];
+    // 確保有結果欄位
+    const resultCols = ['💰 方案', '🎟️ 優惠碼狀態', '📱 手機比對', '💵 應付金額'];
     let startCol = headers.length + 1;
 
-    // 檢查是否已有這些欄位
-    const existingIdx = findColumnIndex(headers, ['早鳥價', '優惠碼狀態']);
+    const existingIdx = findColumnIndex(headers, ['方案', '優惠碼狀態', '早鳥價']);
     if (existingIdx >= 0) {
-      startCol = existingIdx + 1; // 已存在，覆蓋
+      startCol = existingIdx + 1;
     } else {
-      // 第一次：寫表頭
       sheet.getRange(1, startCol, 1, resultCols.length).setValues([resultCols]);
       sheet.getRange(1, startCol, 1, resultCols.length).setFontWeight('bold').setBackground('#F5941E').setFontColor('white');
     }
@@ -603,16 +621,21 @@ function onFormSubmit(e) {
     // 找營隊價格
     const campPrice = findCampPrice(sheetName);
     const earlybird = campPrice ? campPrice.earlybird : 0;
+    const duoPrice = campPrice ? campPrice.duo : null;
 
-    // 取得優惠碼和手機
+    // 取得優惠碼、手機、備註
     const couponCode = couponCol >= 0 ? String(rowData[couponCol] || '').trim() : '';
-    const formPhone = phoneCol >= 0 ? String(rowData[phoneCol] || '').replace(/[-\s]/g, '').trim() : '';
+    const rawFormPhone = phoneCol >= 0 ? String(rowData[phoneCol] || '') : '';
+    const noteText = noteCol >= 0 ? String(rowData[noteCol] || '') : '';
+
+    // 檢查是否兩人同行
+    const isDuo = duoPrice && (noteText.includes('兩人同行') || noteText.includes('兩人') || noteText.includes('2人同行'));
 
     let couponStatus = '無優惠碼';
     let phoneResult = '—';
-    let finalPrice = earlybird;
-    const rawFormPhone = phoneCol >= 0 ? String(rowData[phoneCol] || '') : '';
+    let couponValid = false;
 
+    // 驗證優惠碼
     if (couponCode) {
       const coupon = lookupCoupon(couponCode);
 
@@ -624,12 +647,10 @@ function onFormSubmit(e) {
         const now = new Date();
         const buffer = coupon.expiresAt ? new Date(coupon.expiresAt.getTime() + 10 * 60 * 1000) : now;
         if (buffer >= now) {
-          couponStatus = '✅ 有效';
           if (rawFormPhone && coupon.phone) {
             if (phoneMatch(rawFormPhone, coupon.phone)) {
               phoneResult = '✅ 吻合';
-              finalPrice = Math.round(earlybird * 0.95);
-              // 自動標記為「已使用」（不會被回收，多營隊仍可用）
+              couponValid = true;
               markCouponUsed(couponCode);
             } else {
               phoneResult = '❌ 不吻合';
@@ -637,24 +658,52 @@ function onFormSubmit(e) {
             }
           } else {
             phoneResult = '⚠️ 缺手機資料';
-            finalPrice = Math.round(earlybird * 0.95);
+            couponValid = true;
             markCouponUsed(couponCode);
           }
+          if (couponValid) couponStatus = '✅ 有效';
         } else {
           couponStatus = '❌ 已過期';
         }
       } else if (coupon.status === '已使用') {
-        couponStatus = '✅ 有效（多營隊使用中）';
         if (rawFormPhone && coupon.phone && phoneMatch(rawFormPhone, coupon.phone)) {
           phoneResult = '✅ 吻合';
-          finalPrice = Math.round(earlybird * 0.95);
+          couponValid = true;
+          couponStatus = '✅ 有效（多營隊）';
+        } else {
+          couponStatus = '✅ 已使用（多營隊）';
         }
       }
     }
 
+    // 計算最終價格（兩人同行 vs 95折 取較低，不疊加）
+    let finalPrice = earlybird;
+    let priceLabel = '早鳥價 $' + earlybird.toLocaleString();
+
+    const couponPrice = couponValid ? Math.round(earlybird * 0.95) : earlybird;
+    const actualDuoPrice = isDuo && duoPrice ? duoPrice : earlybird;
+
+    if (couponValid && isDuo && duoPrice) {
+      // 兩個都有：取較低的
+      if (couponPrice <= duoPrice) {
+        finalPrice = couponPrice;
+        priceLabel = '95折 $' + couponPrice.toLocaleString() + '（優於兩人同行）';
+      } else {
+        finalPrice = duoPrice;
+        priceLabel = '兩人同行 $' + duoPrice.toLocaleString() + '（優於95折）';
+        couponStatus += '（兩人同行更優惠）';
+      }
+    } else if (couponValid) {
+      finalPrice = couponPrice;
+      priceLabel = '95折 $' + couponPrice.toLocaleString();
+    } else if (isDuo && duoPrice) {
+      finalPrice = duoPrice;
+      priceLabel = '兩人同行 $' + duoPrice.toLocaleString();
+    }
+
     // 寫入結果
     sheet.getRange(row, startCol, 1, 4).setValues([[
-      earlybird ? '$' + earlybird.toLocaleString() : '未設定',
+      priceLabel,
       couponStatus,
       phoneResult,
       '$' + finalPrice.toLocaleString()
@@ -680,15 +729,16 @@ function recalcSheet(sheetName) {
   if (!sheet) { Logger.log('找不到工作表：' + sheetName); return; }
 
   const headers = sheet.getRange(1, 1, 1, sheet.getLastColumn()).getValues()[0];
-  const couponCol = findColumnIndex(headers, ['優惠碼', '優惠券', 'coupon']);
+  const couponCol = findColumnIndex(headers, ['優惠碼']);
   const phoneCol = findColumnIndex(headers, ['家長聯絡電話', '聯絡電話', '手機', '電話']);
+  const noteCol = findColumnIndex(headers, ['備註', '備注', '其他']);
   const campPrice = findCampPrice(sheetName);
   const earlybird = campPrice ? campPrice.earlybird : 0;
+  const duoPrice = campPrice ? campPrice.duo : null;
 
-  // 確保有結果欄位
-  const resultCols = ['💰 早鳥價', '🎟️ 優惠碼狀態', '📱 手機比對', '💵 應付金額'];
+  const resultCols = ['💰 方案', '🎟️ 優惠碼狀態', '📱 手機比對', '💵 應付金額'];
   let startCol = headers.length + 1;
-  const existingIdx = findColumnIndex(headers, ['早鳥價', '優惠碼狀態']);
+  const existingIdx = findColumnIndex(headers, ['方案', '優惠碼狀態', '早鳥價']);
   if (existingIdx >= 0) {
     startCol = existingIdx + 1;
   } else {
@@ -703,10 +753,12 @@ function recalcSheet(sheetName) {
     const rowData = sheet.getRange(row, 1, 1, sheet.getLastColumn()).getValues()[0];
     const couponCode = couponCol >= 0 ? String(rowData[couponCol] || '').trim() : '';
     const rawFormPhone = phoneCol >= 0 ? String(rowData[phoneCol] || '') : '';
+    const noteText = noteCol >= 0 ? String(rowData[noteCol] || '') : '';
+    const isDuo = duoPrice && (noteText.includes('兩人同行') || noteText.includes('兩人') || noteText.includes('2人同行'));
 
     let couponStatus = '無優惠碼';
     let phoneResult = '—';
-    let finalPrice = earlybird;
+    let couponValid = false;
 
     if (couponCode) {
       const coupon = lookupCoupon(couponCode);
@@ -715,22 +767,43 @@ function recalcSheet(sheetName) {
       } else if (coupon.status === '已過期') {
         couponStatus = '❌ 已過期';
       } else if (coupon.status === '已領取' || coupon.status === '已使用') {
-        couponStatus = '✅ 有效';
         if (rawFormPhone && coupon.phone && phoneMatch(rawFormPhone, coupon.phone)) {
           phoneResult = '✅ 吻合';
-          finalPrice = Math.round(earlybird * 0.95);
+          couponValid = true;
         } else if (rawFormPhone && coupon.phone) {
           phoneResult = '❌ 不吻合';
           couponStatus = '⚠️ 碼有效但手機不符';
         } else {
           phoneResult = '⚠️ 缺手機資料';
-          finalPrice = Math.round(earlybird * 0.95);
+          couponValid = true;
         }
+        if (couponValid) couponStatus = '✅ 有效';
       }
     }
 
+    // 計算最終價格
+    let finalPrice = earlybird;
+    let priceLabel = '早鳥價 $' + earlybird.toLocaleString();
+    const couponPrice = couponValid ? Math.round(earlybird * 0.95) : earlybird;
+
+    if (couponValid && isDuo && duoPrice) {
+      if (couponPrice <= duoPrice) {
+        finalPrice = couponPrice;
+        priceLabel = '95折 $' + couponPrice.toLocaleString() + '（優於兩人同行）';
+      } else {
+        finalPrice = duoPrice;
+        priceLabel = '兩人同行 $' + duoPrice.toLocaleString() + '（優於95折）';
+      }
+    } else if (couponValid) {
+      finalPrice = couponPrice;
+      priceLabel = '95折 $' + couponPrice.toLocaleString();
+    } else if (isDuo && duoPrice) {
+      finalPrice = duoPrice;
+      priceLabel = '兩人同行 $' + duoPrice.toLocaleString();
+    }
+
     sheet.getRange(row, startCol, 1, 4).setValues([[
-      earlybird ? '$' + earlybird.toLocaleString() : '未設定',
+      priceLabel,
       couponStatus,
       phoneResult,
       '$' + finalPrice.toLocaleString()
