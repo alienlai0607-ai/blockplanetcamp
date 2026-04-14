@@ -213,15 +213,15 @@
     }
     .hero-loc-badge:hover { transform:translateY(-2px); box-shadow:0 5px 16px rgba(0,0,0,.1); }
     .hero-coupon-btn {
-      display:flex; flex-direction:column; align-items:center; justify-content:center;
-      gap:4px; padding:18px 24px;
+      display:block; width:100%; text-align:center;
+      padding:16px 28px;
       background:linear-gradient(135deg, #C93A2A, #e74c3c);
-      color:white; border-radius:20px;
+      color:white; font-size:1.05rem; font-weight:900;
+      border-radius:50px;
       text-decoration:none; cursor:pointer;
       box-shadow:0 6px 24px rgba(201,58,42,.35);
       transition:transform .2s, box-shadow .2s;
       animation:pulse-coupon 2s ease-in-out infinite;
-      min-width:140px;
     }
     .hero-coupon-btn:hover { transform:translateY(-3px); box-shadow:0 10px 32px rgba(201,58,42,.5); }
     @keyframes pulse-coupon { 0%,100%{box-shadow:0 6px 24px rgba(201,58,42,.35)} 50%{box-shadow:0 6px 32px rgba(201,58,42,.55)} }
@@ -857,14 +857,8 @@
       <div class="trust-item"><span class="trust-num">5000+</span><span class="trust-label">學生<br>參與</span></div>
     </div>
 
-    <div class="hero-cta-row" style="gap:14px;align-items:stretch">
-      <a href="#quick-nav" class="btn btn-primary">查看三大方案任你挑選</a>
-      <a href="coupon.html" class="hero-coupon-btn">
-        <span style="font-size:2rem;line-height:1">🎟️</span>
-        <span style="font-size:.72rem;opacity:.85">限量 95 折</span>
-        <span style="font-size:1.1rem;font-weight:900">領取優惠券</span>
-        <span style="font-size:.7rem;background:rgba(255,255,255,.25);padding:2px 10px;border-radius:50px;margin-top:2px">限時 1 小時 🔥</span>
-      </a>
+    <div class="hero-cta-row">
+      <a href="coupon.html" class="hero-coupon-btn">🎟️ 限量 95 折優惠券 → 立即領取</a>
     </div>
   </div>
 </section>
