@@ -444,7 +444,8 @@ function lookupByPhone(phone) {
           isDuo: isDuo,
           priceType: priceType,
           basePrice: earlybird,
-          finalPrice: finalPrice
+          finalPrice: finalPrice,
+          note: noteText.trim()
         });
       }
     }
