@@ -4,7 +4,7 @@
 // ========================================
 
 const VALID_MINUTES = 60;   // 優惠券有效時間（分鐘）
-const POOL_SIZE = 200;      // 優惠券總池大小
+const POOL_SIZE = 60;       // 優惠券總池大小
 
 // ===== 網頁 API 入口 =====
 function doGet(e) {
