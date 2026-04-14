@@ -229,7 +229,7 @@
 
     /* ===== 快速導航條 ===== */
     .quick-nav {
-      background:white; padding:20px 5%;
+      background:white; padding:36px 5% 20px;
       position:relative; z-index:5;
     }
     .quick-nav-inner {
@@ -245,6 +245,13 @@
       position:relative;
       background:white;
     }
+    .qn-item::before {
+      content:'👇';
+      position:absolute; top:-32px; left:50%; transform:translateX(-50%);
+      font-size:1.4rem;
+      animation:point-down 1s ease-in-out infinite;
+    }
+    @keyframes point-down { 0%,100%{transform:translateX(-50%) translateY(0)} 50%{transform:translateX(-50%) translateY(6px)} }
     .qn-item:hover { border-color:var(--orange); background:var(--bg-warm); }
     .qn-item.active { border-color:var(--orange); background:var(--bg-warm); box-shadow:0 4px 16px rgba(245,148,30,.1); }
     .qn-char {
