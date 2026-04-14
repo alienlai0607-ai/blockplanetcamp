@@ -118,20 +118,27 @@
     <button class="refresh-btn" onclick="loadStats()">↻ 重新整理</button>
   </div>
 
-  <!-- 核對區 -->
+  <!-- 家長查詢（主功能）-->
   <div class="card">
-    <div class="card-title">🔍 核對優惠碼</div>
+    <div class="card-title">📱 輸入家長電話，一鍵查全部</div>
     <div class="input-row">
-      <input type="text" id="codeInput" placeholder="輸入優惠碼（例如 BP-7A3X）" style="flex:1.2" />
+      <input type="tel" id="phoneLookup" placeholder="輸入家長手機號碼" oninput="this.value=this.value.replace(/[^0-9]/g,'')" maxlength="10" />
+      <button class="verify-btn" onclick="lookupPhone()">查詢</button>
+    </div>
+    <div id="lookupResult"></div>
+  </div>
+
+  <!-- 優惠碼核對（備用）-->
+  <div class="card">
+    <div class="card-title">🔍 單獨核對優惠碼</div>
+    <div class="input-row">
+      <input type="text" id="codeInput" placeholder="優惠碼（例如 BP-7A3X）" style="flex:1.2" />
       <input type="tel" id="phoneCheck" placeholder="家長手機" style="flex:0.8" />
       <button class="verify-btn" onclick="verify()">核對</button>
     </div>
-
     <div class="result-area" id="resultArea">
       <div id="statusBadge"></div>
       <div class="info-grid" id="infoGrid"></div>
-
-      <!-- 費用計算（驗證通過後顯示）-->
       <div id="priceCalc" style="display:none"></div>
     </div>
   </div>
@@ -344,6 +351,101 @@
     billResult.innerHTML = html;
     billResult.style.display = 'block';
   }
+
+  // 電話查詢
+  async function lookupPhone() {
+    const phone = document.getElementById('phoneLookup').value.trim();
+    const resultDiv = document.getElementById('lookupResult');
+    if (!phone || phone.length < 9) { alert('請輸入正確的手機號碼'); return; }
+
+    resultDiv.innerHTML = '<div style="text-align:center;padding:20px;color:#aaa">查詢中...</div>';
+
+    try {
+      const res = await fetch(API + '?action=lookup&phone=' + encodeURIComponent(phone));
+      const data = await res.json();
+
+      if (!data.success) {
+        resultDiv.innerHTML = `<div style="padding:16px;color:#C93A2A;font-weight:700">${data.error}</div>`;
+        return;
+      }
+
+      let html = '';
+
+      // 優惠券狀態
+      if (data.coupon) {
+        const c = data.coupon;
+        const statusColor = c.status === '已領取' ? '#2E7D32' : c.status === '已過期' ? '#C93A2A' : '#1565C0';
+        html += `<div style="background:#f9f9f9;border-radius:12px;padding:14px 16px;margin:12px 0;border-left:4px solid ${statusColor}">
+          <div style="font-size:.82rem;color:#aaa;font-weight:700;margin-bottom:6px">🎟️ 優惠券</div>
+          <div style="font-size:1rem;font-weight:900">優惠碼：<span style="color:${statusColor}">${c.code}</span>（${c.status}）</div>
+          ${c.claimedAt ? `<div style="font-size:.78rem;color:#aaa;margin-top:4px">領取：${c.claimedAt}｜到期：${c.expiresAt}</div>` : ''}
+        </div>`;
+      } else {
+        html += `<div style="background:#f9f9f9;border-radius:12px;padding:14px 16px;margin:12px 0;border-left:4px solid #aaa">
+          <div style="font-size:.92rem;color:#888">🎟️ 此號碼未領取優惠券</div>
+        </div>`;
+      }
+
+      // 報名紀錄
+      if (data.registrations.length === 0) {
+        html += `<div style="text-align:center;padding:24px;color:#aaa">📋 查無此號碼的報名紀錄</div>`;
+      } else {
+        html += `<div style="font-size:.82rem;font-weight:900;color:#aaa;letter-spacing:1px;margin:16px 0 8px">📋 報名紀錄（${data.campCount} 個營隊）</div>`;
+
+        data.registrations.forEach(r => {
+          const discounted = r.hasCoupon;
+          html += `<div style="background:white;border:1.5px solid ${discounted ? '#F5941E' : '#eee'};border-radius:12px;padding:14px 16px;margin-bottom:8px">
+            <div style="display:flex;justify-content:space-between;align-items:center">
+              <div>
+                <div style="font-size:.95rem;font-weight:900;color:#333">${r.camp}</div>
+                ${r.childName ? `<div style="font-size:.78rem;color:#888;margin-top:2px">👦 ${r.childName} ${r.session ? '｜' + r.session : ''}</div>` : ''}
+              </div>
+              <div style="text-align:right">
+                ${discounted
+                  ? `<div style="font-size:.75rem;color:#aaa;text-decoration:line-through">$${r.basePrice.toLocaleString()}</div>
+                     <div style="font-size:1.1rem;font-weight:900;color:#2E7D32">$${r.finalPrice.toLocaleString()}</div>`
+                  : `<div style="font-size:1.1rem;font-weight:900;color:#333">$${r.basePrice.toLocaleString()}</div>`
+                }
+              </div>
+            </div>
+            <div style="display:flex;gap:8px;margin-top:6px;font-size:.72rem">
+              ${r.couponCode !== '無'
+                ? `<span style="background:${discounted ? '#E8F5E9' : '#FFEBEE'};color:${discounted ? '#2E7D32' : '#C93A2A'};padding:2px 8px;border-radius:50px;font-weight:700">🎟️ ${r.couponCode} ${discounted ? '✅' : '❌'}</span>`
+                : `<span style="background:#f5f5f5;color:#aaa;padding:2px 8px;border-radius:50px;font-weight:700">無優惠碼</span>`
+              }
+            </div>
+          </div>`;
+        });
+
+        // 總計
+        html += `<div style="background:linear-gradient(135deg,#FFF8F0,#FFF3E0);border-radius:12px;padding:16px;margin-top:12px;border:2px solid rgba(245,148,30,0.2)">
+          <div style="display:flex;justify-content:space-between;margin-bottom:4px">
+            <span style="color:#888;font-size:.88rem">小計（${data.campCount} 個營隊）</span>
+            <span style="font-weight:700;${data.totalSaved > 0 ? 'text-decoration:line-through;color:#aaa' : 'color:#333'}">$${data.totalBase.toLocaleString()}</span>
+          </div>
+          ${data.totalSaved > 0 ? `
+            <div style="display:flex;justify-content:space-between;margin-bottom:4px">
+              <span style="color:#2E7D32;font-size:.88rem;font-weight:700">95 折優惠</span>
+              <span style="color:#2E7D32;font-weight:700">-$${data.totalSaved.toLocaleString()}</span>
+            </div>
+          ` : ''}
+          <div style="display:flex;justify-content:space-between;border-top:2px solid rgba(0,0,0,.06);padding-top:8px;margin-top:8px">
+            <span style="font-size:1.1rem;font-weight:900">💰 應付總額</span>
+            <span style="font-size:1.3rem;font-weight:900;color:#C93A2A">$${data.totalFinal.toLocaleString()}</span>
+          </div>
+        </div>`;
+      }
+
+      resultDiv.innerHTML = html;
+    } catch(e) {
+      resultDiv.innerHTML = '<div style="padding:16px;color:#C93A2A;font-weight:700">❌ 查詢失敗，請再試一次</div>';
+    }
+  }
+
+  // Enter 鍵觸發查詢
+  document.getElementById('phoneLookup').addEventListener('keydown', e => {
+    if (e.key === 'Enter') lookupPhone();
+  });
 
   // 結案優惠碼
   async function closeCoupon(code) {

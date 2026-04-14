@@ -23,6 +23,7 @@ function doGet(e) {
       case 'status': return respond(getStatus());
       case 'claim':  return respond(claimCoupon(e.parameter.fp || '', e.parameter.phone || ''));
       case 'verify': return respond(verifyCode(e.parameter.code || ''));
+      case 'lookup': return respond(lookupByPhone(e.parameter.phone || ''));
       // close 保留但不常用，過期會自動處理
       default:       return respond({ success: false, error: '無效的操作' });
     }
@@ -297,6 +298,117 @@ function initCoupons() {
   couponSheet.setConditionalFormatRules(rules);
 
   Logger.log('✅ 初始化完成！已建立 ' + POOL_SIZE + ' 張優惠券');
+}
+
+// ===== 用電話查詢所有報名紀錄 =====
+function lookupByPhone(phone) {
+  const cleanPhone = String(phone).replace(/[^0-9]/g, '').trim();
+  if (!cleanPhone || cleanPhone.length < 9) {
+    return { success: false, error: '請輸入正確的手機號碼' };
+  }
+
+  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  const allSheets = ss.getSheets();
+  const results = [];
+  let couponInfo = null;
+
+  // 1. 先查優惠券系統
+  const couponSheet = ss.getSheetByName('優惠券');
+  if (couponSheet) {
+    const cData = couponSheet.getDataRange().getValues();
+    for (let i = 1; i < cData.length; i++) {
+      const cPhone = String(cData[i][6] || '').replace(/[^0-9]/g, '');
+      if (cPhone && (cPhone === cleanPhone || cPhone.includes(cleanPhone) || cleanPhone.includes(cPhone))) {
+        couponInfo = {
+          code: cData[i][1],
+          status: cData[i][2],
+          claimedAt: cData[i][3] ? new Date(cData[i][3]).toLocaleString('zh-TW') : '',
+          expiresAt: cData[i][4] ? new Date(cData[i][4]).toLocaleString('zh-TW') : ''
+        };
+        break;
+      }
+    }
+  }
+
+  // 2. 掃描所有營隊工作表
+  for (const sheet of allSheets) {
+    const name = sheet.getName();
+    if (name === '優惠券' || name === '設定') continue;
+
+    const lastRow = sheet.getLastRow();
+    if (lastRow < 2) continue;
+
+    const headers = sheet.getRange(1, 1, 1, sheet.getLastColumn()).getValues()[0];
+    const phoneCol = findColumnIndex(headers, ['家長聯絡電話', '聯絡電話', '手機', '電話']);
+    if (phoneCol < 0) continue;
+
+    const couponCol = findColumnIndex(headers, ['優惠碼', '優惠券', 'coupon']);
+    const nameCol = findColumnIndex(headers, ['寶貝姓名', '孩子姓名', '學生姓名', '姓名']);
+    const sessionCol = findColumnIndex(headers, ['梯次', '選擇', '場次', '教室']);
+
+    const data = sheet.getRange(2, 1, lastRow - 1, sheet.getLastColumn()).getValues();
+
+    for (let i = 0; i < data.length; i++) {
+      const rowPhone = String(data[i][phoneCol] || '').replace(/[^0-9]/g, '');
+      if (!rowPhone) continue;
+
+      // 電話比對（包含關係，因為可能填多支號碼）
+      if (rowPhone.includes(cleanPhone) || cleanPhone.includes(rowPhone) || rowPhone === cleanPhone) {
+        const campPrice = findCampPrice(name);
+        const earlybird = campPrice ? campPrice.earlybird : 0;
+        const duo = campPrice ? campPrice.duo : null;
+        const couponCode = couponCol >= 0 ? String(data[i][couponCol] || '').trim() : '';
+        const childName = nameCol >= 0 ? String(data[i][nameCol] || '').trim() : '';
+        const session = sessionCol >= 0 ? String(data[i][sessionCol] || '').trim() : '';
+
+        // 判斷價格
+        let priceType = '早鳥價';
+        let basePrice = earlybird;
+        let finalPrice = earlybird;
+        let hasCoupon = false;
+
+        if (couponCode) {
+          const coupon = lookupCoupon(couponCode);
+          if (coupon && (coupon.status === '已領取' || coupon.status === '已使用')) {
+            const cPhone = coupon.phone;
+            if (!cPhone || cPhone === cleanPhone || cPhone.includes(cleanPhone) || cleanPhone.includes(cPhone)) {
+              hasCoupon = true;
+              finalPrice = Math.round(basePrice * 0.95);
+            }
+          }
+        }
+
+        results.push({
+          camp: name,
+          childName: childName,
+          session: session,
+          couponCode: couponCode || '無',
+          hasCoupon: hasCoupon,
+          priceType: priceType,
+          basePrice: basePrice,
+          finalPrice: finalPrice,
+          duoPrice: duo,
+          duoDiscounted: duo ? Math.round(duo * 0.95) : null
+        });
+      }
+    }
+  }
+
+  // 計算總金額
+  let totalBase = 0;
+  let totalFinal = 0;
+  results.forEach(r => { totalBase += r.basePrice; totalFinal += r.finalPrice; });
+
+  return {
+    success: true,
+    phone: cleanPhone,
+    coupon: couponInfo,
+    registrations: results,
+    totalBase: totalBase,
+    totalFinal: totalFinal,
+    totalSaved: totalBase - totalFinal,
+    campCount: results.length
+  };
 }
 
 // ═══════════════════════════════════════════════════════
