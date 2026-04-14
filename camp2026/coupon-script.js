@@ -24,6 +24,7 @@ function doGet(e) {
       case 'claim':  return respond(claimCoupon(e.parameter.fp || '', e.parameter.phone || ''));
       case 'verify': return respond(verifyCode(e.parameter.code || ''));
       case 'lookup': return respond(lookupByPhone(e.parameter.phone || ''));
+      case 'addmore': return respond(addMoreCoupons(parseInt(e.parameter.count) || 0));
       // close 保留但不常用，過期會自動處理
       default:       return respond({ success: false, error: '無效的操作' });
     }
@@ -298,6 +299,32 @@ function initCoupons() {
   couponSheet.setConditionalFormatRules(rules);
 
   Logger.log('✅ 初始化完成！已建立 ' + POOL_SIZE + ' 張優惠券');
+}
+
+// ===== 加開優惠券 =====
+function addMoreCoupons(count) {
+  if (!count || count < 1 || count > 100) {
+    return { success: false, error: '數量需在 1～100 之間' };
+  }
+
+  const sheet = getSheet();
+  const usedCodes = new Set();
+  const data = sheet.getDataRange().getValues();
+  for (let i = 1; i < data.length; i++) {
+    usedCodes.add(data[i][1]);
+  }
+
+  let added = 0;
+  for (let j = 0; j < count; j++) {
+    const num = getNextNumber();
+    let code;
+    do { code = formatCode(num); } while (usedCodes.has(code));
+    usedCodes.add(code);
+    sheet.appendRow([num, code, '可領取', '', '', '', '', '']);
+    added++;
+  }
+
+  return { success: true, message: '✅ 已加開 ' + added + ' 張優惠券', added: added };
 }
 
 // ===== 用電話查詢所有報名紀錄 =====

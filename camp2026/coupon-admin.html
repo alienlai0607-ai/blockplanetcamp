@@ -115,7 +115,10 @@
       <div class="stat-box"><div class="stat-num stat-blue" id="statUsed">-</div><div class="stat-label">已使用</div></div>
       <div class="stat-box"><div class="stat-num stat-red" id="statExpired">-</div><div class="stat-label">已過期</div></div>
     </div>
-    <button class="refresh-btn" onclick="loadStats()">↻ 重新整理</button>
+    <div style="display:flex;gap:8px;margin-top:0">
+      <button class="refresh-btn" onclick="loadStats()" style="flex:1;margin-top:0">↻ 重新整理</button>
+      <button class="refresh-btn" onclick="addMore()" style="flex:1;margin-top:0;border-color:#F5941E;color:#F5941E">＋ 加開優惠券</button>
+    </div>
   </div>
 
   <!-- 家長查詢（主功能）-->
@@ -350,6 +353,24 @@
 
     billResult.innerHTML = html;
     billResult.style.display = 'block';
+  }
+
+  // 加開優惠券
+  async function addMore() {
+    const count = prompt('要加開幾張優惠券？（1～100）');
+    if (!count) return;
+    const num = parseInt(count);
+    if (!num || num < 1 || num > 100) { alert('請輸入 1～100 的數字'); return; }
+    if (!confirm('確定要加開 ' + num + ' 張優惠券？')) return;
+
+    try {
+      const res = await fetch(API + '?action=addmore&count=' + num);
+      const data = await res.json();
+      alert(data.message || data.error);
+      loadStats();
+    } catch(e) {
+      alert('操作失敗，請再試一次');
+    }
   }
 
   // 電話查詢
