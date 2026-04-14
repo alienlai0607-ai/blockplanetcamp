@@ -471,12 +471,12 @@
       const data = await apiCall('claim', { fp, phone });
 
       if (data.success) {
-        saveLocalCoupon({ code: data.code, expiresAt: data.expiresAt, phone });
-        renderClaimed(data.code, data.expiresAt, phone);
-      } else if (data.error && data.error.includes('已經領取')) {
-        alert(data.error);
-        btn.disabled = false;
-        btn.textContent = '🔥 立即領取優惠券';
+        saveLocalCoupon({ code: data.code, expiresAt: data.expiresAt, phone: data.phone || phone });
+        renderClaimed(data.code, data.expiresAt, data.phone || phone);
+      } else if (data.existingCode) {
+        // 同手機已領過 → 直接顯示已有的優惠碼
+        saveLocalCoupon({ code: data.existingCode, expiresAt: data.expiresAt, phone });
+        renderClaimed(data.existingCode, data.expiresAt, phone);
       } else {
         renderEmpty();
       }

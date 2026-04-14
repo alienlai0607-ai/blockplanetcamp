@@ -83,6 +83,15 @@
     .stat-blue { color: #1565C0; }
     .stat-red { color: #C62828; }
 
+    .camp-check {
+      display: flex; align-items: center; gap: 10px;
+      padding: 10px 14px; border-radius: 10px; margin-bottom: 6px;
+      border: 1.5px solid #eee; cursor: pointer; transition: 0.2s;
+    }
+    .camp-check:hover { border-color: #F5941E; background: #FFF8F0; }
+    .camp-check input { width: 18px; height: 18px; accent-color: #F5941E; }
+    .camp-check-name { font-size: 0.88rem; font-weight: 700; flex: 1; }
+    .camp-check-price { font-size: 0.82rem; color: #888; font-weight: 600; }
     .refresh-btn {
       display: block; width: 100%; padding: 10px; margin-top: 12px;
       background: none; border: 1.5px solid #eee; border-radius: 10px;
@@ -122,15 +131,42 @@
       <div id="statusBadge"></div>
       <div class="info-grid" id="infoGrid"></div>
 
-      <!-- 費用計算 -->
-      <div id="priceCalc" style="display:none">
-        <div class="card-title" style="margin-top:16px">💰 費用計算</div>
-        <select class="camp-select" id="campSelect" onchange="calcPrice()">
-          <option value="">— 選擇營隊 —</option>
-        </select>
-        <div class="price-result" id="priceResult" style="display:none"></div>
+      <!-- 費用計算（驗證通過後顯示）-->
+      <div id="priceCalc" style="display:none"></div>
+    </div>
+  </div>
+
+  <!-- 帳單計算器 -->
+  <div class="card">
+    <div class="card-title">💰 帳單計算器（可獨立使用）</div>
+    <div style="font-size:0.82rem;color:#aaa;margin-bottom:14px">勾選家長報名的營隊，自動計算應付金額</div>
+
+    <div id="campCheckboxes" style="margin-bottom:16px"></div>
+
+    <div style="margin-bottom:12px">
+      <div style="font-size:0.82rem;font-weight:700;color:#666;margin-bottom:6px">有優惠碼？</div>
+      <label style="display:flex;align-items:center;gap:8px;font-size:0.9rem;font-weight:700;cursor:pointer">
+        <input type="checkbox" id="hasDiscount" onchange="calcBill()" style="width:18px;height:18px;accent-color:#F5941E" />
+        使用 95 折優惠券
+      </label>
+    </div>
+
+    <div style="margin-bottom:12px">
+      <div style="font-size:0.82rem;font-weight:700;color:#666;margin-bottom:6px">價格方案</div>
+      <div style="display:flex;gap:8px">
+        <label style="display:flex;align-items:center;gap:4px;font-size:0.85rem;font-weight:700;cursor:pointer">
+          <input type="radio" name="priceType" value="earlybird" checked onchange="calcBill()" /> 早鳥價
+        </label>
+        <label style="display:flex;align-items:center;gap:4px;font-size:0.85rem;font-weight:700;cursor:pointer">
+          <input type="radio" name="priceType" value="duo" onchange="calcBill()" /> 兩人同行
+        </label>
+        <label style="display:flex;align-items:center;gap:4px;font-size:0.85rem;font-weight:700;cursor:pointer">
+          <input type="radio" name="priceType" value="original" onchange="calcBill()" /> 原價
+        </label>
       </div>
     </div>
+
+    <div class="price-result" id="billResult" style="display:none"></div>
   </div>
 </div>
 
@@ -152,13 +188,17 @@
     { name: '3D 列印工作坊', earlybird: 4800, original: null, duo: 4700 },
   ];
 
-  // 初始化營隊下拉選單
-  const select = document.getElementById('campSelect');
+  // 初始化營隊勾選清單
+  const checkboxWrap = document.getElementById('campCheckboxes');
   camps.forEach((c, i) => {
-    const opt = document.createElement('option');
-    opt.value = i;
-    opt.textContent = c.name;
-    select.appendChild(opt);
+    const label = document.createElement('label');
+    label.className = 'camp-check';
+    label.innerHTML = `
+      <input type="checkbox" value="${i}" onchange="calcBill()" />
+      <span class="camp-check-name">${c.name}</span>
+      <span class="camp-check-price">$${c.earlybird.toLocaleString()}</span>
+    `;
+    checkboxWrap.appendChild(label);
   });
 
   // 載入統計
@@ -238,37 +278,71 @@
     }
   }
 
-  // 計算費用
-  function calcPrice() {
-    const idx = document.getElementById('campSelect').value;
-    const priceResult = document.getElementById('priceResult');
-    if (idx === '') { priceResult.style.display = 'none'; return; }
+  // 計算帳單
+  function calcBill() {
+    const checks = document.querySelectorAll('#campCheckboxes input:checked');
+    const billResult = document.getElementById('billResult');
+    const hasDiscount = document.getElementById('hasDiscount').checked;
+    const priceType = document.querySelector('input[name="priceType"]:checked').value;
 
-    const camp = camps[idx];
-    const base = camp.earlybird;
-    const discounted = Math.round(base * 0.95);
-    const saved = base - discounted;
+    if (checks.length === 0) { billResult.style.display = 'none'; return; }
+
+    // 更新勾選清單顯示的價格
+    document.querySelectorAll('#campCheckboxes .camp-check-price').forEach((el, i) => {
+      const c = camps[i];
+      let p;
+      if (priceType === 'duo' && c.duo) p = c.duo;
+      else if (priceType === 'original' && c.original) p = c.original;
+      else p = c.earlybird;
+      el.textContent = '$' + p.toLocaleString();
+    });
 
     let html = '';
+    let subtotal = 0;
 
-    if (camp.original) {
-      html += `<div class="price-row"><span class="price-label">原價</span><span class="price-value strike">$${camp.original.toLocaleString()}</span></div>`;
+    checks.forEach(cb => {
+      const camp = camps[cb.value];
+      let price;
+      if (priceType === 'duo' && camp.duo) price = camp.duo;
+      else if (priceType === 'original' && camp.original) price = camp.original;
+      else price = camp.earlybird;
+
+      subtotal += price;
+      html += `<div class="price-row">
+        <span class="price-label">${camp.name}</span>
+        <span class="price-value">$${price.toLocaleString()}</span>
+      </div>`;
+    });
+
+    html += `<div class="price-row" style="border-top:1px solid #eee;padding-top:8px;margin-top:8px">
+      <span class="price-label">小計（${checks.length} 個營隊）</span>
+      <span class="price-value">$${subtotal.toLocaleString()}</span>
+    </div>`;
+
+    if (hasDiscount) {
+      const discounted = Math.round(subtotal * 0.95);
+      const saved = subtotal - discounted;
+      html += `<div class="price-row">
+        <span class="price-label">95 折優惠</span>
+        <span class="price-value">× 0.95</span>
+      </div>`;
+      html += `<div class="price-row total">
+        <span>💰 應付總額</span>
+        <span>$${discounted.toLocaleString()}</span>
+      </div>`;
+      html += `<div class="price-row">
+        <span class="price-label">共省下</span>
+        <span class="price-value" style="color:#2E7D32">$${saved.toLocaleString()}</span>
+      </div>`;
+    } else {
+      html += `<div class="price-row total">
+        <span>💰 應付總額</span>
+        <span>$${subtotal.toLocaleString()}</span>
+      </div>`;
     }
-    html += `<div class="price-row"><span class="price-label">早鳥價</span><span class="price-value strike">$${base.toLocaleString()}</span></div>`;
-    html += `<div class="price-row"><span class="price-label">95 折優惠</span><span class="price-value">× 0.95</span></div>`;
-    html += `<div class="price-row total"><span>應付金額</span><span>$${discounted.toLocaleString()}</span></div>`;
-    html += `<div class="price-row"><span class="price-label">現省</span><span class="price-value" style="color:#2E7D32">$${saved.toLocaleString()}</span></div>`;
 
-    if (camp.duo) {
-      const duoDiscounted = Math.round(camp.duo * 0.95);
-      html += `<div style="border-top:1px solid #eee;margin-top:12px;padding-top:12px">`;
-      html += `<div class="price-row"><span class="price-label">兩人同行價</span><span class="price-value strike">$${camp.duo.toLocaleString()}</span></div>`;
-      html += `<div class="price-row total"><span>兩人同行 + 95折</span><span>$${duoDiscounted.toLocaleString()}</span></div>`;
-      html += `</div>`;
-    }
-
-    priceResult.innerHTML = html;
-    priceResult.style.display = 'block';
+    billResult.innerHTML = html;
+    billResult.style.display = 'block';
   }
 
   // 結案優惠碼

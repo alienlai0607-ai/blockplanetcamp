@@ -137,7 +137,7 @@ function claimCoupon(fingerprint, phone) {
     }
   }
 
-  // 檢查此手機號碼是否已有有效的優惠券（防止同一人用不同裝置領多張）
+  // 檢查此手機號碼是否已有有效的優惠券（直接回傳已領的券）
   if (phone) {
     for (let i = 1; i < data.length; i++) {
       if (data[i][6] === phone && data[i][2] === '已領取') {
@@ -145,7 +145,11 @@ function claimCoupon(fingerprint, phone) {
         if (expires > now) {
           return {
             success: false,
-            error: '此手機號碼已經領取過優惠券，請直接使用！優惠碼：' + data[i][1]
+            existingCode: data[i][1],
+            expiresAt: expires.toISOString(),
+            phone: data[i][6],
+            discount: '95折',
+            message: '此手機已領取過，為您顯示已領的優惠碼'
           };
         }
       }
@@ -292,5 +296,252 @@ function initCoupons() {
 
   couponSheet.setConditionalFormatRules(rules);
 
-  Logger.log('✅ 初始化完成！已建立 ' + POOL_SIZE + ' 張優惠券（BP-001 ~ BP-200）');
+  Logger.log('✅ 初始化完成！已建立 ' + POOL_SIZE + ' 張優惠券');
+}
+
+// ═══════════════════════════════════════════════════════
+//  自動計算系統 — 表單回覆自動算金額
+// ═══════════════════════════════════════════════════════
+
+// 營隊費用對照表（工作表名稱 → 價格）
+const CAMP_PRICES = {
+  '猴囝仔露營趣':           { earlybird: 6999, original: 7500, duo: null },
+  'MAKER自造營':             { earlybird: 7500, original: 8800, duo: 7400 },
+  '水上裝置實驗室':          { earlybird: 7500, original: 8800, duo: 7400 },
+  '空中競技計畫':            { earlybird: 7999, original: 9500, duo: 7800 },
+  'Game Lab':                { earlybird: 6999, original: 8500, duo: 6800 },
+  'ROBLOX':                  { earlybird: 6999, original: 8500, duo: 6800 },
+  'HELLO MAKER':             { earlybird: 7500, original: 8800, duo: 7400 },
+  'LEGO Ideas':              { earlybird: 6999, original: 8500, duo: 6800 },
+  '飛行航空科學營':          { earlybird: 7999, original: null, duo: 7800 },
+  '科學大師營':              { earlybird: 4800, original: null, duo: 4700 },
+  '3D列印工作坊':            { earlybird: 4800, original: null, duo: 4700 },
+};
+
+// 根據工作表名稱找到對應營隊價格
+function findCampPrice(sheetName) {
+  for (const [key, val] of Object.entries(CAMP_PRICES)) {
+    if (sheetName.includes(key) || sheetName.toLowerCase().includes(key.toLowerCase())) {
+      return val;
+    }
+  }
+  return null;
+}
+
+// 在表頭中找特定欄位的索引
+function findColumnIndex(headers, keywords) {
+  for (let i = 0; i < headers.length; i++) {
+    const h = String(headers[i]).trim();
+    for (const kw of keywords) {
+      if (h.includes(kw)) return i;
+    }
+  }
+  return -1;
+}
+
+// 查詢優惠碼資訊（從優惠券工作表）
+function lookupCoupon(code) {
+  if (!code) return null;
+  const sheet = getSheet();
+  if (!sheet) return null;
+  const data = sheet.getDataRange().getValues();
+  const upperCode = String(code).toUpperCase().trim();
+
+  for (let i = 1; i < data.length; i++) {
+    if (data[i][1] === upperCode) {
+      return {
+        code: data[i][1],
+        status: data[i][2],
+        phone: String(data[i][6] || '').replace(/[-\s]/g, ''),
+        expiresAt: data[i][4] ? new Date(data[i][4]) : null
+      };
+    }
+  }
+  return null;
+}
+
+// ===== 表單提交自動觸發 =====
+function onFormSubmit(e) {
+  try {
+    const sheet = e.range.getSheet();
+    const sheetName = sheet.getName();
+
+    // 跳過優惠券和設定工作表
+    if (sheetName === '優惠券' || sheetName === '設定' || sheetName === '總帳') return;
+
+    const row = e.range.getRow();
+    const headers = sheet.getRange(1, 1, 1, sheet.getLastColumn()).getValues()[0];
+    const rowData = sheet.getRange(row, 1, 1, sheet.getLastColumn()).getValues()[0];
+
+    // 找關鍵欄位
+    const couponCol = findColumnIndex(headers, ['優惠碼', '優惠券', 'coupon']);
+    const phoneCol = findColumnIndex(headers, ['家長聯絡電話', '聯絡電話', '手機', '電話']);
+
+    // 確保有「優惠碼狀態」「手機比對」「早鳥價」「應付金額」欄位
+    const resultCols = ['💰 早鳥價', '🎟️ 優惠碼狀態', '📱 手機比對', '💵 應付金額'];
+    let startCol = headers.length + 1;
+
+    // 檢查是否已有這些欄位
+    const existingIdx = findColumnIndex(headers, ['早鳥價', '優惠碼狀態']);
+    if (existingIdx >= 0) {
+      startCol = existingIdx + 1; // 已存在，覆蓋
+    } else {
+      // 第一次：寫表頭
+      sheet.getRange(1, startCol, 1, resultCols.length).setValues([resultCols]);
+      sheet.getRange(1, startCol, 1, resultCols.length).setFontWeight('bold').setBackground('#F5941E').setFontColor('white');
+    }
+
+    // 找營隊價格
+    const campPrice = findCampPrice(sheetName);
+    const earlybird = campPrice ? campPrice.earlybird : 0;
+
+    // 取得優惠碼和手機
+    const couponCode = couponCol >= 0 ? String(rowData[couponCol] || '').trim() : '';
+    const formPhone = phoneCol >= 0 ? String(rowData[phoneCol] || '').replace(/[-\s]/g, '').trim() : '';
+
+    let couponStatus = '無優惠碼';
+    let phoneMatch = '—';
+    let finalPrice = earlybird;
+
+    if (couponCode) {
+      const coupon = lookupCoupon(couponCode);
+
+      if (!coupon) {
+        couponStatus = '❌ 查無此碼';
+      } else if (coupon.status === '已過期') {
+        couponStatus = '❌ 已過期';
+      } else if (coupon.status === '已領取') {
+        // 檢查是否在有效期內（加 10 分鐘緩衝）
+        const now = new Date();
+        const buffer = coupon.expiresAt ? new Date(coupon.expiresAt.getTime() + 10 * 60 * 1000) : now;
+        if (buffer >= now) {
+          couponStatus = '✅ 有效';
+          // 比對手機
+          if (formPhone && coupon.phone) {
+            if (formPhone.includes(coupon.phone) || coupon.phone.includes(formPhone)) {
+              phoneMatch = '✅ 吻合';
+              finalPrice = Math.round(earlybird * 0.95);
+            } else {
+              phoneMatch = '❌ 不吻合';
+              couponStatus = '⚠️ 碼有效但手機不符';
+            }
+          } else {
+            phoneMatch = '⚠️ 缺手機資料';
+            finalPrice = Math.round(earlybird * 0.95); // 先給折扣，人工確認
+          }
+        } else {
+          couponStatus = '❌ 已過期';
+        }
+      } else if (coupon.status === '已使用') {
+        couponStatus = '⚠️ 已結案（可能多營隊使用中）';
+        // 已結案的碼如果手機吻合，仍給折扣（因為 1 小時內不限次數）
+        if (formPhone && coupon.phone && (formPhone.includes(coupon.phone) || coupon.phone.includes(formPhone))) {
+          phoneMatch = '✅ 吻合';
+          finalPrice = Math.round(earlybird * 0.95);
+        }
+      }
+    }
+
+    // 寫入結果
+    sheet.getRange(row, startCol, 1, 4).setValues([[
+      earlybird ? '$' + earlybird.toLocaleString() : '未設定',
+      couponStatus,
+      phoneMatch,
+      '$' + finalPrice.toLocaleString()
+    ]]);
+
+    // 應付金額上色
+    const priceCell = sheet.getRange(row, startCol + 3);
+    if (finalPrice < earlybird) {
+      priceCell.setBackground('#E8F5E9').setFontColor('#2E7D32').setFontWeight('bold');
+    }
+
+  } catch(err) {
+    Logger.log('onFormSubmit 錯誤：' + err.message);
+  }
+}
+
+// ===== 手動：重新計算整個工作表的金額 =====
+function recalcSheet(sheetName) {
+  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  const sheet = ss.getSheetByName(sheetName);
+  if (!sheet) { Logger.log('找不到工作表：' + sheetName); return; }
+
+  const headers = sheet.getRange(1, 1, 1, sheet.getLastColumn()).getValues()[0];
+  const couponCol = findColumnIndex(headers, ['優惠碼', '優惠券', 'coupon']);
+  const phoneCol = findColumnIndex(headers, ['家長聯絡電話', '聯絡電話', '手機', '電話']);
+  const campPrice = findCampPrice(sheetName);
+  const earlybird = campPrice ? campPrice.earlybird : 0;
+
+  // 確保有結果欄位
+  const resultCols = ['💰 早鳥價', '🎟️ 優惠碼狀態', '📱 手機比對', '💵 應付金額'];
+  let startCol = headers.length + 1;
+  const existingIdx = findColumnIndex(headers, ['早鳥價', '優惠碼狀態']);
+  if (existingIdx >= 0) {
+    startCol = existingIdx + 1;
+  } else {
+    sheet.getRange(1, startCol, 1, resultCols.length).setValues([resultCols]);
+    sheet.getRange(1, startCol, 1, resultCols.length).setFontWeight('bold').setBackground('#F5941E').setFontColor('white');
+  }
+
+  const lastRow = sheet.getLastRow();
+  if (lastRow < 2) { Logger.log('沒有資料'); return; }
+
+  for (let row = 2; row <= lastRow; row++) {
+    const rowData = sheet.getRange(row, 1, 1, sheet.getLastColumn()).getValues()[0];
+    const couponCode = couponCol >= 0 ? String(rowData[couponCol] || '').trim() : '';
+    const formPhone = phoneCol >= 0 ? String(rowData[phoneCol] || '').replace(/[-\s]/g, '').trim() : '';
+
+    let couponStatus = '無優惠碼';
+    let phoneMatch = '—';
+    let finalPrice = earlybird;
+
+    if (couponCode) {
+      const coupon = lookupCoupon(couponCode);
+      if (!coupon) {
+        couponStatus = '❌ 查無此碼';
+      } else if (coupon.status === '已過期') {
+        couponStatus = '❌ 已過期';
+      } else if (coupon.status === '已領取' || coupon.status === '已使用') {
+        couponStatus = '✅ 有效';
+        if (formPhone && coupon.phone && (formPhone.includes(coupon.phone) || coupon.phone.includes(formPhone))) {
+          phoneMatch = '✅ 吻合';
+          finalPrice = Math.round(earlybird * 0.95);
+        } else if (formPhone && coupon.phone) {
+          phoneMatch = '❌ 不吻合';
+          couponStatus = '⚠️ 碼有效但手機不符';
+        } else {
+          phoneMatch = '⚠️ 缺手機資料';
+          finalPrice = Math.round(earlybird * 0.95);
+        }
+      }
+    }
+
+    sheet.getRange(row, startCol, 1, 4).setValues([[
+      earlybird ? '$' + earlybird.toLocaleString() : '未設定',
+      couponStatus,
+      phoneMatch,
+      '$' + finalPrice.toLocaleString()
+    ]]);
+
+    if (finalPrice < earlybird) {
+      sheet.getRange(row, startCol + 3).setBackground('#E8F5E9').setFontColor('#2E7D32').setFontWeight('bold');
+    }
+  }
+
+  Logger.log('✅ ' + sheetName + ' 重新計算完成，共 ' + (lastRow - 1) + ' 筆');
+}
+
+// ===== 重新計算所有營隊工作表 =====
+function recalcAll() {
+  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  const sheets = ss.getSheets();
+  for (const sheet of sheets) {
+    const name = sheet.getName();
+    if (name === '優惠券' || name === '設定') continue;
+    if (findCampPrice(name)) {
+      recalcSheet(name);
+    }
+  }
+  Logger.log('✅ 全部工作表重新計算完成');
 }
