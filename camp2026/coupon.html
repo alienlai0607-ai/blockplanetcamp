@@ -310,7 +310,7 @@
         </div>
         <div class="phone-input-wrap">
           <div class="phone-label">📱 請輸入報名人手機號碼</div>
-          <input type="tel" class="phone-input" id="phoneInput" placeholder="0912-345-678" maxlength="15" />
+          <input type="tel" class="phone-input" id="phoneInput" placeholder="0912345678" maxlength="10" oninput="this.value=this.value.replace(/[^0-9]/g,'')" />
           <div class="phone-hint">優惠碼將綁定此號碼，報名時需填寫相同號碼才能使用</div>
         </div>
         <button class="claim-btn" onclick="handleClaim()">🔥 立即領取優惠券</button>
@@ -453,12 +453,13 @@
   // ===== 領取 =====
   async function handleClaim() {
     const phoneEl = document.getElementById('phoneInput');
-    const phone = phoneEl.value.replace(/[-\s]/g, '').trim();
+    const phone = phoneEl.value.replace(/[^0-9]/g, '').trim();
+    phoneEl.value = phone; // 清掉非數字字元
 
-    if (!phone || phone.length < 9) {
+    if (!phone || phone.length !== 10 || !phone.startsWith('09')) {
       phoneEl.style.borderColor = 'var(--red)';
       phoneEl.focus();
-      alert('請輸入正確的手機號碼');
+      alert('請輸入正確的 10 碼手機號碼（例如 0912345678）');
       return;
     }
 
