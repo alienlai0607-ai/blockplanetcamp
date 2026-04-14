@@ -349,11 +349,14 @@ function lookupByPhone(phone) {
     const data = sheet.getRange(2, 1, lastRow - 1, sheet.getLastColumn()).getValues();
 
     for (let i = 0; i < data.length; i++) {
-      const rowPhone = String(data[i][phoneCol] || '').replace(/[^0-9]/g, '');
-      if (!rowPhone) continue;
+      const rawPhone = String(data[i][phoneCol] || '');
+      if (!rawPhone) continue;
 
-      // 電話比對（包含關係，因為可能填多支號碼）
-      if (rowPhone.includes(cleanPhone) || cleanPhone.includes(rowPhone) || rowPhone === cleanPhone) {
+      // 電話比對：從欄位中提取所有 09 開頭手機號碼
+      const phonesInField = extractPhones(rawPhone);
+      const rawDigits = rawPhone.replace(/[^0-9]/g, '');
+      const matched = phonesInField.some(p => p === cleanPhone) || rawDigits.includes(cleanPhone) || cleanPhone.includes(rawDigits);
+      if (matched) {
         const campPrice = findCampPrice(name);
         const earlybird = campPrice ? campPrice.earlybird : 0;
         const duo = campPrice ? campPrice.duo : null;
@@ -371,7 +374,7 @@ function lookupByPhone(phone) {
           const coupon = lookupCoupon(couponCode);
           if (coupon && (coupon.status === '已領取' || coupon.status === '已使用')) {
             const cPhone = coupon.phone;
-            if (!cPhone || cPhone === cleanPhone || cPhone.includes(cleanPhone) || cleanPhone.includes(cPhone)) {
+            if (!cPhone || phoneMatch(cleanPhone, cPhone)) {
               hasCoupon = true;
               finalPrice = Math.round(basePrice * 0.95);
             }
@@ -452,6 +455,28 @@ function findCampPrice(sheetName) {
   return null;
 }
 
+// 從文字中提取所有手機號碼（09開頭10碼）
+function extractPhones(text) {
+  const str = String(text || '');
+  const matches = str.match(/09\d{8}/g);
+  return matches || [];
+}
+
+// 比對手機：從表單欄位提取所有號碼，任一支吻合就算通過
+function phoneMatch(formPhoneField, couponPhone) {
+  if (!couponPhone) return false;
+  const cleanCoupon = couponPhone.replace(/[^0-9]/g, '');
+  if (!cleanCoupon) return false;
+  // 提取表單中所有手機號碼
+  const phones = extractPhones(formPhoneField);
+  if (phones.length === 0) {
+    // 沒有標準格式，退回 includes 比對
+    const cleanForm = String(formPhoneField || '').replace(/[^0-9]/g, '');
+    return cleanForm.includes(cleanCoupon) || cleanCoupon.includes(cleanForm);
+  }
+  return phones.some(p => p === cleanCoupon);
+}
+
 // 在表頭中找特定欄位的索引
 function findColumnIndex(headers, keywords) {
   for (let i = 0; i < headers.length; i++) {
@@ -524,8 +549,9 @@ function onFormSubmit(e) {
     const formPhone = phoneCol >= 0 ? String(rowData[phoneCol] || '').replace(/[-\s]/g, '').trim() : '';
 
     let couponStatus = '無優惠碼';
-    let phoneMatch = '—';
+    let phoneResult = '—';
     let finalPrice = earlybird;
+    const rawFormPhone = phoneCol >= 0 ? String(rowData[phoneCol] || '') : '';
 
     if (couponCode) {
       const coupon = lookupCoupon(couponCode);
@@ -535,32 +561,29 @@ function onFormSubmit(e) {
       } else if (coupon.status === '已過期') {
         couponStatus = '❌ 已過期';
       } else if (coupon.status === '已領取') {
-        // 檢查是否在有效期內（加 10 分鐘緩衝）
         const now = new Date();
         const buffer = coupon.expiresAt ? new Date(coupon.expiresAt.getTime() + 10 * 60 * 1000) : now;
         if (buffer >= now) {
           couponStatus = '✅ 有效';
-          // 比對手機
-          if (formPhone && coupon.phone) {
-            if (formPhone.includes(coupon.phone) || coupon.phone.includes(formPhone)) {
-              phoneMatch = '✅ 吻合';
+          if (rawFormPhone && coupon.phone) {
+            if (phoneMatch(rawFormPhone, coupon.phone)) {
+              phoneResult = '✅ 吻合';
               finalPrice = Math.round(earlybird * 0.95);
             } else {
-              phoneMatch = '❌ 不吻合';
+              phoneResult = '❌ 不吻合';
               couponStatus = '⚠️ 碼有效但手機不符';
             }
           } else {
-            phoneMatch = '⚠️ 缺手機資料';
-            finalPrice = Math.round(earlybird * 0.95); // 先給折扣，人工確認
+            phoneResult = '⚠️ 缺手機資料';
+            finalPrice = Math.round(earlybird * 0.95);
           }
         } else {
           couponStatus = '❌ 已過期';
         }
       } else if (coupon.status === '已使用') {
         couponStatus = '⚠️ 已結案（可能多營隊使用中）';
-        // 已結案的碼如果手機吻合，仍給折扣（因為 1 小時內不限次數）
-        if (formPhone && coupon.phone && (formPhone.includes(coupon.phone) || coupon.phone.includes(formPhone))) {
-          phoneMatch = '✅ 吻合';
+        if (rawFormPhone && coupon.phone && phoneMatch(rawFormPhone, coupon.phone)) {
+          phoneResult = '✅ 吻合';
           finalPrice = Math.round(earlybird * 0.95);
         }
       }
@@ -570,7 +593,7 @@ function onFormSubmit(e) {
     sheet.getRange(row, startCol, 1, 4).setValues([[
       earlybird ? '$' + earlybird.toLocaleString() : '未設定',
       couponStatus,
-      phoneMatch,
+      phoneResult,
       '$' + finalPrice.toLocaleString()
     ]]);
 
@@ -614,10 +637,10 @@ function recalcSheet(sheetName) {
   for (let row = 2; row <= lastRow; row++) {
     const rowData = sheet.getRange(row, 1, 1, sheet.getLastColumn()).getValues()[0];
     const couponCode = couponCol >= 0 ? String(rowData[couponCol] || '').trim() : '';
-    const formPhone = phoneCol >= 0 ? String(rowData[phoneCol] || '').replace(/[-\s]/g, '').trim() : '';
+    const rawFormPhone = phoneCol >= 0 ? String(rowData[phoneCol] || '') : '';
 
     let couponStatus = '無優惠碼';
-    let phoneMatch = '—';
+    let phoneResult = '—';
     let finalPrice = earlybird;
 
     if (couponCode) {
@@ -628,14 +651,14 @@ function recalcSheet(sheetName) {
         couponStatus = '❌ 已過期';
       } else if (coupon.status === '已領取' || coupon.status === '已使用') {
         couponStatus = '✅ 有效';
-        if (formPhone && coupon.phone && (formPhone.includes(coupon.phone) || coupon.phone.includes(formPhone))) {
-          phoneMatch = '✅ 吻合';
+        if (rawFormPhone && coupon.phone && phoneMatch(rawFormPhone, coupon.phone)) {
+          phoneResult = '✅ 吻合';
           finalPrice = Math.round(earlybird * 0.95);
-        } else if (formPhone && coupon.phone) {
-          phoneMatch = '❌ 不吻合';
+        } else if (rawFormPhone && coupon.phone) {
+          phoneResult = '❌ 不吻合';
           couponStatus = '⚠️ 碼有效但手機不符';
         } else {
-          phoneMatch = '⚠️ 缺手機資料';
+          phoneResult = '⚠️ 缺手機資料';
           finalPrice = Math.round(earlybird * 0.95);
         }
       }
@@ -644,7 +667,7 @@ function recalcSheet(sheetName) {
     sheet.getRange(row, startCol, 1, 4).setValues([[
       earlybird ? '$' + earlybird.toLocaleString() : '未設定',
       couponStatus,
-      phoneMatch,
+      phoneResult,
       '$' + finalPrice.toLocaleString()
     ]]);
 
