@@ -292,7 +292,7 @@
   }
 
   // ===== 畫面：可領取 =====
-  function renderAvailable(remaining) {
+  function renderAvailable(remaining, total) {
     app.innerHTML = `
       <div class="coupon-card">
         <div class="coupon-icon">🎟️</div>
@@ -300,7 +300,7 @@
         <div class="coupon-discount">95折</div>
         <div class="coupon-remaining">
           剩餘可領取
-          <span class="remaining-num">${remaining} / 60 張</span>
+          <span class="remaining-num">${remaining} / ${total} 張</span>
         </div>
         <div class="coupon-note">
           ⏰ 領取後 <strong style="color:var(--red)">1 小時內</strong> 需完成報名使用，逾時自動失效<br><br>
@@ -503,12 +503,12 @@
     try {
       const status = await apiCall('status');
       if (status.available > 0) {
-        renderAvailable(status.available);
+        renderAvailable(status.available, status.total);
       } else {
         renderEmpty();
       }
     } catch(err) {
-      renderAvailable('?');
+      renderAvailable('?', '?');
     }
   }
 
