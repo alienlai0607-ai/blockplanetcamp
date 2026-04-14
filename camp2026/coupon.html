@@ -302,11 +302,16 @@
           剩餘可領取
           <span class="remaining-num">${remaining} / ${total} 張</span>
         </div>
-        <div class="coupon-note">
-          ⏰ 領取後 <strong style="color:var(--red)">1 小時內</strong> 需完成報名使用，逾時自動失效<br><br>
-          ✅ 1 小時內<strong style="color:var(--orange)">不限營隊數量</strong>，報幾個就折幾個！<br>
-          ✅ 適用所有暑期特色營隊<br>
-          ❌ 不適用：七月包月營、小一新生營
+        <div class="coupon-note" style="text-align:left;background:#FFFBF5;border-radius:14px;padding:18px 16px;border:1.5px solid rgba(245,148,30,0.15);color:#555;font-size:.84rem;line-height:1.9">
+          <div style="font-weight:900;color:var(--black);font-size:.92rem;margin-bottom:10px;text-align:center">📋 使用規則</div>
+          <div style="color:var(--red);font-weight:700">⏰ 領取後 1 小時內需完成報名，逾時自動失效</div>
+          <div style="color:#2E7D32;font-weight:700">✅ 1 小時內不限營隊數量，報幾個就折幾個</div>
+          <div style="color:#2E7D32;font-weight:700">✅ 優惠碼綁定手機號碼，報名時需填相同號碼</div>
+          <div style="color:var(--orange);font-weight:700">⚠️ 優惠碼與「兩人同行價」擇優使用，不可疊加</div>
+          <div style="margin-top:10px;padding-top:10px;border-top:1px solid #eee">
+            <span style="color:#2E7D32;font-weight:700">✅ 適用：</span><span style="color:#333">所有暑期特色營隊</span><br>
+            <span style="color:var(--red);font-weight:700">❌ 不適用：</span><span style="color:#333">七月包月營、小一新生營</span>
+          </div>
         </div>
         <div class="phone-input-wrap">
           <div class="phone-label">📱 請輸入報名人手機號碼</div>
@@ -340,16 +345,24 @@
           <div class="timer-warn">逾時後優惠碼將自動作廢，無法使用</div>
         </div>
         <div class="result-body">
-          <div class="result-info">
-            📌 報名時在備註欄填入優惠碼 <strong>${code}</strong><br>
-            並確認手機號碼為 <strong>${phone || '(已綁定)'}</strong><br>
-            即可享有 <strong>95 折</strong> 優惠<br><br>
-            🔥 <strong>1 小時內不限次數</strong>，報幾個營隊就折幾個！<br>
-            ⚠️ 優惠碼僅限綁定手機號碼的本人使用
+          <div class="result-info" style="line-height:1.9">
+            <div style="font-weight:900;color:var(--black);font-size:.95rem;margin-bottom:8px">📌 報名步驟</div>
+            <div><span style="color:#2E7D32;font-weight:700">Step 1</span> 前往營隊報名表單</div>
+            <div><span style="color:#2E7D32;font-weight:700">Step 2</span> 在「<strong style="color:var(--orange)">優惠碼</strong>」欄位填入 <strong style="color:var(--orange);font-size:1.05em">${code}</strong></div>
+            <div><span style="color:#2E7D32;font-weight:700">Step 3</span> 手機號碼填 <strong style="color:var(--orange)">${phone || '(已綁定)'}</strong></div>
+            <div><span style="color:#2E7D32;font-weight:700">Step 4</span> 送出報名，系統自動折扣！</div>
           </div>
+
+          <div style="background:#FFFBF5;border-radius:12px;padding:14px 16px;margin-bottom:16px;font-size:.82rem;line-height:1.8;border:1.5px solid rgba(245,148,30,0.15)">
+            <div style="color:#2E7D32;font-weight:700">🔥 1 小時內不限營隊數量，報幾個就折幾個</div>
+            <div style="color:var(--orange);font-weight:700">⚠️ 與「兩人同行價」擇優使用，不可疊加</div>
+            <div style="color:var(--red);font-weight:700">⚠️ 僅限綁定手機號碼的本人使用</div>
+          </div>
+
           <div class="result-camps">
             <div class="result-camps-title">✅ 適用營隊</div>
             猴囝仔露營趣、MAKER自造營、水上裝置實驗室、空中競技計畫、Game Lab、ROBLOX x SPIKE、HELLO MAKER、LEGO Ideas、飛行航空科學營、科學大師營、3D 列印工作坊
+            <div style="margin-top:4px;color:var(--red);font-weight:700">❌ 不適用：七月包月營、小一新生營</div>
           </div>
           <a class="action-btn action-btn-primary" href="index.html#weekly">
             🔥 立即前往報名（使用優惠碼）
