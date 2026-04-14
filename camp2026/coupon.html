@@ -1,0 +1,479 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
+  <meta http-equiv="Pragma" content="no-cache" />
+  <meta http-equiv="Expires" content="0" />
+  <title>限量 95 折優惠券｜布拉克星球 2026 暑期營隊</title>
+  <meta property="og:title" content="限量 95 折優惠券｜布拉克星球暑期營隊">
+  <meta property="og:description" content="限量 200 張！立即領取 95 折優惠券，用在暑期特色營隊報名。領取後 1 小時內有效，手腳要快！">
+  <meta property="og:image" content="https://blockplanetcamp.com/camp2026/posters/暑期2.png">
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;700;900&family=Noto+Sans+TC:wght@400;700;900&display=swap" rel="stylesheet" />
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --orange: #F5941E; --orange-dark: #E07A08;
+      --red: #C93A2A; --green: #5BAD5B;
+      --black: #2C2C2C; --bg: #FFF8F0; --text: #333;
+    }
+    html, body {
+      font-family: 'Noto Sans TC', 'Nunito', sans-serif;
+      background: var(--bg); color: var(--text);
+      min-height: 100vh; overflow-x: hidden;
+    }
+
+    .top-bar {
+      position: fixed; top: 0; left: 0; right: 0; z-index: 100;
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 12px 20px;
+      background: rgba(255,248,240,0.95); backdrop-filter: blur(12px);
+      border-bottom: 2px solid rgba(245,148,30,0.2);
+    }
+    .top-bar-logo { display: flex; align-items: center; gap: 8px; text-decoration: none; }
+    .top-bar-logo img { width: 36px; height: 36px; border-radius: 50%; }
+    .top-bar-logo span { font-weight: 900; font-size: 0.95rem; color: var(--black); }
+    .top-bar-logo small { display: block; font-size: 0.7rem; color: var(--orange); font-weight: 700; }
+    .back-btn {
+      color: #888; font-size: 0.85rem; font-weight: 700;
+      text-decoration: none; padding: 6px 12px;
+      border-radius: 50px; background: rgba(0,0,0,0.05);
+    }
+
+    .wrapper {
+      min-height: 100svh; padding: 96px 20px 48px;
+      display: flex; flex-direction: column; align-items: center; justify-content: center;
+    }
+    @media (max-width: 768px) { .wrapper { justify-content: flex-start; } }
+
+    @keyframes cardIn { from { opacity:0; transform:translateY(32px) scale(0.97); } to { opacity:1; transform:translateY(0) scale(1); } }
+    @keyframes pulse { 0%,100%{transform:scale(1)} 50%{transform:scale(1.03)} }
+    @keyframes shake { 0%,100%{transform:translateX(0)} 25%{transform:translateX(-4px)} 75%{transform:translateX(4px)} }
+    @keyframes countdown-glow { 0%,100%{box-shadow:0 0 20px rgba(201,58,42,.2)} 50%{box-shadow:0 0 40px rgba(201,58,42,.4)} }
+
+    /* ── 領取前 ── */
+    .coupon-card {
+      width: 100%; max-width: 440px; background: white; border-radius: 28px;
+      padding: 40px 32px; text-align: center;
+      box-shadow: 0 12px 48px rgba(0,0,0,0.10);
+      border: 2px solid rgba(245,148,30,0.1);
+      animation: cardIn 0.5s ease both;
+    }
+    .coupon-icon { font-size: 3.5rem; margin-bottom: 16px; }
+    .coupon-title {
+      font-size: 1.5rem; font-weight: 900; color: var(--black);
+      line-height: 1.3; margin-bottom: 8px;
+    }
+    .coupon-title em { font-style: normal; color: var(--orange); }
+    .coupon-discount {
+      display: inline-block; background: linear-gradient(135deg, var(--red), #e74c3c);
+      color: white; font-size: 2rem; font-weight: 900;
+      padding: 8px 28px; border-radius: 16px; margin: 16px 0;
+      letter-spacing: 2px;
+    }
+    .coupon-remaining {
+      font-size: 0.92rem; color: #888; margin-bottom: 8px; font-weight: 600;
+    }
+    .remaining-num {
+      font-size: 1.8rem; font-weight: 900; color: var(--red);
+      display: block; margin: 4px 0 16px;
+    }
+    .coupon-note {
+      font-size: 0.8rem; color: #aaa; line-height: 1.6; margin-bottom: 24px;
+    }
+    .claim-btn {
+      display: block; width: 100%; padding: 18px; border-radius: 50px;
+      background: linear-gradient(135deg, var(--orange), var(--orange-dark));
+      color: white; font-weight: 900; font-size: 1.1rem;
+      border: none; cursor: pointer; font-family: inherit;
+      box-shadow: 0 8px 28px rgba(245,148,30,0.4);
+      transition: transform 0.2s, box-shadow 0.2s;
+      animation: pulse 2s ease-in-out infinite;
+    }
+    .claim-btn:hover { transform: translateY(-2px); box-shadow: 0 12px 36px rgba(245,148,30,0.5); }
+    .claim-btn:disabled {
+      background: #ccc; box-shadow: none; animation: none; cursor: not-allowed;
+    }
+
+    /* ── 領取後 ── */
+    .result-card {
+      width: 100%; max-width: 440px; background: white; border-radius: 28px;
+      overflow: hidden;
+      box-shadow: 0 16px 60px rgba(0,0,0,0.14);
+      animation: cardIn 0.5s ease both;
+    }
+    .result-header {
+      background: linear-gradient(135deg, var(--orange), var(--orange-dark));
+      padding: 32px 24px 24px; text-align: center; color: white;
+    }
+    .result-header-icon { font-size: 2.5rem; margin-bottom: 8px; }
+    .result-header-title { font-size: 1.2rem; font-weight: 900; margin-bottom: 4px; }
+    .result-header-sub { font-size: 0.85rem; opacity: 0.85; }
+
+    .code-box {
+      margin: -20px 24px 0; padding: 20px;
+      background: white; border-radius: 16px;
+      box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+      text-align: center; position: relative; z-index: 1;
+    }
+    .code-label { font-size: 0.78rem; color: #aaa; font-weight: 700; margin-bottom: 8px; }
+    .code-value {
+      font-size: 2.2rem; font-weight: 900; color: var(--orange);
+      letter-spacing: 4px; font-family: 'Nunito', monospace;
+      padding: 8px 0;
+      user-select: all;
+    }
+    .code-copy {
+      font-size: 0.78rem; color: #aaa; cursor: pointer; margin-top: 4px;
+    }
+    .code-copy:hover { color: var(--orange); }
+
+    .timer-box {
+      margin: 16px 24px; padding: 16px;
+      background: #FFF5F5; border-radius: 14px;
+      border: 2px solid rgba(201,58,42,0.15);
+      text-align: center;
+      animation: countdown-glow 2s ease-in-out infinite;
+    }
+    .timer-label { font-size: 0.82rem; color: var(--red); font-weight: 700; margin-bottom: 6px; }
+    .timer-value {
+      font-size: 2rem; font-weight: 900; color: var(--red);
+      font-family: 'Nunito', monospace; letter-spacing: 2px;
+    }
+    .timer-warn { font-size: 0.75rem; color: #aaa; margin-top: 6px; }
+
+    .result-body { padding: 16px 24px 28px; }
+    .result-info {
+      background: var(--bg); border-radius: 12px; padding: 14px 16px;
+      margin-bottom: 16px; font-size: 0.85rem; color: #666; line-height: 1.7;
+    }
+    .result-info strong { color: var(--orange); }
+    .result-camps {
+      font-size: 0.78rem; color: #aaa; line-height: 1.8;
+      margin-bottom: 20px; padding: 0 4px;
+    }
+    .result-camps-title { font-weight: 900; color: #bbb; margin-bottom: 4px; }
+
+    .action-btn {
+      display: block; width: 100%; padding: 16px; border-radius: 50px;
+      text-align: center; font-weight: 900; font-size: 1rem;
+      text-decoration: none; border: none; cursor: pointer;
+      font-family: inherit; margin-bottom: 10px;
+      transition: transform 0.2s;
+    }
+    .action-btn:hover { transform: translateY(-2px); }
+    .action-btn-primary {
+      background: linear-gradient(135deg, var(--red), #e74c3c);
+      color: white; box-shadow: 0 6px 24px rgba(201,58,42,0.35);
+      animation: pulse 2s ease-in-out infinite;
+    }
+    .action-btn-line {
+      background: #06C755; color: white;
+      box-shadow: 0 4px 16px rgba(6,199,85,0.3);
+    }
+    .action-btn-outline {
+      background: white; color: var(--orange);
+      border: 2.5px solid var(--orange);
+    }
+
+    /* ── 已領完 ── */
+    .empty-card {
+      width: 100%; max-width: 440px; background: white; border-radius: 28px;
+      padding: 40px 32px; text-align: center;
+      box-shadow: 0 12px 48px rgba(0,0,0,0.10);
+      animation: cardIn 0.5s ease both;
+    }
+    .empty-icon { font-size: 3rem; margin-bottom: 16px; }
+    .empty-title { font-size: 1.3rem; font-weight: 900; color: var(--black); margin-bottom: 12px; }
+    .empty-sub { font-size: 0.9rem; color: #888; line-height: 1.7; margin-bottom: 24px; }
+
+    /* ── 過期 ── */
+    .expired-overlay {
+      position: fixed; inset: 0; z-index: 9999;
+      background: rgba(0,0,0,0.6); display: flex;
+      align-items: center; justify-content: center;
+      padding: 20px;
+    }
+    .expired-card {
+      background: white; border-radius: 24px; padding: 36px 28px;
+      text-align: center; max-width: 380px; width: 100%;
+      animation: shake 0.5s ease;
+    }
+    .expired-icon { font-size: 3rem; margin-bottom: 12px; }
+    .expired-title { font-size: 1.2rem; font-weight: 900; color: var(--red); margin-bottom: 8px; }
+    .expired-sub { font-size: 0.88rem; color: #888; line-height: 1.7; margin-bottom: 20px; }
+
+    @media (max-width: 480px) {
+      .wrapper { padding: 80px 16px 40px; }
+      .coupon-card, .result-card, .empty-card { border-radius: 22px; }
+      .coupon-title { font-size: 1.3rem; }
+      .code-value { font-size: 1.8rem; letter-spacing: 3px; }
+      .timer-value { font-size: 1.6rem; }
+    }
+  </style>
+</head>
+<body>
+
+<div class="top-bar">
+  <a class="top-bar-logo" href="index.html">
+    <img src="../assets/可愛的布拉克星球logo.png" alt="布拉克星球" />
+    <div><span>布拉克星球</span><small>Block Planet</small></div>
+  </a>
+  <a class="back-btn" href="index.html">← 回營隊首頁</a>
+</div>
+
+<div class="wrapper" id="app"></div>
+
+<script>
+  const API = 'https://script.google.com/macros/s/AKfycbzpvTQtRH2_DxdjQzGIWw_FM920CCe39nlZ-7IeTn1SQnyTks_ew4cUnnMiS9GUS5X_/exec';
+  const app = document.getElementById('app');
+  let countdownTimer = null;
+
+  // 簡易裝置指紋
+  function getFingerprint() {
+    let fp = localStorage.getItem('bp_coupon_fp');
+    if (!fp) {
+      fp = 'fp_' + Date.now() + '_' + Math.random().toString(36).substr(2, 8);
+      localStorage.setItem('bp_coupon_fp', fp);
+    }
+    return fp;
+  }
+
+  // 檢查是否已領取過（本地記錄）
+  function getLocalCoupon() {
+    const data = localStorage.getItem('bp_coupon_data');
+    if (!data) return null;
+    const parsed = JSON.parse(data);
+    if (new Date(parsed.expiresAt) < new Date()) {
+      localStorage.removeItem('bp_coupon_data');
+      return null;
+    }
+    return parsed;
+  }
+
+  function saveLocalCoupon(data) {
+    localStorage.setItem('bp_coupon_data', JSON.stringify(data));
+  }
+
+  // API 呼叫
+  async function apiCall(action, params = {}) {
+    const url = new URL(API);
+    url.searchParams.set('action', action);
+    Object.entries(params).forEach(([k, v]) => url.searchParams.set(k, v));
+    const res = await fetch(url.toString());
+    return res.json();
+  }
+
+  // ===== 畫面：載入中 =====
+  function renderLoading() {
+    app.innerHTML = `
+      <div class="coupon-card">
+        <div class="coupon-icon">⏳</div>
+        <div class="coupon-title">載入中...</div>
+      </div>
+    `;
+  }
+
+  // ===== 畫面：可領取 =====
+  function renderAvailable(remaining) {
+    app.innerHTML = `
+      <div class="coupon-card">
+        <div class="coupon-icon">🎟️</div>
+        <div class="coupon-title">暑期特色營隊<br>限量 <em>95 折</em> 優惠券</div>
+        <div class="coupon-discount">95折</div>
+        <div class="coupon-remaining">
+          剩餘可領取
+          <span class="remaining-num">${remaining} / 200 張</span>
+        </div>
+        <div class="coupon-note">
+          ⏰ 領取後 <strong style="color:var(--red)">1 小時內</strong> 需完成報名使用<br>
+          逾時優惠碼將自動失效<br>
+          適用：所有暑期特色營隊（包月／小一新生營除外）
+        </div>
+        <button class="claim-btn" onclick="handleClaim()">🔥 立即領取優惠券</button>
+      </div>
+    `;
+  }
+
+  // ===== 畫面：已領取（倒數中）=====
+  function renderClaimed(code, expiresAt) {
+    const expTime = new Date(expiresAt);
+
+    app.innerHTML = `
+      <div class="result-card">
+        <div class="result-header">
+          <div class="result-header-icon">🎉</div>
+          <div class="result-header-title">優惠券領取成功！</div>
+          <div class="result-header-sub">請在時間內完成報名並填入優惠碼</div>
+        </div>
+        <div class="code-box">
+          <div class="code-label">你的專屬優惠碼</div>
+          <div class="code-value" id="codeValue">${code}</div>
+          <div class="code-copy" onclick="copyCode()">📋 點擊複製優惠碼</div>
+        </div>
+        <div class="timer-box">
+          <div class="timer-label">⚠️ 優惠碼將在以下時間後失效</div>
+          <div class="timer-value" id="countdown">--:--</div>
+          <div class="timer-warn">逾時後優惠碼將自動作廢，無法使用</div>
+        </div>
+        <div class="result-body">
+          <div class="result-info">
+            📌 報名時在備註欄填入優惠碼 <strong>${code}</strong><br>
+            即可享有該營隊 <strong>95 折</strong> 優惠
+          </div>
+          <div class="result-camps">
+            <div class="result-camps-title">✅ 適用營隊</div>
+            猴囝仔露營趣、MAKER自造營、水上裝置實驗室、空中競技計畫、Game Lab、ROBLOX x SPIKE、HELLO MAKER、LEGO Ideas、飛行航空科學營、科學大師營、3D 列印工作坊
+          </div>
+          <a class="action-btn action-btn-primary" href="index.html#weekly">
+            🔥 立即前往報名（使用優惠碼）
+          </a>
+          <a class="action-btn action-btn-line" href="https://lin.ee/zFqqFzQ" target="_blank">
+            💬 加入 LINE 詢問
+          </a>
+          <a class="action-btn action-btn-outline" href="index.html">
+            查看所有營隊方案
+          </a>
+        </div>
+      </div>
+    `;
+
+    startCountdown(expTime);
+  }
+
+  // ===== 畫面：已領完 =====
+  function renderEmpty() {
+    app.innerHTML = `
+      <div class="empty-card">
+        <div class="empty-icon">😢</div>
+        <div class="empty-title">優惠券已全部領完！</div>
+        <div class="empty-sub">
+          目前所有優惠券都已被領取<br>
+          但如果有人未在時間內使用，優惠券會自動釋放<br>
+          你可以稍後再來看看！
+        </div>
+        <a class="action-btn action-btn-primary" href="index.html" style="animation:none">
+          先去看看營隊方案 →
+        </a>
+        <a class="action-btn action-btn-line" href="https://lin.ee/zFqqFzQ" target="_blank" style="margin-top:8px">
+          💬 加 LINE 通知我有券釋出
+        </a>
+      </div>
+    `;
+  }
+
+  // ===== 畫面：已過期 =====
+  function renderExpired() {
+    app.innerHTML = `
+      <div class="expired-overlay" onclick="location.reload()">
+        <div class="expired-card" onclick="event.stopPropagation()">
+          <div class="expired-icon">⏰</div>
+          <div class="expired-title">優惠碼已過期</div>
+          <div class="expired-sub">
+            很可惜，你的優惠碼已超過 1 小時未使用<br>
+            已自動失效並釋放給其他人
+          </div>
+          <button class="action-btn action-btn-primary" onclick="localStorage.removeItem('bp_coupon_data');location.reload()" style="animation:none">
+            🔄 重新領取一張
+          </button>
+        </div>
+      </div>
+    `;
+  }
+
+  // ===== 倒數計時器 =====
+  function startCountdown(expTime) {
+    if (countdownTimer) clearInterval(countdownTimer);
+
+    function update() {
+      const now = new Date();
+      const diff = expTime - now;
+
+      if (diff <= 0) {
+        clearInterval(countdownTimer);
+        document.getElementById('countdown').textContent = '00:00';
+        localStorage.removeItem('bp_coupon_data');
+        renderExpired();
+        return;
+      }
+
+      const mins = Math.floor(diff / 60000);
+      const secs = Math.floor((diff % 60000) / 1000);
+      const el = document.getElementById('countdown');
+      if (el) {
+        el.textContent = `${String(mins).padStart(2,'0')}:${String(secs).padStart(2,'0')}`;
+        // 最後 5 分鐘變更急迫
+        if (mins < 5) {
+          el.style.fontSize = '2.4rem';
+          el.parentElement.style.borderColor = 'rgba(201,58,42,0.4)';
+        }
+      }
+    }
+
+    update();
+    countdownTimer = setInterval(update, 1000);
+  }
+
+  // ===== 複製優惠碼 =====
+  function copyCode() {
+    const code = document.getElementById('codeValue').textContent;
+    navigator.clipboard.writeText(code).then(() => {
+      const el = document.querySelector('.code-copy');
+      el.textContent = '✅ 已複製！';
+      setTimeout(() => el.textContent = '📋 點擊複製優惠碼', 2000);
+    });
+  }
+
+  // ===== 領取 =====
+  async function handleClaim() {
+    const btn = document.querySelector('.claim-btn');
+    btn.disabled = true;
+    btn.textContent = '領取中...';
+
+    try {
+      const fp = getFingerprint();
+      const data = await apiCall('claim', { fp });
+
+      if (data.success) {
+        saveLocalCoupon({ code: data.code, expiresAt: data.expiresAt });
+        renderClaimed(data.code, data.expiresAt);
+      } else {
+        renderEmpty();
+      }
+    } catch(err) {
+      btn.disabled = false;
+      btn.textContent = '🔥 立即領取優惠券';
+      alert('系統忙碌，請稍後再試');
+    }
+  }
+
+  // ===== 初始化 =====
+  async function init() {
+    renderLoading();
+
+    // 檢查本地是否有未過期的優惠券
+    const local = getLocalCoupon();
+    if (local) {
+      renderClaimed(local.code, local.expiresAt);
+      return;
+    }
+
+    // 查詢剩餘數量
+    try {
+      const status = await apiCall('status');
+      if (status.available > 0) {
+        renderAvailable(status.available);
+      } else {
+        renderEmpty();
+      }
+    } catch(err) {
+      renderAvailable('?');
+    }
+  }
+
+  init();
+</script>
+</body>
+</html>
