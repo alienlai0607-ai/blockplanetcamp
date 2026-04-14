@@ -246,9 +246,10 @@
       background:white;
     }
     .qn-item::before {
-      content:'👇';
-      position:absolute; top:-32px; left:50%; transform:translateX(-50%);
-      font-size:1.4rem;
+      content:'';
+      position:absolute; top:-36px; left:50%; transform:translateX(-50%);
+      width:32px; height:32px;
+      background:url('posters/block/click.png') center/contain no-repeat;
       animation:point-down 1s ease-in-out infinite;
     }
     @keyframes point-down { 0%,100%{transform:translateX(-50%) translateY(0)} 50%{transform:translateX(-50%) translateY(6px)} }
