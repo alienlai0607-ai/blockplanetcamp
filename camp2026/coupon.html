@@ -384,19 +384,27 @@
   function renderEmpty() {
     app.innerHTML = `
       <div class="empty-card">
-        <div class="empty-icon">😢</div>
-        <div class="empty-title">優惠券已全部領完！</div>
+        <div class="empty-icon">🔥</div>
+        <div class="empty-title">優惠券被搶光啦！</div>
         <div class="empty-sub">
-          目前所有優惠券都已被領取<br>
-          但如果有人未在時間內使用，優惠券會自動釋放<br>
-          你可以稍後再來看看！
+          太熱門了，優惠券已經全部被領取<br>
+          不過沒關係，我們的營隊本身就超值！
         </div>
-        <a class="action-btn action-btn-primary" href="index.html" style="animation:none">
-          先去看看營隊方案 →
+        <div style="background:#FFF8F0;border-radius:14px;padding:16px;margin-bottom:20px;text-align:left;font-size:.88rem;line-height:1.8;color:#555">
+          <div style="font-weight:900;color:var(--orange);margin-bottom:6px;text-align:center">🌟 就算沒有優惠券，現在報名也很划算</div>
+          <div style="color:#2E7D32;font-weight:700">✅ 早鳥價限時優惠中</div>
+          <div style="color:#2E7D32;font-weight:700">✅ 兩人同行再享特別價</div>
+          <div style="color:#2E7D32;font-weight:700">✅ 10+ 年教學經驗，台南最受歡迎的營隊</div>
+        </div>
+        <a class="action-btn action-btn-primary" href="index.html" style="animation:none;background:linear-gradient(135deg,var(--orange),var(--orange-dark))">
+          🚀 直接去看營隊方案，立即報名 →
         </a>
         <a class="action-btn action-btn-line" href="https://lin.ee/zFqqFzQ" target="_blank" style="margin-top:8px">
-          💬 加 LINE 通知我有券釋出
+          💬 加 LINE 詢問更多優惠
         </a>
+        <div style="text-align:center;margin-top:12px;font-size:.78rem;color:#aaa">
+          💡 如果有人未在時間內使用，優惠券會自動釋放，可以稍後再來看看
+        </div>
       </div>
     `;
   }
