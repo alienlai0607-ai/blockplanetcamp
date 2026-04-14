@@ -24,7 +24,9 @@ function doGet(e) {
       case 'claim':  return respond(claimCoupon(e.parameter.fp || '', e.parameter.phone || ''));
       case 'verify': return respond(verifyCode(e.parameter.code || ''));
       case 'lookup': return respond(lookupByPhone(e.parameter.phone || ''));
-      case 'addmore': return respond(addMoreCoupons(parseInt(e.parameter.count) || 0));
+      case 'addmore':
+        if (e.parameter.key !== 'bp2026admin') return respond({ success: false, error: '權限不足' });
+        return respond(addMoreCoupons(parseInt(e.parameter.count) || 0));
       // close 保留但不常用，過期會自動處理
       default:       return respond({ success: false, error: '無效的操作' });
     }
@@ -206,7 +208,7 @@ function verifyCode(code) {
           return { success: true, valid: false, status: '❌ 此優惠碼已過期', phone: phone };
         }
       } else if (status === '已使用') {
-        return { success: true, valid: false, status: '⚠️ 此優惠碼已結案', phone: phone };
+        return { success: true, valid: true, discount: '95折', status: '✅ 已使用（報名中）', phone: phone, claimedAt: claimedAt, expiresAt: expiresAt };
       } else if (status === '已過期') {
         return { success: true, valid: false, status: '❌ 此優惠碼已過期', phone: phone };
       } else if (status === '可領取') {
@@ -339,22 +341,27 @@ function lookupByPhone(phone) {
   const results = [];
   let couponInfo = null;
 
-  // 1. 先查優惠券系統
+  // 1. 先查優惠券系統（找最新的一筆，優先顯示已領取/已使用的）
   const couponSheet = ss.getSheetByName('優惠券');
   if (couponSheet) {
     const cData = couponSheet.getDataRange().getValues();
+    let latestCoupon = null;
     for (let i = 1; i < cData.length; i++) {
       const cPhone = String(cData[i][6] || '').replace(/[^0-9]/g, '');
       if (cPhone && (cPhone === cleanPhone || cPhone.includes(cleanPhone) || cleanPhone.includes(cPhone))) {
-        couponInfo = {
+        const info = {
           code: cData[i][1],
           status: cData[i][2],
           claimedAt: cData[i][3] ? new Date(cData[i][3]).toLocaleString('zh-TW') : '',
           expiresAt: cData[i][4] ? new Date(cData[i][4]).toLocaleString('zh-TW') : ''
         };
-        break;
+        // 優先顯示「已領取」或「已使用」的（最新有效的券）
+        if (!latestCoupon || info.status === '已領取' || info.status === '已使用') {
+          latestCoupon = info;
+        }
       }
     }
+    couponInfo = latestCoupon;
   }
 
   // 2. 掃描所有營隊工作表
@@ -557,6 +564,13 @@ function lookupCoupon(code) {
 
 // ===== 表單提交自動觸發 =====
 function onFormSubmit(e) {
+  const lock = LockService.getScriptLock();
+  try {
+    lock.waitLock(15000);
+  } catch(lockErr) {
+    Logger.log('onFormSubmit 鎖定失敗');
+    return;
+  }
   try {
     const sheet = e.range.getSheet();
     const sheetName = sheet.getName();
@@ -654,6 +668,8 @@ function onFormSubmit(e) {
 
   } catch(err) {
     Logger.log('onFormSubmit 錯誤：' + err.message);
+  } finally {
+    lock.releaseLock();
   }
 }
 
