@@ -21,7 +21,7 @@ function doGet(e) {
 
     switch(action) {
       case 'status': return respond(getStatus());
-      case 'claim':  return respond(claimCoupon(e.parameter.fp || ''));
+      case 'claim':  return respond(claimCoupon(e.parameter.fp || '', e.parameter.phone || ''));
       case 'verify': return respond(verifyCode(e.parameter.code || ''));
       default:       return respond({ success: false, error: '無效的操作' });
     }
@@ -76,7 +76,7 @@ function cleanupExpired() {
   for (let j = 0; j < expiredCount; j++) {
     const num = getNextNumber();
     const code = formatCode(num);
-    sheet.appendRow([num, code, '可領取', '', '', '', '']);
+    sheet.appendRow([num, code, '可領取', '', '', '', '', '']);
   }
 }
 
@@ -108,7 +108,7 @@ function getStatus() {
 }
 
 // ===== 領取優惠券 =====
-function claimCoupon(fingerprint) {
+function claimCoupon(fingerprint, phone) {
   const sheet = getSheet();
   const data = sheet.getDataRange().getValues();
   const now = new Date();
@@ -123,6 +123,7 @@ function claimCoupon(fingerprint) {
           alreadyClaimed: true,
           code: data[i][1],
           expiresAt: expires.toISOString(),
+          phone: data[i][6],
           discount: '95折'
         };
       }
@@ -139,11 +140,13 @@ function claimCoupon(fingerprint) {
       sheet.getRange(row, 4).setValue(now);
       sheet.getRange(row, 5).setValue(expires);
       sheet.getRange(row, 6).setValue(fingerprint);
+      sheet.getRange(row, 7).setValue(phone || '');
 
       return {
         success: true,
         code: data[i][1],
         expiresAt: expires.toISOString(),
+        phone: phone,
         discount: '95折'
       };
     }
@@ -166,7 +169,7 @@ function verifyCode(code) {
         if (expires > new Date()) {
           // 標記為已使用
           sheet.getRange(i + 1, 3).setValue('已使用');
-          sheet.getRange(i + 1, 7).setValue(new Date());
+          sheet.getRange(i + 1, 8).setValue(new Date());
           return { success: true, valid: true, discount: '95折', status: '✅ 優惠碼有效！已標記為使用' };
         } else {
           return { success: true, valid: false, status: '❌ 此優惠碼已過期' };
@@ -203,15 +206,15 @@ function initCoupons() {
   }
 
   // 設定表頭
-  couponSheet.getRange(1, 1, 1, 7).setValues([
-    ['編號', '優惠碼', '狀態', '領取時間', '到期時間', '領取者', '使用時間']
+  couponSheet.getRange(1, 1, 1, 8).setValues([
+    ['編號', '優惠碼', '狀態', '領取時間', '到期時間', '領取者', '手機號碼', '使用時間']
   ]);
-  couponSheet.getRange(1, 1, 1, 7).setFontWeight('bold').setBackground('#F5941E').setFontColor('white');
+  couponSheet.getRange(1, 1, 1, 8).setFontWeight('bold').setBackground('#F5941E').setFontColor('white');
 
   // 產生 200 張優惠券
   const coupons = [];
   for (let i = 1; i <= POOL_SIZE; i++) {
-    coupons.push([i, formatCode(i), '可領取', '', '', '', '']);
+    coupons.push([i, formatCode(i), '可領取', '', '', '', '', '']);
   }
   couponSheet.getRange(2, 1, coupons.length, 7).setValues(coupons);
 
@@ -220,7 +223,7 @@ function initCoupons() {
 
   // 格式化
   couponSheet.setFrozenRows(1);
-  couponSheet.autoResizeColumns(1, 7);
+  couponSheet.autoResizeColumns(1, 8);
 
   // 條件格式：不同狀態不同顏色
   const range = couponSheet.getRange('C2:C1000');

@@ -83,6 +83,21 @@
     .coupon-note {
       font-size: 0.8rem; color: #aaa; line-height: 1.6; margin-bottom: 24px;
     }
+    .phone-input-wrap {
+      margin-bottom: 20px;
+    }
+    .phone-label {
+      font-size: 0.85rem; font-weight: 700; color: #666; margin-bottom: 8px; text-align: left;
+    }
+    .phone-input {
+      width: 100%; padding: 14px 18px; border-radius: 14px;
+      border: 2.5px solid #eee; font-size: 1.1rem; font-family: inherit;
+      font-weight: 700; text-align: center; letter-spacing: 2px;
+      outline: none; transition: border-color 0.2s;
+    }
+    .phone-input:focus { border-color: var(--orange); }
+    .phone-input::placeholder { color: #ccc; letter-spacing: 0; font-weight: 400; font-size: 0.9rem; }
+    .phone-hint { font-size: 0.75rem; color: #aaa; margin-top: 6px; }
     .claim-btn {
       display: block; width: 100%; padding: 18px; border-radius: 50px;
       background: linear-gradient(135deg, var(--orange), var(--orange-dark));
@@ -293,13 +308,18 @@
           ✅ 適用所有暑期特色營隊<br>
           ❌ 不適用：七月包月營、小一新生營
         </div>
+        <div class="phone-input-wrap">
+          <div class="phone-label">📱 請輸入報名人手機號碼</div>
+          <input type="tel" class="phone-input" id="phoneInput" placeholder="0912-345-678" maxlength="15" />
+          <div class="phone-hint">優惠碼將綁定此號碼，報名時需填寫相同號碼才能使用</div>
+        </div>
         <button class="claim-btn" onclick="handleClaim()">🔥 立即領取優惠券</button>
       </div>
     `;
   }
 
   // ===== 畫面：已領取（倒數中）=====
-  function renderClaimed(code, expiresAt) {
+  function renderClaimed(code, expiresAt, phone) {
     const expTime = new Date(expiresAt);
 
     app.innerHTML = `
@@ -322,9 +342,10 @@
         <div class="result-body">
           <div class="result-info">
             📌 報名時在備註欄填入優惠碼 <strong>${code}</strong><br>
+            並確認手機號碼為 <strong>${phone || '(已綁定)'}</strong><br>
             即可享有 <strong>95 折</strong> 優惠<br><br>
             🔥 <strong>1 小時內不限次數</strong>，報幾個營隊就折幾個！<br>
-            想報的趕快一次報完！
+            ⚠️ 優惠碼僅限綁定手機號碼的本人使用
           </div>
           <div class="result-camps">
             <div class="result-camps-title">✅ 適用營隊</div>
@@ -431,17 +452,27 @@
 
   // ===== 領取 =====
   async function handleClaim() {
+    const phoneEl = document.getElementById('phoneInput');
+    const phone = phoneEl.value.replace(/[-\s]/g, '').trim();
+
+    if (!phone || phone.length < 9) {
+      phoneEl.style.borderColor = 'var(--red)';
+      phoneEl.focus();
+      alert('請輸入正確的手機號碼');
+      return;
+    }
+
     const btn = document.querySelector('.claim-btn');
     btn.disabled = true;
     btn.textContent = '領取中...';
 
     try {
       const fp = getFingerprint();
-      const data = await apiCall('claim', { fp });
+      const data = await apiCall('claim', { fp, phone });
 
       if (data.success) {
-        saveLocalCoupon({ code: data.code, expiresAt: data.expiresAt });
-        renderClaimed(data.code, data.expiresAt);
+        saveLocalCoupon({ code: data.code, expiresAt: data.expiresAt, phone });
+        renderClaimed(data.code, data.expiresAt, phone);
       } else {
         renderEmpty();
       }
@@ -459,7 +490,7 @@
     // 檢查本地是否有未過期的優惠券
     const local = getLocalCoupon();
     if (local) {
-      renderClaimed(local.code, local.expiresAt);
+      renderClaimed(local.code, local.expiresAt, local.phone);
       return;
     }
 
