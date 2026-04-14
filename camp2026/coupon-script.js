@@ -515,6 +515,25 @@ function findColumnIndex(headers, keywords) {
   return -1;
 }
 
+// 標記優惠碼為已使用（表單提交時自動呼叫）
+function markCouponUsed(code) {
+  try {
+    const sheet = getSheet();
+    if (!sheet) return;
+    const data = sheet.getDataRange().getValues();
+    const upperCode = String(code).toUpperCase().trim();
+    for (let i = 1; i < data.length; i++) {
+      if (data[i][1] === upperCode && data[i][2] === '已領取') {
+        sheet.getRange(i + 1, 3).setValue('已使用');
+        sheet.getRange(i + 1, 8).setValue(new Date());
+        break;
+      }
+    }
+  } catch(e) {
+    Logger.log('markCouponUsed error: ' + e.message);
+  }
+}
+
 // 查詢優惠碼資訊（從優惠券工作表）
 function lookupCoupon(code) {
   if (!code) return null;
@@ -596,6 +615,8 @@ function onFormSubmit(e) {
             if (phoneMatch(rawFormPhone, coupon.phone)) {
               phoneResult = '✅ 吻合';
               finalPrice = Math.round(earlybird * 0.95);
+              // 自動標記為「已使用」（不會被回收，多營隊仍可用）
+              markCouponUsed(couponCode);
             } else {
               phoneResult = '❌ 不吻合';
               couponStatus = '⚠️ 碼有效但手機不符';
@@ -603,12 +624,13 @@ function onFormSubmit(e) {
           } else {
             phoneResult = '⚠️ 缺手機資料';
             finalPrice = Math.round(earlybird * 0.95);
+            markCouponUsed(couponCode);
           }
         } else {
           couponStatus = '❌ 已過期';
         }
       } else if (coupon.status === '已使用') {
-        couponStatus = '⚠️ 已結案（可能多營隊使用中）';
+        couponStatus = '✅ 有效（多營隊使用中）';
         if (rawFormPhone && coupon.phone && phoneMatch(rawFormPhone, coupon.phone)) {
           phoneResult = '✅ 吻合';
           finalPrice = Math.round(earlybird * 0.95);
