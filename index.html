@@ -1,0 +1,1871 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>布拉克星球 Block Planet｜孩子的創意學習基地</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;700;900&family=Noto+Sans+TC:wght@400;700;900&display=swap" rel="stylesheet" />
+  <script async defer crossorigin="anonymous" src="https://connect.facebook.net/zh_TW/sdk.js#xfbml=1&version=v21.0"></script>
+  <style>
+    /* ===== 基礎設定 ===== */
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --orange:  #F5941E;
+      --orange-dark: #E07A08;
+      --red:     #C93A2A;
+      --blue:    #4B9CD3;
+      --green:   #5BAD5B;
+      --yellow:  #F5D021;
+      --black:   #2C2C2C;
+      --white:   #FFFFFF;
+      --bg-warm: #FFF8F0;
+      --bg-section: #FFFBF5;
+      --text:    #333333;
+      --shadow:  0 8px 30px rgba(0,0,0,0.10);
+    }
+
+    html { scroll-behavior: smooth; overflow-x: hidden; }
+
+    body {
+      font-family: 'Noto Sans TC', 'Nunito', sans-serif;
+      background: var(--bg-warm);
+      color: var(--text);
+      overflow-x: hidden;
+      max-width: 100vw;
+    }
+
+    /* ===== 動畫關鍵影格 ===== */
+    @keyframes float {
+      0%, 100% { transform: translateY(0px) rotate(0deg); }
+      50%       { transform: translateY(-18px) rotate(3deg); }
+    }
+    @keyframes float2 {
+      0%, 100% { transform: translateY(0px) rotate(0deg); }
+      50%       { transform: translateY(-12px) rotate(-4deg); }
+    }
+    @keyframes spin-slow {
+      from { transform: rotate(0deg); }
+      to   { transform: rotate(360deg); }
+    }
+    @keyframes bounce-in {
+      0%   { transform: scale(0.3); opacity: 0; }
+      50%  { transform: scale(1.05); }
+      70%  { transform: scale(0.95); }
+      100% { transform: scale(1); opacity: 1; }
+    }
+    @keyframes slide-up {
+      from { transform: translateY(60px); opacity: 0; }
+      to   { transform: translateY(0);    opacity: 1; }
+    }
+    @keyframes slide-left {
+      from { transform: translateX(-80px); opacity: 0; }
+      to   { transform: translateX(0);     opacity: 1; }
+    }
+    @keyframes slide-right {
+      from { transform: translateX(80px); opacity: 0; }
+      to   { transform: translateX(0);    opacity: 1; }
+    }
+    @keyframes twinkle {
+      0%, 100% { opacity: 1; transform: scale(1); }
+      50%       { opacity: 0.4; transform: scale(0.7); }
+    }
+    @keyframes count-up {
+      from { opacity: 0; transform: translateY(20px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+    @keyframes wave {
+      0%, 100% { transform: rotate(-10deg); }
+      50%       { transform: rotate(10deg); }
+    }
+    @keyframes mascot-bob {
+      0%, 100% { transform: translateY(0px) scale(1); }
+      30%       { transform: translateY(-16px) scale(1.012); }
+      60%       { transform: translateY(-8px) scale(1.006); }
+    }
+
+    .fade-in { opacity: 0; transition: opacity 0.8s ease, transform 0.8s ease; }
+    .fade-in.visible { opacity: 1; transform: none !important; }
+    .from-left  { transform: translateX(-60px); }
+    .from-right { transform: translateX(60px); }
+    .from-bottom{ transform: translateY(60px); }
+
+    /* ===== 導覽列 ===== */
+    nav {
+      position: fixed; top: 0; left: 0; right: 0; z-index: 1000;
+      background: rgba(255,255,255,0.92);
+      backdrop-filter: blur(12px);
+      border-bottom: 3px solid var(--orange);
+      padding: 0 5%;
+      display: flex; align-items: center; justify-content: space-between;
+      height: 70px;
+      box-shadow: 0 2px 20px rgba(245,148,30,0.15);
+    }
+    .nav-logo {
+      display: flex; align-items: center; gap: 12px;
+      text-decoration: none;
+    }
+    .nav-logo-img {
+      width: 50px; height: 50px;
+      border-radius: 50%;
+      background: var(--orange);
+      display: flex; align-items: center; justify-content: center;
+      font-weight: 900; color: white; font-size: 18px;
+      overflow: hidden;
+    }
+    .nav-logo-img img { width: 100%; height: 100%; object-fit: cover; }
+    .nav-logo-text {
+      font-weight: 900; font-size: 1.1rem; color: var(--black);
+      line-height: 1.2;
+    }
+    .nav-logo-text span { color: var(--orange); display: block; font-size: 0.75rem; }
+
+    .nav-links { display: flex; gap: 6px; list-style: none; }
+    .nav-links a {
+      text-decoration: none; color: var(--black); font-weight: 700;
+      font-size: 0.9rem; padding: 8px 14px; border-radius: 50px;
+      transition: all 0.3s;
+    }
+    .nav-links a:hover { background: var(--orange); color: white; }
+
+    .nav-cta {
+      background: var(--orange); color: white !important;
+      border-radius: 50px !important; padding: 10px 20px !important;
+      box-shadow: 0 4px 15px rgba(245,148,30,0.4);
+      transition: transform 0.2s, box-shadow 0.2s !important;
+    }
+    .nav-cta:hover {
+      transform: translateY(-2px) !important;
+      box-shadow: 0 8px 25px rgba(245,148,30,0.5) !important;
+      background: var(--orange-dark) !important;
+    }
+
+    /* ===== HERO ===== */
+    /* ===== Hero 全背景教室場景 ===== */
+    .hero {
+      min-height: 100vh;
+      background: url('assets/網頁用.png') center/cover no-repeat;
+      position: relative;
+      display: flex;
+      flex-direction: column;
+      justify-content: flex-start;
+      padding: 120px 6% 60px;
+      overflow: hidden;
+    }
+
+    /* 吉祥物動畫層：同一張圖但只顯示右半，浮動 */
+    .mascot-anim {
+      position: absolute;
+      inset: 0;
+      background: url('assets/網頁用.png') center/cover no-repeat;
+      clip-path: inset(0 0 0 38%);
+      animation: mascot-bob 4.5s ease-in-out infinite;
+      transform-origin: center 85%;
+      pointer-events: none;
+      z-index: 3;
+    }
+
+    .hero-content {
+      position: relative;
+      z-index: 10;
+      max-width: 520px;
+      background: rgba(255, 248, 235, 0.86);
+      backdrop-filter: blur(14px);
+      -webkit-backdrop-filter: blur(14px);
+      border-radius: 28px;
+      padding: 36px 44px;
+      box-shadow: 0 10px 50px rgba(0,0,0,0.14);
+      border: 2.5px solid rgba(255,255,255,0.85);
+      animation: slide-up 0.9s ease both;
+    }
+    .hero-badge {
+      display: inline-block;
+      background: var(--orange); color: white;
+      border-radius: 50px; padding: 6px 18px;
+      font-size: 0.85rem; font-weight: 700;
+      margin-bottom: 20px;
+      animation: bounce-in 0.6s ease both 0.3s;
+    }
+    .hero h1 {
+      font-size: clamp(2rem, 4.5vw, 3rem);
+      font-weight: 900; line-height: 1.25;
+      color: var(--black); margin-bottom: 16px;
+    }
+    .hero h1 em {
+      font-style: normal; color: var(--orange);
+      position: relative;
+    }
+    .hero h1 em::after {
+      content: '';
+      position: absolute; bottom: 2px; left: 0; right: 0;
+      height: 6px;
+      background: var(--yellow);
+      border-radius: 3px; z-index: -1;
+      opacity: 0.6;
+    }
+    .hero p {
+      font-size: 1rem; color: #555; line-height: 1.85;
+      margin-bottom: 28px;
+    }
+    .hero-btns { display: flex; gap: 14px; flex-wrap: wrap; }
+    .btn {
+      padding: 14px 28px; border-radius: 50px;
+      font-size: 1rem; font-weight: 700;
+      cursor: pointer; border: none;
+      text-decoration: none; display: inline-block;
+      transition: transform 0.2s, box-shadow 0.2s;
+    }
+    .btn:hover { transform: translateY(-3px); }
+    .btn-primary {
+      background: var(--orange); color: white;
+      box-shadow: 0 6px 20px rgba(245,148,30,0.4);
+    }
+    .btn-primary:hover { box-shadow: 0 10px 30px rgba(245,148,30,0.5); }
+    .btn-outline {
+      background: white; color: var(--orange);
+      border: 2.5px solid var(--orange);
+      box-shadow: var(--shadow);
+    }
+
+    /* 教室徽章 */
+    .location-badges {
+      display: flex; gap: 10px; margin-top: 22px; flex-wrap: wrap;
+    }
+    .location-badge {
+      background: white; border-radius: 50px;
+      padding: 7px 16px; font-size: 0.82rem; font-weight: 700;
+      box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+      display: flex; align-items: center; gap: 8px;
+      border-left: 4px solid var(--orange);
+    }
+
+
+    /* ===== 通用 Section 樣式 ===== */
+    section { padding: 80px 5%; }
+    .section-header { text-align: center; margin-bottom: 60px; }
+    .section-tag {
+      display: inline-block;
+      background: var(--orange); color: white;
+      border-radius: 50px; padding: 5px 16px;
+      font-size: 0.8rem; font-weight: 700;
+      margin-bottom: 12px; letter-spacing: 1px;
+    }
+    .section-header h2 {
+      font-size: clamp(1.6rem, 4vw, 2.4rem);
+      font-weight: 900; color: var(--black);
+      margin-bottom: 14px;
+    }
+    .section-header p { color: #777; font-size: 1rem; line-height: 1.8; }
+
+    /* ===== 特色三格 ===== */
+    .features {
+      background: white;
+    }
+    .features-grid {
+      display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+      gap: 30px;
+    }
+    .feature-card {
+      background: var(--bg-warm);
+      border-radius: 24px; padding: 40px 32px;
+      text-align: center;
+      border: 2px solid transparent;
+      transition: border-color 0.3s, transform 0.3s, box-shadow 0.3s;
+      position: relative; overflow: hidden;
+    }
+    .feature-card::before {
+      content: '';
+      position: absolute; top: 0; left: 0; right: 0;
+      height: 6px;
+      border-radius: 24px 24px 0 0;
+    }
+    .feature-card:nth-child(1)::before { background: var(--orange); }
+    .feature-card:nth-child(2)::before { background: var(--blue); }
+    .feature-card:nth-child(3)::before { background: var(--green); }
+    .feature-card:hover {
+      transform: translateY(-8px);
+      box-shadow: 0 20px 50px rgba(0,0,0,0.12);
+    }
+    .feature-icon {
+      font-size: 3.5rem; margin-bottom: 20px;
+      display: block;
+      animation: float2 3.5s ease-in-out infinite;
+    }
+    .feature-card:nth-child(2) .feature-icon { animation-delay: 0.5s; }
+    .feature-card:nth-child(3) .feature-icon { animation-delay: 1s; }
+    .feature-photo {
+      width: 100%; height: 180px;
+      object-fit: cover; border-radius: 16px;
+      margin-bottom: 20px;
+      display: block;
+      box-shadow: 0 4px 16px rgba(0,0,0,0.10);
+      animation: float2 3.5s ease-in-out infinite;
+    }
+    .feature-card:nth-child(2) .feature-photo { animation-delay: 0.5s; }
+    .feature-card:nth-child(3) .feature-photo { animation-delay: 1s; }
+    .feature-card h3 { font-size: 1.3rem; font-weight: 900; margin-bottom: 12px; }
+    .feature-card p { color: #666; font-size: 0.95rem; line-height: 1.7; }
+
+    /* ===== 課程區塊 ===== */
+    .courses { background: var(--bg-section); }
+    .courses-grid {
+      display: grid;
+      grid-template-columns: repeat(5, 1fr);
+      gap: 20px;
+    }
+    .course-card {
+      background: white; border-radius: 20px;
+      overflow: hidden; box-shadow: var(--shadow);
+      transition: transform 0.3s, box-shadow 0.3s;
+    }
+    .course-card:hover { transform: translateY(-6px); box-shadow: 0 20px 50px rgba(0,0,0,0.15); }
+    .course-thumb {
+      height: 160px;
+      display: flex; align-items: flex-end; justify-content: center;
+      position: relative; overflow: hidden;
+      padding-bottom: 0;
+    }
+    .course-char {
+      height: 148px;
+      width: auto;
+      object-fit: contain;
+      transform-origin: bottom center;
+      animation: float2 4.5s ease-in-out infinite;
+      filter: drop-shadow(0 10px 18px rgba(0,0,0,0.18));
+      position: relative; z-index: 2;
+    }
+    .course-card:nth-child(1) .course-char { animation-delay: 0s; }
+    .course-card:nth-child(2) .course-char { animation-delay: 0.6s; }
+    .course-card:nth-child(3) .course-char { animation-delay: 1.2s; }
+    .course-card:nth-child(4) .course-char { animation-delay: 0.3s; }
+    .course-card:nth-child(5) .course-char { animation-delay: 0.9s; }
+    .course-card:nth-child(1) .course-thumb { background: linear-gradient(160deg, #1a1a2e 0%, #0f3460 100%); }
+    .course-card:nth-child(2) .course-thumb { background: linear-gradient(160deg, #1e6b9e 0%, #74B9FF 100%); }
+    .course-card:nth-child(3) .course-thumb { background: linear-gradient(160deg, #8B2020 0%, #FF6B6B 100%); }
+    .course-card:nth-child(4) .course-thumb { background: linear-gradient(160deg, #2d6a2d 0%, #A8E6CF 100%); }
+    .course-card:nth-child(5) .course-thumb { background: linear-gradient(160deg, #b8860b 0%, #FFBE76 100%); }
+    .course-body { padding: 16px 16px 20px; }
+    .course-tags { display: flex; gap: 4px; margin-bottom: 8px; flex-wrap: wrap; }
+    .course-tag {
+      font-size: 0.65rem; font-weight: 700; padding: 2px 8px;
+      border-radius: 50px; background: var(--bg-warm); color: var(--orange);
+    }
+    .course-body h3 { font-size: 0.95rem; font-weight: 900; margin-bottom: 6px; }
+    .course-body p { font-size: 0.8rem; color: #666; line-height: 1.5; }
+    .course-footer {
+      padding: 0 16px 16px;
+      display: flex; align-items: center; justify-content: space-between;
+    }
+    .course-age { font-size: 0.72rem; color: #999; font-weight: 700; }
+    .course-btn {
+      background: var(--orange); color: white;
+      border: none; border-radius: 50px; padding: 6px 14px;
+      font-size: 0.76rem; font-weight: 700; cursor: pointer;
+      transition: background 0.2s, transform 0.2s;
+    }
+    .course-btn:hover { background: var(--orange-dark); transform: scale(1.05); }
+
+    /* ===== 戰績區 ===== */
+    .achievements {
+      background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
+      color: white; position: relative; overflow: hidden;
+    }
+    .achievements::before {
+      content: '🏆';
+      position: absolute; font-size: 20rem; opacity: 0.03;
+      top: 50%; left: 50%; transform: translate(-50%, -50%);
+    }
+    /* 星空背景 */
+    .stars-bg { position: absolute; inset: 0; pointer-events: none; }
+    .star-dot {
+      position: absolute; background: white; border-radius: 50%;
+      animation: twinkle 3s infinite;
+    }
+    .achievements .section-tag { background: var(--yellow); color: var(--black); }
+    .achievements .section-header h2 { color: white; }
+    .achievements .section-header p { color: rgba(255,255,255,0.7); }
+
+    .stats-row {
+      display: flex; gap: 30px; justify-content: center; flex-wrap: wrap;
+      margin-bottom: 60px;
+    }
+    .stat-card {
+      text-align: center; padding: 30px 40px;
+      background: rgba(255,255,255,0.07);
+      border: 1px solid rgba(255,255,255,0.15);
+      border-radius: 20px; backdrop-filter: blur(10px);
+      transition: transform 0.3s;
+    }
+    .stat-card:hover { transform: translateY(-5px); }
+    .stat-num {
+      font-size: 3rem; font-weight: 900; color: var(--yellow);
+      display: block; line-height: 1;
+    }
+    .stat-label { font-size: 0.9rem; color: rgba(255,255,255,0.7); margin-top: 8px; }
+
+    .awards-timeline {
+      display: flex; flex-direction: column; gap: 20px;
+      max-width: 750px; margin: 0 auto;
+    }
+    .award-item {
+      display: flex; gap: 20px; align-items: flex-start;
+      background: rgba(255,255,255,0.06);
+      border: 1px solid rgba(255,255,255,0.1);
+      border-radius: 16px; padding: 20px 24px;
+      transition: background 0.3s;
+    }
+    .award-item:hover { background: rgba(255,255,255,0.1); }
+    .award-year {
+      background: var(--orange); color: white;
+      border-radius: 10px; padding: 6px 14px;
+      font-size: 0.85rem; font-weight: 900;
+      white-space: nowrap; flex-shrink: 0;
+    }
+    .award-content h4 { font-weight: 700; margin-bottom: 4px; font-size: 1rem; }
+    .award-content p { font-size: 0.85rem; color: rgba(255,255,255,0.6); }
+    .award-medals { margin-top: 6px; font-size: 0.9rem; }
+
+    /* ===== 最新消息 ===== */
+    .news { background: #fafafa; }
+    .news-layout {
+      display: grid;
+      grid-template-columns: 1fr 460px;
+      gap: 32px;
+      align-items: start;
+      max-width: 1080px; margin: 0 auto;
+    }
+    /* 左欄：一大一小 */
+    .news-featured { display: flex; flex-direction: column; gap: 16px; }
+
+    /* 主打大卡 */
+    .news-hero {
+      position: relative; border-radius: 18px; overflow: hidden;
+      height: 320px; box-shadow: var(--shadow);
+      cursor: pointer; transition: transform 0.3s;
+    }
+    .news-hero:hover { transform: translateY(-4px); }
+    .news-hero img {
+      width: 100%; height: 100%; object-fit: cover; display: block;
+    }
+    .news-hero-overlay {
+      position: absolute; inset: 0;
+      background: linear-gradient(to top, rgba(0,0,0,0.82) 0%, rgba(0,0,0,0.35) 55%, transparent 100%);
+    }
+    .news-hero-content {
+      position: absolute; bottom: 0; left: 0; right: 0;
+      padding: 28px 28px 24px;
+    }
+    .news-hero-tag {
+      display: inline-block;
+      background: var(--orange); color: white;
+      border-radius: 50px; padding: 3px 12px;
+      font-size: 0.72rem; font-weight: 700; margin-bottom: 10px;
+    }
+    .news-hero-date { color: rgba(255,255,255,0.65); font-size: 0.78rem; margin-bottom: 8px; }
+    .news-hero-title {
+      color: white; font-size: 1.2rem; font-weight: 900;
+      line-height: 1.45; margin-bottom: 14px;
+    }
+    .news-hero-link {
+      display: inline-block;
+      background: white; color: var(--orange-dark);
+      padding: 7px 20px; border-radius: 50px;
+      font-weight: 700; font-size: 0.82rem; text-decoration: none;
+      transition: background 0.2s;
+    }
+    .news-hero-link:hover { background: var(--orange); color: white; }
+
+    /* 次要小卡（文字型） */
+    .news-sub {
+      background: white; border-radius: 16px;
+      padding: 20px 24px;
+      box-shadow: 0 2px 12px rgba(0,0,0,0.07);
+      border-left: 4px solid var(--orange);
+      cursor: pointer; transition: transform 0.3s, box-shadow 0.3s;
+      display: flex; flex-direction: column; gap: 6px;
+    }
+    .news-sub:hover { transform: translateY(-3px); box-shadow: var(--shadow); }
+    .news-sub-meta { display: flex; align-items: center; gap: 10px; }
+    .news-sub-tag {
+      background: var(--bg-warm); color: var(--orange-dark);
+      border-radius: 50px; padding: 2px 10px;
+      font-size: 0.72rem; font-weight: 700;
+    }
+    .news-sub-date { font-size: 0.78rem; color: #aaa; }
+    .news-sub h3 { font-size: 0.98rem; font-weight: 900; color: #333; line-height: 1.45; margin: 0; }
+    .news-sub p { font-size: 0.83rem; color: #666; line-height: 1.6; margin: 0;
+      display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+    .news-sub-link { align-self: flex-start; color: var(--orange); font-weight: 700; font-size: 0.82rem; text-decoration: none; margin-top: 4px; cursor: pointer; }
+
+    /* 右欄：FB */
+    .news-fb-wrap {
+      background: #f0f2f5;
+      border-radius: 16px;
+      overflow: hidden;
+      box-shadow: 0 4px 20px rgba(0,0,0,0.08);
+    }
+    .news-fb-header {
+      background: #1877F2; color: white;
+      padding: 13px 18px;
+      display: flex; align-items: center; gap: 10px;
+      font-weight: 700; font-size: 0.92rem;
+    }
+    .news-fb-header svg { flex-shrink: 0; }
+    .news-fb-body { padding: 0; overflow: hidden; line-height: 0; }
+    .news-fb-body iframe {
+      width: 460px !important; max-width: 100%;
+      display: block; border: none;
+    }
+    @media (max-width: 1000px) {
+      .news-layout { grid-template-columns: 1fr; }
+    }
+
+    /* ===== 活動報名 ===== */
+    .events { background: var(--bg-warm); }
+    .events-grid {
+      display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+      gap: 24px;
+    }
+    .event-card {
+      background: white; border-radius: 20px; overflow: hidden;
+      box-shadow: var(--shadow); transition: transform 0.3s;
+    }
+    .event-card:hover { transform: translateY(-6px); }
+    .event-header {
+      padding: 28px 28px 20px;
+      border-bottom: 2px dashed rgba(0,0,0,0.08);
+    }
+    .event-emoji { font-size: 2.5rem; margin-bottom: 12px; display: block; }
+    .event-header h3 { font-size: 1.1rem; font-weight: 900; margin-bottom: 6px; }
+    .event-header p { font-size: 0.85rem; color: #888; }
+    .event-meta { padding: 16px 28px; }
+    .event-info { display: flex; gap: 8px; align-items: center; margin-bottom: 8px; font-size: 0.85rem; }
+    .event-info .icon { font-size: 1rem; }
+    .event-footer { padding: 0 28px 24px; }
+    .event-btn {
+      width: 100%; padding: 12px;
+      background: var(--orange); color: white;
+      border: none; border-radius: 12px;
+      font-size: 0.95rem; font-weight: 700; cursor: pointer;
+      transition: background 0.2s, transform 0.2s;
+    }
+    .event-btn:hover { background: var(--orange-dark); transform: scale(1.02); }
+
+    /* ===== 聯絡我們 ===== */
+    .contact { background: white; }
+    .contact-wrapper {
+      display: grid; grid-template-columns: 1fr 1fr; gap: 60px;
+      align-items: start; max-width: 1000px; margin: 0 auto;
+    }
+    .contact-family-photo {
+      width: 100%; border-radius: 20px;
+      object-fit: cover; max-height: 220px;
+      margin-bottom: 24px;
+      box-shadow: 0 8px 24px rgba(0,0,0,0.12);
+      display: block;
+    }
+    .contact-info h3 { font-size: 1.3rem; font-weight: 900; margin-bottom: 24px; }
+    .contact-location {
+      background: var(--bg-warm); border-radius: 16px;
+      padding: 20px 24px; margin-bottom: 16px;
+      border-left: 5px solid var(--orange);
+    }
+    .contact-location h4 {
+      font-size: 0.9rem; font-weight: 700; color: var(--orange);
+      margin-bottom: 8px;
+    }
+    .contact-location p { font-size: 0.9rem; color: #555; line-height: 1.6; }
+    .contact-social { display: flex; gap: 12px; margin-top: 20px; flex-wrap: wrap; }
+    .social-btn {
+      display: flex; align-items: center; gap: 8px;
+      padding: 10px 18px; border-radius: 50px;
+      font-size: 0.88rem; font-weight: 700;
+      text-decoration: none; transition: transform 0.2s;
+    }
+    .social-btn:hover { transform: translateY(-2px); }
+    .social-fb { background: #1877F2; color: white; }
+    .social-line { background: #00B900; color: white; }
+    .social-ig { background: linear-gradient(45deg, #f09433, #e6683c, #dc2743, #cc2366, #bc1888); color: white; }
+
+    .contact-form { background: var(--bg-warm); border-radius: 24px; padding: 36px; }
+    .contact-form h3 { font-size: 1.2rem; font-weight: 900; margin-bottom: 24px; }
+    .form-group { margin-bottom: 16px; }
+    .form-group label { display: block; font-size: 0.85rem; font-weight: 700; margin-bottom: 6px; color: #555; }
+    .form-group input, .form-group select, .form-group textarea {
+      width: 100%; padding: 12px 16px;
+      border: 2px solid #eee; border-radius: 12px;
+      font-size: 0.95rem; font-family: inherit;
+      transition: border-color 0.2s;
+      background: white;
+    }
+    .form-group input:focus, .form-group select:focus, .form-group textarea:focus {
+      outline: none; border-color: var(--orange);
+    }
+    .form-group textarea { height: 100px; resize: none; }
+    .form-submit {
+      width: 100%; padding: 14px;
+      background: var(--orange); color: white;
+      border: none; border-radius: 12px;
+      font-size: 1rem; font-weight: 700; cursor: pointer;
+      transition: background 0.2s, transform 0.2s;
+    }
+    .form-submit:hover { background: var(--orange-dark); transform: translateY(-2px); }
+
+    /* ===== Footer ===== */
+    footer {
+      background: var(--black); color: white;
+      padding: 50px 5% 30px;
+    }
+    .footer-top {
+      display: flex; gap: 40px; flex-wrap: wrap;
+      justify-content: space-between; margin-bottom: 40px;
+      padding-bottom: 40px; border-bottom: 1px solid rgba(255,255,255,0.1);
+    }
+    .footer-brand .nav-logo-text { color: white; }
+    .footer-brand p { font-size: 0.85rem; color: rgba(255,255,255,0.5); margin-top: 12px; max-width: 280px; line-height: 1.7; }
+    .footer-links h4 { font-size: 0.9rem; font-weight: 700; margin-bottom: 14px; color: var(--orange); }
+    .footer-links ul { list-style: none; }
+    .footer-links li { margin-bottom: 8px; }
+    .footer-links a { color: rgba(255,255,255,0.6); text-decoration: none; font-size: 0.85rem; transition: color 0.2s; }
+    .footer-links a:hover { color: var(--orange); }
+    .footer-bottom { text-align: center; font-size: 0.8rem; color: rgba(255,255,255,0.3); }
+
+    /* ===== 彩色筆刷分隔線 ===== */
+    .brush-divider {
+      height: 8px;
+      background: linear-gradient(90deg, var(--orange) 0%, var(--red) 20%, var(--blue) 40%, var(--green) 60%, var(--yellow) 80%, var(--orange) 100%);
+    }
+
+    /* ===== LINE 浮動按鈕 ===== */
+    .line-float {
+      position: fixed; bottom: 30px; right: 30px; z-index: 999;
+      background: #00B900; color: white;
+      width: 60px; height: 60px; border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 1.8rem; text-decoration: none;
+      box-shadow: 0 6px 20px rgba(0,185,0,0.4);
+      transition: transform 0.3s, box-shadow 0.3s;
+      animation: bounce-in 0.6s ease both 1s;
+    }
+    .line-float:hover { transform: scale(1.15); box-shadow: 0 10px 30px rgba(0,185,0,0.5); }
+    .line-float::before {
+      content: '聯絡我們';
+      position: absolute; right: 70px; background: var(--black);
+      color: white; font-size: 0.75rem; font-weight: 700;
+      padding: 6px 12px; border-radius: 8px; white-space: nowrap;
+      opacity: 0; transition: opacity 0.3s;
+      pointer-events: none;
+    }
+    .line-float:hover::before { opacity: 1; }
+
+    /* ===== 回到頂端 ===== */
+    .back-top {
+      position: fixed; bottom: 100px; right: 30px; z-index: 999;
+      background: var(--orange); color: white;
+      width: 44px; height: 44px; border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 1.2rem; cursor: pointer; border: none;
+      box-shadow: 0 4px 15px rgba(245,148,30,0.4);
+      transition: transform 0.2s; opacity: 0; pointer-events: none;
+    }
+    .back-top.show { opacity: 1; pointer-events: auto; }
+    .back-top:hover { transform: translateY(-3px); }
+
+    /* ===== 漢堡選單 ===== */
+    .nav-hamburger {
+      display: none;
+      flex-direction: column; justify-content: center; align-items: center; gap: 5px;
+      width: 40px; height: 40px;
+      background: none; border: none; cursor: pointer; padding: 4px;
+    }
+    .nav-hamburger span {
+      display: block; width: 24px; height: 2.5px;
+      background: var(--black); border-radius: 2px;
+      transition: transform 0.3s, opacity 0.3s;
+    }
+    .nav-hamburger.open span:nth-child(1) { transform: translateY(7.5px) rotate(45deg); }
+    .nav-hamburger.open span:nth-child(2) { opacity: 0; }
+    .nav-hamburger.open span:nth-child(3) { transform: translateY(-7.5px) rotate(-45deg); }
+
+    /* ===== RWD 手機版 ===== */
+    @media (max-width: 768px) {
+
+      /* ── 通用：防止橫向滾動 ── */
+      *, *::before, *::after { max-width: 100%; }
+      section { padding: 44px 5% !important; overflow-x: hidden !important; }
+      /* from-right / from-left 的 translateX 在手機會超出螢幕 → 改用從下方進場 */
+      .from-left  { transform: translateY(40px) !important; }
+      .from-right { transform: translateY(40px) !important; }
+      .fade-in.visible { transform: none !important; }
+      .section-header { margin-bottom: 28px; padding: 0; }
+      .section-header h2 { font-size: 1.5rem; }
+      .section-header p { font-size: 0.9rem; }
+
+      /* ── 導覽列 ── */
+      .nav-hamburger { display: flex; }
+      .nav-links {
+        display: none;
+        position: fixed; inset: 64px 0 0 0; z-index: 1999;
+        background: rgba(255,255,255,0.97);
+        backdrop-filter: blur(8px);
+        flex-direction: column; align-items: center; justify-content: center;
+        gap: 28px;
+      }
+      .nav-links.open { display: flex; }
+      .nav-links li a { font-size: 1.1rem; font-weight: 700; color: var(--black); text-decoration: none; }
+      .nav-links li a.nav-cta { background: var(--orange); color: white; padding: 12px 32px; border-radius: 50px; }
+
+      /* ── Hero ── */
+      .hero {
+        padding: 240px 5% 28px !important;
+        justify-content: flex-start !important;
+        background-position: 65% 25% !important;
+        min-height: 0 !important;
+        align-items: stretch !important;
+        overflow: hidden !important;
+      }
+      .mascot-anim { display: none !important; }
+      .hero-content {
+        max-width: 100% !important;
+        width: 100% !important;
+        padding: 20px 18px !important;
+        background: rgba(255, 248, 235, 0.96) !important;
+        text-align: left !important;
+        border-radius: 20px !important;
+      }
+      .hero h1 { font-size: 1.5rem !important; margin-bottom: 8px !important; }
+      .hero p { font-size: 0.88rem !important; margin-bottom: 14px !important; line-height: 1.6 !important; }
+      .hero-badge { margin-bottom: 10px !important; font-size: 0.78rem !important; padding: 5px 14px !important; }
+      .hero-btns { justify-content: flex-start !important; gap: 10px !important; }
+      .hero-btns .btn { padding: 11px 20px !important; font-size: 0.88rem !important; }
+      .location-badges { margin-top: 12px !important; gap: 8px !important; }
+      .location-badge { font-size: 0.76rem !important; padding: 5px 11px !important; }
+
+      /* ── 輪播 ── */
+      .carousel-inner {
+        grid-template-columns: 1fr !important;
+        gap: 20px !important;
+      }
+      .carousel-text { width: 100% !important; max-width: 100% !important; }
+      .carousel-text h2 { font-size: 1.5rem !important; }
+      .carousel-section { padding: 40px 5% !important; overflow: hidden !important; }
+      .carousel-outer { overflow: hidden !important; max-width: 100% !important; }
+      .carousel-wrap { overflow: hidden !important; max-width: 100% !important; }
+      .carousel-btn { width: 36px !important; height: 36px !important; font-size: 1.1rem !important; }
+      .carousel-highlight { font-size: 0.85rem !important; }
+      .carousel-highlights { gap: 6px !important; margin-bottom: 20px !important; }
+
+      /* ── 特色三格 ── */
+      .features-grid { grid-template-columns: 1fr !important; gap: 20px !important; }
+      .feature-card { padding: 24px 20px !important; }
+      .feature-photo { height: 130px !important; object-fit: contain !important; margin-bottom: 4px !important; }
+
+      /* ── 課程卡 ── */
+      .courses-grid { grid-template-columns: 1fr !important; gap: 16px !important; }
+      .course-thumb { height: 150px !important; }
+      .course-char { height: 135px !important; }
+
+      /* ── 爬升路徑 ── */
+      .level-steps {
+        flex-direction: column !important;
+        align-items: stretch !important;
+        gap: 12px !important;
+        margin-top: 20px !important;
+      }
+      .level-step {
+        display: flex !important;
+        flex-direction: row !important;
+        align-items: center !important;
+        text-align: left !important;
+        width: 100% !important;
+        max-width: 100% !important;
+        gap: 0 !important;
+        flex: unset !important;
+        position: relative !important;
+      }
+      .level-step-bar {
+        width: 68px !important; height: 68px !important;
+        flex-shrink: 0 !important;
+        border-radius: 14px !important;
+        padding: 0 !important;
+        order: 1 !important;
+      }
+      /* 角色絕對定位，覆蓋在色塊上 */
+      .level-char {
+        position: absolute !important;
+        left: 4px !important; top: 50% !important;
+        transform: translateY(-50%) !important;
+        width: 60px !important; height: 60px !important;
+        margin-bottom: 0 !important;
+        animation: none !important;
+        z-index: 3 !important;
+        order: 1 !important;
+      }
+      .level-step:nth-child(1) .level-char,
+      .level-step:nth-child(3) .level-char,
+      .level-step:nth-child(5) .level-char,
+      .level-step:nth-child(7) .level-char,
+      .level-step:nth-child(9) .level-char {
+        width: 60px !important; height: 60px !important;
+      }
+      /* nth-child bar heights 覆蓋 */
+      .level-step:nth-child(1) .level-step-bar,
+      .level-step:nth-child(3) .level-step-bar,
+      .level-step:nth-child(5) .level-step-bar,
+      .level-step:nth-child(7) .level-step-bar,
+      .level-step:nth-child(9) .level-step-bar {
+        height: 68px !important;
+      }
+      .level-label {
+        order: 2 !important;
+        margin-top: 0 !important;
+        text-align: left !important;
+        flex: 1 !important;
+        box-shadow: none !important;
+        padding: 8px 14px !important;
+        border-radius: 10px !important;
+        margin-left: 10px !important;
+      }
+      .level-num { font-size: 0.62rem; }
+      .level-name { font-size: 0.9rem; }
+      .level-connector { display: none !important; }
+
+      /* ── 戰績數字 ── */
+      .stats-row { gap: 10px !important; margin-bottom: 32px !important; }
+      .stat-card {
+        flex: 1 1 calc(50% - 10px) !important;
+        padding: 18px 12px !important;
+        min-width: 0 !important;
+      }
+      .stat-num { font-size: 2.2rem !important; }
+      .stat-label { font-size: 0.78rem !important; }
+      .award-item { gap: 12px !important; }
+      .award-year { font-size: 0.7rem !important; padding: 4px 10px !important; }
+
+      /* ── 最新消息 ── */
+      .news-layout { grid-template-columns: 1fr !important; }
+      .news-featured { grid-template-columns: 1fr !important; }
+      .news-hero { height: 220px !important; }
+      .news-fb { overflow: hidden !important; max-width: 100% !important; }
+      .news-fb-body { width: 100% !important; overflow: hidden !important; max-width: 100% !important; }
+      .news-fb-body iframe { width: 100% !important; max-width: 100% !important; min-width: 0 !important; }
+
+      /* ── 聯絡 ── */
+      .contact-wrapper { grid-template-columns: 1fr !important; }
+      .contact-family-photo { max-height: 200px !important; object-fit: cover !important; border-radius: 14px !important; width: 100% !important; }
+      .contact-social { flex-wrap: nowrap !important; gap: 8px !important; }
+      .social-btn { flex: 1 !important; justify-content: center !important; padding: 10px 6px !important; font-size: 0.78rem !important; gap: 4px !important; white-space: nowrap !important; }
+
+      /* ── Footer ── */
+      .footer-top { flex-direction: column !important; gap: 24px !important; }
+      .footer-links { flex-direction: column !important; gap: 6px !important; }
+      .footer-bottom { flex-direction: column !important; text-align: center !important; gap: 8px !important; }
+    }
+
+    /* ===== 輪播圖 ===== */
+    .carousel-section {
+      background: var(--bg-warm);
+      padding: 70px 6%;
+    }
+    .carousel-inner {
+      max-width: 1160px; margin: 0 auto;
+      display: grid;
+      grid-template-columns: 0.55fr 2fr;
+      gap: 48px;
+      align-items: center;
+    }
+    .carousel-text .section-tag { margin-bottom: 16px; }
+    .carousel-text h2 {
+      font-size: clamp(1.5rem, 2.6vw, 2rem);
+      font-weight: 900; line-height: 1.35;
+      color: var(--black); margin-bottom: 16px;
+    }
+    .carousel-text h2 em {
+      font-style: normal; color: var(--orange);
+    }
+    .carousel-text p {
+      font-size: 0.93rem; color: #555;
+      line-height: 1.9; margin-bottom: 20px;
+    }
+    .carousel-highlights {
+      display: flex; flex-direction: column; gap: 8px;
+      margin-bottom: 28px;
+      padding-left: 2px;
+    }
+    .carousel-highlight {
+      font-size: 0.88rem; color: #444; line-height: 1.6;
+      padding-left: 14px;
+      border-left: 3px solid var(--orange);
+    }
+    .carousel-outer {
+      border-radius: 20px; overflow: hidden;
+      box-shadow: 0 14px 50px rgba(0,0,0,0.14);
+      position: relative;
+    }
+    .carousel-wrap {
+      position: relative; overflow: hidden;
+      border-radius: 24px;
+    }
+    .carousel-track {
+      display: flex;
+      transition: transform 0.55s cubic-bezier(.4,0,.2,1);
+    }
+    .carousel-slide {
+      min-width: 100%; position: relative;
+    }
+    .carousel-slide img {
+      width: 100%; height: auto;
+      display: block; max-height: 420px;
+      object-fit: cover;
+    }
+    .carousel-btn {
+      position: absolute; top: 50%; transform: translateY(-50%);
+      background: rgba(255,255,255,0.85); color: var(--black);
+      border: none;
+      width: 40px; height: 40px; border-radius: 50%;
+      font-size: 1.3rem; cursor: pointer; z-index: 3;
+      display: flex; align-items: center; justify-content: center;
+      box-shadow: 0 2px 12px rgba(0,0,0,0.15);
+      transition: background 0.2s, transform 0.2s;
+    }
+    .carousel-btn:hover { background: white; transform: translateY(-50%) scale(1.1); }
+    .carousel-btn.prev { left: 14px; }
+    .carousel-btn.next { right: 14px; }
+    .carousel-dots {
+      display: flex; gap: 8px; justify-content: center;
+      margin-top: 16px;
+    }
+    .carousel-dot {
+      width: 8px; height: 8px; border-radius: 50%;
+      background: rgba(0,0,0,0.18); cursor: pointer;
+      transition: background 0.2s, transform 0.2s;
+      border: none;
+    }
+    .carousel-dot.active { background: var(--orange); transform: scale(1.4); }
+
+    /* ===== 課程爬升路徑 ===== */
+    .level-path {
+      background: linear-gradient(135deg, #FFF4E0 0%, #FFFBF5 100%);
+      padding: 80px 5%;
+    }
+    .level-steps {
+      display: flex; align-items: flex-end;
+      justify-content: center;
+      gap: 0; margin-top: 60px;
+      position: relative;
+    }
+    .level-step {
+      display: flex; flex-direction: column;
+      align-items: center; text-align: center;
+      position: relative;
+      flex: 1; max-width: 180px;
+    }
+    .level-step-bar {
+      width: 100%; border-radius: 12px 12px 0 0;
+      display: flex; flex-direction: column;
+      align-items: center; justify-content: flex-end;
+      padding: 16px 12px 20px;
+      position: relative;
+    }
+    .level-step:nth-child(1) .level-step-bar { height: 140px; background: linear-gradient(160deg,#b8d4f0,#4B9CD3); }
+    .level-step:nth-child(3) .level-step-bar { height: 180px; background: linear-gradient(160deg,#c8e6c8,#5BAD5B); }
+    .level-step:nth-child(5) .level-step-bar { height: 220px; background: linear-gradient(160deg,#ffe9b5,#F5941E); }
+    .level-step:nth-child(7) .level-step-bar { height: 270px; background: linear-gradient(160deg,#ffb5b5,#C93A2A); }
+    .level-step:nth-child(9) .level-step-bar { height: 320px; background: linear-gradient(160deg,#2a1a4e,#0f3460); }
+    .level-char {
+      width: 110px; height: 110px;
+      object-fit: contain;
+      filter: drop-shadow(0 8px 16px rgba(0,0,0,0.2));
+      animation: float2 5s ease-in-out infinite;
+      margin-bottom: -8px; position: relative; z-index: 2;
+    }
+    .level-step:nth-child(1) .level-char { animation-delay: 0s; width:90px; height:90px; }
+    .level-step:nth-child(3) .level-char { animation-delay: 0.4s; }
+    .level-step:nth-child(5) .level-char { animation-delay: 0.8s; }
+    .level-step:nth-child(7) .level-char { animation-delay: 1.2s; }
+    .level-step:nth-child(9) .level-char { animation-delay: 1.6s; }
+    .level-label {
+      background: white; border-radius: 10px;
+      padding: 10px 14px; margin-top: 12px;
+      box-shadow: 0 4px 14px rgba(0,0,0,0.10);
+      width: 100%;
+    }
+    .level-num {
+      font-size: 0.65rem; font-weight: 900; color: var(--orange);
+      letter-spacing: 0.06em; text-transform: uppercase;
+    }
+    .level-name { font-size: 0.92rem; font-weight: 900; margin: 2px 0; }
+    .level-age  { font-size: 0.72rem; color: #888; }
+    .level-connector {
+      flex: 0 0 32px; height: 4px;
+      background: linear-gradient(90deg, rgba(245,148,30,0.3), rgba(245,148,30,0.7));
+      border-radius: 2px; align-self: flex-end;
+      margin-bottom: 60px; position: relative;
+    }
+    .level-connector::after {
+      content: '▶'; position: absolute; right: -4px; top: 50%;
+      transform: translateY(-50%);
+      color: var(--orange); font-size: 0.7rem;
+    }
+
+    /* ===== 文章 Modal ===== */
+    .modal-overlay {
+      position: fixed; inset: 0; z-index: 2000;
+      background: rgba(0,0,0,0.65);
+      display: none; align-items: center; justify-content: center;
+      padding: 20px;
+      backdrop-filter: blur(4px);
+    }
+    .modal-overlay.open { display: flex; }
+    .modal-box {
+      background: white; border-radius: 24px;
+      max-width: 680px; width: 100%;
+      max-height: 85vh; overflow: hidden;
+      position: relative;
+      display: flex; flex-direction: column;
+      animation: slide-up 0.3s ease;
+    }
+    /* 關閉按鈕 fixed 在視窗右上，永遠可點 */
+    .modal-close {
+      display: none;
+      position: fixed; top: 20px; right: 20px;
+      width: 40px; height: 40px; border-radius: 50%;
+      background: rgba(20,20,20,0.75); color: white;
+      border: 2px solid rgba(255,255,255,0.3); cursor: pointer;
+      font-size: 1.2rem; align-items: center; justify-content: center;
+      z-index: 2100;
+      transition: background 0.2s;
+    }
+    .modal-overlay.open .modal-close { display: flex; }
+    .modal-close:hover { background: rgba(20,20,20,0.95); }
+    /* 可滾動內容區 */
+    .modal-scroll { overflow-y: auto; flex: 1; }
+    .modal-hero-img {
+      width: 100%; height: 220px;
+      object-fit: cover; border-radius: 24px 24px 0 0;
+      display: block;
+    }
+    .modal-body { padding: 28px 32px 36px; }
+    .modal-category {
+      background: var(--orange); color: white;
+      border-radius: 50px; padding: 4px 14px;
+      font-size: 0.75rem; font-weight: 700;
+      display: inline-block; margin-bottom: 14px;
+    }
+    .modal-body h2 { font-size: 1.4rem; font-weight: 900; margin-bottom: 8px; line-height: 1.3; }
+    .modal-date { font-size: 0.8rem; color: #aaa; margin-bottom: 20px; }
+    .modal-body p { font-size: 0.93rem; color: #444; line-height: 1.9; margin-bottom: 16px; }
+  </style>
+</head>
+<body>
+
+  <div id="fb-root"></div>
+
+  <!-- LINE 浮動按鈕 -->
+  <a href="https://lin.ee/zFqqFzQ" class="line-float" target="_blank" title="加入 LINE 詢問">💬</a>
+  <button class="back-top" onclick="window.scrollTo({top:0,behavior:'smooth'})">↑</button>
+
+  <!-- ===== 導覽列 ===== -->
+  <nav>
+    <a href="#" class="nav-logo">
+      <div class="nav-logo-img">
+        <img src="assets/可愛的布拉克星球logo.png" alt="布拉克星球 Logo" />
+      </div>
+      <div class="nav-logo-text">
+        布拉克星球
+        <span>Block Planet</span>
+      </div>
+    </a>
+    <button class="nav-hamburger" id="navToggle" aria-label="選單">
+      <span></span><span></span><span></span>
+    </button>
+    <ul class="nav-links" id="navLinks">
+      <li><a href="#about">關於我們</a></li>
+      <li><a href="#courses">課程</a></li>
+      <li><a href="#achievements">競賽成績</a></li>
+      <li><a href="#events">活動報名</a></li>
+      <li><a href="#news">最新消息</a></li>
+      <li><a href="#contact" class="nav-cta">立即諮詢</a></li>
+    </ul>
+  </nav>
+
+  <!-- ===== HERO ===== -->
+  <section class="hero">
+
+    <!-- 吉祥物浮動層（右側同圖疊加，帶動畫） -->
+    <div class="mascot-anim" aria-hidden="true"></div>
+
+    <!-- 文字卡片 -->
+    <div class="hero-content">
+      <div class="hero-badge">🚀 台南最強機器人教室</div>
+      <h1>這是專屬孩子們的<br/><em>創意星球</em></h1>
+      <p>動手做、愛冒險、不怕失敗<br/>從積木、程式到國際機器人競賽<br/>我們陪孩子蓋出屬於自己的星球</p>
+      <div class="hero-btns">
+        <a href="#courses" class="btn btn-primary">探索課程</a>
+        <a href="#contact" class="btn btn-outline">免費諮詢</a>
+      </div>
+      <a href="quiz.html" style="display:inline-flex;align-items:center;gap:6px;margin-top:14px;padding:10px 20px;background:rgba(245,148,30,0.12);border:2px solid rgba(245,148,30,0.4);border-radius:50px;font-size:0.85rem;font-weight:700;color:var(--orange);text-decoration:none;transition:background 0.2s;" onmouseover="this.style.background='rgba(245,148,30,0.22)'" onmouseout="this.style.background='rgba(245,148,30,0.12)'">
+        ✨ 不確定從哪開始？測驗找課程 →
+      </a>
+      <div class="location-badges">
+        <div class="location-badge">📍 台南北區教室</div>
+        <div class="location-badge">📍 台南永康教室</div>
+      </div>
+    </div>
+
+  </section>
+
+  <div class="brush-divider"></div>
+
+  <!-- ===== 照片輪播 ===== -->
+  <section class="carousel-section">
+    <div class="carousel-inner">
+
+      <!-- 左側文字 -->
+      <div class="carousel-text fade-in from-left">
+        <div class="section-tag">我們的日常</div>
+        <h2>每一張照片<br/>都是孩子的<em>故事</em></h2>
+        <p>在這裡，孩子不怕失敗，只有越來越想挑戰的眼神。動手做、一起想、勇敢試——這是我們每天都在發生的事。</p>
+        <div class="carousel-highlights">
+          <div class="carousel-highlight">動手做，不是口號，是每堂課的樣子</div>
+          <div class="carousel-highlight">從第一塊積木到站上國際賽場</div>
+          <div class="carousel-highlight">陪伴超過 5 年，我們認識每個孩子</div>
+        </div>
+        <a href="#courses" class="btn btn-primary">探索我們的課程</a>
+      </div>
+
+      <!-- 右側輪播 -->
+      <div class="fade-in from-right">
+        <div class="carousel-outer">
+          <div class="carousel-wrap" id="carousel">
+            <div class="carousel-track" id="carouselTrack">
+              <div class="carousel-slide"><img src="assets/slide-01.jpg" alt="布拉克星球輪播1" /></div>
+              <div class="carousel-slide"><img src="assets/slide-02.jpg" alt="布拉克星球輪播2" /></div>
+              <div class="carousel-slide"><img src="assets/slide-03.jpg" alt="布拉克星球輪播3" /></div>
+              <div class="carousel-slide"><img src="assets/slide-04.jpg" alt="布拉克星球輪播4" /></div>
+              <div class="carousel-slide"><img src="assets/slide-05.jpg" alt="布拉克星球輪播5" /></div>
+            </div>
+            <button class="carousel-btn prev" id="carouselPrev">‹</button>
+            <button class="carousel-btn next" id="carouselNext">›</button>
+          </div>
+          <div class="carousel-dots" id="carouselDots"></div>
+        </div>
+      </div>
+
+    </div>
+  </section>
+
+  <!-- ===== 關於我們 ===== -->
+  <section id="about" class="features">
+    <div class="section-header fade-in from-bottom">
+      <div class="section-tag">ABOUT US</div>
+      <h2>為什麼選擇布拉克星球？</h2>
+      <p>我們相信每個孩子都有獨特的潛能<br/>教室是他們第一個可以盡情探索的星球</p>
+    </div>
+    <div class="features-grid">
+      <div class="feature-card fade-in from-left">
+        <img src="assets/合作.PNG" alt="孩子們合作完成任務" class="feature-photo" />
+        <h3>國際競賽實戰經驗</h3>
+        <p>FLL、MARC、FTC、Robofest 等國際級機器人賽事，帶孩子走進真正的工程挑戰，不只得獎，更培養面對困難的勇氣。</p>
+      </div>
+      <div class="feature-card fade-in from-bottom">
+        <img src="assets/學習.PNG" alt="孩子動手做學習" class="feature-photo" />
+        <h3>任務導向動手做</h3>
+        <p>每一堂課都是一個任務，孩子在設計、拆解、修改中學習解決問題的思維，那種「我做到了」的成就感是最好的老師。</p>
+      </div>
+      <div class="feature-card fade-in from-right">
+        <img src="assets/驚喜.PNG" alt="孩子開心的驚喜表情" class="feature-photo" />
+        <h3>有溫度的陪伴</h3>
+        <p>我們不只教機器人，更陪孩子走進每一次的挑戰。從露營到競賽，從積木到程式，布拉克星球是孩子心中的第二個家。</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===== 課程 ===== -->
+  <section id="courses" class="courses">
+    <div class="section-header fade-in from-bottom">
+      <div class="section-tag">COURSES</div>
+      <h2>找到孩子最愛的課程</h2>
+      <p>從程式積木到國際賽事，依照孩子的年齡與興趣，我們有最適合的學習路徑</p>
+    </div>
+    <div class="courses-grid">
+      <!-- 競賽班 -->
+      <div class="course-card fade-in from-left">
+        <div class="course-thumb">
+          <img class="course-char" src="assets/level-spike-nobg.png" alt="機器人競賽" />
+        </div>
+        <div class="course-body">
+          <div class="course-tags">
+            <span class="course-tag">FLL</span>
+            <span class="course-tag">MARC</span>
+            <span class="course-tag">FTC</span>
+          </div>
+          <h3>機器人競賽班</h3>
+          <p>從零開始組裝、寫程式、上賽場。我們帶過的隊伍已在多項國際賽事中榮獲大獎。</p>
+        </div>
+        <div class="course-footer">
+          <span class="course-age">適合 10 歲以上</span>
+          <button class="course-btn">了解更多</button>
+        </div>
+      </div>
+      <!-- 積木程式 -->
+      <div class="course-card fade-in from-bottom">
+        <div class="course-thumb">
+          <img class="course-char" src="assets/level-wedo-nobg.png" alt="積木程式課" />
+        </div>
+        <div class="course-body">
+          <div class="course-tags">
+            <span class="course-tag">積木程式</span>
+            <span class="course-tag">WEDO</span>
+          </div>
+          <h3>積木 & 程式課</h3>
+          <p>用樂高學程式邏輯，Milo 機器人帶孩子在遊戲中培養系統化思考，適合程式入門。</p>
+        </div>
+        <div class="course-footer">
+          <span class="course-age">適合 6~10 歲</span>
+          <button class="course-btn">了解更多</button>
+        </div>
+      </div>
+      <!-- 科學手作 -->
+      <div class="course-card fade-in from-bottom">
+        <div class="course-thumb">
+          <img class="course-char" src="assets/level-maker-nobg.png" alt="科學實驗手作" />
+        </div>
+        <div class="course-body">
+          <div class="course-tags">
+            <span class="course-tag">科學實驗</span>
+            <span class="course-tag">手作</span>
+          </div>
+          <h3>科學實驗 & 手作</h3>
+          <p>廢材機器人、科學實驗、工程挑戰……每次都是全新冒險，孩子從不想下課。</p>
+        </div>
+        <div class="course-footer">
+          <span class="course-age">適合 5~12 歲</span>
+          <button class="course-btn">了解更多</button>
+        </div>
+      </div>
+      <!-- 創意積木 -->
+      <div class="course-card fade-in from-bottom">
+        <div class="course-thumb">
+          <img class="course-char" src="assets/level-creative-nobg.png" alt="創意積木課" />
+        </div>
+        <div class="course-body">
+          <div class="course-tags">
+            <span class="course-tag">創意積木</span>
+            <span class="course-tag">入門</span>
+          </div>
+          <h3>創意積木課</h3>
+          <p>用積木堆出想像中的世界。專為幼兒設計，在遊戲中訓練空間感、創造力與專注力。</p>
+        </div>
+        <div class="course-footer">
+          <span class="course-age">適合 4~7 歲</span>
+          <button class="course-btn">了解更多</button>
+        </div>
+      </div>
+      <!-- 安親共學 -->
+      <div class="course-card fade-in from-right">
+        <div class="course-thumb">
+          <img class="course-char" src="assets/level-easy-nobg.png" alt="課後安親共學" />
+        </div>
+        <div class="course-body">
+          <div class="course-tags">
+            <span class="course-tag">安親</span>
+            <span class="course-tag">共學</span>
+          </div>
+          <h3>課後安親 / 共學基地</h3>
+          <p>下課後最溫暖的地方。作業輔導加上課程活動，孩子在布拉克星球安心成長。</p>
+        </div>
+        <div class="course-footer">
+          <span class="course-age">國小各年級</span>
+          <button class="course-btn">了解更多</button>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===== 課程爬升路徑 ===== -->
+  <section class="level-path">
+    <div class="section-header fade-in from-bottom">
+      <div class="section-tag">LEARNING PATH</div>
+      <h2>孩子的學習爬升路徑</h2>
+      <p>從積木入門，一步一步挑戰國際賽事<br/>我們陪著每個孩子，找到屬於自己的那一關</p>
+    </div>
+    <div class="level-steps">
+      <div class="level-step fade-in from-bottom">
+        <img class="level-char" src="assets/level-creative-nobg.png" alt="創意積木" />
+        <div class="level-step-bar"></div>
+        <div class="level-label">
+          <div class="level-num">LEVEL 1</div>
+          <div class="level-name">創意積木課</div>
+          <div class="level-age">4 ~ 7 歲</div>
+        </div>
+      </div>
+      <div class="level-connector"></div>
+      <div class="level-step fade-in from-bottom" style="animation-delay:0.15s">
+        <img class="level-char" src="assets/level-easy-nobg.png" alt="簡易入門" />
+        <div class="level-step-bar"></div>
+        <div class="level-label">
+          <div class="level-num">LEVEL 2</div>
+          <div class="level-name">科學手作入門</div>
+          <div class="level-age">5 ~ 8 歲</div>
+        </div>
+      </div>
+      <div class="level-connector"></div>
+      <div class="level-step fade-in from-bottom" style="animation-delay:0.3s">
+        <img class="level-char" src="assets/level-maker-nobg.png" alt="科學手作" />
+        <div class="level-step-bar"></div>
+        <div class="level-label">
+          <div class="level-num">LEVEL 3</div>
+          <div class="level-name">科學實驗手作</div>
+          <div class="level-age">6 ~ 12 歲</div>
+        </div>
+      </div>
+      <div class="level-connector"></div>
+      <div class="level-step fade-in from-bottom" style="animation-delay:0.45s">
+        <img class="level-char" src="assets/level-wedo-nobg.png" alt="積木程式" />
+        <div class="level-step-bar"></div>
+        <div class="level-label">
+          <div class="level-num">LEVEL 4</div>
+          <div class="level-name">積木程式課</div>
+          <div class="level-age">7 ~ 11 歲</div>
+        </div>
+      </div>
+      <div class="level-connector"></div>
+      <div class="level-step fade-in from-bottom" style="animation-delay:0.6s">
+        <img class="level-char" src="assets/level-spike-nobg.png" alt="競賽班" />
+        <div class="level-step-bar"></div>
+        <div class="level-label">
+          <div class="level-num">LEVEL 5</div>
+          <div class="level-name">國際競賽班</div>
+          <div class="level-age">10 歲以上</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===== 競賽成績 ===== -->
+  <section id="achievements" class="achievements">
+    <!-- 星空背景 -->
+    <div class="stars-bg" id="starsBg"></div>
+
+    <div class="section-header fade-in from-bottom" style="position:relative;z-index:1;">
+      <div class="section-tag">ACHIEVEMENTS</div>
+      <h2 style="color:white;">我們的戰績</h2>
+      <p>每一個獎項背後，都是孩子們熬夜測試、不斷修改的堅持</p>
+    </div>
+
+    <div class="stats-row" style="position:relative;z-index:1;">
+      <div class="stat-card fade-in from-left">
+        <span class="stat-num" data-target="12">0</span>
+        <div class="stat-label">國際/全國賽事得獎</div>
+      </div>
+      <div class="stat-card fade-in from-bottom">
+        <span class="stat-num" data-target="4">0</span>
+        <div class="stat-label">參與競賽種類</div>
+      </div>
+      <div class="stat-card fade-in from-bottom">
+        <span class="stat-num" data-target="5">0</span>
+        <div class="stat-label">年競賽陪伴歷史</div>
+      </div>
+      <div class="stat-card fade-in from-right">
+        <span class="stat-num" data-target="30">0</span>
+        <div class="stat-label">參賽學生人次</div>
+      </div>
+    </div>
+
+    <div class="awards-timeline" style="position:relative;z-index:1;">
+      <div class="award-item fade-in from-left">
+        <div class="award-year">2025-26</div>
+        <div class="award-content">
+          <h4>MARC LOM 鐵製機器人競賽</h4>
+          <div class="award-medals">🥇 全能冠軍獎 &nbsp; 🥈 亞軍聯盟獎 &nbsp; 🌟 大使獎</div>
+        </div>
+      </div>
+      <div class="award-item fade-in from-right">
+        <div class="award-year">2025</div>
+        <div class="award-content">
+          <h4>Robofest 國際賽台灣選拔賽</h4>
+          <div class="award-medals">🥇 機器人遊行嘉年華 金獎 &nbsp; 🥈 銀獎 &nbsp; 🥉 銅獎</div>
+        </div>
+      </div>
+      <div class="award-item fade-in from-left">
+        <div class="award-year">2023</div>
+        <div class="award-content">
+          <h4>FIRST 樂高機器人 FLL Challenge</h4>
+          <div class="award-medals">🏆 表現優良獎</div>
+        </div>
+      </div>
+      <div class="award-item fade-in from-right">
+        <div class="award-year">2021</div>
+        <div class="award-content">
+          <h4>FIRST 樂高機器人 FLL Explore</h4>
+          <div class="award-medals">✨ 精彩參賽紀錄</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===== 最新消息 ===== -->
+  <section id="news" class="news">
+    <div class="section-header fade-in from-bottom">
+      <div class="section-tag">NEWS</div>
+      <h2>最新消息</h2>
+      <p>比賽捷報、活動花絮、每日動態都在這裡</p>
+    </div>
+
+    <div class="news-layout">
+      <!-- 左：精選新聞 -->
+      <div class="news-featured fade-in from-left">
+        <!-- 主打大卡 -->
+        <div class="news-hero" data-modal="news1">
+          <img src="assets/class-spike.jpg" alt="MARC LOM 競賽捷報" />
+          <div class="news-hero-overlay"></div>
+          <div class="news-hero-content">
+            <div class="news-hero-tag">競賽捷報</div>
+            <div class="news-hero-date">2025 / 03 / 15</div>
+            <div class="news-hero-title">MARC LOM 鐵製機器人大賽三冠王！</div>
+            <span class="news-hero-link">閱讀全文</span>
+          </div>
+        </div>
+        <!-- 次要小卡 -->
+        <div class="news-sub" data-modal="news3">
+          <div class="news-sub-meta">
+            <span class="news-sub-tag">營隊花絮</span>
+            <span class="news-sub-date">2025 / 07 / 01</span>
+          </div>
+          <h3>動物方城市任務啟動！夏令營精彩側記</h3>
+          <p>孩子化身動物城市探員，透過線索追蹤、氣味辨識與無人機空拍，展開三天兩夜的任務冒險。</p>
+          <span class="news-sub-link">閱讀全文 →</span>
+        </div>
+      </div>
+
+      <!-- 右：Facebook 粉專即時貼文 -->
+      <div class="news-fb-wrap fade-in from-right">
+        <div class="news-fb-header">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="white"><path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"/></svg>
+          布拉克星球粉絲專頁 · 最新動態
+        </div>
+        <div class="news-fb-body">
+          <iframe
+            src="https://www.facebook.com/plugins/page.php?href=https%3A%2F%2Fwww.facebook.com%2Fblockplanet&tabs=timeline&width=460&height=560&small_header=true&adapt_container_width=false&hide_cover=false&show_facepile=false"
+            width="460"
+            height="560"
+            scrolling="no"
+            frameborder="0"
+            allowfullscreen="true"
+            allow="autoplay; clipboard-write; encrypted-media; picture-in-picture; web-share">
+          </iframe>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===== 活動報名 ===== -->
+  <section id="events" class="events">
+    <div class="section-header fade-in from-bottom">
+      <div class="section-tag">EVENTS</div>
+      <h2>即將開跑的活動</h2>
+      <p>名額有限，錯過就要等明年！</p>
+    </div>
+    <div class="events-grid">
+      <div class="event-card fade-in from-left">
+        <div class="event-header">
+          <span class="event-emoji">🤖</span>
+          <h3>2026 廢材機器人大賽</h3>
+          <p>全台最「廢」！！親子共創機器人</p>
+        </div>
+        <div class="event-meta">
+          <div class="event-info"><span class="icon">📅</span> 報名資訊更新中</div>
+          <div class="event-info"><span class="icon">👨‍👧</span> 一位家長 + 一位孩童</div>
+          <div class="event-info"><span class="icon">🏆</span> 總獎金 $30,000</div>
+        </div>
+        <div class="event-footer">
+          <button class="event-btn">報名 / 了解詳情</button>
+        </div>
+      </div>
+      <div class="event-card fade-in from-bottom">
+        <div class="event-header">
+          <span class="event-emoji">🦊</span>
+          <h3>2026 動物方城市夏令營</h3>
+          <p>三天兩夜任務式露營冒險</p>
+        </div>
+        <div class="event-meta">
+          <div class="event-info"><span class="icon">📅</span> 7月 / 8月 兩梯次</div>
+          <div class="event-info"><span class="icon">👦</span> 大班以上</div>
+          <div class="event-info"><span class="icon">📍</span> 南投縣中寮鄉</div>
+        </div>
+        <div class="event-footer">
+          <button class="event-btn">搶先報名</button>
+        </div>
+      </div>
+      <div class="event-card fade-in from-right">
+        <div class="event-header">
+          <span class="event-emoji">🚀</span>
+          <h3>2025-26 競賽戰隊選手招募</h3>
+          <p>FLL / MARC / FTC 國際賽事</p>
+        </div>
+        <div class="event-meta">
+          <div class="event-info"><span class="icon">🎯</span> 適合有衝勁的孩子</div>
+          <div class="event-info"><span class="icon">👦</span> 國小高年級以上</div>
+          <div class="event-info"><span class="icon">💬</span> 私訊了解選拔辦法</div>
+        </div>
+        <div class="event-footer">
+          <button class="event-btn">我想加入戰隊</button>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===== 聯絡我們 ===== -->
+  <section id="contact" class="contact">
+    <div class="section-header fade-in from-bottom">
+      <div class="section-tag">CONTACT</div>
+      <h2>來找我們聊聊</h2>
+      <p>有任何問題都可以聯絡我們，小編會盡快回覆你！</p>
+    </div>
+    <div class="contact-wrapper">
+      <div class="contact-info fade-in from-left">
+        <img src="assets/一家人.JPEG" alt="布拉克星球師資團隊" class="contact-family-photo" />
+        <h3>教室地址 & 聯絡方式</h3>
+        <div class="contact-location">
+          <h4>📍 北區教室</h4>
+          <p>台南市北區中華北路二段113號<br/>電話：06-3583735</p>
+        </div>
+        <div class="contact-location">
+          <h4>📍 永康教室</h4>
+          <p>台南市永康區東橋一路558號<br/>電話：06-2089382</p>
+        </div>
+        <div class="contact-social">
+          <a href="https://www.facebook.com/blockplanet" class="social-btn social-fb" target="_blank">
+            📘 Facebook
+          </a>
+          <a href="https://lin.ee/zFqqFzQ" class="social-btn social-line" target="_blank">
+            💬 LINE 官方
+          </a>
+          <a href="https://www.instagram.com/blockplanet_2021" class="social-btn social-ig" target="_blank">
+            📸 Instagram
+          </a>
+        </div>
+      </div>
+      <div class="contact-form fade-in from-right">
+        <h3>留下你的資料，我們來找你！</h3>
+        <div class="form-group">
+          <label>孩子姓名</label>
+          <input type="text" placeholder="請輸入孩子的名字" />
+        </div>
+        <div class="form-group">
+          <label>家長電話</label>
+          <input type="tel" placeholder="方便聯絡的電話" />
+        </div>
+        <div class="form-group">
+          <label>想了解的課程</label>
+          <select>
+            <option value="">請選擇</option>
+            <option>機器人競賽班</option>
+            <option>積木 & 程式課</option>
+            <option>科學實驗</option>
+            <option>課後安親</option>
+            <option>夏冬令營</option>
+            <option>其他</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>想說的話</label>
+          <textarea placeholder="孩子的年齡、想了解的內容..."></textarea>
+        </div>
+        <button class="form-submit">送出諮詢 🚀</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===== Footer ===== -->
+  <div class="brush-divider"></div>
+  <footer>
+    <div class="footer-top">
+      <div class="footer-brand">
+        <a href="#" class="nav-logo" style="margin-bottom:12px;display:flex;">
+          <div class="nav-logo-img"><img src="assets/可愛的布拉克星球logo.png" alt="布拉克星球 Logo" /></div>
+          <div class="nav-logo-text" style="color:white;">
+            布拉克星球
+            <span>Block Planet</span>
+          </div>
+        </a>
+        <p>這是專屬孩子們的創意星球<br/>從天馬星空的想像開始，在布拉克星球自在學習、不害怕地展現天馬行空。</p>
+      </div>
+      <div class="footer-links">
+        <h4>快速導覽</h4>
+        <ul>
+          <li><a href="#about">關於我們</a></li>
+          <li><a href="#courses">課程介紹</a></li>
+          <li><a href="#achievements">競賽成績</a></li>
+          <li><a href="#events">活動報名</a></li>
+          <li><a href="#news">最新消息</a></li>
+        </ul>
+      </div>
+      <div class="footer-links">
+        <h4>聯絡我們</h4>
+        <ul>
+          <li><a href="tel:063583735">北區：06-3583735</a></li>
+          <li><a href="tel:062089382">永康：06-2089382</a></li>
+          <li><a href="https://lin.ee/zFqqFzQ">LINE 官方帳號</a></li>
+          <li><a href="https://www.facebook.com/blockplanet">Facebook 粉絲專頁</a></li>
+        </ul>
+      </div>
+    </div>
+    <div class="footer-bottom">
+      <p>© 2025 布拉克星球教育機構 Block Planet. All Rights Reserved.</p>
+    </div>
+  </footer>
+
+  <!-- ===== 文章 Modal ===== -->
+  <div class="modal-overlay" id="articleModal">
+    <button class="modal-close" id="modalClose">✕</button>
+    <div class="modal-box">
+      <div class="modal-scroll">
+        <img class="modal-hero-img" id="modalImg" src="" alt="" />
+        <div class="modal-body">
+          <span class="modal-category" id="modalCat"></span>
+          <h2 id="modalTitle"></h2>
+          <div class="modal-date" id="modalDate"></div>
+          <div id="modalContent"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // ===== 星空背景 =====
+    const starsBg = document.getElementById('starsBg');
+    if (starsBg) {
+      for (let i = 0; i < 60; i++) {
+        const dot = document.createElement('div');
+        dot.className = 'star-dot';
+        const size = Math.random() * 3 + 1;
+        dot.style.cssText = `
+          width:${size}px; height:${size}px;
+          top:${Math.random()*100}%; left:${Math.random()*100}%;
+          animation-delay:${Math.random()*4}s;
+          animation-duration:${2 + Math.random()*3}s;
+        `;
+        starsBg.appendChild(dot);
+      }
+    }
+
+    // ===== Scroll 動畫 =====
+    const observer = new IntersectionObserver((entries) => {
+      entries.forEach(entry => {
+        if (entry.isIntersecting) {
+          entry.target.classList.add('visible');
+        }
+      });
+    }, { threshold: 0.15 });
+
+    document.querySelectorAll('.fade-in').forEach(el => observer.observe(el));
+
+    // ===== 數字計數動畫 =====
+    const countObserver = new IntersectionObserver((entries) => {
+      entries.forEach(entry => {
+        if (entry.isIntersecting) {
+          const el = entry.target;
+          const target = parseInt(el.getAttribute('data-target'));
+          let current = 0;
+          const step = Math.ceil(target / 40);
+          const timer = setInterval(() => {
+            current += step;
+            if (current >= target) { current = target; clearInterval(timer); }
+            el.textContent = current + '+';
+          }, 50);
+          countObserver.unobserve(el);
+        }
+      });
+    }, { threshold: 0.5 });
+
+    document.querySelectorAll('[data-target]').forEach(el => countObserver.observe(el));
+
+    // ===== 回到頂端 =====
+    const backTop = document.querySelector('.back-top');
+    window.addEventListener('scroll', () => {
+      backTop.classList.toggle('show', window.scrollY > 400);
+    });
+
+    // ===== Nav 滾動效果 =====
+    const nav = document.querySelector('nav');
+    window.addEventListener('scroll', () => {
+      nav.style.boxShadow = window.scrollY > 10
+        ? '0 4px 30px rgba(245,148,30,0.2)'
+        : '0 2px 20px rgba(245,148,30,0.15)';
+    });
+
+    // ===== 照片輪播 =====
+    (function() {
+      const track  = document.getElementById('carouselTrack');
+      const slides = track ? track.children : [];
+      const dotsEl = document.getElementById('carouselDots');
+      if (!track || slides.length === 0) return;
+
+      let current = 0;
+      const total = slides.length;
+
+      // 建立 dots
+      for (let i = 0; i < total; i++) {
+        const d = document.createElement('button');
+        d.className = 'carousel-dot' + (i === 0 ? ' active' : '');
+        d.addEventListener('click', () => goTo(i));
+        dotsEl.appendChild(d);
+      }
+
+      function goTo(n) {
+        current = (n + total) % total;
+        track.style.transform = `translateX(-${current * 100}%)`;
+        dotsEl.querySelectorAll('.carousel-dot').forEach((d, i) =>
+          d.classList.toggle('active', i === current));
+      }
+
+      document.getElementById('carouselPrev').addEventListener('click', () => goTo(current - 1));
+      document.getElementById('carouselNext').addEventListener('click', () => goTo(current + 1));
+
+      // 自動輪播
+      let timer = setInterval(() => goTo(current + 1), 4500);
+      track.parentElement.addEventListener('mouseenter', () => clearInterval(timer));
+      track.parentElement.addEventListener('mouseleave', () => {
+        timer = setInterval(() => goTo(current + 1), 4500);
+      });
+
+      // 觸控滑動
+      let startX = 0;
+      track.addEventListener('touchstart', e => { startX = e.touches[0].clientX; }, {passive:true});
+      track.addEventListener('touchend',   e => {
+        const dx = e.changedTouches[0].clientX - startX;
+        if (Math.abs(dx) > 50) goTo(current + (dx < 0 ? 1 : -1));
+      });
+    })();
+
+    // ===== 文章 Modal =====
+    const modalData = {
+      news1: {
+        img: 'assets/class-spike.jpg',
+        category: '競賽捷報',
+        date: '2025 / 03 / 15',
+        title: 'MARC LOM 鐵製機器人大賽三冠王！',
+        content: `<p>2025 年 MARC LOM 鐵製機器人競賽，布拉克星球戰隊帶著整個學期累積的技術與默契，從眾多隊伍中脫穎而出！</p>
+<p>這一次，孩子們不只拿下了<strong>全能冠軍獎</strong>，還同時獲得<strong>亞軍聯盟獎</strong>與<strong>大使獎</strong>，一共三座獎盃！</p>
+<p>「我上台的時候手在抖，但我記得老師說，把我們練習的動作做出來就好了。」——布拉克戰隊成員小謙</p>
+<p>這份成績背後，是無數個週末的反覆測試、壞掉又重建的機器、改了十幾次的程式。每個孩子都付出了比想像中更多的努力。我們以他們為傲。</p>`
+      },
+      news2: {
+        img: 'assets/class-mechanism.jpg',
+        category: '活動消息',
+        date: '2025 / 10 / 19',
+        title: '2025 廢材機器人大賽 精彩回顧',
+        content: `<p>10 月 19 日，柳營尖山埤渡假村變成了全台最「廢」的戰場——2025 廢材機器人大賽在這裡正式開打！</p>
+<p>親子組隊，用紙箱、保特瓶、吸管、舊零件，打造出可以對決的機器人。現場充滿歡笑與驚呼，有的機器人跑得飛快，有的「一出場就倒」，但每一組的眼神都閃閃發亮。</p>
+<p>這個活動的核心不是得獎，而是讓孩子和爸媽一起動手，一起面對失敗、一起修正、一起笑著重來。</p>
+<p>明年還要來！今年沒參加到的家庭，記得先訂好時間 📅</p>`
+      },
+      news3: {
+        img: 'assets/class-wedo.jpg',
+        category: '營隊花絮',
+        date: '2025 / 07 / 01',
+        title: '動物方城市任務啟動！夏令營精彩側記',
+        content: `<p>孩子化身「動物城市特勤探員」，帶著任務手冊、偵測器與一顆好奇心，踏進三天兩夜的秘密任務！</p>
+<p>第一天：氣味辨識訓練 + 野外觀察記錄。孩子們從來不知道，原來找到一隻樹蛙可以讓人興奮成這樣。</p>
+<p>第二天：無人機空拍 + 密碼解謎挑戰。有組孩子因為一個線索解錯，差點走到隔壁農場去——最後成了最開心的意外。</p>
+<p>第三天：任務成果發表 + 頒獎典禮。每個人都拿到了屬於自己的「特勤徽章」，那個笑容，你懂的。</p>
+<p>2026 夏令營即將開放報名，名額搶手，歡迎先加入 LINE 官方帳號候補！</p>`
+      }
+    };
+
+    document.querySelectorAll('[data-modal]').forEach(el => {
+      el.addEventListener('click', e => {
+        e.preventDefault();
+        e.stopPropagation();
+        const key = el.getAttribute('data-modal');
+        const d = modalData[key];
+        if (!d) return;
+        document.getElementById('modalImg').src = d.img;
+        document.getElementById('modalCat').textContent = d.category;
+        document.getElementById('modalDate').textContent = d.date;
+        document.getElementById('modalTitle').textContent = d.title;
+        document.getElementById('modalContent').innerHTML = d.content;
+        // 捲回頂部再開啟
+        const scroll = document.querySelector('.modal-scroll');
+        if (scroll) scroll.scrollTop = 0;
+        document.getElementById('articleModal').classList.add('open');
+        document.body.style.overflow = 'hidden';
+      });
+    });
+
+    // ===== 漢堡選單 =====
+    const navToggle = document.getElementById('navToggle');
+    const navLinks  = document.getElementById('navLinks');
+    if (navToggle && navLinks) {
+      navToggle.addEventListener('click', () => {
+        navToggle.classList.toggle('open');
+        navLinks.classList.toggle('open');
+        document.body.style.overflow = navLinks.classList.contains('open') ? 'hidden' : '';
+      });
+      // 點選任何連結後關閉選單
+      navLinks.querySelectorAll('a').forEach(a => {
+        a.addEventListener('click', () => {
+          navToggle.classList.remove('open');
+          navLinks.classList.remove('open');
+          document.body.style.overflow = '';
+        });
+      });
+    }
+
+    // ===== 課程「了解更多」按鈕 → 滑到聯絡區 =====
+    document.querySelectorAll('.course-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        document.querySelector('#contact').scrollIntoView({ behavior: 'smooth' });
+      });
+    });
+
+    // ===== 活動「報名」按鈕 → 開啟 LINE =====
+    document.querySelectorAll('.event-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        window.open('https://lin.ee/zFqqFzQ', '_blank');
+      });
+    });
+
+    // ===== 聯絡表單送出 =====
+    document.querySelector('.form-submit').addEventListener('click', () => {
+      const name = document.querySelector('.contact-form input[type="text"]').value.trim();
+      const phone = document.querySelector('.contact-form input[type="tel"]').value.trim();
+      if (!name || !phone) {
+        alert('請填寫孩子姓名和家長電話，我們才能聯絡你喔！');
+        return;
+      }
+      // 顯示感謝提示後開啟 LINE
+      const btn = document.querySelector('.form-submit');
+      btn.textContent = '✅ 收到了！小編馬上來找你';
+      btn.style.background = '#4CAF50';
+      btn.disabled = true;
+      setTimeout(() => window.open('https://lin.ee/zFqqFzQ', '_blank'), 800);
+    });
+
+    function closeModal() {
+      document.getElementById('articleModal').classList.remove('open');
+      document.body.style.overflow = '';
+    }
+    document.getElementById('modalClose').addEventListener('click', closeModal);
+    document.getElementById('articleModal').addEventListener('click', e => {
+      if (e.target === e.currentTarget) closeModal();
+    });
+    document.addEventListener('keydown', e => { if (e.key === 'Escape') closeModal(); });
+
+    // 手機版 FB iframe：用正確的手機寬度重建 src
+    (function() {
+      if (window.innerWidth >= 768) return;
+      const fbIframe = document.querySelector('.news-fb-body iframe');
+      if (!fbIframe) return;
+      const w = Math.min(window.innerWidth - 32, 400);
+      fbIframe.src = `https://www.facebook.com/plugins/page.php?href=https%3A%2F%2Fwww.facebook.com%2Fblockplanet&tabs=timeline&width=${w}&height=500&small_header=true&adapt_container_width=true&hide_cover=false&show_facepile=false&appId`;
+      fbIframe.width = w;
+      fbIframe.height = 500;
+      fbIframe.style.width = '100%';
+    })();
+  </script>
+</body>
+</html>
