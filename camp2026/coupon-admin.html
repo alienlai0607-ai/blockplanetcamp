@@ -1,0 +1,259 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>優惠券核對系統｜管理員</title>
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;700;900&display=swap" rel="stylesheet" />
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: 'Noto Sans TC', sans-serif;
+      background: #f5f5f5; color: #333;
+      min-height: 100vh; padding: 24px;
+    }
+    .container { max-width: 600px; margin: 0 auto; }
+    h1 {
+      font-size: 1.3rem; font-weight: 900; color: #F5941E;
+      margin-bottom: 8px;
+    }
+    .subtitle { font-size: 0.85rem; color: #aaa; margin-bottom: 24px; }
+
+    .card {
+      background: white; border-radius: 16px; padding: 24px;
+      box-shadow: 0 2px 12px rgba(0,0,0,0.06); margin-bottom: 16px;
+    }
+    .card-title { font-size: 0.82rem; font-weight: 900; color: #aaa; letter-spacing: 1px; margin-bottom: 14px; }
+
+    .input-row { display: flex; gap: 10px; margin-bottom: 16px; }
+    .input-row input {
+      flex: 1; padding: 12px 16px; border-radius: 10px;
+      border: 2px solid #eee; font-size: 1rem; font-family: inherit;
+      font-weight: 700; outline: none;
+    }
+    .input-row input:focus { border-color: #F5941E; }
+    .verify-btn {
+      padding: 12px 24px; border-radius: 10px;
+      background: #F5941E; color: white; font-weight: 900;
+      font-size: 0.95rem; border: none; cursor: pointer;
+      font-family: inherit; white-space: nowrap;
+    }
+    .verify-btn:hover { background: #E07A08; }
+
+    .result-area { display: none; }
+    .result-area.show { display: block; }
+
+    .status-badge {
+      display: inline-block; padding: 6px 16px; border-radius: 50px;
+      font-size: 0.85rem; font-weight: 900; margin-bottom: 12px;
+    }
+    .status-valid { background: #E8F5E9; color: #2E7D32; }
+    .status-invalid { background: #FFEBEE; color: #C62828; }
+
+    .info-grid { display: grid; grid-template-columns: auto 1fr; gap: 8px 16px; margin-bottom: 16px; }
+    .info-label { font-size: 0.82rem; color: #aaa; font-weight: 700; }
+    .info-value { font-size: 0.95rem; font-weight: 700; color: #333; }
+
+    .camp-select {
+      width: 100%; padding: 12px 16px; border-radius: 10px;
+      border: 2px solid #eee; font-size: 0.95rem; font-family: inherit;
+      font-weight: 700; margin-bottom: 12px; outline: none;
+    }
+    .camp-select:focus { border-color: #F5941E; }
+
+    .price-result {
+      background: #FFF8F0; border-radius: 12px; padding: 16px;
+      border: 2px solid rgba(245,148,30,0.2);
+    }
+    .price-row { display: flex; justify-content: space-between; margin-bottom: 6px; font-size: 0.92rem; }
+    .price-row.total {
+      font-size: 1.2rem; font-weight: 900; color: #C93A2A;
+      border-top: 2px solid #eee; padding-top: 10px; margin-top: 10px;
+    }
+    .price-label { color: #888; }
+    .price-value { font-weight: 700; }
+    .price-value.strike { text-decoration: line-through; color: #ccc; }
+
+    .stats { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; }
+    .stat-box { text-align: center; }
+    .stat-num { font-size: 1.5rem; font-weight: 900; }
+    .stat-label { font-size: 0.72rem; color: #aaa; font-weight: 700; }
+    .stat-green { color: #2E7D32; }
+    .stat-orange { color: #F5941E; }
+    .stat-blue { color: #1565C0; }
+    .stat-red { color: #C62828; }
+
+    .refresh-btn {
+      display: block; width: 100%; padding: 10px; margin-top: 12px;
+      background: none; border: 1.5px solid #eee; border-radius: 10px;
+      font-size: 0.82rem; font-weight: 700; color: #aaa;
+      cursor: pointer; font-family: inherit;
+    }
+    .refresh-btn:hover { border-color: #F5941E; color: #F5941E; }
+  </style>
+</head>
+<body>
+<div class="container">
+  <h1>🎟️ 優惠券核對系統</h1>
+  <div class="subtitle">管理員專用 — 核對優惠碼 × 計算折扣金額</div>
+
+  <!-- 即時統計 -->
+  <div class="card">
+    <div class="card-title">📊 即時統計</div>
+    <div class="stats" id="stats">
+      <div class="stat-box"><div class="stat-num stat-green" id="statAvail">-</div><div class="stat-label">可領取</div></div>
+      <div class="stat-box"><div class="stat-num stat-orange" id="statClaimed">-</div><div class="stat-label">已領取</div></div>
+      <div class="stat-box"><div class="stat-num stat-blue" id="statUsed">-</div><div class="stat-label">已使用</div></div>
+      <div class="stat-box"><div class="stat-num stat-red" id="statExpired">-</div><div class="stat-label">已過期</div></div>
+    </div>
+    <button class="refresh-btn" onclick="loadStats()">↻ 重新整理</button>
+  </div>
+
+  <!-- 核對區 -->
+  <div class="card">
+    <div class="card-title">🔍 核對優惠碼</div>
+    <div class="input-row">
+      <input type="text" id="codeInput" placeholder="輸入優惠碼（例如 BP-001）" />
+      <button class="verify-btn" onclick="verify()">核對</button>
+    </div>
+
+    <div class="result-area" id="resultArea">
+      <div id="statusBadge"></div>
+      <div class="info-grid" id="infoGrid"></div>
+
+      <!-- 費用計算 -->
+      <div id="priceCalc" style="display:none">
+        <div class="card-title" style="margin-top:16px">💰 費用計算</div>
+        <select class="camp-select" id="campSelect" onchange="calcPrice()">
+          <option value="">— 選擇營隊 —</option>
+        </select>
+        <div class="price-result" id="priceResult" style="display:none"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+  const API = 'https://script.google.com/macros/s/AKfycbyKCCVeFgpWti52J4Q-5nU96Uh6Jp_KmSmwdF7RlNCJEfyRntx__TUDSOkn9L7LDLv-/exec';
+
+  // 營隊費用表（早鳥價）
+  const camps = [
+    { name: '猴囝仔露營趣｜動物方城市', earlybird: 6999, original: 7500, duo: null },
+    { name: 'MAKER自造營｜我是造船大師', earlybird: 7500, original: 8800, duo: 7400 },
+    { name: '全新打造！水上裝置實驗室', earlybird: 7500, original: 8800, duo: 7400 },
+    { name: '空中競技計畫｜無人機足球營隊', earlybird: 7999, original: 9500, duo: 7800 },
+    { name: 'Game Lab｜遊戲設計師養成營', earlybird: 6999, original: 8500, duo: 6800 },
+    { name: 'ROBLOX x SPIKE機器人 實境戰場計畫', earlybird: 6999, original: 8500, duo: 6800 },
+    { name: 'HELLO MAKER 廢材機器人自造營', earlybird: 7500, original: 8800, duo: 7400 },
+    { name: 'LEGO Ideas｜玩具設計總監計畫', earlybird: 6999, original: 8500, duo: 6800 },
+    { name: '飛行航空科學營｜萊特兄弟計劃', earlybird: 7999, original: null, duo: 7800 },
+    { name: '科學大師營｜大型科學水火箭', earlybird: 4800, original: null, duo: 4700 },
+    { name: '3D 列印工作坊', earlybird: 4800, original: null, duo: 4700 },
+  ];
+
+  // 初始化營隊下拉選單
+  const select = document.getElementById('campSelect');
+  camps.forEach((c, i) => {
+    const opt = document.createElement('option');
+    opt.value = i;
+    opt.textContent = c.name;
+    select.appendChild(opt);
+  });
+
+  // 載入統計
+  async function loadStats() {
+    try {
+      const res = await fetch(API + '?action=status');
+      const data = await res.json();
+      document.getElementById('statAvail').textContent = data.available;
+      document.getElementById('statClaimed').textContent = data.claimed;
+      document.getElementById('statUsed').textContent = data.used;
+      document.getElementById('statExpired').textContent = data.expired;
+    } catch(e) {
+      console.error(e);
+    }
+  }
+
+  // 核對優惠碼
+  async function verify() {
+    const code = document.getElementById('codeInput').value.trim().toUpperCase();
+    if (!code) { alert('請輸入優惠碼'); return; }
+
+    const resultArea = document.getElementById('resultArea');
+    const statusBadge = document.getElementById('statusBadge');
+    const infoGrid = document.getElementById('infoGrid');
+    const priceCalc = document.getElementById('priceCalc');
+
+    resultArea.classList.add('show');
+    statusBadge.innerHTML = '<span class="status-badge" style="background:#FFF3E0;color:#E65100;">查詢中...</span>';
+    infoGrid.innerHTML = '';
+    priceCalc.style.display = 'none';
+
+    try {
+      // 先查詢驗證狀態（不標記為使用）
+      const res = await fetch(API + '?action=verify&code=' + encodeURIComponent(code));
+      const data = await res.json();
+
+      if (data.valid) {
+        statusBadge.innerHTML = '<span class="status-badge status-valid">✅ 優惠碼有效</span>';
+        priceCalc.style.display = 'block';
+      } else {
+        statusBadge.innerHTML = '<span class="status-badge status-invalid">' + (data.status || '❌ 無效') + '</span>';
+        priceCalc.style.display = 'none';
+      }
+
+      // 從優惠券 Sheets 抓對應資料（透過 status API 拿不到個別資料，顯示基本資訊）
+      infoGrid.innerHTML = `
+        <div class="info-label">優惠碼</div><div class="info-value">${code}</div>
+        <div class="info-label">狀態</div><div class="info-value">${data.status || '未知'}</div>
+        <div class="info-label">折扣</div><div class="info-value">${data.valid ? '95 折' : '—'}</div>
+      `;
+
+    } catch(e) {
+      statusBadge.innerHTML = '<span class="status-badge status-invalid">❌ 查詢失敗</span>';
+    }
+  }
+
+  // 計算費用
+  function calcPrice() {
+    const idx = document.getElementById('campSelect').value;
+    const priceResult = document.getElementById('priceResult');
+    if (idx === '') { priceResult.style.display = 'none'; return; }
+
+    const camp = camps[idx];
+    const base = camp.earlybird;
+    const discounted = Math.round(base * 0.95);
+    const saved = base - discounted;
+
+    let html = '';
+
+    if (camp.original) {
+      html += `<div class="price-row"><span class="price-label">原價</span><span class="price-value strike">$${camp.original.toLocaleString()}</span></div>`;
+    }
+    html += `<div class="price-row"><span class="price-label">早鳥價</span><span class="price-value strike">$${base.toLocaleString()}</span></div>`;
+    html += `<div class="price-row"><span class="price-label">95 折優惠</span><span class="price-value">× 0.95</span></div>`;
+    html += `<div class="price-row total"><span>應付金額</span><span>$${discounted.toLocaleString()}</span></div>`;
+    html += `<div class="price-row"><span class="price-label">現省</span><span class="price-value" style="color:#2E7D32">$${saved.toLocaleString()}</span></div>`;
+
+    if (camp.duo) {
+      const duoDiscounted = Math.round(camp.duo * 0.95);
+      html += `<div style="border-top:1px solid #eee;margin-top:12px;padding-top:12px">`;
+      html += `<div class="price-row"><span class="price-label">兩人同行價</span><span class="price-value strike">$${camp.duo.toLocaleString()}</span></div>`;
+      html += `<div class="price-row total"><span>兩人同行 + 95折</span><span>$${duoDiscounted.toLocaleString()}</span></div>`;
+      html += `</div>`;
+    }
+
+    priceResult.innerHTML = html;
+    priceResult.style.display = 'block';
+  }
+
+  // Enter 鍵觸發核對
+  document.getElementById('codeInput').addEventListener('keydown', e => {
+    if (e.key === 'Enter') verify();
+  });
+
+  // 初始化
+  loadStats();
+</script>
+</body>
+</html>
