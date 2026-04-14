@@ -683,13 +683,13 @@
     @media(max-width:900px){
       .nav-hamburger{display:flex}
       .nav-links{
-        display:none; position:fixed; inset:var(--nav-h) 0 0 0; z-index:1999;
-        background:rgba(255,252,242,.98); backdrop-filter:blur(12px);
+        display:none; position:fixed; top:var(--nav-h); left:0; right:0; bottom:0; z-index:9999;
+        background:rgba(255,252,242,.99); backdrop-filter:blur(18px); -webkit-backdrop-filter:blur(18px);
         flex-direction:column; align-items:center; justify-content:center;
         gap:24px; list-style:none;
       }
       .nav-links.open{display:flex}
-      .nav-links li a{font-size:1.1rem}
+      .nav-links li a{font-size:1.1rem;padding:12px 24px}
 
       .quick-nav{padding:16px 4%}
       .quick-nav-inner{grid-template-columns:repeat(3,1fr);gap:8px}
