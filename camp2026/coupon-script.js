@@ -268,7 +268,7 @@ function initCoupons() {
     usedCodes.add(code);
     coupons.push([i, code, '可領取', '', '', '', '', '']);
   }
-  couponSheet.getRange(2, 1, coupons.length, 7).setValues(coupons);
+  couponSheet.getRange(2, 1, coupons.length, 8).setValues(coupons);
 
   // 設定下一個編號
   settingsSheet.getRange(1, 1, 1, 2).setValues([['下一個編號', POOL_SIZE + 1]]);
