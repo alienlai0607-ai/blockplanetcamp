@@ -196,14 +196,20 @@
     }
     .hero-loc-badge:hover { transform:translateY(-2px); box-shadow:0 5px 16px rgba(0,0,0,.1); }
     .quiz-hint {
-      text-align:center; margin-top:12px;
+      text-align:center; margin-top:20px;
     }
     .quiz-hint a {
-      color:var(--orange); font-size:.85rem; font-weight:700;
-      text-decoration:none; display:inline-flex; align-items:center; gap:4px;
-      animation: pulse-hint 2s ease-in-out infinite;
+      display:inline-block;
+      background:linear-gradient(135deg, var(--orange), var(--orange-dark));
+      color:white; font-size:1.1rem; font-weight:900;
+      padding:16px 36px; border-radius:50px;
+      text-decoration:none;
+      box-shadow:0 6px 24px rgba(245,148,30,.4);
+      transition:transform .2s, box-shadow .2s;
+      animation: pulse-btn 2s ease-in-out infinite;
     }
-    @keyframes pulse-hint { 0%,100%{opacity:.7} 50%{opacity:1} }
+    .quiz-hint a:hover { transform:translateY(-3px); box-shadow:0 10px 32px rgba(245,148,30,.5); }
+    @keyframes pulse-btn { 0%,100%{box-shadow:0 6px 24px rgba(245,148,30,.4)} 50%{box-shadow:0 6px 32px rgba(245,148,30,.6)} }
     .hero-cta-row { display:flex; gap:12px; flex-wrap:wrap; }
     .btn {
       padding:13px 28px; border-radius:50px; font-size:.92rem; font-weight:700;
@@ -849,7 +855,7 @@
     </a>
   </div>
   <div class="quiz-hint">
-    <a href="quiz.html">👆 不知道怎麼選？一分鐘幫你配對</a>
+    <a href="quiz.html">🎯 不知道怎麼選？一分鐘幫你配對 👉</a>
   </div>
 </div>
 
