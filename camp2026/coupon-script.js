@@ -112,7 +112,7 @@ function getStatus() {
     claimed: claimed,
     used: used,
     expired: expired,
-    total: POOL_SIZE
+    total: available + claimed
   };
 }
 
