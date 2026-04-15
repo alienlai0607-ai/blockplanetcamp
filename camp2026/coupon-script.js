@@ -143,8 +143,9 @@ function claimCoupon(fingerprint, phone) {
 
   // 檢查此手機號碼是否已有有效的優惠券（直接回傳已領的券）
   if (phone) {
+    const cleanPhone = fixPhone(phone);
     for (let i = 1; i < data.length; i++) {
-      if (data[i][6] === phone && data[i][2] === '已領取') {
+      if (fixPhone(data[i][6]) === cleanPhone && data[i][2] === '已領取') {
         const expires = new Date(data[i][4]);
         if (expires > now) {
           return {
@@ -509,26 +510,41 @@ function findCampPrice(sheetName) {
   return null;
 }
 
+// 修正手機號碼（Google Sheets 可能會把 0920... 變成 920...）
+function fixPhone(phone) {
+  let p = String(phone || '').replace(/[^0-9]/g, '');
+  if (p.length === 9 && !p.startsWith('0')) p = '0' + p;
+  return p;
+}
+
 // 從文字中提取所有手機號碼（09開頭10碼）
 function extractPhones(text) {
   const str = String(text || '');
-  const matches = str.match(/09\d{8}/g);
-  return matches || [];
+  // 先找標準格式
+  const matches = str.match(/09\d{8}/g) || [];
+  // 也找被去掉 0 的格式（9 碼數字）
+  const digits = str.replace(/[^0-9]/g, '');
+  if (matches.length === 0 && digits.length >= 9) {
+    const fixed = fixPhone(digits);
+    if (fixed.startsWith('09') && fixed.length === 10) {
+      matches.push(fixed);
+    }
+  }
+  return matches;
 }
 
 // 比對手機：從表單欄位提取所有號碼，任一支吻合就算通過
 function phoneMatch(formPhoneField, couponPhone) {
   if (!couponPhone) return false;
-  const cleanCoupon = couponPhone.replace(/[^0-9]/g, '');
-  if (!cleanCoupon) return false;
+  const cleanCoupon = fixPhone(couponPhone);
+  if (!cleanCoupon || cleanCoupon.length < 9) return false;
   // 提取表單中所有手機號碼
   const phones = extractPhones(formPhoneField);
   if (phones.length === 0) {
-    // 沒有標準格式，退回 includes 比對
-    const cleanForm = String(formPhoneField || '').replace(/[^0-9]/g, '');
-    return cleanForm.includes(cleanCoupon) || cleanCoupon.includes(cleanForm);
+    const cleanForm = fixPhone(formPhoneField);
+    return cleanForm === cleanCoupon || cleanForm.includes(cleanCoupon) || cleanCoupon.includes(cleanForm);
   }
-  return phones.some(p => p === cleanCoupon);
+  return phones.some(p => p === cleanCoupon || fixPhone(p) === cleanCoupon);
 }
 
 // 在表頭中找特定欄位的索引
@@ -574,7 +590,7 @@ function lookupCoupon(code) {
       return {
         code: data[i][1],
         status: data[i][2],
-        phone: String(data[i][6] || '').replace(/[-\s]/g, ''),
+        phone: fixPhone(data[i][6]),
         expiresAt: data[i][4] ? new Date(data[i][4]) : null
       };
     }
