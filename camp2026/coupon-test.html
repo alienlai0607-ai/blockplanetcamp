@@ -281,12 +281,17 @@
     return res.json();
   }
 
-  // ===== 畫面：載入中 =====
+  // ===== 畫面：載入中（直接先顯示頁面框架）=====
   function renderLoading() {
     app.innerHTML = `
       <div class="coupon-card">
-        <div class="coupon-icon">⏳</div>
-        <div class="coupon-title">載入中...</div>
+        <div class="coupon-icon">🎟️</div>
+        <div class="coupon-title">暑期特色營隊<br>限量 <em>95 折</em> 優惠券</div>
+        <div class="coupon-discount">95折</div>
+        <div class="coupon-remaining">
+          剩餘可領取
+          <span class="remaining-num" style="animation:pulse 1s infinite">載入中...</span>
+        </div>
       </div>
     `;
   }
@@ -626,7 +631,7 @@
     renderLoading();
 
     // 開放時間限制（台灣時間）
-    const OPEN_TIME = new Date('2026-04-14T00:00:00+08:00');
+    const OPEN_TIME = new Date('2026-01-01T00:00:00+08:00');
     const now = new Date();
     if (now < OPEN_TIME) {
       renderNotYet(OPEN_TIME);
@@ -657,6 +662,7 @@
 </script>
 </body>
 </html>
-<div style="position:fixed;bottom:20px;left:20px;z-index:99999">
-<button onclick="localStorage.removeItem('bp_coupon_data');localStorage.removeItem('bp_coupon_fp');location.reload();" style="padding:12px 20px;background:#C93A2A;color:white;font-weight:900;border:none;border-radius:50px;font-size:.9rem;cursor:pointer;box-shadow:0 4px 12px rgba(0,0,0,.3)">🔄 重置測試</button>
+<div style="position:fixed;bottom:20px;left:20px;z-index:99999;display:flex;gap:8px">
+<button onclick="localStorage.removeItem('bp_coupon_data');localStorage.removeItem('bp_coupon_fp');location.reload();" style="padding:10px 16px;background:#C93A2A;color:white;font-weight:900;border:none;border-radius:50px;font-size:.8rem;cursor:pointer;box-shadow:0 4px 12px rgba(0,0,0,.3)">🔄 重置</button>
+<span style="background:rgba(0,0,0,.7);color:#FFD700;padding:10px 16px;border-radius:50px;font-size:.8rem;font-weight:900">⚠️ 測試頁 — 非正式版</span>
 </div>
