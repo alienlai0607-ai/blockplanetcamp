@@ -9,13 +9,12 @@
   <link rel="icon" type="image/png" sizes="32x32" href="favicon-32.png">
   <link rel="icon" type="image/png" sizes="16x16" href="favicon-16.png">
   <link rel="shortcut icon" href="favicon.ico">
-  <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
-  <meta http-equiv="Pragma" content="no-cache">
-  <meta http-equiv="Expires" content="0">
+  <!-- 快取策略：靜態資源可快取，更新時改 ?v= 版本號即可 -->
+  <meta http-equiv="Cache-Control" content="public, max-age=3600">
   <title>2026布拉克星球暑期營隊｜報名專頁</title>
   <meta property="og:title" content="2026布拉克星球暑期營隊｜報名專頁">
   <meta property="og:description" content="科學實作 × 任務導向 × 創意發揮 × 程式邏輯思考。台南北區＆永康，雙教室同步招生中！">
-  <meta property="og:image" content="https://blockplanetcamp.com/camp2026/posters/暑期2-opt.jpg">
+  <meta property="og:image" content="https://blockplanetcamp.com/camp2026/posters/暑期2-opt2.jpg">
   <meta property="og:url" content="https://blockplanetcamp.com/camp2026/">
   <meta property="og:type" content="website">
   <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -64,6 +63,7 @@
     @keyframes slide-up { from{transform:translateY(40px);opacity:0} to{transform:translateY(0);opacity:1} }
     @keyframes bounce-in { 0%{transform:scale(.3);opacity:0} 50%{transform:scale(1.05)} 100%{transform:scale(1);opacity:1} }
     @keyframes star-twinkle { 0%,100%{opacity:.8;transform:scale(1)} 50%{opacity:.1;transform:scale(.3)} }
+    @media(prefers-reduced-motion:reduce){*,*::before,*::after{animation-duration:.01ms!important;animation-iteration-count:1!important;transition-duration:.01ms!important}}
     @keyframes gradient-shift { 0%{background-position:0% 50%} 50%{background-position:100% 50%} 100%{background-position:0% 50%} }
     @keyframes rkt-fly { 0%{left:-80px;opacity:0} 8%{opacity:1} 88%{opacity:1} 100%{left:calc(100% + 80px);opacity:0} }
     @keyframes rkt-bob { from{margin-top:-4px} to{margin-top:4px} }
@@ -544,7 +544,7 @@
     .sec-deco {
       position:absolute; pointer-events:none; z-index:0;
       filter:drop-shadow(0 4px 12px rgba(0,0,0,.08));
-      opacity:.35;
+      opacity:.35; will-change:transform;
     }
 
     /* ===== 小一新生 ===== */
@@ -850,7 +850,7 @@
 
 <!-- ===== HERO ===== -->
 <section class="hero" id="home">
-  <img src="posters/暑期2-opt.jpg" class="hero-mascot" alt="2026布拉克暑期">
+  <img src="posters/暑期2-opt2.jpg" class="hero-mascot" alt="2026布拉克暑期">
   <div class="hero-card">
     <h1><span style="font-size:.75em;font-weight:700;color:#555">布拉克星球｜</span><span class="hero-badge"><img src="../assets/deco-star.png" style="width:14px;height:14px;object-fit:contain;vertical-align:middle;margin-right:4px">2026 暑期活動正式開跑！</span><br><em>暑期營隊</em>開始報名 <a href="https://www.google.com/maps/search/台南市永康區東橋一路558號" target="_blank" class="hero-loc-inline">📍永康</a> <a href="https://www.google.com/maps/search/台南市北區中華北路二段113號" target="_blank" class="hero-loc-inline">📍北區</a></h1>
     <p class="hero-subtitle">用一個夏天，打造孩子的學習挑戰</p>
@@ -874,21 +874,21 @@
 <div class="quick-nav" id="quick-nav">
   <div class="quick-nav-inner">
     <a href="#monthly" class="qn-item active" data-target="monthly">
-      <img src="../assets/mascot-illust2.png" class="qn-char" alt="">
+      <img src="../assets/mascot-illust2.png" class="qn-char" alt="" loading="lazy">
       <div class="qn-text">
         <div class="qn-title">七月包月</div>
         <div class="qn-sub">整月報名最划算</div>
       </div>
     </a>
     <a href="#weekly" class="qn-item" data-target="weekly">
-      <img src="../assets/event-tryout.png" class="qn-char" alt="">
+      <img src="../assets/event-tryout.png" class="qn-char" alt="" loading="lazy">
       <div class="qn-text">
         <div class="qn-title">主題週</div>
         <div class="qn-sub">七月＋八月，自由選</div>
       </div>
     </a>
     <a href="#grade1" class="qn-item" data-target="grade1">
-      <img src="../assets/char-astronaut-nobg.png" class="qn-char" alt="">
+      <img src="../assets/char-astronaut-nobg.png" class="qn-char" alt="" loading="lazy">
       <div class="qn-text">
         <div class="qn-title">小一新生營</div>
         <div class="qn-sub">大班升小一專屬</div>
@@ -911,7 +911,7 @@
 
   <div class="monthly-hero fade-in from-bottom delay-1">
     <div class="monthly-poster" onclick="openLightbox(this.querySelector('img').src)">
-      <img src="posters/2026暑期包月課表-02(1).jpg" alt="七月包月課表">
+      <img src="posters/2026暑期包月課表-opt.jpg" alt="七月包月課表" loading="lazy">
       <div class="zoom-hint"><svg viewBox="0 0 24 24"><path d="M15.5 14h-.79l-.28-.27A6.47 6.47 0 0 0 16 9.5 6.5 6.5 0 1 0 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14zM12 10h-2v2H9v-2H7V9h2V7h1v2h2v1z"/></svg>點擊放大</div>
     </div>
     <div class="monthly-info">
@@ -943,10 +943,10 @@
 <!-- ===== 主題週（七月特色 + 八月特色合併） ===== -->
 <section class="sec" id="weekly">
   <!-- 裝飾角色 -->
-  <img src="posters/block/船.png" class="sec-deco" style="left:5px;top:60px;height:180px;animation:float2 6.5s ease-in-out infinite .6s" alt="">
-  <img src="posters/block/研發.png" class="sec-deco" style="right:5px;top:60px;height:180px;animation:float2 7s ease-in-out infinite 1.2s" alt="">
-  <img src="posters/block/露營_工作區域 1.png" class="sec-deco" style="left:-60px;bottom:-40px;height:280px;opacity:.25;animation:float2 6s ease-in-out infinite" alt="">
-  <img src="posters/block/程式操作.png" class="sec-deco" style="right:-60px;bottom:-40px;height:280px;opacity:.25;animation:float2 5.5s ease-in-out infinite .8s" alt="">
+  <img src="posters/block/船.png" class="sec-deco" style="left:5px;top:60px;height:180px;animation:float2 6.5s ease-in-out infinite .6s" alt="" loading="lazy">
+  <img src="posters/block/研發.png" class="sec-deco" style="right:5px;top:60px;height:180px;animation:float2 7s ease-in-out infinite 1.2s" alt="" loading="lazy">
+  <img src="posters/block/露營_工作區域 1.png" class="sec-deco" style="left:-60px;bottom:-40px;height:280px;opacity:.25;animation:float2 6s ease-in-out infinite" alt="" loading="lazy">
+  <img src="posters/block/程式操作.png" class="sec-deco" style="right:-60px;bottom:-40px;height:280px;opacity:.25;animation:float2 5.5s ease-in-out infinite .8s" alt="" loading="lazy">
 
   <div class="sec-header fade-in from-bottom" style="position:relative;z-index:1">
     <span class="sec-tag">主題週報名</span>
@@ -964,9 +964,9 @@
   <!-- ── 七月（限定北區）── -->
   <div id="pane-july" class="weekly-pane active" style="position:relative;z-index:1">
     <div class="camp-card fade-in from-bottom delay-2">
-      <div class="camp-card-head" style="position:relative" onclick="openLightbox('posters/LINE_NOTE_260413_3.jpg')">
+      <div class="camp-card-head" style="position:relative" onclick="openLightbox('posters/LINE_NOTE_260413_3-opt.jpg')">
         <div class="zoom-hint"><svg viewBox="0 0 24 24"><path d="M15.5 14h-.79l-.28-.27A6.47 6.47 0 0 0 16 9.5 6.5 6.5 0 1 0 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14zM12 10h-2v2H9v-2H7V9h2V7h1v2h2v1z"/></svg>點擊放大</div>
-        <img src="posters/LINE_NOTE_260413_3.jpg" alt="七月北區特色營">
+        <img src="posters/LINE_NOTE_260413_3-opt.jpg" alt="七月北區特色營" loading="lazy">
         <div class="camp-card-overlay">
           <span class="camp-card-loc" style="background:var(--teal)">北區教室</span>
           <div class="camp-card-date">7/1（三）─ 7/31（五）</div>
@@ -990,9 +990,9 @@
   <!-- ── 八月（北區教室）── -->
   <div id="pane-aug-north" class="weekly-pane" style="position:relative;z-index:1">
     <div class="camp-card">
-      <div class="camp-card-head" style="position:relative" onclick="openLightbox('posters/八月北區特色營.jpg')">
+      <div class="camp-card-head" style="position:relative" onclick="openLightbox('posters/八月北區特色營-opt.jpg')">
         <div class="zoom-hint"><svg viewBox="0 0 24 24"><path d="M15.5 14h-.79l-.28-.27A6.47 6.47 0 0 0 16 9.5 6.5 6.5 0 1 0 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14zM12 10h-2v2H9v-2H7V9h2V7h1v2h2v1z"/></svg>點擊放大</div>
-        <img src="posters/八月北區特色營.jpg" alt="八月北區特色">
+        <img src="posters/八月北區特色營-opt.jpg" alt="八月北區特色" loading="lazy">
         <div class="camp-card-overlay">
           <span class="camp-card-loc" style="background:var(--teal)">北區教室</span>
           <div class="camp-card-date">8/3（一）─ 8/25（五）</div>
@@ -1020,9 +1020,9 @@
   <!-- ── 八月（永康教室）── -->
   <div id="pane-aug-yk" class="weekly-pane" style="position:relative;z-index:1">
     <div class="camp-card">
-      <div class="camp-card-head" style="position:relative" onclick="openLightbox('posters/LINE_NOTE_260413_1.jpg')">
+      <div class="camp-card-head" style="position:relative" onclick="openLightbox('posters/LINE_NOTE_260413_1-opt.jpg')">
         <div class="zoom-hint"><svg viewBox="0 0 24 24"><path d="M15.5 14h-.79l-.28-.27A6.47 6.47 0 0 0 16 9.5 6.5 6.5 0 1 0 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14zM12 10h-2v2H9v-2H7V9h2V7h1v2h2v1z"/></svg>點擊放大</div>
-        <img src="posters/LINE_NOTE_260413_1.jpg" alt="八月永康特色">
+        <img src="posters/LINE_NOTE_260413_1-opt.jpg" alt="八月永康特色" loading="lazy">
         <div class="camp-card-overlay">
           <span class="camp-card-loc" style="background:var(--orange)">永康教室</span>
           <div class="camp-card-date">8/3（一）─ 8/25（五）</div>
@@ -1060,9 +1060,9 @@
     </div>
 
     <div class="grade1-card fade-in from-bottom delay-1">
-      <div class="grade1-poster" style="position:relative" onclick="openLightbox('posters/暑期小一新生2026.jpg')">
+      <div class="grade1-poster" style="position:relative" onclick="openLightbox('posters/暑期小一新生2026-opt.jpg')">
         <div class="zoom-hint"><svg viewBox="0 0 24 24"><path d="M15.5 14h-.79l-.28-.27A6.47 6.47 0 0 0 16 9.5 6.5 6.5 0 1 0 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14zM12 10h-2v2H9v-2H7V9h2V7h1v2h2v1z"/></svg>點擊放大</div>
-        <img src="posters/暑期小一新生2026.jpg" alt="小一新生營">
+        <img src="posters/暑期小一新生2026-opt.jpg" alt="小一新生營" loading="lazy">
       </div>
       <div class="grade1-info">
         <div class="info-block">
@@ -1168,15 +1168,17 @@
   }
   document.addEventListener('keydown',e=>{if(e.key==='Escape')closeLightbox()});
 
-  /* Stars */
+  /* Stars — 40 個就夠，視覺幾乎一樣但 CPU 省 75% */
   (function(){
     const c=document.getElementById('stars2'); if(!c) return;
-    for(let i=0;i<160;i++){
+    const frag=document.createDocumentFragment();
+    for(let i=0;i<40;i++){
       const d=document.createElement('div'); d.className='star-dot';
       const s=Math.random()*3+1;
-      d.style.cssText=`width:${s}px;height:${s}px;left:${Math.random()*100}%;top:${Math.random()*100}%;animation-delay:${Math.random()*4}s;animation-duration:${2+Math.random()*3}s;`;
-      c.appendChild(d);
+      d.style.cssText=`width:${s}px;height:${s}px;left:${Math.random()*100}%;top:${Math.random()*100}%;animation-delay:${Math.random()*4}s;animation-duration:${2+Math.random()*3}s;will-change:transform,opacity;`;
+      frag.appendChild(d);
     }
+    c.appendChild(frag);
   })();
 
   /* Scroll fade-in */
@@ -1193,26 +1195,31 @@
     document.getElementById('pane-'+id).classList.add('active');
   }
 
-  /* Quick nav highlight on scroll */
+  /* Quick nav highlight on scroll — 用 rAF 節流，每幀最多跑一次 */
   const sections=['monthly','weekly','grade1'];
   const qnItems=document.querySelectorAll('.qn-item');
+  const fc=document.getElementById('floatCta');
+  const isMobile=window.innerWidth<=600;
+  let scrollTicking=false;
   window.addEventListener('scroll',()=>{
-    const y=window.scrollY+200;
-    let active='monthly';
-    sections.forEach(id=>{
-      const el=document.getElementById(id);
-      if(el && el.offsetTop<=y) active=id;
+    if(scrollTicking) return;
+    scrollTicking=true;
+    requestAnimationFrame(()=>{
+      const y=window.scrollY+200;
+      let active='monthly';
+      sections.forEach(id=>{
+        const el=document.getElementById(id);
+        if(el && el.offsetTop<=y) active=id;
+      });
+      qnItems.forEach(item=>{
+        item.classList.toggle('active',item.dataset.target===active);
+      });
+      if(fc && isMobile){
+        fc.style.display=window.scrollY>window.innerHeight*.4?'block':'none';
+      }
+      scrollTicking=false;
     });
-    qnItems.forEach(item=>{
-      item.classList.toggle('active',item.dataset.target===active);
-    });
-
-    // 浮動 CTA：手機版 + 滾過 hero 才顯示
-    const fc=document.getElementById('floatCta');
-    if(fc && window.innerWidth<=600){
-      fc.style.display=window.scrollY>window.innerHeight*.4?'block':'none';
-    }
-  });
+  },{passive:true});
 
   /* 手機版縮短日期：7/1（三）～7/3（五） → 7/1–7/3 */
   (function(){
@@ -1236,6 +1243,14 @@
         document.querySelector('.nav-links')?.classList.remove('open');
         window.scrollTo({top:target.getBoundingClientRect().top+window.scrollY-70,behavior:'smooth'});
       }
+    });
+  });
+
+  /* 頁面隱藏時暫停所有動畫，避免背景持續耗電 */
+  document.addEventListener('visibilitychange',()=>{
+    document.documentElement.style.animationPlayState=document.hidden?'paused':'running';
+    document.querySelectorAll('.star-dot,.sec-deco,.nav-rocket-wrap,.nav-star,.nav-rocket-img').forEach(el=>{
+      el.style.animationPlayState=document.hidden?'paused':'running';
     });
   });
 </script>
