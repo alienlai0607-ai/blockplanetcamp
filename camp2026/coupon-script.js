@@ -594,6 +594,18 @@ function markCouponUsed(code) {
   }
 }
 
+// 正規化姓名（去空格、全形轉半形、統一大小寫）
+function normalizeName(name) {
+  if (!name) return '';
+  return String(name)
+    .trim()
+    .replace(/\s+/g, '')       // 去所有空格
+    .replace(/　/g, '')         // 去全形空格
+    .replace(/[Ａ-Ｚ]/g, c => String.fromCharCode(c.charCodeAt(0) - 0xFEE0)) // 全形轉半形
+    .replace(/[ａ-ｚ]/g, c => String.fromCharCode(c.charCodeAt(0) - 0xFEE0))
+    .toUpperCase();             // 統一大寫
+}
+
 // 查詢優惠碼綁定的學員姓名（跨所有工作表找第一個使用此碼的姓名）
 function getCouponBoundName(code) {
   if (!code) return null;
@@ -728,7 +740,12 @@ function onFormSubmit(e) {
           }
           if (couponValid) {
             const currentChild = childNameCol >= 0 ? String(rowData[childNameCol] || '').trim() : '';
-            couponStatus = '✅ 有效（學員：' + (currentChild || '未知') + '）';
+            if (!currentChild) {
+              couponValid = false;
+              couponStatus = '⚠️ 碼有效但表單缺少學員姓名，無法綁定';
+            } else {
+              couponStatus = '✅ 有效（學員：' + currentChild + '）';
+            }
           }
         } else {
           couponStatus = '❌ 已過期';
@@ -737,11 +754,14 @@ function onFormSubmit(e) {
         if (rawFormPhone && coupon.phone && phoneMatch(rawFormPhone, coupon.phone)) {
           phoneResult = '✅ 吻合';
           // 檢查是否同一位學員
-          const currentChild = childNameCol >= 0 ? String(rowData[childNameCol] || '').trim() : '';
-          const boundChild = getCouponBoundName(couponCode);
+          const currentChild = childNameCol >= 0 ? normalizeName(rowData[childNameCol]) : '';
+          const boundChild = normalizeName(getCouponBoundName(couponCode));
           if (boundChild && currentChild && boundChild !== currentChild) {
             couponValid = false;
             couponStatus = '❌ 此券已綁定「' + boundChild + '」，不可用於「' + currentChild + '」';
+          } else if (boundChild && !currentChild) {
+            couponValid = false;
+            couponStatus = '⚠️ 此券已綁定「' + boundChild + '」，但此表單缺少姓名無法驗證';
           } else {
             couponValid = true;
             couponStatus = '✅ 有效（多營隊，學員：' + (boundChild || currentChild || '未知') + '）';
