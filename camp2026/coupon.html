@@ -389,13 +389,26 @@
       showReminder('index.html');
     };
 
-    // 自動複製優惠碼到剪貼簿
+    // 自動複製優惠碼 + 跳提示
     try {
       navigator.clipboard.writeText(code).then(() => {
         const el = document.querySelector('.code-copy');
         if (el) el.textContent = '✅ 優惠碼已自動複製！直接去表單貼上';
+        // 跳「已複製」提示
+        const toast = document.createElement('div');
+        toast.style.cssText = 'position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);z-index:99999;background:rgba(0,0,0,0.85);color:white;padding:24px 36px;border-radius:20px;text-align:center;animation:cardIn .3s ease';
+        toast.innerHTML = '<div style="font-size:2rem;margin-bottom:8px">✅</div><div style="font-size:1.1rem;font-weight:900">優惠碼已複製！</div><div style="font-size:.85rem;color:#aaa;margin-top:4px">可直接貼到報名表單</div>';
+        document.body.appendChild(toast);
+        toast.onclick = () => toast.remove();
+        setTimeout(() => toast.remove(), 1000);
       });
     } catch(e) {}
+
+    // 攔截左上角 LOGO
+    document.querySelector('.top-bar-logo').onclick = function(e) {
+      e.preventDefault();
+      showReminder('index.html');
+    };
   }
 
   // ===== 畫面：已領完 =====

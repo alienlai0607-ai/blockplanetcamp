@@ -236,7 +236,7 @@
     <img src="../assets/可愛的布拉克星球logo.png" alt="布拉克星球" />
     <div><span>布拉克星球</span><small>Block Planet</small></div>
   </a>
-  <a class="back-btn" href="index.html">← 回營隊首頁</a>
+  <a class="back-btn" href="index.html" id="backBtn">← 回營隊首頁</a>
 </div>
 
 <div class="wrapper" id="app"></div>
@@ -368,28 +368,47 @@
               <span style="font-weight:400;color:#666">將優惠碼及手機號碼私訊<span style="color:#06C755;font-weight:700">官方 LINE</span>，行政小編會幫您處理折扣。</span>
             </div>
           </div>
-          <button class="action-btn action-btn-primary" onclick="showReminder()">
+          <button class="action-btn action-btn-primary" onclick="showReminder('index.html#weekly')">
             🔥 立即前往報名（使用優惠碼）
           </button>
-          <a class="action-btn action-btn-line" href="https://lin.ee/zFqqFzQ" target="_blank">
+          <button class="action-btn action-btn-line" onclick="showReminder('https://lin.ee/zFqqFzQ')" style="border:none;cursor:pointer;font-family:inherit">
             💬 加入 LINE 詢問
-          </a>
-          <a class="action-btn action-btn-outline" href="index.html">
+          </button>
+          <button class="action-btn action-btn-outline" onclick="showReminder('index.html')" style="cursor:pointer;font-family:inherit">
             查看所有營隊方案
-          </a>
+          </button>
         </div>
       </div>
     `;
 
     startCountdown(expTime);
 
-    // 自動複製優惠碼到剪貼簿
+    // 攔截左上角「回營隊首頁」按鈕
+    document.getElementById('backBtn').onclick = function(e) {
+      e.preventDefault();
+      showReminder('index.html');
+    };
+
+    // 自動複製優惠碼 + 跳提示
     try {
       navigator.clipboard.writeText(code).then(() => {
         const el = document.querySelector('.code-copy');
         if (el) el.textContent = '✅ 優惠碼已自動複製！直接去表單貼上';
+        // 跳「已複製」提示
+        const toast = document.createElement('div');
+        toast.style.cssText = 'position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);z-index:99999;background:rgba(0,0,0,0.85);color:white;padding:24px 36px;border-radius:20px;text-align:center;animation:cardIn .3s ease';
+        toast.innerHTML = '<div style="font-size:2rem;margin-bottom:8px">✅</div><div style="font-size:1.1rem;font-weight:900">優惠碼已複製！</div><div style="font-size:.85rem;color:#aaa;margin-top:4px">可直接貼到報名表單</div>';
+        document.body.appendChild(toast);
+        toast.onclick = () => toast.remove();
+        setTimeout(() => toast.remove(), 1000);
       });
     } catch(e) {}
+
+    // 攔截左上角 LOGO
+    document.querySelector('.top-bar-logo').onclick = function(e) {
+      e.preventDefault();
+      showReminder('index.html');
+    };
   }
 
   // ===== 畫面：已領完 =====
@@ -441,7 +460,9 @@
   }
 
   // ===== 提醒對話框 =====
-  function showReminder() {
+  function showReminder(targetUrl) {
+    const url = targetUrl || 'index.html#weekly';
+    const isExternal = url.startsWith('http');
     const overlay = document.createElement('div');
     overlay.style.cssText = 'position:fixed;inset:0;z-index:9999;background:rgba(0,0,0,0.6);display:flex;align-items:center;justify-content:center;padding:20px';
     overlay.innerHTML = `
@@ -455,8 +476,8 @@
           <p style="margin:0 0 8px"><span style="color:#2E7D32;font-weight:700">4.</span> 將截圖傳到 <b style="color:#06C755">官方 LINE</b> 確認是否使用成功</p>
           <p style="margin:0;padding-top:8px;border-top:1px solid #eee;color:#C93A2A;font-weight:700">⚠️ 若未完成以上步驟確認，將維持原價計費</p>
         </div>
-        <button onclick="window.location.href='index.html#weekly'" style="display:block;width:100%;padding:16px;border-radius:50px;background:linear-gradient(135deg,#C93A2A,#e74c3c);color:white;font-weight:900;font-size:1rem;border:none;cursor:pointer;font-family:inherit;box-shadow:0 6px 24px rgba(201,58,42,.35)">
-          ✅ 我知道了，前往報名
+        <button onclick="${isExternal ? `window.open('${url}','_blank')` : `window.location.href='${url}'`};this.closest('div[style*=fixed]').remove()" style="display:block;width:100%;padding:16px;border-radius:50px;background:linear-gradient(135deg,#C93A2A,#e74c3c);color:white;font-weight:900;font-size:1rem;border:none;cursor:pointer;font-family:inherit;box-shadow:0 6px 24px rgba(201,58,42,.35)">
+          ✅ 我知道了，繼續前往
         </button>
         <button onclick="this.closest('div[style*=fixed]').remove()" style="display:block;width:100%;padding:12px;margin-top:8px;background:none;border:none;color:#aaa;font-size:.85rem;font-weight:700;cursor:pointer;font-family:inherit">
           返回
