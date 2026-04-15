@@ -377,7 +377,7 @@ function lookupByPhone(phone) {
     const phoneCol = findColumnIndex(headers, ['家長聯絡電話', '聯絡電話', '手機', '電話']);
     if (phoneCol < 0) continue;
 
-    const couponCol = findColumnIndex(headers, ['優惠碼']);
+    const couponCol = findColumnIndex(headers, ['填寫您的優惠碼', '填寫優惠碼', '優惠碼']);
     const nameCol = findColumnIndex(headers, ['寶貝姓名', '孩子姓名', '學生姓名', '姓名']);
     const sessionCol = findColumnIndex(headers, ['梯次', '選擇', '場次', '教室']);
     const noteCol = findColumnIndex(headers, ['備註', '備注', '其他']);
@@ -557,10 +557,17 @@ function phoneMatch(formPhoneField, couponPhone) {
   return phones.some(p => p === cleanCoupon || fixPhone(p) === cleanCoupon);
 }
 
-// 在表頭中找特定欄位的索引
-function findColumnIndex(headers, keywords) {
+// 在表頭中找特定欄位的索引（排除系統自動產生的欄位）
+function findColumnIndex(headers, keywords, excludeKeywords) {
+  const excludes = excludeKeywords || ['💰', '🎟️', '📱', '💵'];
   for (let i = 0; i < headers.length; i++) {
     const h = String(headers[i]).trim();
+    // 跳過系統自動產生的欄位
+    let isSystemCol = false;
+    for (const ex of excludes) {
+      if (h.includes(ex)) { isSystemCol = true; break; }
+    }
+    if (isSystemCol) continue;
     for (const kw of keywords) {
       if (h.includes(kw)) return i;
     }
@@ -629,7 +636,7 @@ function onFormSubmit(e) {
     const rowData = sheet.getRange(row, 1, 1, sheet.getLastColumn()).getValues()[0];
 
     // 找關鍵欄位
-    const couponCol = findColumnIndex(headers, ['優惠碼']);
+    const couponCol = findColumnIndex(headers, ['填寫您的優惠碼', '填寫優惠碼', '優惠碼']);
     const phoneCol = findColumnIndex(headers, ['家長聯絡電話', '聯絡電話', '手機', '電話']);
     const noteCol = findColumnIndex(headers, ['備註', '備注', '其他']);
 
@@ -637,7 +644,7 @@ function onFormSubmit(e) {
     const resultCols = ['💰 方案', '🎟️ 優惠碼狀態', '📱 手機比對', '💵 應付金額'];
     let startCol = headers.length + 1;
 
-    const existingIdx = findColumnIndex(headers, ['方案', '優惠碼狀態', '早鳥價']);
+    const existingIdx = findColumnIndex(headers, ['方案', '優惠碼狀態', '早鳥價'], []);
     if (existingIdx >= 0) {
       startCol = existingIdx + 1;
     } else {
@@ -756,7 +763,7 @@ function recalcSheet(sheetName) {
   if (!sheet) { Logger.log('找不到工作表：' + sheetName); return; }
 
   const headers = sheet.getRange(1, 1, 1, sheet.getLastColumn()).getValues()[0];
-  const couponCol = findColumnIndex(headers, ['優惠碼']);
+  const couponCol = findColumnIndex(headers, ['填寫您的優惠碼', '填寫優惠碼', '優惠碼']);
   const phoneCol = findColumnIndex(headers, ['家長聯絡電話', '聯絡電話', '手機', '電話']);
   const noteCol = findColumnIndex(headers, ['備註', '備注', '其他']);
   const campPrice = findCampPrice(sheetName);
@@ -765,7 +772,7 @@ function recalcSheet(sheetName) {
 
   const resultCols = ['💰 方案', '🎟️ 優惠碼狀態', '📱 手機比對', '💵 應付金額'];
   let startCol = headers.length + 1;
-  const existingIdx = findColumnIndex(headers, ['方案', '優惠碼狀態', '早鳥價']);
+  const existingIdx = findColumnIndex(headers, ['方案', '優惠碼狀態', '早鳥價'], []);
   if (existingIdx >= 0) {
     startCol = existingIdx + 1;
   } else {
