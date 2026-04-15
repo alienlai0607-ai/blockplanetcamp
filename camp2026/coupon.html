@@ -517,9 +517,63 @@
     }
   }
 
+  // ===== 畫面：尚未開放 =====
+  function renderNotYet(openTime) {
+    const h = openTime.getHours();
+    const m = String(openTime.getMinutes()).padStart(2, '0');
+    app.innerHTML = `
+      <div class="coupon-card">
+        <div class="coupon-icon">⏳</div>
+        <div class="coupon-title">暑期特色營隊<br>限量 <em>95 折</em> 優惠券</div>
+        <div class="coupon-discount">95折</div>
+        <div style="font-size:1.1rem;font-weight:900;color:var(--red);margin:16px 0 8px">
+          🔥 今日 ${h}:${m} 準時開搶！
+        </div>
+        <div id="preCountdown" style="font-size:2.2rem;font-weight:900;color:var(--red);font-family:'Nunito',monospace;letter-spacing:2px;margin-bottom:16px">--:--:--</div>
+        <div class="coupon-note" style="text-align:left;background:#FFFBF5;border-radius:14px;padding:18px 16px;border:1.5px solid rgba(245,148,30,0.15);color:#555;font-size:.84rem;line-height:1.9">
+          <div style="font-weight:900;color:var(--black);font-size:.92rem;margin-bottom:10px;text-align:center">⏰ 等待開放中，先看看有哪些營隊吧！</div>
+          <div style="color:#2E7D32;font-weight:700">✅ 領取後 1 小時內不限營隊數量</div>
+          <div style="color:#2E7D32;font-weight:700">✅ 適用所有暑期特色營隊</div>
+          <div style="color:var(--orange);font-weight:700">⚠️ 與兩人同行價擇優使用，不可疊加</div>
+          <div style="margin-top:8px;color:var(--red);font-weight:700">❌ 不適用：七月包月營、小一新生營</div>
+        </div>
+        <a class="action-btn action-btn-primary" href="index.html" style="animation:none;margin-top:16px;background:linear-gradient(135deg,var(--orange),var(--orange-dark))">
+          🔍 先去看看營隊有哪些 →
+        </a>
+        <a class="action-btn action-btn-outline" href="quiz.html" style="margin-top:8px">
+          🎯 不知道選什麼？做個小測驗
+        </a>
+      </div>
+    `;
+
+    // 開放倒數
+    const preTimer = setInterval(() => {
+      const now = new Date();
+      const diff = openTime - now;
+      if (diff <= 0) {
+        clearInterval(preTimer);
+        init(); // 時間到自動刷新
+        return;
+      }
+      const hrs = Math.floor(diff / 3600000);
+      const mins = Math.floor((diff % 3600000) / 60000);
+      const secs = Math.floor((diff % 60000) / 1000);
+      const el = document.getElementById('preCountdown');
+      if (el) el.textContent = `${String(hrs).padStart(2,'0')}:${String(mins).padStart(2,'0')}:${String(secs).padStart(2,'0')}`;
+    }, 1000);
+  }
+
   // ===== 初始化 =====
   async function init() {
     renderLoading();
+
+    // 開放時間限制（台灣時間）
+    const OPEN_TIME = new Date('2026-04-15T13:00:00+08:00');
+    const now = new Date();
+    if (now < OPEN_TIME) {
+      renderNotYet(OPEN_TIME);
+      return;
+    }
 
     // 檢查本地是否有未過期的優惠券
     const local = getLocalCoupon();
