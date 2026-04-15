@@ -378,6 +378,14 @@
     `;
 
     startCountdown(expTime);
+
+    // 自動複製優惠碼到剪貼簿
+    try {
+      navigator.clipboard.writeText(code).then(() => {
+        const el = document.querySelector('.code-copy');
+        if (el) el.textContent = '✅ 優惠碼已自動複製！直接去表單貼上';
+      });
+    } catch(e) {}
   }
 
   // ===== 畫面：已領完 =====
