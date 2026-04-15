@@ -594,6 +594,36 @@ function markCouponUsed(code) {
   }
 }
 
+// 查詢優惠碼綁定的學員姓名（跨所有工作表找第一個使用此碼的姓名）
+function getCouponBoundName(code) {
+  if (!code) return null;
+  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  const allSheets = ss.getSheets();
+  const upperCode = String(code).toUpperCase().trim();
+
+  for (const sheet of allSheets) {
+    const name = sheet.getName();
+    if (name === '優惠券' || name === '設定') continue;
+    const lastRow = sheet.getLastRow();
+    if (lastRow < 2) continue;
+
+    const headers = sheet.getRange(1, 1, 1, sheet.getLastColumn()).getValues()[0];
+    const couponCol = findColumnIndex(headers, ['填寫您的優惠碼', '填寫優惠碼', '優惠碼']);
+    const nameCol = findColumnIndex(headers, ['寶貝姓名', '孩子姓名', '學生姓名', '姓名']);
+    if (couponCol < 0 || nameCol < 0) continue;
+
+    const data = sheet.getRange(2, 1, lastRow - 1, sheet.getLastColumn()).getValues();
+    for (let i = 0; i < data.length; i++) {
+      const rowCode = String(data[i][couponCol] || '').toUpperCase().trim();
+      if (rowCode === upperCode) {
+        const childName = String(data[i][nameCol] || '').trim();
+        if (childName) return childName;
+      }
+    }
+  }
+  return null;
+}
+
 // 查詢優惠碼資訊（從優惠券工作表）
 function lookupCoupon(code) {
   if (!code) return null;
@@ -639,6 +669,7 @@ function onFormSubmit(e) {
     const couponCol = findColumnIndex(headers, ['填寫您的優惠碼', '填寫優惠碼', '優惠碼']);
     const phoneCol = findColumnIndex(headers, ['家長聯絡電話', '聯絡電話', '手機', '電話']);
     const noteCol = findColumnIndex(headers, ['備註', '備注', '其他']);
+    const childNameCol = findColumnIndex(headers, ['寶貝姓名', '孩子姓名', '學生姓名', '姓名']);
 
     // 確保有結果欄位
     const resultCols = ['💰 方案', '🎟️ 優惠碼狀態', '📱 手機比對', '💵 應付金額'];
@@ -695,17 +726,28 @@ function onFormSubmit(e) {
             couponValid = true;
             markCouponUsed(couponCode);
           }
-          if (couponValid) couponStatus = '✅ 有效';
+          if (couponValid) {
+            const currentChild = childNameCol >= 0 ? String(rowData[childNameCol] || '').trim() : '';
+            couponStatus = '✅ 有效（學員：' + (currentChild || '未知') + '）';
+          }
         } else {
           couponStatus = '❌ 已過期';
         }
       } else if (coupon.status === '已使用') {
         if (rawFormPhone && coupon.phone && phoneMatch(rawFormPhone, coupon.phone)) {
           phoneResult = '✅ 吻合';
-          couponValid = true;
-          couponStatus = '✅ 有效（多營隊）';
+          // 檢查是否同一位學員
+          const currentChild = childNameCol >= 0 ? String(rowData[childNameCol] || '').trim() : '';
+          const boundChild = getCouponBoundName(couponCode);
+          if (boundChild && currentChild && boundChild !== currentChild) {
+            couponValid = false;
+            couponStatus = '❌ 此券已綁定「' + boundChild + '」，不可用於「' + currentChild + '」';
+          } else {
+            couponValid = true;
+            couponStatus = '✅ 有效（多營隊，學員：' + (boundChild || currentChild || '未知') + '）';
+          }
         } else {
-          couponStatus = '✅ 已使用（多營隊）';
+          couponStatus = '⚠️ 已使用（手機不符）';
         }
       }
     }
