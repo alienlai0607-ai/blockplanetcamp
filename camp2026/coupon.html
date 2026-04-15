@@ -368,9 +368,9 @@
               <span style="font-weight:400;color:#666">將優惠碼及手機號碼私訊<span style="color:#06C755;font-weight:700">官方 LINE</span>，行政小編會幫您處理折扣。</span>
             </div>
           </div>
-          <a class="action-btn action-btn-primary" href="index.html#weekly">
+          <button class="action-btn action-btn-primary" onclick="showReminder()">
             🔥 立即前往報名（使用優惠碼）
-          </a>
+          </button>
           <a class="action-btn action-btn-line" href="https://lin.ee/zFqqFzQ" target="_blank">
             💬 加入 LINE 詢問
           </a>
@@ -438,6 +438,32 @@
         </div>
       </div>
     `;
+  }
+
+  // ===== 提醒對話框 =====
+  function showReminder() {
+    const overlay = document.createElement('div');
+    overlay.style.cssText = 'position:fixed;inset:0;z-index:9999;background:rgba(0,0,0,0.6);display:flex;align-items:center;justify-content:center;padding:20px';
+    overlay.innerHTML = `
+      <div style="background:white;border-radius:24px;padding:32px 24px;max-width:380px;width:100%;text-align:center;animation:cardIn .3s ease">
+        <div style="font-size:2.5rem;margin-bottom:12px">⚠️</div>
+        <div style="font-size:1.15rem;font-weight:900;color:#333;margin-bottom:16px">使用優惠碼前請注意！</div>
+        <div style="text-align:left;font-size:.88rem;color:#555;line-height:1.9;background:#FFF8F0;border-radius:14px;padding:16px;margin-bottom:20px;border:1.5px solid rgba(245,148,30,0.15)">
+          <p style="margin:0 0 8px"><span style="color:#2E7D32;font-weight:700">1.</span> 在報名表單的「<b style="color:var(--orange)">優惠碼</b>」欄位填入您的優惠碼</p>
+          <p style="margin:0 0 8px"><span style="color:#2E7D32;font-weight:700">2.</span> 請在 <b style="color:#C93A2A">1 小時內</b> 完成報名</p>
+          <p style="margin:0 0 8px"><span style="color:#2E7D32;font-weight:700">3.</span> 填完表單後請 <b style="color:#C93A2A">立即截圖</b></p>
+          <p style="margin:0 0 8px"><span style="color:#2E7D32;font-weight:700">4.</span> 將截圖傳到 <b style="color:#06C755">官方 LINE</b> 確認是否使用成功</p>
+          <p style="margin:0;padding-top:8px;border-top:1px solid #eee;color:#C93A2A;font-weight:700">⚠️ 若未完成以上步驟確認，將維持原價計費</p>
+        </div>
+        <button onclick="window.location.href='index.html#weekly'" style="display:block;width:100%;padding:16px;border-radius:50px;background:linear-gradient(135deg,#C93A2A,#e74c3c);color:white;font-weight:900;font-size:1rem;border:none;cursor:pointer;font-family:inherit;box-shadow:0 6px 24px rgba(201,58,42,.35)">
+          ✅ 我知道了，前往報名
+        </button>
+        <button onclick="this.closest('div[style*=fixed]').remove()" style="display:block;width:100%;padding:12px;margin-top:8px;background:none;border:none;color:#aaa;font-size:.85rem;font-weight:700;cursor:pointer;font-family:inherit">
+          返回
+        </button>
+      </div>
+    `;
+    document.body.appendChild(overlay);
   }
 
   // ===== 倒數計時器 =====
