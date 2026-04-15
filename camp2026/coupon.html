@@ -281,12 +281,17 @@
     return res.json();
   }
 
-  // ===== 畫面：載入中 =====
+  // ===== 畫面：載入中（直接先顯示頁面框架）=====
   function renderLoading() {
     app.innerHTML = `
       <div class="coupon-card">
-        <div class="coupon-icon">⏳</div>
-        <div class="coupon-title">載入中...</div>
+        <div class="coupon-icon">🎟️</div>
+        <div class="coupon-title">暑期特色營隊<br>限量 <em>95 折</em> 優惠券</div>
+        <div class="coupon-discount">95折</div>
+        <div class="coupon-remaining">
+          剩餘可領取
+          <span class="remaining-num" style="animation:pulse 1s infinite">載入中...</span>
+        </div>
       </div>
     `;
   }
