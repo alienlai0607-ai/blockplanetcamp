@@ -520,14 +520,24 @@ function fixPhone(phone) {
 // 從文字中提取所有手機號碼（09開頭10碼）
 function extractPhones(text) {
   const str = String(text || '');
-  // 先找標準格式
-  const matches = str.match(/09\d{8}/g) || [];
-  // 也找被去掉 0 的格式（9 碼數字）
-  const digits = str.replace(/[^0-9]/g, '');
-  if (matches.length === 0 && digits.length >= 9) {
-    const fixed = fixPhone(digits);
-    if (fixed.startsWith('09') && fixed.length === 10) {
-      matches.push(fixed);
+  // 先找標準格式（連續10碼）
+  let matches = str.match(/09\d{8}/g) || [];
+  // 找有橫線或空格的格式（如 0903-422-288 或 0903 422 288）
+  const dashMatches = str.match(/09\d{1,2}[-\s]?\d{2,3}[-\s]?\d{2,4}/g) || [];
+  for (const dm of dashMatches) {
+    const cleaned = dm.replace(/[^0-9]/g, '');
+    if (cleaned.length === 10 && cleaned.startsWith('09') && !matches.includes(cleaned)) {
+      matches.push(cleaned);
+    }
+  }
+  // 退路：把整段文字的數字抽出來找
+  if (matches.length === 0) {
+    const digits = str.replace(/[^0-9]/g, '');
+    if (digits.length >= 9) {
+      const fixed = fixPhone(digits);
+      if (fixed.startsWith('09') && fixed.length === 10 && !matches.includes(fixed)) {
+        matches.push(fixed);
+      }
     }
   }
   return matches;
