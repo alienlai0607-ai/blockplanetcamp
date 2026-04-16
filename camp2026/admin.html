@@ -393,37 +393,91 @@ function renderCamps(data) {
   document.getElementById('camps-content').innerHTML = html;
 }
 
+// 從 session 字串抽簡潔 tab 標籤（北區 7/6 / 永康 8/17 / 第 1 梯次）
+function sessionLabel(session) {
+  if (!session || session === '(未指定梯次)') return '未指定';
+  const parts = [];
+  if (session.includes('北區')) parts.push('📍 北區');
+  else if (session.includes('永康')) parts.push('📍 永康');
+  const mg = session.match(/第\s*(\d+)/);
+  if (mg) parts.push('第 ' + mg[1] + ' 梯');
+  const md = session.match(/\d+\/\d+/);
+  if (md) parts.push(md[0]);
+  return parts.length > 0 ? parts.join(' ｜ ') : session.slice(0, 14);
+}
+
+// 目前 modal 狀態（供列印用）
+let _currentCampData = null;
+
 function openCamp(idx) {
   const camp = allData.camps[idx];
-  document.getElementById('modalTitle').textContent = camp.name + '（' + camp.count + ' 人）';
+  document.getElementById('modalTitle').textContent = camp.name + '（共 ' + camp.count + ' 人）';
   const sessionMap = {};
   camp.students.forEach(s => { const k = s.session || '(未指定梯次)'; if (!sessionMap[k]) sessionMap[k] = []; sessionMap[k].push(s); });
   const allStudents = []; allData.camps.forEach(c => c.students.forEach(s => allStudents.push(s)));
+  const sessionKeys = Object.keys(sessionMap);
+
+  _currentCampData = { camp, sessionMap, allStudents, sessionKeys };
+
   let body = '';
-  Object.keys(sessionMap).forEach(session => {
-    const students = sessionMap[session];
-    body += `<div class="session-section"><div class="session-title"><span>📅 ${session}</span><span style="font-size:.75rem;color:#888">${students.length} 人</span></div>`;
-    students.forEach((s, i) => {
-      const siblings = allStudents.filter(x => x.parentPhone && s.parentPhone && x.parentPhone === s.parentPhone && x.name !== s.name);
-      const siblingNames = [...new Set(siblings.map(x => x.name))];
-      const alerts = [];
-      if (s.allergy && s.allergy !== '無') alerts.push('⚠️ 過敏/用藥：' + s.allergy);
-      if (s.health && s.health !== '無' && s.health !== '良好') alerts.push('🏥 健康：' + s.health);
-      body += `<div class="student-row">
-        <div class="student-num">${i + 1}</div>
-        <div>
-          <div class="student-name">${s.name}${s.gender ? `<small>${s.gender}</small>` : ''}${siblingNames.length > 0 ? `<span class="sibling-tag">👨‍👩‍👧 ${siblingNames.join('、')}</span>` : ''}</div>
-          <div class="student-detail">${s.parentName ? `👤 ${s.parentName}` : ''}${s.parentPhone ? ` ｜ 📱 ${s.parentPhone}` : ''}${s.diet ? ` ｜ 🍽️ ${s.diet}` : ''}${s.lineId ? ` ｜ LINE: ${s.lineId}` : ''}</div>
-          ${alerts.length > 0 ? `<div class="alert-box">${alerts.map(a => '<div>' + a + '</div>').join('')}</div>` : ''}
-          ${s.note ? `<div class="note-box">📝 ${s.note}</div>` : ''}
-        </div>
-        <div>${paymentBadge(s.payment)}</div>
-      </div>`;
+  if (sessionKeys.length > 1) {
+    body += '<div id="sessionTabs" style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:14px;padding:4px 0 12px;border-bottom:1.5px solid #f0f0f0;position:sticky;top:0;background:white;z-index:5">';
+    sessionKeys.forEach((s, i) => {
+      body += `<button class="session-tab" data-idx="${i}" style="padding:8px 16px;border-radius:50px;border:2px solid ${i === 0 ? '#F5941E' : '#eee'};background:${i === 0 ? '#F5941E' : 'white'};color:${i === 0 ? 'white' : '#555'};font-weight:700;cursor:pointer;font-family:inherit;font-size:.85rem;transition:all .15s">${sessionLabel(s)} <span style="opacity:.85">(${sessionMap[s].length})</span></button>`;
     });
-    body += `<button class="print-btn" data-camp="${encodeURIComponent(camp.name)}" data-session="${encodeURIComponent(session)}" data-students='${encodeURIComponent(JSON.stringify(students.map(s => ({n:s.name, g:s.gender, a:s.allergy}))))}' onclick="printFromBtn(this)">🖨️ 列印簽到單（${students.length} 人）</button></div>`;
-  });
+    body += '</div>';
+  }
+  body += '<div id="sessionContent"></div>';
+
   document.getElementById('modalBody').innerHTML = body;
+  renderSession(0);
+
+  if (sessionKeys.length > 1) {
+    document.querySelectorAll('.session-tab').forEach(btn => {
+      btn.addEventListener('click', () => {
+        document.querySelectorAll('.session-tab').forEach(b => {
+          b.style.background = 'white'; b.style.color = '#555'; b.style.borderColor = '#eee';
+        });
+        btn.style.background = '#F5941E'; btn.style.color = 'white'; btn.style.borderColor = '#F5941E';
+        renderSession(Number(btn.dataset.idx));
+      });
+    });
+  }
+
   document.getElementById('modal').classList.add('show');
+}
+
+function renderSession(sessionIdx) {
+  const { sessionMap, allStudents, sessionKeys } = _currentCampData;
+  const session = sessionKeys[sessionIdx];
+  const students = sessionMap[session];
+  let html = `<div class="session-section"><div class="session-title"><span>📅 ${session}</span><span style="font-size:.75rem;color:#888">${students.length} 人</span></div>`;
+  students.forEach((s, i) => {
+    const siblings = allStudents.filter(x => x.parentPhone && s.parentPhone && x.parentPhone === s.parentPhone && x.name !== s.name);
+    const siblingNames = [...new Set(siblings.map(x => x.name))];
+    const alerts = [];
+    if (s.allergy && s.allergy !== '無') alerts.push('⚠️ 過敏/用藥：' + s.allergy);
+    if (s.health && s.health !== '無' && s.health !== '良好') alerts.push('🏥 健康：' + s.health);
+    html += `<div class="student-row">
+      <div class="student-num">${i + 1}</div>
+      <div>
+        <div class="student-name">${s.name}${s.gender ? `<small>${s.gender}</small>` : ''}${siblingNames.length > 0 ? `<span class="sibling-tag">👨‍👩‍👧 ${siblingNames.join('、')}</span>` : ''}</div>
+        <div class="student-detail">${s.parentName ? `👤 ${s.parentName}` : ''}${s.parentPhone ? ` ｜ 📱 ${s.parentPhone}` : ''}${s.diet ? ` ｜ 🍽️ ${s.diet}` : ''}${s.lineId ? ` ｜ LINE: ${s.lineId}` : ''}</div>
+        ${alerts.length > 0 ? `<div class="alert-box">${alerts.map(a => '<div>' + a + '</div>').join('')}</div>` : ''}
+        ${s.note ? `<div class="note-box">📝 ${s.note}</div>` : ''}
+      </div>
+      <div>${paymentBadge(s.payment)}</div>
+    </div>`;
+  });
+  html += `<button class="print-btn" onclick="printCurrent(${sessionIdx})">🖨️ 列印此梯次簽到單（${students.length} 人）</button></div>`;
+  document.getElementById('sessionContent').innerHTML = html;
+}
+
+function printCurrent(sessionIdx) {
+  const { camp, sessionMap, sessionKeys } = _currentCampData;
+  const session = sessionKeys[sessionIdx];
+  const students = sessionMap[session].map(s => ({ n: s.name, g: s.gender, a: s.allergy }));
+  printRollCall(camp.name, session, students);
 }
 function closeModal(e) { if (!e || e.target.id === 'modal') document.getElementById('modal').classList.remove('show'); }
 function printFromBtn(btn) {
