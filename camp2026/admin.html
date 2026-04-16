@@ -75,9 +75,11 @@ h1 { font-size: 1.5rem; color: #F5941E; font-weight: 900; }
 .student-detail { font-size: .76rem; color: #888; margin-top: 3px; line-height: 1.6; }
 .alert-box { background: #FFEBEE; border: 1.5px solid #FFCDD2; border-radius: 8px; padding: 6px 10px; margin-top: 5px; font-size: .78rem; color: #C62828; }
 .note-box { background: #FFF8E1; border-left: 3px solid #FFC107; padding: 4px 8px; margin-top: 5px; font-size: .75rem; color: #795548; }
-.payment { padding: 3px 10px; border-radius: 50px; font-size: .72rem; font-weight: 700; white-space: nowrap; }
+.payment { padding: 3px 10px; border-radius: 50px; font-size: .72rem; font-weight: 700; white-space: nowrap; display: inline-block; }
 .payment-paid { background: #E8F5E9; color: #2E7D32; }
+.payment-notified { background: #FFF3E0; color: #E65100; }
 .payment-unpaid { background: #FFEBEE; color: #C62828; }
+.payment-note { background: #F3E5F5; color: #6A1B9A; }
 .payment-pending { background: #FFF3E0; color: #E65100; }
 .print-btn { display: block; width: 100%; padding: 10px; margin-top: 8px; background: #F5941E; color: white; font-weight: 900; border: none; border-radius: 8px; font-size: .9rem; cursor: pointer; font-family: inherit; }
 
@@ -256,13 +258,22 @@ function parseDates(session) {
 
 function paymentBadge(status) {
   const s = (status || '').trim();
-  if (!s) return '<span class="payment payment-pending">⏳ 未確認</span>';
-  if (/(已|完|OK|ok|是|付)/.test(s)) return '<span class="payment payment-paid">✅ 已付款</span>';
-  if (/(未|待|否)/.test(s)) return '<span class="payment payment-unpaid">❌ 未付款</span>';
-  return '<span class="payment payment-pending">⏳ ' + s + '</span>';
+  if (!s) return '<span class="payment payment-unpaid">⏳ 未通知</span>';
+  if (/^[vV✓✔]$/.test(s)) return '<span class="payment payment-paid">✅ 已付款</span>';
+  if (s === '已通知' || s.includes('已通知')) return '<span class="payment payment-notified">🔔 已通知</span>';
+  return '<span class="payment payment-note">📝 ' + s + '</span>';
 }
 function countAlerts(students) { return students.filter(s => (s.allergy && s.allergy !== '無') || (s.health && s.health !== '無' && s.health !== '良好')).length; }
-function countPayment(students) { let paid = 0, unpaid = 0; students.forEach(s => { const p = (s.payment || '').trim(); if (/(已|完|OK|ok|是|付)/.test(p)) paid++; else unpaid++; }); return { paid, unpaid }; }
+function countPayment(students) {
+  let paid = 0, notified = 0, unknown = 0;
+  students.forEach(s => {
+    const p = (s.payment || '').trim();
+    if (/^[vV✓✔]$/.test(p)) paid++;
+    else if (p.includes('已通知')) notified++;
+    else unknown++;
+  });
+  return { paid, notified, unknown };
+}
 
 // === 載入營隊資料 ===
 async function loadCamps() {
@@ -278,15 +289,16 @@ async function loadCamps() {
 function renderCamps(data) {
   if (!data.camps || data.camps.length === 0) { document.getElementById('camps-content').innerHTML = '<div class="loading">尚無報名資料</div>'; return; }
   const totalStudents = data.camps.reduce((s, c) => s + c.count, 0);
-  let totalPaid = 0, totalUnpaid = 0, totalAlerts = 0;
-  data.camps.forEach(c => { const p = countPayment(c.students); totalPaid += p.paid; totalUnpaid += p.unpaid; totalAlerts += countAlerts(c.students); });
+  let totalPaid = 0, totalNotified = 0, totalUnknown = 0, totalAlerts = 0;
+  data.camps.forEach(c => { const p = countPayment(c.students); totalPaid += p.paid; totalNotified += p.notified; totalUnknown += p.unknown; totalAlerts += countAlerts(c.students); });
   const stats = document.getElementById('stats');
   stats.style.display = 'grid';
   stats.innerHTML = `
     <div class="stat"><div class="stat-num">${data.camps.length}</div><div class="stat-label">營隊數</div></div>
     <div class="stat"><div class="stat-num">${totalStudents}</div><div class="stat-label">總人數</div></div>
-    <div class="stat"><div class="stat-num" style="color:#2E7D32">${totalPaid}</div><div class="stat-label">已付款</div></div>
-    <div class="stat"><div class="stat-num" style="color:#C93A2A">${totalUnpaid}</div><div class="stat-label">未付款/未確認</div></div>
+    <div class="stat"><div class="stat-num" style="color:#2E7D32">${totalPaid}</div><div class="stat-label">✅ 已付款</div></div>
+    <div class="stat"><div class="stat-num" style="color:#E65100">${totalNotified}</div><div class="stat-label">🔔 已通知</div></div>
+    <div class="stat"><div class="stat-num" style="color:#C93A2A">${totalUnknown}</div><div class="stat-label">⏳ 待處理</div></div>
     <div class="stat"><div class="stat-num" style="color:#C93A2A">${totalAlerts}</div><div class="stat-label">💊 特殊照護</div></div>`;
 
   let html = '<div class="camps-grid">';
@@ -301,7 +313,8 @@ function renderCamps(data) {
       </div>
       <div class="camp-payment-line">
         ${pay.paid > 0 ? `<span class="badge-mini" style="background:#E8F5E9;color:#2E7D32">✅ ${pay.paid}</span>` : ''}
-        ${pay.unpaid > 0 ? `<span class="badge-mini" style="background:#FFF3E0;color:#E65100">⏳ ${pay.unpaid}</span>` : ''}
+        ${pay.notified > 0 ? `<span class="badge-mini" style="background:#FFF3E0;color:#E65100">🔔 ${pay.notified}</span>` : ''}
+        ${pay.unknown > 0 ? `<span class="badge-mini" style="background:#FFEBEE;color:#C93A2A">⏳ ${pay.unknown}</span>` : ''}
         ${sessions.size > 1 ? `<span class="badge-mini" style="background:#E3F2FD;color:#1565C0">📅 ${sessions.size} 梯次</span>` : ''}
       </div>
       ${alerts > 0 ? `<div class="camp-alerts">💊 ${alerts} 位需特殊照護</div>` : ''}
