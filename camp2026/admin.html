@@ -305,12 +305,22 @@ function parseDates(session) {
   return dates;
 }
 
-function paymentBadge(status) {
-  const s = (status || '').trim();
-  if (!s) return '<span class="payment payment-unpaid">⏳ 未通知</span>';
-  if (/^[vV✓✔]$/.test(s)) return '<span class="payment payment-paid">✅ 已付款</span>';
-  if (s === '已通知' || s.includes('已通知')) return '<span class="payment payment-notified">🔔 已通知</span>';
-  return '<span class="payment payment-note">📝 ' + s + '</span>';
+// 判斷是否為「去年颱風移轉」的孩子（已通知 + 不計費）
+function isTransferredStudent(s) {
+  return s && s.note && s.note.includes('去年露營活動移轉');
+}
+
+function paymentBadge(s) {
+  // 支援傳物件（新）或字串（舊）
+  if (typeof s === 'object' && s !== null) {
+    if (isTransferredStudent(s)) return '<span class="payment" style="background:#E0E0E0;color:#555">🔄 去年移轉（不計費）</span>';
+    return paymentBadge(s.payment);
+  }
+  const status = (s || '').trim();
+  if (!status) return '<span class="payment payment-unpaid">⏳ 未通知</span>';
+  if (/^[vV✓✔]$/.test(status)) return '<span class="payment payment-paid">✅ 已付款</span>';
+  if (status === '已通知' || status.includes('已通知')) return '<span class="payment payment-notified">🔔 已通知</span>';
+  return '<span class="payment payment-note">📝 ' + status + '</span>';
 }
 function countAlerts(students) { return students.filter(s => (s.allergy && s.allergy !== '無') || (s.health && s.health !== '無' && s.health !== '良好')).length; }
 function countPayment(students) {
@@ -318,7 +328,7 @@ function countPayment(students) {
   students.forEach(s => {
     const p = (s.payment || '').trim();
     if (/^[vV✓✔]$/.test(p)) paid++;
-    else if (p.includes('已通知')) notified++;
+    else if (p.includes('已通知') || isTransferredStudent(s)) notified++;  // 移轉視為已通知
     else unknown++;
   });
   return { paid, notified, unknown };
@@ -496,7 +506,7 @@ function renderSession(sessionIdx) {
         ${alerts.length > 0 ? `<div class="alert-box">${alerts.map(a => '<div>' + a + '</div>').join('')}</div>` : ''}
         ${s.note ? `<div class="note-box">📝 ${s.note}</div>` : ''}
       </div>
-      <div>${paymentBadge(s.payment)}</div>
+      <div>${paymentBadge(s)}</div>
     </div>`;
   });
   html += `<button class="print-btn" onclick="printCurrent(${sessionIdx})">🖨️ 列印此梯次簽到單（${students.length} 人）</button></div>`;
