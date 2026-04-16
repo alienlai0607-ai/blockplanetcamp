@@ -27,6 +27,7 @@ function doGet(e) {
       case 'addmore':
         if (e.parameter.key !== 'bp2026admin') return respond({ success: false, error: '權限不足' });
         return respond(addMoreCoupons(parseInt(e.parameter.count) || 0));
+      case 'teacher': return respond(getTeacherData());
       // close 保留但不常用，過期會自動處理
       default:       return respond({ success: false, error: '無效的操作' });
     }
@@ -328,6 +329,73 @@ function addMoreCoupons(count) {
   }
 
   return { success: true, message: '✅ 已加開 ' + added + ' 張優惠券', added: added };
+}
+
+// ===== 老師後台：取得所有營隊報名資料 =====
+function getTeacherData() {
+  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  const allSheets = ss.getSheets();
+  const camps = [];
+
+  for (const sheet of allSheets) {
+    const name = sheet.getName();
+    if (name === '優惠券' || name === '設定' || name === '總帳') continue;
+    if (!findCampPrice(name)) continue;
+
+    const lastRow = sheet.getLastRow();
+    if (lastRow < 2) continue;
+
+    const headers = sheet.getRange(1, 1, 1, sheet.getLastColumn()).getValues()[0];
+    const data = sheet.getRange(2, 1, lastRow - 1, sheet.getLastColumn()).getValues();
+
+    const cols = {
+      timestamp: findColumnIndex(headers, ['時間戳記']),
+      name: findColumnIndex(headers, ['寶貝姓名', '孩子姓名', '學生姓名']),
+      grade: findColumnIndex(headers, ['寶貝出生年月日', '就讀年級', '年級']),
+      gender: findColumnIndex(headers, ['寶貝性別', '性別']),
+      diet: findColumnIndex(headers, ['寶貝飲食習慣', '飲食']),
+      allergy: findColumnIndex(headers, ['過敏', '藥物', '固定服用']),
+      health: findColumnIndex(headers, ['健康狀況']),
+      session: findColumnIndex(headers, ['梯次', '選擇您想', '場次']),
+      parentName: findColumnIndex(headers, ['家長姓名', '稱位']),
+      parentPhone: findColumnIndex(headers, ['家長聯絡電話', '聯絡電話', '手機', '電話']),
+      lineId: findColumnIndex(headers, ['LINE ID', 'LINE']),
+      note: findColumnIndex(headers, ['備註', '備注', '其他']),
+      payment: findColumnIndex(headers, ['付款狀態', '付款', '繳費']),
+    };
+
+    const students = [];
+    for (let i = 0; i < data.length; i++) {
+      const row = data[i];
+      const sname = cols.name >= 0 ? String(row[cols.name] || '').trim() : '';
+      if (!sname) continue;
+
+      students.push({
+        name: sname,
+        grade: cols.grade >= 0 ? String(row[cols.grade] || '').trim() : '',
+        gender: cols.gender >= 0 ? String(row[cols.gender] || '').trim() : '',
+        diet: cols.diet >= 0 ? String(row[cols.diet] || '').trim() : '',
+        allergy: cols.allergy >= 0 ? String(row[cols.allergy] || '').trim() : '',
+        health: cols.health >= 0 ? String(row[cols.health] || '').trim() : '',
+        session: cols.session >= 0 ? String(row[cols.session] || '').trim() : '',
+        parentName: cols.parentName >= 0 ? String(row[cols.parentName] || '').trim() : '',
+        parentPhone: cols.parentPhone >= 0 ? String(row[cols.parentPhone] || '').trim() : '',
+        lineId: cols.lineId >= 0 ? String(row[cols.lineId] || '').trim() : '',
+        note: cols.note >= 0 ? String(row[cols.note] || '').trim() : '',
+        payment: cols.payment >= 0 ? String(row[cols.payment] || '').trim() : '',
+      });
+    }
+
+    if (students.length > 0) {
+      camps.push({
+        name: name,
+        count: students.length,
+        students: students
+      });
+    }
+  }
+
+  return { success: true, camps: camps };
 }
 
 // ===== 用電話查詢所有報名紀錄 =====
