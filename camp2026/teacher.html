@@ -112,7 +112,7 @@ function parseDates(session) {
   // 轉換特殊粗體數字 𝟬-𝟵 → 0-9
   let text = String(session);
   const boldMap = { '𝟬':'0','𝟭':'1','𝟮':'2','𝟯':'3','𝟰':'4','𝟱':'5','𝟲':'6','𝟳':'7','𝟴':'8','𝟵':'9' };
-  text = text.replace(/[𝟬-𝟵]/g, c => boldMap[c] || c);
+  text = text.replace(/[\u{1D7EC}-\u{1D7F5}]/gu, c => boldMap[c] || c);
   text = text.replace(/[０-９]/g, c => String.fromCharCode(c.charCodeAt(0) - 0xFEE0));
 
   const matches = text.match(/\b\d{1,2}\/\d{1,2}\b/g);
