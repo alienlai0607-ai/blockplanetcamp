@@ -357,7 +357,7 @@ function renderCamps(data) {
     <div class="stat"><div class="stat-num">${totalStudents}</div><div class="stat-label">總人數</div></div>
     <div class="stat"><div class="stat-num" style="color:#2E7D32">${totalPaid}</div><div class="stat-label">✅ 已付款</div></div>
     <div class="stat"><div class="stat-num" style="color:#E65100">${totalNotified}</div><div class="stat-label">🔔 已通知</div></div>
-    <div class="stat"><div class="stat-num" style="color:#C93A2A">${totalUnknown}</div><div class="stat-label">⏳ 待處理</div></div>
+    <div class="stat"><div class="stat-num" style="color:#C93A2A">${totalUnknown}</div><div class="stat-label">⏳ 待通知</div></div>
     <div class="stat"><div class="stat-num" style="color:#C93A2A">${totalAlerts}</div><div class="stat-label">💊 特殊照護</div></div>`;
 
   let html = '<div class="camps-grid">';
@@ -366,7 +366,7 @@ function renderCamps(data) {
       html += `<div class="camp-card" style="opacity:.55;border-left-color:#bbb">
         <div class="camp-card-head">
           <div class="camp-name" style="color:#888">${camp.name}</div>
-          <div class="camp-count-badge" style="background:#e0e0e0">👥 0</div>
+          <div class="camp-count-badge" style="background:#e0e0e0">👥 報名 0 人</div>
         </div>
         <div style="font-size:.78rem;color:#aaa;margin-top:4px">尚無報名</div>
       </div>`;
@@ -378,12 +378,12 @@ function renderCamps(data) {
     html += `<div class="camp-card" onclick="openCamp(${idx})">
       <div class="camp-card-head">
         <div class="camp-name">${camp.name}</div>
-        <div class="camp-count-badge">👥 ${camp.count}</div>
+        <div class="camp-count-badge">👥 報名 ${camp.count} 人</div>
       </div>
       <div class="camp-payment-line">
-        ${pay.paid > 0 ? `<span class="badge-mini" style="background:#E8F5E9;color:#2E7D32">✅ ${pay.paid}</span>` : ''}
-        ${pay.notified > 0 ? `<span class="badge-mini" style="background:#FFF3E0;color:#E65100">🔔 ${pay.notified}</span>` : ''}
-        ${pay.unknown > 0 ? `<span class="badge-mini" style="background:#FFEBEE;color:#C93A2A">⏳ ${pay.unknown}</span>` : ''}
+        ${pay.paid > 0 ? `<span class="badge-mini" style="background:#E8F5E9;color:#2E7D32">✅ 已付款 ${pay.paid}</span>` : ''}
+        ${pay.notified > 0 ? `<span class="badge-mini" style="background:#FFF3E0;color:#E65100">🔔 已通知 ${pay.notified}</span>` : ''}
+        ${pay.unknown > 0 ? `<span class="badge-mini" style="background:#FFEBEE;color:#C93A2A">⏳ 待通知 ${pay.unknown}</span>` : ''}
         ${sessions.size > 1 ? `<span class="badge-mini" style="background:#E3F2FD;color:#1565C0">📅 ${sessions.size} 梯次</span>` : ''}
       </div>
       ${alerts > 0 ? `<div class="camp-alerts">💊 ${alerts} 位需特殊照護</div>` : ''}
