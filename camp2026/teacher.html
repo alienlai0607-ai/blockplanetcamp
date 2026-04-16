@@ -247,8 +247,14 @@ function render(data) {
         </div>`;
       });
 
+      const printData = {
+        camp: camp.name,
+        session: session,
+        students: students.map(s => ({n:s.name, g:s.grade, a:s.allergy}))
+      };
+      const encodedData = encodeURIComponent(JSON.stringify(printData));
       html += `<div class="btn-row no-print">
-        <button class="btn btn-primary" onclick="printRollCall('${camp.name}', '${session}', ${JSON.stringify(students.map(s => ({n:s.name, g:s.grade, a:s.allergy}))).replace(/"/g, '&quot;')})">🖨️ 列印簽到單</button>
+        <button class="btn btn-primary" data-print="${encodedData}" onclick="printFromData(this)">🖨️ 列印簽到單</button>
       </div>
       </div>`;
     });
@@ -257,6 +263,11 @@ function render(data) {
   });
 
   document.getElementById('content').innerHTML = html;
+}
+
+function printFromData(btn) {
+  const data = JSON.parse(decodeURIComponent(btn.dataset.print));
+  printRollCall(data.camp, data.session, data.students);
 }
 
 function printRollCall(campName, session, students) {
@@ -304,10 +315,19 @@ async function loadData() {
   try {
     const res = await fetch(API + '?action=teacher');
     const data = await res.json();
-    if (data.success) render(data);
-    else document.getElementById('content').innerHTML = '<div class="loading">載入失敗</div>';
+    if (data.success) {
+      try {
+        render(data);
+      } catch(renderErr) {
+        document.getElementById('content').innerHTML = '<div class="loading" style="color:#C93A2A">渲染失敗：' + renderErr.message + '</div>';
+        console.error(renderErr);
+      }
+    } else {
+      document.getElementById('content').innerHTML = '<div class="loading">載入失敗：' + (data.error || '未知錯誤') + '</div>';
+    }
   } catch(e) {
-    document.getElementById('content').innerHTML = '<div class="loading">載入失敗，請重新整理</div>';
+    document.getElementById('content').innerHTML = '<div class="loading" style="color:#C93A2A">載入失敗：' + e.message + '</div>';
+    console.error(e);
   }
 }
 
