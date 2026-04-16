@@ -284,12 +284,19 @@ function printFromBtn(btn) {
 function printRollCall(campName, session, students) {
   const dates = parseDates(session);
   const n = students.length;
-  const rowHeight = n <= 15 ? 32 : n <= 25 ? 26 : n <= 35 ? 20 : 16;
-  const fontSize = n <= 15 ? 13 : n <= 25 ? 12 : n <= 35 ? 11 : 10;
+  const rowHeight = n <= 12 ? 42 : n <= 20 ? 32 : n <= 28 ? 24 : n <= 35 ? 20 : 16;
+  const fontSize = n <= 15 ? 14 : n <= 25 ? 13 : n <= 35 ? 12 : 11;
 
   const dateHeaders = dates.length > 0
     ? dates.map(d => `<th>${d}</th>`).join('')
     : '<th>簽到</th>';
+
+  // 動態計算欄位寬度百分比（橫式 A4）
+  const dateCount = dates.length > 0 ? dates.length : 1;
+  const nameWidth = 18; // 姓名 18%
+  const noteWidth = 15; // 備註 15%
+  const numWidth = 5;   // 編號 5%
+  const dateWidth = (100 - nameWidth - noteWidth - numWidth) / dateCount;
 
   let rows = '';
   students.forEach((s, i) => {
@@ -301,27 +308,47 @@ function printRollCall(campName, session, students) {
     </tr>`;
   });
 
-  const w = window.open('', '_blank');
-  w.document.write(`<!DOCTYPE html><html><head><meta charset="UTF-8"><title>${campName}</title><style>
-    @page { size: A4; margin: 12mm; }
-    * { box-sizing: border-box; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
-    html, body { margin: 0; padding: 10px; font-family: 'Microsoft JhengHei','Noto Sans TC',sans-serif; }
-    h1 { text-align: center; font-size: 16pt; margin: 0 0 4px; font-weight: 900; }
-    .info { text-align: center; color: #555; margin-bottom: 10px; font-size: 11pt; }
+  const html = `<!DOCTYPE html><html><head><meta charset="UTF-8"><title>${campName} - 簽到單</title><style>
+    @page { size: A4 landscape; margin: 10mm; }
+    * { box-sizing: border-box; -webkit-print-color-adjust: exact; print-color-adjust: exact; color-adjust: exact; }
+    html, body { margin: 0; padding: 15px; font-family: 'Microsoft JhengHei','PingFang TC','Noto Sans TC',sans-serif; color: #333; }
+    h1 { text-align: center; font-size: 18pt; margin: 0 0 6px; font-weight: 900; }
+    .info { text-align: center; color: #555; margin-bottom: 12px; font-size: 12pt; }
     table { width: 100%; border-collapse: collapse; table-layout: fixed; }
     tr { page-break-inside: avoid; }
-    th, td { border: 1.5px solid #333; padding: 4px 6px; text-align: center; font-size: ${fontSize}pt; height: ${rowHeight}px; overflow: hidden; }
+    th, td { border: 1.5px solid #333; padding: 6px 8px; text-align: center; font-size: ${fontSize}pt; height: ${rowHeight}px; overflow: hidden; vertical-align: middle; }
     th { background: #FFF3E0 !important; font-weight: 900; }
-    td.num { width: 36px; color: #888; }
-    td.name { text-align: left; padding-left: 10px; font-weight: 700; }
-    td.note { text-align: left; padding-left: 8px; font-size: ${fontSize-1}pt; color: #C93A2A; }
-    @media print { body { padding: 0; } @page { margin: 10mm; } }
+    td.num { color: #888; }
+    td.name { text-align: left; padding-left: 12px; font-weight: 700; }
+    td.note { text-align: left; padding-left: 10px; font-size: ${fontSize-1}pt; color: #C93A2A; }
+    .col-num { width: ${numWidth}%; }
+    .col-name { width: ${nameWidth}%; }
+    .col-date { width: ${dateWidth}%; }
+    .col-note { width: ${noteWidth}%; }
+    @media print { body { padding: 8px; } }
   </style></head><body>
   <h1>${campName}</h1>
   <div class="info">${session}｜共 ${n} 位學員</div>
-  <table><tr><th style="width:36px">No.</th><th>姓名</th>${dateHeaders}<th style="width:140px">備註</th></tr>${rows}</table>
-  <script>window.print();</sc`+`ript></body></html>`);
+  <table>
+    <colgroup>
+      <col class="col-num">
+      <col class="col-name">
+      ${(dates.length > 0 ? dates : [0]).map(() => '<col class="col-date">').join('')}
+      <col class="col-note">
+    </colgroup>
+    <thead>
+      <tr><th>No.</th><th>姓名</th>${dateHeaders}<th>備註</th></tr>
+    </thead>
+    <tbody>${rows}</tbody>
+  </table>
+  </body></html>`;
+
+  const w = window.open('', '_blank');
+  w.document.open();
+  w.document.write(html);
   w.document.close();
+  // 等 DOM 載入完成再列印
+  w.onload = () => setTimeout(() => w.print(), 300);
 }
 
 async function loadData() {
