@@ -109,23 +109,22 @@ let allData = null;
 
 function parseDates(session) {
   if (!session) return [];
-  // 抓出所有 m/d 格式（排除時間如 9:00）
-  const matches = String(session).match(/\b\d{1,2}\/\d{1,2}\b/g);
-  if (!matches || matches.length === 0) return [];
+  // 轉換特殊粗體數字 𝟬-𝟵 → 0-9
+  let text = String(session);
+  const boldMap = { '𝟬':'0','𝟭':'1','𝟮':'2','𝟯':'3','𝟰':'4','𝟱':'5','𝟲':'6','𝟳':'7','𝟴':'8','𝟵':'9' };
+  text = text.replace(/[𝟬-𝟵]/g, c => boldMap[c] || c);
+  text = text.replace(/[０-９]/g, c => String.fromCharCode(c.charCodeAt(0) - 0xFEE0));
 
+  const matches = text.match(/\b\d{1,2}\/\d{1,2}\b/g);
+  if (!matches || matches.length === 0) return [];
   const [m1, d1] = matches[0].split('/').map(Number);
-  // 若只有一個日期，預設 5 天
   let m2, d2;
   if (matches.length >= 2) {
     [m2, d2] = matches[matches.length - 1].split('/').map(Number);
-  } else {
-    m2 = m1; d2 = d1 + 4;
-  }
-
+  } else { m2 = m1; d2 = d1 + 4; }
   const dates = [];
-  const start = new Date(2026, m1 - 1, d1);
+  const cursor = new Date(2026, m1 - 1, d1);
   const end = new Date(2026, m2 - 1, d2);
-  const cursor = new Date(start);
   while (cursor <= end && dates.length < 14) {
     dates.push((cursor.getMonth() + 1) + '/' + cursor.getDate());
     cursor.setDate(cursor.getDate() + 1);
