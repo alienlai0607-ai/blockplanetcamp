@@ -6,6 +6,32 @@
 const VALID_MINUTES = 60;   // 優惠券有效時間（分鐘）
 const POOL_SIZE = 60;       // 優惠券總池大小
 
+// 🆕 課後安親名單（享七月包月特價 $15,500，其他家長報名包月為 $16,000）
+// 支援 2 字/3 字姓名，與表單輸入做雙向 includes 比對
+const AFTERSCHOOL_STUDENTS = [
+  '吳翊辰','張晉嘉','岳士宸','詹恩弦','黃宥鈞','黃允樂','黃偲芮','陳岩真',
+  '張軒瑀','林宥縈','林久珹','林彥呈','張尊瑋','翁梓涵','黃浩軒','李荏苒',
+  '陳宥熹','宥銨','芮語','佳陽','翊菲','愷妡','紹凱','琝程','梓寧','呈諺',
+  '雋翔','詠媞','紫瑀','沐雅','米樂','立喆','宸瑋','士剛','羽芯','詣壹',
+  '炳兆','竩婷','博棟','丞澤','萓臻','采華','靚芯','陳宥騫','張宏宇','曾宇綸',
+  '陳硯','蔡卓辰','雨彤','尹睿','睿安','承叡','映竹','秉融','守博'
+];
+
+function isAfterSchoolStudent(childName) {
+  if (!childName) return false;
+  const norm = normalizeName(childName);
+  if (!norm) return false;
+  return AFTERSCHOOL_STUDENTS.some(n => {
+    const nn = normalizeName(n);
+    if (!nn) return false;
+    return norm === nn || norm.includes(nn) || nn.includes(norm);
+  });
+}
+
+function isPackageMonthSheet(sheetName) {
+  return sheetName.includes('七月包月') || sheetName.includes('包月營') || sheetName.includes('包月');
+}
+
 // ===== 網頁 API 入口 =====
 function doGet(e) {
   const lock = LockService.getScriptLock();
@@ -447,11 +473,26 @@ function lookupByPhone(phone) {
         } else if (hasCoupon) { finalPrice = couponPrice; priceType = '95折'; }
         else if (isDuo) { finalPrice = duo; priceType = '兩人同行'; }
 
+        // 🆕 七月包月：安親名單 $15,500，其他 $16,000（覆蓋上面）
+        let isAfterSchool = false;
+        if (isPackageMonthSheet(name)) {
+          basePrice = 16000;
+          if (isAfterSchoolStudent(childName)) {
+            finalPrice = 15500;
+            priceType = '課後安親特價';
+            isAfterSchool = true;
+          } else {
+            finalPrice = 16000;
+            priceType = '早鳥價';
+          }
+          hasCoupon = false;
+        }
+
         results.push({
           camp: name, childName, session,
           couponCode: couponCode || '無',
-          hasCoupon, isDuo, priceType,
-          basePrice: earlybird, finalPrice,
+          hasCoupon, isDuo, priceType, isAfterSchool,
+          basePrice, finalPrice,
           note: noteText.trim()
         });
       }
@@ -731,6 +772,18 @@ function onFormSubmit(e) {
     } else if (couponValid) { finalPrice = couponPrice; priceLabel = '95折 $' + couponPrice.toLocaleString(); }
     else if (isDuo && duoPrice) { finalPrice = duoPrice; priceLabel = '兩人同行 $' + duoPrice.toLocaleString(); }
 
+    // 🆕 七月包月：安親名單 $15,500，其他 $16,000（覆蓋上面所有邏輯）
+    if (isPackageMonthSheet(sheetName)) {
+      const currentChild = childNameCol >= 0 ? String(rowData[childNameCol] || '').trim() : '';
+      if (isAfterSchoolStudent(currentChild)) {
+        finalPrice = 15500;
+        priceLabel = '課後安親特價 $15,500';
+      } else {
+        finalPrice = 16000;
+        priceLabel = '早鳥價 $16,000';
+      }
+    }
+
     sheet.getRange(row, startCol, 1, 4).setValues([[priceLabel, couponStatus, phoneResult, '$' + finalPrice.toLocaleString()]]);
 
     const priceCell = sheet.getRange(row, startCol + 3);
@@ -750,6 +803,7 @@ function recalcSheet(sheetName) {
   const couponCol = findColumnIndex(headers, ['填寫您的優惠碼', '填寫優惠碼', '優惠碼']);
   const phoneCol = findColumnIndex(headers, ['家長聯絡電話', '聯絡電話', '手機', '電話']);
   const noteCol = findColumnIndex(headers, ['備註', '備注', '其他']);
+  const childNameCol = findColumnIndex(headers, ['寶貝姓名', '孩子姓名', '學生姓名', '姓名']);
   const campPrice = findCampPrice(sheetName);
   const earlybird = campPrice ? campPrice.earlybird : 0;
   const duoPrice = campPrice ? campPrice.duo : null;
@@ -804,6 +858,18 @@ function recalcSheet(sheetName) {
       else { finalPrice = duoPrice; priceLabel = '兩人同行 $' + duoPrice.toLocaleString() + '（優於95折）'; }
     } else if (couponValid) { finalPrice = couponPrice; priceLabel = '95折 $' + couponPrice.toLocaleString(); }
     else if (isDuo && duoPrice) { finalPrice = duoPrice; priceLabel = '兩人同行 $' + duoPrice.toLocaleString(); }
+
+    // 🆕 七月包月：安親名單 $15,500，其他 $16,000
+    if (isPackageMonthSheet(sheetName)) {
+      const currentChild = childNameCol >= 0 ? String(rowData[childNameCol] || '').trim() : '';
+      if (isAfterSchoolStudent(currentChild)) {
+        finalPrice = 15500;
+        priceLabel = '課後安親特價 $15,500';
+      } else {
+        finalPrice = 16000;
+        priceLabel = '早鳥價 $16,000';
+      }
+    }
 
     sheet.getRange(row, startCol, 1, 4).setValues([[priceLabel, couponStatus, phoneResult, '$' + finalPrice.toLocaleString()]]);
     if (finalPrice < earlybird) sheet.getRange(row, startCol + 3).setBackground('#E8F5E9').setFontColor('#2E7D32').setFontWeight('bold');
