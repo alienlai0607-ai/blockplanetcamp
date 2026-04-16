@@ -1,0 +1,523 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
+<title>2026暑期營隊總後台｜布拉克星球</title>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;700;900&display=swap" rel="stylesheet" />
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: 'Noto Sans TC', sans-serif; background: linear-gradient(180deg, #FFF8F0, #f5f5f5); min-height: 100vh; color: #333; }
+.container { max-width: 1400px; margin: 0 auto; padding: 20px; }
+.header { margin-bottom: 16px; }
+h1 { font-size: 1.5rem; color: #F5941E; font-weight: 900; }
+.sub { font-size: .85rem; color: #888; margin-top: 4px; }
+
+/* Tabs */
+.tabs { display: flex; gap: 6px; margin-bottom: 20px; flex-wrap: wrap; }
+.tab {
+  padding: 10px 18px; border-radius: 50px; background: white; border: 2px solid #eee;
+  font-weight: 700; font-size: .9rem; cursor: pointer; font-family: inherit;
+  transition: all .2s; display: flex; align-items: center; gap: 6px;
+}
+.tab:hover { border-color: #F5941E; }
+.tab.active { background: #F5941E; color: white; border-color: #F5941E; }
+.tab-lock { font-size: .78rem; opacity: .7; }
+
+.panel { display: none; }
+.panel.active { display: block; }
+.loading { text-align: center; padding: 60px; color: #aaa; }
+
+/* 統計列（營隊總覽用）*/
+.stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 10px; margin-bottom: 20px; }
+.stat { background: white; padding: 14px 16px; border-radius: 12px; box-shadow: 0 2px 8px rgba(0,0,0,.04); text-align: center; }
+.stat-num { font-size: 1.4rem; font-weight: 900; color: #F5941E; }
+.stat-label { font-size: .72rem; color: #888; font-weight: 700; margin-top: 2px; }
+
+/* 營隊卡片 */
+.camps-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 12px; }
+.camp-card { background: white; border-radius: 12px; padding: 14px 16px; cursor: pointer; box-shadow: 0 2px 8px rgba(0,0,0,.06); transition: all .2s; border-left: 5px solid #F5941E; }
+.camp-card:hover { transform: translateY(-2px); box-shadow: 0 6px 18px rgba(0,0,0,.1); }
+.camp-card-head { display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px; gap: 8px; }
+.camp-name { font-size: 1.15rem; font-weight: 900; color: #333; line-height: 1.3; flex: 1; }
+.camp-count-badge { background: linear-gradient(135deg, #F5941E, #E07A08); color: white; padding: 4px 12px; border-radius: 50px; font-size: 1rem; font-weight: 900; }
+.camp-alerts { font-size: .82rem; color: #C93A2A; font-weight: 700; margin-top: 6px; }
+.camp-payment-line { margin-top: 6px; display: flex; gap: 6px; flex-wrap: wrap; }
+.badge-mini { padding: 2px 10px; border-radius: 50px; font-weight: 700; font-size: .78rem; }
+
+/* 卡片式子區塊 */
+.card { background: white; border-radius: 14px; padding: 18px; box-shadow: 0 2px 10px rgba(0,0,0,.05); margin-bottom: 14px; }
+.card-title { font-size: .82rem; font-weight: 900; color: #aaa; letter-spacing: 1px; margin-bottom: 12px; }
+.input-row { display: flex; gap: 10px; flex-wrap: wrap; }
+.input-row input { flex: 1; min-width: 150px; padding: 12px 16px; border-radius: 10px; border: 2px solid #eee; font-size: 1rem; font-family: inherit; font-weight: 700; outline: none; }
+.input-row input:focus { border-color: #F5941E; }
+.verify-btn { padding: 12px 24px; border-radius: 10px; background: #F5941E; color: white; font-weight: 900; font-size: .95rem; border: none; cursor: pointer; font-family: inherit; }
+.verify-btn:hover { background: #E07A08; }
+
+/* Modal */
+.modal { position: fixed; inset: 0; background: rgba(0,0,0,.6); display: none; z-index: 9999; align-items: flex-start; justify-content: center; padding: 20px; overflow-y: auto; }
+.modal.show { display: flex; }
+.modal-content { background: white; border-radius: 20px; width: 100%; max-width: 900px; margin: 20px 0; overflow: hidden; }
+.modal-head { padding: 18px 24px; background: linear-gradient(135deg, #F5941E, #E07A08); color: white; display: flex; justify-content: space-between; align-items: center; }
+.modal-title { font-size: 1.1rem; font-weight: 900; }
+.modal-close { background: rgba(255,255,255,.3); border: none; width: 32px; height: 32px; border-radius: 50%; color: white; cursor: pointer; font-size: 1.1rem; }
+.modal-body { padding: 16px 20px; max-height: 70vh; overflow-y: auto; }
+
+.session-section { margin-bottom: 18px; }
+.session-title { font-size: .88rem; font-weight: 900; color: #666; padding: 8px 12px; background: #FFF8F0; border-radius: 8px; margin-bottom: 10px; display: flex; justify-content: space-between; }
+.student-row { display: grid; grid-template-columns: auto 1fr auto; gap: 10px; padding: 12px; border-bottom: 1px solid #f0f0f0; align-items: start; }
+.student-row:last-child { border-bottom: none; }
+.student-num { color: #bbb; font-weight: 700; font-size: .85rem; padding-top: 2px; }
+.student-name { font-weight: 900; font-size: .95rem; }
+.student-name small { font-weight: 600; color: #888; font-size: .75rem; margin-left: 6px; }
+.sibling-tag { background: #E3F2FD; color: #1565C0; padding: 1px 7px; border-radius: 50px; font-size: .68rem; font-weight: 700; margin-left: 4px; }
+.student-detail { font-size: .76rem; color: #888; margin-top: 3px; line-height: 1.6; }
+.alert-box { background: #FFEBEE; border: 1.5px solid #FFCDD2; border-radius: 8px; padding: 6px 10px; margin-top: 5px; font-size: .78rem; color: #C62828; }
+.note-box { background: #FFF8E1; border-left: 3px solid #FFC107; padding: 4px 8px; margin-top: 5px; font-size: .75rem; color: #795548; }
+.payment { padding: 3px 10px; border-radius: 50px; font-size: .72rem; font-weight: 700; white-space: nowrap; }
+.payment-paid { background: #E8F5E9; color: #2E7D32; }
+.payment-unpaid { background: #FFEBEE; color: #C62828; }
+.payment-pending { background: #FFF3E0; color: #E65100; }
+.print-btn { display: block; width: 100%; padding: 10px; margin-top: 8px; background: #F5941E; color: white; font-weight: 900; border: none; border-radius: 8px; font-size: .9rem; cursor: pointer; font-family: inherit; }
+
+/* 電話查詢結果 */
+.lookup-result .rec-card { background: white; border: 1.5px solid #eee; border-radius: 12px; padding: 14px 16px; margin-bottom: 8px; }
+.lookup-result .rec-card:hover { border-color: #F5941E; }
+
+/* 優惠券管理 */
+.coupon-locked { text-align: center; padding: 40px 20px; color: #888; }
+.coupon-locked button { padding: 12px 28px; border-radius: 50px; background: #F5941E; color: white; font-weight: 900; border: none; cursor: pointer; font-family: inherit; font-size: .95rem; margin-top: 12px; }
+
+@media (max-width: 480px) {
+  .container { padding: 12px; }
+  .camps-grid { grid-template-columns: 1fr; }
+}
+</style>
+</head>
+<body>
+<div class="container">
+  <div class="header">
+    <h1>🌟 2026 暑期營隊總後台</h1>
+    <div class="sub">布拉克星球內部工具｜功能整合中心</div>
+  </div>
+
+  <div class="tabs">
+    <button class="tab active" data-tab="camps">📋 營隊總名單</button>
+    <button class="tab" data-tab="lookup">📱 電話查詢</button>
+    <button class="tab" data-tab="coupon">🎟️ 優惠券管理 <span class="tab-lock">🔒</span></button>
+  </div>
+
+  <!-- 營隊總名單 -->
+  <div class="panel active" id="panel-camps">
+    <div class="stats" id="stats" style="display:none"></div>
+    <div id="camps-content" class="loading">載入中...</div>
+  </div>
+
+  <!-- 電話查詢 -->
+  <div class="panel" id="panel-lookup">
+    <div class="card">
+      <div class="card-title">📱 輸入家長電話，一鍵查全部</div>
+      <div class="input-row">
+        <input type="tel" id="phoneLookup" placeholder="輸入家長手機號碼" oninput="this.value=this.value.replace(/[^0-9]/g,'')" maxlength="10" />
+        <button class="verify-btn" onclick="lookupPhone()">查詢</button>
+      </div>
+      <div id="lookupResult" class="lookup-result" style="margin-top:14px"></div>
+    </div>
+  </div>
+
+  <!-- 優惠券管理（需密碼）-->
+  <div class="panel" id="panel-coupon">
+    <div class="card" id="couponLocked">
+      <div class="coupon-locked">
+        <div style="font-size:2rem;margin-bottom:8px">🔒</div>
+        <div style="font-weight:900;font-size:1.05rem;color:#333">此區需要管理員密碼</div>
+        <div style="font-size:.85rem;color:#888;margin-top:4px">優惠券管理、加開、結案</div>
+        <button onclick="unlockCoupon()">🔓 輸入密碼解鎖</button>
+      </div>
+    </div>
+
+    <div id="couponContent" style="display:none">
+      <div class="card">
+        <div class="card-title">📊 即時統計</div>
+        <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px">
+          <div style="text-align:center"><div style="font-size:1.5rem;font-weight:900;color:#2E7D32" id="statAvail">-</div><div style="font-size:.72rem;color:#aaa;font-weight:700">可領取</div></div>
+          <div style="text-align:center"><div style="font-size:1.5rem;font-weight:900;color:#F5941E" id="statClaimed">-</div><div style="font-size:.72rem;color:#aaa;font-weight:700">已領取</div></div>
+          <div style="text-align:center"><div style="font-size:1.5rem;font-weight:900;color:#1565C0" id="statUsed">-</div><div style="font-size:.72rem;color:#aaa;font-weight:700">已使用</div></div>
+          <div style="text-align:center"><div style="font-size:1.5rem;font-weight:900;color:#C62828" id="statExpired">-</div><div style="font-size:.72rem;color:#aaa;font-weight:700">已過期</div></div>
+        </div>
+        <div style="display:flex;gap:8px;margin-top:14px">
+          <button onclick="loadCouponStats()" style="flex:1;padding:10px;background:none;border:1.5px solid #eee;border-radius:10px;font-weight:700;color:#888;cursor:pointer;font-family:inherit">↻ 重新整理</button>
+          <button onclick="addMore()" style="flex:1;padding:10px;background:none;border:1.5px solid #F5941E;color:#F5941E;border-radius:10px;font-weight:700;cursor:pointer;font-family:inherit">＋ 加開優惠券</button>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-title">🔍 單獨核對優惠碼</div>
+        <div class="input-row">
+          <input type="text" id="codeInput" placeholder="優惠碼（例如 BP-7A3X）" />
+          <input type="tel" id="phoneCheck" placeholder="家長手機" />
+          <button class="verify-btn" onclick="verify()">核對</button>
+        </div>
+        <div id="verifyResult" style="margin-top:14px"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- 學員名單 Modal -->
+<div class="modal" id="modal" onclick="closeModal(event)">
+  <div class="modal-content" onclick="event.stopPropagation()">
+    <div class="modal-head">
+      <div class="modal-title" id="modalTitle"></div>
+      <button class="modal-close" onclick="closeModal()">✕</button>
+    </div>
+    <div class="modal-body" id="modalBody"></div>
+  </div>
+</div>
+
+<script>
+const API = 'https://script.google.com/macros/s/AKfycbxA5RJsAME8NARKKWSePdCm70JZYq4PT1nDhc9TubdfeON6xSy5Rm2bbinzApr3CkIe/exec';
+const ADMIN_PASS = 'BLOCK';
+let allData = null;
+let unlocked = false;
+
+// 營隊費用表（給帳單計算用）
+const CAMP_PRICES = {
+  '猴囝仔露營趣': { earlybird: 6999, discounted: 6650, duo: null },
+  '我是造船大師': { earlybird: 7500, discounted: 7125, duo: 7400 },
+  '水上裝置實驗': { earlybird: 7500, discounted: 7125, duo: 7400 },
+  '空中競技計畫': { earlybird: 7999, discounted: 7600, duo: 7800 },
+  '無人機足球': { earlybird: 7999, discounted: 7600, duo: 7800 },
+  'Game Lab': { earlybird: 7500, discounted: 7125, duo: 6800 },
+  '設計師養成': { earlybird: 7500, discounted: 7125, duo: 6800 },
+  'ROBLOX': { earlybird: 6999, discounted: 6650, duo: 6800 },
+  '廢材機器人': { earlybird: 7500, discounted: 7125, duo: 7400 },
+  'HELLO MAKER': { earlybird: 7500, discounted: 7125, duo: 7400 },
+  'LEGO Ideas': { earlybird: 6999, discounted: 6650, duo: 6800 },
+  '飛行航空': { earlybird: 7999, discounted: 7600, duo: 7800 },
+  '科學大師': { earlybird: 4800, discounted: 4560, duo: 4700 },
+  '蛋仔派對': { earlybird: 4800, discounted: 4560, duo: 4700 },
+  '3D列印': { earlybird: 4800, discounted: 4560, duo: 4700 },
+};
+
+// === Tab 切換 ===
+document.querySelectorAll('.tab').forEach(btn => {
+  btn.addEventListener('click', () => {
+    const tab = btn.dataset.tab;
+    document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+    document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
+    btn.classList.add('active');
+    document.getElementById('panel-' + tab).classList.add('active');
+    if (tab === 'camps' && !allData) loadCamps();
+    if (tab === 'coupon' && unlocked) loadCouponStats();
+  });
+});
+
+// === 解鎖優惠券區 ===
+function unlockCoupon() {
+  const p = prompt('請輸入管理員密碼：');
+  if (p && p.toUpperCase() === ADMIN_PASS) {
+    unlocked = true;
+    document.getElementById('couponLocked').style.display = 'none';
+    document.getElementById('couponContent').style.display = 'block';
+    loadCouponStats();
+  } else if (p !== null) {
+    alert('❌ 密碼錯誤');
+  }
+}
+
+// === 解析日期 ===
+function parseDates(session) {
+  if (!session) return [];
+  const matches = String(session).match(/\b\d{1,2}\/\d{1,2}\b/g);
+  if (!matches || matches.length === 0) return [];
+  const [m1, d1] = matches[0].split('/').map(Number);
+  let m2, d2;
+  if (matches.length >= 2) {
+    [m2, d2] = matches[matches.length - 1].split('/').map(Number);
+  } else { m2 = m1; d2 = d1 + 4; }
+  const dates = [];
+  const cursor = new Date(2026, m1 - 1, d1);
+  const end = new Date(2026, m2 - 1, d2);
+  while (cursor <= end && dates.length < 14) {
+    dates.push((cursor.getMonth() + 1) + '/' + cursor.getDate());
+    cursor.setDate(cursor.getDate() + 1);
+  }
+  return dates;
+}
+
+function paymentBadge(status) {
+  const s = (status || '').trim();
+  if (!s) return '<span class="payment payment-pending">⏳ 未確認</span>';
+  if (/(已|完|OK|ok|是|付)/.test(s)) return '<span class="payment payment-paid">✅ 已付款</span>';
+  if (/(未|待|否)/.test(s)) return '<span class="payment payment-unpaid">❌ 未付款</span>';
+  return '<span class="payment payment-pending">⏳ ' + s + '</span>';
+}
+function countAlerts(students) { return students.filter(s => (s.allergy && s.allergy !== '無') || (s.health && s.health !== '無' && s.health !== '良好')).length; }
+function countPayment(students) { let paid = 0, unpaid = 0; students.forEach(s => { const p = (s.payment || '').trim(); if (/(已|完|OK|ok|是|付)/.test(p)) paid++; else unpaid++; }); return { paid, unpaid }; }
+
+// === 載入營隊資料 ===
+async function loadCamps() {
+  document.getElementById('camps-content').innerHTML = '<div class="loading">載入中...</div>';
+  try {
+    const res = await fetch(API + '?action=teacher');
+    const data = await res.json();
+    if (data.success) { allData = data; renderCamps(data); }
+    else document.getElementById('camps-content').innerHTML = '<div class="loading">載入失敗</div>';
+  } catch(e) { document.getElementById('camps-content').innerHTML = '<div class="loading" style="color:#C93A2A">載入失敗：' + e.message + '</div>'; }
+}
+
+function renderCamps(data) {
+  if (!data.camps || data.camps.length === 0) { document.getElementById('camps-content').innerHTML = '<div class="loading">尚無報名資料</div>'; return; }
+  const totalStudents = data.camps.reduce((s, c) => s + c.count, 0);
+  let totalPaid = 0, totalUnpaid = 0, totalAlerts = 0;
+  data.camps.forEach(c => { const p = countPayment(c.students); totalPaid += p.paid; totalUnpaid += p.unpaid; totalAlerts += countAlerts(c.students); });
+  const stats = document.getElementById('stats');
+  stats.style.display = 'grid';
+  stats.innerHTML = `
+    <div class="stat"><div class="stat-num">${data.camps.length}</div><div class="stat-label">營隊數</div></div>
+    <div class="stat"><div class="stat-num">${totalStudents}</div><div class="stat-label">總人數</div></div>
+    <div class="stat"><div class="stat-num" style="color:#2E7D32">${totalPaid}</div><div class="stat-label">已付款</div></div>
+    <div class="stat"><div class="stat-num" style="color:#C93A2A">${totalUnpaid}</div><div class="stat-label">未付款/未確認</div></div>
+    <div class="stat"><div class="stat-num" style="color:#C93A2A">${totalAlerts}</div><div class="stat-label">💊 特殊照護</div></div>`;
+
+  let html = '<div class="camps-grid">';
+  data.camps.forEach((camp, idx) => {
+    const alerts = countAlerts(camp.students);
+    const pay = countPayment(camp.students);
+    const sessions = new Set(camp.students.map(s => s.session || '(未指定)'));
+    html += `<div class="camp-card" onclick="openCamp(${idx})">
+      <div class="camp-card-head">
+        <div class="camp-name">${camp.name}</div>
+        <div class="camp-count-badge">👥 ${camp.count}</div>
+      </div>
+      <div class="camp-payment-line">
+        ${pay.paid > 0 ? `<span class="badge-mini" style="background:#E8F5E9;color:#2E7D32">✅ ${pay.paid}</span>` : ''}
+        ${pay.unpaid > 0 ? `<span class="badge-mini" style="background:#FFF3E0;color:#E65100">⏳ ${pay.unpaid}</span>` : ''}
+        ${sessions.size > 1 ? `<span class="badge-mini" style="background:#E3F2FD;color:#1565C0">📅 ${sessions.size} 梯次</span>` : ''}
+      </div>
+      ${alerts > 0 ? `<div class="camp-alerts">💊 ${alerts} 位需特殊照護</div>` : ''}
+    </div>`;
+  });
+  html += '</div>';
+  document.getElementById('camps-content').innerHTML = html;
+}
+
+function openCamp(idx) {
+  const camp = allData.camps[idx];
+  document.getElementById('modalTitle').textContent = camp.name + '（' + camp.count + ' 人）';
+  const sessionMap = {};
+  camp.students.forEach(s => { const k = s.session || '(未指定梯次)'; if (!sessionMap[k]) sessionMap[k] = []; sessionMap[k].push(s); });
+  const allStudents = []; allData.camps.forEach(c => c.students.forEach(s => allStudents.push(s)));
+  let body = '';
+  Object.keys(sessionMap).forEach(session => {
+    const students = sessionMap[session];
+    body += `<div class="session-section"><div class="session-title"><span>📅 ${session}</span><span style="font-size:.75rem;color:#888">${students.length} 人</span></div>`;
+    students.forEach((s, i) => {
+      const siblings = allStudents.filter(x => x.parentPhone && s.parentPhone && x.parentPhone === s.parentPhone && x.name !== s.name);
+      const siblingNames = [...new Set(siblings.map(x => x.name))];
+      const alerts = [];
+      if (s.allergy && s.allergy !== '無') alerts.push('⚠️ 過敏/用藥：' + s.allergy);
+      if (s.health && s.health !== '無' && s.health !== '良好') alerts.push('🏥 健康：' + s.health);
+      body += `<div class="student-row">
+        <div class="student-num">${i + 1}</div>
+        <div>
+          <div class="student-name">${s.name}${s.gender ? `<small>${s.gender}</small>` : ''}${siblingNames.length > 0 ? `<span class="sibling-tag">👨‍👩‍👧 ${siblingNames.join('、')}</span>` : ''}</div>
+          <div class="student-detail">${s.parentName ? `👤 ${s.parentName}` : ''}${s.parentPhone ? ` ｜ 📱 ${s.parentPhone}` : ''}${s.diet ? ` ｜ 🍽️ ${s.diet}` : ''}${s.lineId ? ` ｜ LINE: ${s.lineId}` : ''}</div>
+          ${alerts.length > 0 ? `<div class="alert-box">${alerts.map(a => '<div>' + a + '</div>').join('')}</div>` : ''}
+          ${s.note ? `<div class="note-box">📝 ${s.note}</div>` : ''}
+        </div>
+        <div>${paymentBadge(s.payment)}</div>
+      </div>`;
+    });
+    body += `<button class="print-btn" data-camp="${encodeURIComponent(camp.name)}" data-session="${encodeURIComponent(session)}" data-students='${encodeURIComponent(JSON.stringify(students.map(s => ({n:s.name, g:s.gender, a:s.allergy}))))}' onclick="printFromBtn(this)">🖨️ 列印簽到單（${students.length} 人）</button></div>`;
+  });
+  document.getElementById('modalBody').innerHTML = body;
+  document.getElementById('modal').classList.add('show');
+}
+function closeModal(e) { if (!e || e.target.id === 'modal') document.getElementById('modal').classList.remove('show'); }
+function printFromBtn(btn) {
+  const camp = decodeURIComponent(btn.dataset.camp);
+  const session = decodeURIComponent(btn.dataset.session);
+  const students = JSON.parse(decodeURIComponent(btn.dataset.students));
+  printRollCall(camp, session, students);
+}
+
+function printRollCall(campName, session, students) {
+  const dates = parseDates(session);
+  const n = students.length;
+  const rowHeight = n <= 12 ? 42 : n <= 20 ? 32 : n <= 28 ? 24 : n <= 35 ? 20 : 16;
+  const fontSize = n <= 15 ? 14 : n <= 25 ? 13 : n <= 35 ? 12 : 11;
+  const dateCount = dates.length > 0 ? dates.length : 1;
+  const nameWidth = 22, noteWidth = 16, numWidth = 5;
+  const dateWidth = ((100 - nameWidth - noteWidth - numWidth) / dateCount).toFixed(2);
+  let rows = '';
+  students.forEach((s, i) => {
+    rows += `<tr><td class="num">${i + 1}</td><td class="name">${s.n}${s.g ? ' ('+s.g+')' : ''}</td>${(dates.length > 0 ? dates : ['']).map(() => '<td class="check">☐</td>').join('')}<td class="note">${s.a && s.a !== '無' ? '⚠️ ' + s.a : ''}</td></tr>`;
+  });
+  const html = `<!DOCTYPE html><html><head><meta charset="UTF-8"><title>${campName}</title><style>
+    @page { size: A4 landscape; margin: 8mm; }
+    * { box-sizing: border-box; }
+    html, body { margin: 0; padding: 10px; font-family: 'Microsoft JhengHei','PingFang TC','Noto Sans TC',sans-serif; color: #000; }
+    h1 { text-align: center; font-size: 18pt; margin: 0 0 6px; font-weight: 900; }
+    .info { text-align: center; color: #333; margin-bottom: 10px; font-size: 12pt; }
+    table { width: 100%; border-collapse: collapse; }
+    tr { page-break-inside: avoid; }
+    th, td { border: 1.5px solid #000; padding: 4px 6px; text-align: center; font-size: ${fontSize}pt; height: ${rowHeight}px; vertical-align: middle; word-wrap: break-word; }
+    th { background: #FFF3E0; font-weight: 900; }
+    td.num { color: #555; }
+    td.name { text-align: left; padding-left: 10px; font-weight: 700; }
+    td.note { text-align: left; padding-left: 8px; font-size: ${fontSize-1}pt; color: #C93A2A; }
+    td.check { color: #aaa; font-size: ${fontSize + 4}pt; }
+    @media print { body { padding: 6px; } * { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; } }
+  </style></head><body>
+  <h1>${campName}</h1>
+  <div class="info">${session}｜共 ${n} 位學員</div>
+  <table><tr><th style="width:${numWidth}%">No.</th><th style="width:${nameWidth}%">姓名</th>${(dates.length > 0 ? dates : ['簽到']).map(d => `<th style="width:${dateWidth}%">${d}</th>`).join('')}<th style="width:${noteWidth}%">備註</th></tr>${rows}</table>
+  </body></html>`;
+  const blob = new Blob([html], { type: 'text/html;charset=utf-8' });
+  const url = URL.createObjectURL(blob);
+  const w = window.open(url, '_blank');
+  w.addEventListener('load', () => { setTimeout(() => { w.print(); setTimeout(() => URL.revokeObjectURL(url), 5000); }, 500); });
+}
+
+// === 電話查詢 ===
+async function lookupPhone() {
+  const phone = document.getElementById('phoneLookup').value.trim();
+  const resultDiv = document.getElementById('lookupResult');
+  if (!phone || phone.length < 9) { alert('請輸入正確的手機號碼'); return; }
+  resultDiv.innerHTML = '<div style="text-align:center;padding:20px;color:#aaa">查詢中...</div>';
+  try {
+    const res = await fetch(API + '?action=lookup&phone=' + encodeURIComponent(phone));
+    const data = await res.json();
+    if (!data.success) { resultDiv.innerHTML = `<div style="padding:16px;color:#C93A2A;font-weight:700">${data.error}</div>`; return; }
+    let html = '';
+    if (data.coupon) {
+      const c = data.coupon;
+      const color = c.status === '已領取' ? '#2E7D32' : c.status === '已過期' ? '#C93A2A' : '#1565C0';
+      html += `<div style="background:#f9f9f9;border-radius:12px;padding:14px 16px;margin-bottom:12px;border-left:4px solid ${color}">
+        <div style="font-size:.82rem;color:#aaa;font-weight:700;margin-bottom:6px">🎟️ 優惠券</div>
+        <div style="font-size:1rem;font-weight:900">${c.code}（${c.status}）</div>
+        ${c.claimedAt ? `<div style="font-size:.78rem;color:#aaa;margin-top:4px">領取：${c.claimedAt}｜到期：${c.expiresAt}</div>` : ''}
+      </div>`;
+    } else {
+      html += `<div style="background:#f9f9f9;border-radius:12px;padding:14px 16px;margin-bottom:12px;border-left:4px solid #aaa"><div style="font-size:.92rem;color:#888">🎟️ 此號碼未領取優惠券</div></div>`;
+    }
+    if (data.registrations.length === 0) {
+      html += `<div style="text-align:center;padding:24px;color:#aaa">📋 查無此號碼的報名紀錄</div>`;
+    } else {
+      html += `<div style="font-size:.82rem;font-weight:900;color:#aaa;margin:12px 0 8px">📋 報名紀錄（${data.campCount} 個營隊）</div>`;
+      data.registrations.forEach(r => {
+        const d = r.hasCoupon;
+        html += `<div class="rec-card">
+          <div style="display:flex;justify-content:space-between;align-items:center">
+            <div>
+              <div style="font-size:.95rem;font-weight:900">${r.camp}</div>
+              ${r.childName ? `<div style="font-size:.78rem;color:#888;margin-top:2px">👦 ${r.childName} ${r.session ? '｜' + r.session : ''}</div>` : ''}
+            </div>
+            <div style="text-align:right">
+              ${d ? `<div style="font-size:.75rem;color:#aaa;text-decoration:line-through">$${r.basePrice.toLocaleString()}</div><div style="font-size:1.1rem;font-weight:900;color:#2E7D32">$${r.finalPrice.toLocaleString()}</div>` : `<div style="font-size:1.1rem;font-weight:900">$${r.basePrice.toLocaleString()}</div>`}
+            </div>
+          </div>
+          <div style="display:flex;flex-wrap:wrap;gap:6px;margin-top:6px;font-size:.72rem">
+            <span style="background:#f0f0f0;color:#666;padding:2px 8px;border-radius:50px;font-weight:700">📋 ${r.priceType}</span>
+            ${r.couponCode !== '無' ? `<span style="background:${d ? '#E8F5E9' : '#FFEBEE'};color:${d ? '#2E7D32' : '#C93A2A'};padding:2px 8px;border-radius:50px;font-weight:700">🎟️ ${r.couponCode} ${d ? '✅' : '❌'}</span>` : `<span style="background:#f5f5f5;color:#aaa;padding:2px 8px;border-radius:50px;font-weight:700">無優惠碼</span>`}
+            ${r.isDuo ? `<span style="background:#E3F2FD;color:#1565C0;padding:2px 8px;border-radius:50px;font-weight:700">👥 兩人同行</span>` : ''}
+          </div>
+          ${r.note ? `<div style="font-size:.72rem;color:#888;margin-top:4px">📝 ${r.note}</div>` : ''}
+        </div>`;
+      });
+      html += `<div style="background:linear-gradient(135deg,#FFF8F0,#FFF3E0);border-radius:12px;padding:16px;margin-top:12px;border:2px solid rgba(245,148,30,0.2)">
+        <div style="display:flex;justify-content:space-between;margin-bottom:4px">
+          <span style="color:#888;font-size:.88rem">小計（${data.campCount} 個營隊）</span>
+          <span style="font-weight:700;${data.totalSaved > 0 ? 'text-decoration:line-through;color:#aaa' : ''}">$${data.totalBase.toLocaleString()}</span>
+        </div>
+        ${data.totalSaved > 0 ? `<div style="display:flex;justify-content:space-between;margin-bottom:4px"><span style="color:#2E7D32;font-size:.88rem;font-weight:700">95 折優惠</span><span style="color:#2E7D32;font-weight:700">-$${data.totalSaved.toLocaleString()}</span></div>` : ''}
+        <div style="display:flex;justify-content:space-between;border-top:2px solid rgba(0,0,0,.06);padding-top:8px;margin-top:8px">
+          <span style="font-size:1.1rem;font-weight:900">💰 應付總額</span>
+          <span style="font-size:1.3rem;font-weight:900;color:#C93A2A">$${data.totalFinal.toLocaleString()}</span>
+        </div>
+      </div>`;
+      // 家長訊息
+      const childName = data.registrations[0]?.childName || '';
+      let msg = data.totalSaved > 0 ? '媽咪您好！有確認收到您們報名表單+使用優惠折扣碼✅\n\n' : '媽咪您好！有確認收到您們報名表單✅\n\n';
+      if (childName) msg += '【寶貝姓名：' + childName + '】\n';
+      data.registrations.forEach(r => {
+        msg += '\n💟' + r.camp;
+        if (r.session) msg += '\n' + r.session;
+        msg += (r.hasCoupon || r.isDuo) ? '\n費用經折扣後為：$' + r.finalPrice.toLocaleString() : '\n費用為：$' + r.finalPrice.toLocaleString();
+        msg += '\n';
+      });
+      msg += '\n營隊費用總計：$' + data.totalFinal.toLocaleString();
+      html += `<button onclick="copyMsg()" style="display:block;width:100%;padding:14px;margin-top:14px;border-radius:50px;background:#06C755;color:white;font-weight:900;font-size:1rem;border:none;cursor:pointer;font-family:inherit;box-shadow:0 4px 16px rgba(6,199,85,0.3)">📋 複製家長訊息（可直接貼 LINE）</button>
+      <textarea id="parentMsgText" style="position:absolute;left:-9999px">${msg}</textarea>
+      <details style="margin-top:10px"><summary style="font-size:.82rem;color:#888;cursor:pointer;font-weight:700">👁️ 預覽訊息</summary><pre style="background:#f9f9f9;border-radius:10px;padding:12px;font-size:.82rem;white-space:pre-wrap;margin-top:8px;font-family:inherit;line-height:1.7">${msg}</pre></details>`;
+    }
+    resultDiv.innerHTML = html;
+  } catch(e) { resultDiv.innerHTML = '<div style="padding:16px;color:#C93A2A;font-weight:700">❌ 查詢失敗</div>'; }
+}
+
+function copyMsg() {
+  const ta = document.getElementById('parentMsgText');
+  if (!ta) return;
+  navigator.clipboard.writeText(ta.value).then(() => alert('✅ 已複製！可直接貼到 LINE'));
+}
+
+document.getElementById('phoneLookup').addEventListener('keydown', e => { if (e.key === 'Enter') lookupPhone(); });
+
+// === 優惠券管理 ===
+async function loadCouponStats() {
+  try {
+    const res = await fetch(API + '?action=status');
+    const data = await res.json();
+    document.getElementById('statAvail').textContent = data.available;
+    document.getElementById('statClaimed').textContent = data.claimed;
+    document.getElementById('statUsed').textContent = data.used;
+    document.getElementById('statExpired').textContent = data.expired;
+  } catch(e) {}
+}
+
+async function addMore() {
+  const count = prompt('要加開幾張優惠券？（1～100）');
+  if (!count) return;
+  const num = parseInt(count);
+  if (!num || num < 1 || num > 100) { alert('請輸入 1～100 的數字'); return; }
+  if (!confirm('確定要加開 ' + num + ' 張？')) return;
+  try {
+    const res = await fetch(API + '?action=addmore&count=' + num + '&key=bp2026admin');
+    const data = await res.json();
+    alert(data.message || data.error);
+    loadCouponStats();
+  } catch(e) { alert('操作失敗'); }
+}
+
+async function verify() {
+  const code = document.getElementById('codeInput').value.trim().toUpperCase();
+  const phone = document.getElementById('phoneCheck').value.replace(/[-\s]/g, '').trim();
+  const resultDiv = document.getElementById('verifyResult');
+  if (!code) { alert('請輸入優惠碼'); return; }
+  resultDiv.innerHTML = '<div style="text-align:center;padding:20px;color:#aaa">查詢中...</div>';
+  try {
+    const res = await fetch(API + '?action=verify&code=' + encodeURIComponent(code));
+    const data = await res.json();
+    const boundPhone = (data.phone || '').replace(/[-\s]/g, '');
+    let phoneMatch = '';
+    if (data.valid && phone && boundPhone) {
+      phoneMatch = phone === boundPhone ? '<span style="color:#2E7D32;font-weight:900">✅ 手機吻合</span>' : '<span style="color:#C93A2A;font-weight:900">❌ 手機不吻合！可能是盜用</span>';
+    }
+    resultDiv.innerHTML = `<div style="background:${data.valid ? '#E8F5E9' : '#FFEBEE'};padding:12px 16px;border-radius:10px;font-weight:900;color:${data.valid ? '#2E7D32' : '#C93A2A'}">${data.status}</div>
+      <div style="display:grid;grid-template-columns:auto 1fr;gap:8px 16px;margin-top:12px;font-size:.88rem">
+        <div style="color:#aaa;font-weight:700">優惠碼</div><div style="font-weight:700">${code}</div>
+        <div style="color:#aaa;font-weight:700">綁定手機</div><div style="font-weight:700">${data.phone || '—'} ${phoneMatch}</div>
+        ${data.claimedAt ? `<div style="color:#aaa;font-weight:700">領取時間</div><div style="font-weight:700">${data.claimedAt}</div>` : ''}
+        ${data.expiresAt ? `<div style="color:#aaa;font-weight:700">到期時間</div><div style="font-weight:700">${data.expiresAt}</div>` : ''}
+      </div>`;
+  } catch(e) { resultDiv.innerHTML = '<div style="padding:16px;color:#C93A2A;font-weight:700">❌ 查詢失敗</div>'; }
+}
+
+// === 初始化 ===
+loadCamps();
+</script>
+</body>
+</html>
