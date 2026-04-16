@@ -120,7 +120,7 @@ h1 { font-size: 1.5rem; color: #F5941E; font-weight: 900; }
   <div class="tabs">
     <button class="tab active" data-tab="camps">📋 營隊總名單</button>
     <button class="tab" data-tab="lookup">📱 電話查詢</button>
-    <button class="tab" data-tab="coupon">🎟️ 優惠券管理 <span class="tab-lock">🔒</span></button>
+    <button class="tab" data-tab="coupon">🎟️ 優惠券管理</button>
   </div>
 
   <!-- 營隊總名單 -->
@@ -141,18 +141,9 @@ h1 { font-size: 1.5rem; color: #F5941E; font-weight: 900; }
     </div>
   </div>
 
-  <!-- 優惠券管理（需密碼）-->
+  <!-- 優惠券管理 -->
   <div class="panel" id="panel-coupon">
-    <div class="card" id="couponLocked">
-      <div class="coupon-locked">
-        <div style="font-size:2rem;margin-bottom:8px">🔒</div>
-        <div style="font-weight:900;font-size:1.05rem;color:#333">此區需要管理員密碼</div>
-        <div style="font-size:.85rem;color:#888;margin-top:4px">優惠券管理、加開、結案</div>
-        <button onclick="unlockCoupon()">🔓 輸入密碼解鎖</button>
-      </div>
-    </div>
-
-    <div id="couponContent" style="display:none">
+    <div id="couponContent">
       <div class="card">
         <div class="card-title">📊 即時統計</div>
         <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px">
@@ -193,11 +184,10 @@ h1 { font-size: 1.5rem; color: #F5941E; font-weight: 900; }
 
 <script>
 const API = 'https://script.google.com/macros/s/AKfycbxA5RJsAME8NARKKWSePdCm70JZYq4PT1nDhc9TubdfeON6xSy5Rm2bbinzApr3CkIe/exec';
-const SITE_PASS = 'BLOCK2026';   // 整站進入密碼
-const ADMIN_PASS = 'BLOCK';      // 優惠券區額外密碼
+const SITE_PASS = 'BLOCK';       // 整站進入密碼（進站後全開，無二次密碼）
 const SITE_UNLOCK_KEY = 'bp_admin_unlocked_v1';
 let allData = null;
-let unlocked = false;
+let unlocked = true;   // 進站後優惠券區直接可用，不再二次驗證
 
 // === 整頁密碼鎖 ===
 function unlockSite() {
@@ -254,22 +244,9 @@ document.querySelectorAll('.tab').forEach(btn => {
     btn.classList.add('active');
     document.getElementById('panel-' + tab).classList.add('active');
     if (tab === 'camps' && !allData) loadCamps();
-    if (tab === 'coupon' && unlocked) loadCouponStats();
+    if (tab === 'coupon') loadCouponStats();
   });
 });
-
-// === 解鎖優惠券區 ===
-function unlockCoupon() {
-  const p = prompt('請輸入管理員密碼：');
-  if (p && p.toUpperCase() === ADMIN_PASS) {
-    unlocked = true;
-    document.getElementById('couponLocked').style.display = 'none';
-    document.getElementById('couponContent').style.display = 'block';
-    loadCouponStats();
-  } else if (p !== null) {
-    alert('❌ 密碼錯誤');
-  }
-}
 
 // === 解析日期 ===
 function parseDates(session) {
@@ -385,6 +362,16 @@ function renderCamps(data) {
 
   let html = '<div class="camps-grid">';
   data.camps.forEach((camp, idx) => {
+    if (camp.count === 0) {
+      html += `<div class="camp-card" style="opacity:.55;border-left-color:#bbb">
+        <div class="camp-card-head">
+          <div class="camp-name" style="color:#888">${camp.name}</div>
+          <div class="camp-count-badge" style="background:#e0e0e0">👥 0</div>
+        </div>
+        <div style="font-size:.78rem;color:#aaa;margin-top:4px">尚無報名</div>
+      </div>`;
+      return;
+    }
     const alerts = countAlerts(camp.students);
     const pay = countPayment(camp.students);
     const sessions = new Set(camp.students.map(s => s.session || '(未指定)'));
