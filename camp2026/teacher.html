@@ -175,7 +175,7 @@ function render(data) {
     <div class="stat"><div class="stat-num">${totalStudents}</div><div class="stat-label">總人數</div></div>
     <div class="stat"><div class="stat-num" style="color:#2E7D32">${totalPaid}</div><div class="stat-label">已付款</div></div>
     <div class="stat"><div class="stat-num" style="color:#C93A2A">${totalUnpaid}</div><div class="stat-label">未付款/未確認</div></div>
-    <div class="stat"><div class="stat-num" style="color:#C93A2A">${totalAlerts}</div><div class="stat-label">⚠️ 需注意</div></div>
+    <div class="stat"><div class="stat-num" style="color:#C93A2A">${totalAlerts}</div><div class="stat-label">💊 特殊照護</div></div>
   `;
 
   // 營隊卡片格
@@ -195,7 +195,7 @@ function render(data) {
         ${pay.unpaid > 0 ? `<span class="badge-mini" style="background:#FFF3E0;color:#E65100">⏳ ${pay.unpaid}</span>` : ''}
         ${sessions.size > 1 ? `<span class="badge-mini" style="background:#E3F2FD;color:#1565C0">📅 ${sessions.size} 梯次</span>` : ''}
       </div>
-      ${alerts > 0 ? `<div class="camp-alerts">⚠️ ${alerts} 位學員需特別注意</div>` : ''}
+      ${alerts > 0 ? `<div class="camp-alerts">💊 ${alerts} 位需特殊照護</div>` : ''}
     </div>`;
   });
   html += '</div>';
