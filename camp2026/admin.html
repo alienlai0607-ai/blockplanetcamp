@@ -98,7 +98,20 @@ h1 { font-size: 1.5rem; color: #F5941E; font-weight: 900; }
 </style>
 </head>
 <body>
-<div class="container">
+
+<!-- 🔐 整頁密碼鎖 -->
+<div id="siteLock" style="position:fixed;inset:0;background:linear-gradient(180deg,#FFF8F0,#FFE0B2);display:flex;align-items:center;justify-content:center;z-index:99999;padding:20px">
+  <div style="background:white;border-radius:20px;padding:36px 28px;max-width:380px;width:100%;box-shadow:0 10px 40px rgba(0,0,0,0.15);text-align:center">
+    <div style="font-size:3rem;margin-bottom:12px">🔐</div>
+    <div style="font-size:1.25rem;font-weight:900;color:#333;margin-bottom:6px">2026 暑期營隊總後台</div>
+    <div style="font-size:.85rem;color:#888;margin-bottom:24px">需要管理員密碼才能進入</div>
+    <input type="password" id="siteLockPass" placeholder="請輸入密碼" style="width:100%;padding:14px 18px;border-radius:12px;border:2px solid #eee;font-size:1rem;font-family:inherit;font-weight:700;outline:none;text-align:center;letter-spacing:4px" />
+    <div id="siteLockErr" style="color:#C62828;font-size:.85rem;font-weight:700;margin-top:10px;min-height:1.2em"></div>
+    <button id="siteLockBtn" style="width:100%;padding:14px;margin-top:14px;border-radius:50px;background:linear-gradient(135deg,#F5941E,#E07A08);color:white;font-weight:900;font-size:1rem;border:none;cursor:pointer;font-family:inherit;box-shadow:0 4px 16px rgba(245,148,30,0.3)">🔓 進入後台</button>
+  </div>
+</div>
+
+<div class="container" id="mainContainer" style="display:none">
   <div class="header">
     <h1>🌟 2026 暑期營隊總後台</h1>
     <div class="sub">布拉克星球內部工具｜功能整合中心</div>
@@ -180,9 +193,37 @@ h1 { font-size: 1.5rem; color: #F5941E; font-weight: 900; }
 
 <script>
 const API = 'https://script.google.com/macros/s/AKfycbxA5RJsAME8NARKKWSePdCm70JZYq4PT1nDhc9TubdfeON6xSy5Rm2bbinzApr3CkIe/exec';
-const ADMIN_PASS = 'BLOCK';
+const SITE_PASS = 'BLOCK2026';   // 整站進入密碼
+const ADMIN_PASS = 'BLOCK';      // 優惠券區額外密碼
+const SITE_UNLOCK_KEY = 'bp_admin_unlocked_v1';
 let allData = null;
 let unlocked = false;
+
+// === 整頁密碼鎖 ===
+function unlockSite() {
+  const input = document.getElementById('siteLockPass');
+  const err = document.getElementById('siteLockErr');
+  const val = (input.value || '').trim().toUpperCase();
+  if (val === SITE_PASS) {
+    sessionStorage.setItem(SITE_UNLOCK_KEY, '1');
+    document.getElementById('siteLock').style.display = 'none';
+    document.getElementById('mainContainer').style.display = 'block';
+    loadCamps();
+  } else {
+    err.textContent = '❌ 密碼錯誤，請再試一次';
+    input.value = '';
+    input.focus();
+  }
+}
+// 頁面啟動：檢查 session 是否已解鎖
+if (sessionStorage.getItem(SITE_UNLOCK_KEY) === '1') {
+  document.getElementById('siteLock').style.display = 'none';
+  document.getElementById('mainContainer').style.display = 'block';
+} else {
+  setTimeout(() => document.getElementById('siteLockPass').focus(), 100);
+}
+document.getElementById('siteLockBtn').addEventListener('click', unlockSite);
+document.getElementById('siteLockPass').addEventListener('keydown', e => { if (e.key === 'Enter') unlockSite(); });
 
 // 營隊費用表（給帳單計算用）
 const CAMP_PRICES = {
@@ -576,8 +617,8 @@ async function verify() {
   } catch(e) { resultDiv.innerHTML = '<div style="padding:16px;color:#C93A2A;font-weight:700">❌ 查詢失敗</div>'; }
 }
 
-// === 初始化 ===
-loadCamps();
+// === 初始化（只有已解鎖才載入）===
+if (sessionStorage.getItem(SITE_UNLOCK_KEY) === '1') loadCamps();
 </script>
 </body>
 </html>
