@@ -343,12 +343,15 @@ function printRollCall(campName, session, students) {
   </table>
   </body></html>`;
 
-  const w = window.open('', '_blank');
-  w.document.open();
-  w.document.write(html);
-  w.document.close();
-  // 等 DOM 載入完成再列印
-  w.onload = () => setTimeout(() => w.print(), 300);
+  const blob = new Blob([html], { type: 'text/html;charset=utf-8' });
+  const url = URL.createObjectURL(blob);
+  const w = window.open(url, '_blank');
+  w.addEventListener('load', () => {
+    setTimeout(() => {
+      w.print();
+      setTimeout(() => URL.revokeObjectURL(url), 5000);
+    }, 500);
+  });
 }
 
 async function loadData() {
