@@ -183,19 +183,19 @@
 <script>
   const API = 'https://script.google.com/macros/s/AKfycbymXGYCvj1m17APK2Vcpi-cxBDoAOkBDRHUGcpiEBEMg8gTeEzmZrZQ9efPedJInz5A/exec';
 
-  // 營隊費用表（早鳥價）
+  // 營隊費用表（早鳥價+折扣價）
   const camps = [
-    { name: '猴囝仔露營趣｜動物方城市', earlybird: 6999, original: 7500, duo: null },
-    { name: 'MAKER自造營｜我是造船大師', earlybird: 7500, original: 8800, duo: 7400 },
-    { name: '全新打造！水上裝置實驗室', earlybird: 7500, original: 8800, duo: 7400 },
-    { name: '空中競技計畫｜無人機足球營隊', earlybird: 7999, original: 9500, duo: 7800 },
-    { name: 'Game Lab｜遊戲設計師養成營', earlybird: 6999, original: 8500, duo: 6800 },
-    { name: 'ROBLOX x SPIKE機器人 實境戰場計畫', earlybird: 6999, original: 8500, duo: 6800 },
-    { name: 'HELLO MAKER 廢材機器人自造營', earlybird: 7500, original: 8800, duo: 7400 },
-    { name: 'LEGO Ideas｜玩具設計總監計畫', earlybird: 6999, original: 8500, duo: 6800 },
-    { name: '飛行航空科學營｜萊特兄弟計劃', earlybird: 7999, original: null, duo: 7800 },
-    { name: '科學大師營｜大型科學水火箭', earlybird: 4800, original: null, duo: 4700 },
-    { name: '3D 列印工作坊', earlybird: 4800, original: null, duo: 4700 },
+    { name: '猴囝仔露營趣｜動物方城市', earlybird: 6999, discounted: 6650, original: 7500, duo: null },
+    { name: 'MAKER自造營｜我是造船大師', earlybird: 7500, discounted: 7125, original: 8800, duo: 7400 },
+    { name: '全新打造！水上裝置實驗室', earlybird: 7500, discounted: 7125, original: 8800, duo: 7400 },
+    { name: '空中競技計畫｜無人機足球營隊', earlybird: 7999, discounted: 7600, original: 9500, duo: 7800 },
+    { name: 'Game Lab｜遊戲設計師養成營', earlybird: 7500, discounted: 7125, original: 8500, duo: 6800 },
+    { name: 'ROBLOX x SPIKE機器人 實境戰場計畫', earlybird: 6999, discounted: 6650, original: 8500, duo: 6800 },
+    { name: 'HELLO MAKER 廢材機器人自造營', earlybird: 7500, discounted: 7125, original: 8800, duo: 7400 },
+    { name: 'LEGO Ideas｜玩具設計總監計畫', earlybird: 6999, discounted: 6650, original: 8500, duo: 6800 },
+    { name: '飛行航空科學營｜萊特兄弟計劃', earlybird: 7999, discounted: 7600, original: null, duo: 7800 },
+    { name: '科學大師營｜大型科學水火箭', earlybird: 4800, discounted: 4560, original: null, duo: 4700 },
+    { name: '3D 列印工作坊', earlybird: 4800, discounted: 4560, original: null, duo: 4700 },
   ];
 
   // 初始化營隊勾選清單
@@ -330,11 +330,16 @@
     </div>`;
 
     if (hasDiscount) {
-      const discounted = Math.round(subtotal * 0.95);
+      // 用每個營隊的折扣價（已整數）計算
+      let discounted = 0;
+      checks.forEach(cb => {
+        const camp = camps[cb.value];
+        discounted += camp.discounted || Math.round(camp.earlybird * 0.95);
+      });
       const saved = subtotal - discounted;
       html += `<div class="price-row">
-        <span class="price-label">95 折優惠</span>
-        <span class="price-value">× 0.95</span>
+        <span class="price-label">95 折優惠（每項折扣）</span>
+        <span class="price-value">-$${saved.toLocaleString()}</span>
       </div>`;
       html += `<div class="price-row total">
         <span>💰 應付總額</span>

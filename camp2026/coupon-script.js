@@ -419,7 +419,7 @@ function lookupByPhone(phone) {
         }
 
         // 兩人同行 vs 95折 取較低，不疊加
-        const couponPrice = hasCoupon ? Math.round(earlybird * 0.95) : earlybird;
+        const couponPrice = hasCoupon ? (campPrice && campPrice.discounted ? campPrice.discounted : Math.round(earlybird * 0.95)) : earlybird;
         if (hasCoupon && isDuo) {
           if (couponPrice <= duo) {
             finalPrice = couponPrice;
@@ -475,29 +475,29 @@ function lookupByPhone(phone) {
 
 // 營隊費用對照表（工作表名稱 → 價格）
 const CAMP_PRICES = {
-  '猴囝仔露營趣':           { earlybird: 6999, original: 7500, duo: null },
-  '猴囝仔露營':              { earlybird: 6999, original: 7500, duo: null },
-  '我是造船大師':            { earlybird: 7500, original: 8800, duo: 7400 },
-  'MAKER自造營':             { earlybird: 7500, original: 8800, duo: 7400 },
-  '水上裝置實驗室':          { earlybird: 7500, original: 8800, duo: 7400 },
-  '水上裝置實驗':            { earlybird: 7500, original: 8800, duo: 7400 },
-  '空中競技計畫':            { earlybird: 7999, original: 9500, duo: 7800 },
-  '無人機足球營隊':          { earlybird: 7999, original: 9500, duo: 7800 },
-  '無人機足球':              { earlybird: 7999, original: 9500, duo: 7800 },
-  'Game Lab':                { earlybird: 6999, original: 8500, duo: 6800 },
-  '設計師養成營':            { earlybird: 6999, original: 8500, duo: 6800 },
-  'ROBLOX':                  { earlybird: 6999, original: 8500, duo: 6800 },
-  '廢材機器人自造營':        { earlybird: 7500, original: 8800, duo: 7400 },
-  '廢材機器人':              { earlybird: 7500, original: 8800, duo: 7400 },
-  'HELLO MAKER':             { earlybird: 7500, original: 8800, duo: 7400 },
-  'LEGO Ideas':              { earlybird: 6999, original: 8500, duo: 6800 },
-  'LEGO Ideas玩具設計總監':  { earlybird: 6999, original: 8500, duo: 6800 },
-  '飛行航空科學營':          { earlybird: 7999, original: null, duo: 7800 },
-  '飛行航空':                { earlybird: 7999, original: null, duo: 7800 },
-  '科學大師營':              { earlybird: 4800, original: null, duo: 4700 },
-  '科學大師':                { earlybird: 4800, original: null, duo: 4700 },
-  '蛋仔派對':               { earlybird: 4800, original: null, duo: 4700 },
-  '3D列印':                  { earlybird: 4800, original: null, duo: 4700 },
+  '猴囝仔露營趣':           { earlybird: 6999, discounted: 6650, original: 7500, duo: null },
+  '猴囝仔露營':              { earlybird: 6999, discounted: 6650, original: 7500, duo: null },
+  '我是造船大師':            { earlybird: 7500, discounted: 7125, original: 8800, duo: 7400 },
+  'MAKER自造營':             { earlybird: 7500, discounted: 7125, original: 8800, duo: 7400 },
+  '水上裝置實驗室':          { earlybird: 7500, discounted: 7125, original: 8800, duo: 7400 },
+  '水上裝置實驗':            { earlybird: 7500, discounted: 7125, original: 8800, duo: 7400 },
+  '空中競技計畫':            { earlybird: 7999, discounted: 7600, original: 9500, duo: 7800 },
+  '無人機足球營隊':          { earlybird: 7999, discounted: 7600, original: 9500, duo: 7800 },
+  '無人機足球':              { earlybird: 7999, discounted: 7600, original: 9500, duo: 7800 },
+  'Game Lab':                { earlybird: 7500, discounted: 7125, original: 8500, duo: 6800 },
+  '設計師養成營':            { earlybird: 7500, discounted: 7125, original: 8500, duo: 6800 },
+  'ROBLOX':                  { earlybird: 6999, discounted: 6650, original: 8500, duo: 6800 },
+  '廢材機器人自造營':        { earlybird: 7500, discounted: 7125, original: 8800, duo: 7400 },
+  '廢材機器人':              { earlybird: 7500, discounted: 7125, original: 8800, duo: 7400 },
+  'HELLO MAKER':             { earlybird: 7500, discounted: 7125, original: 8800, duo: 7400 },
+  'LEGO Ideas':              { earlybird: 6999, discounted: 6650, original: 8500, duo: 6800 },
+  'LEGO Ideas玩具設計總監':  { earlybird: 6999, discounted: 6650, original: 8500, duo: 6800 },
+  '飛行航空科學營':          { earlybird: 7999, discounted: 7600, original: null, duo: 7800 },
+  '飛行航空':                { earlybird: 7999, discounted: 7600, original: null, duo: 7800 },
+  '科學大師營':              { earlybird: 4800, discounted: 4560, original: null, duo: 4700 },
+  '科學大師':                { earlybird: 4800, discounted: 4560, original: null, duo: 4700 },
+  '蛋仔派對':               { earlybird: 4800, discounted: 4560, original: null, duo: 4700 },
+  '3D列印':                  { earlybird: 4800, discounted: 4560, original: null, duo: 4700 },
 };
 
 // 根據工作表名稱找到對應營隊價格
@@ -776,7 +776,7 @@ function onFormSubmit(e) {
     let finalPrice = earlybird;
     let priceLabel = '早鳥價 $' + earlybird.toLocaleString();
 
-    const couponPrice = couponValid ? Math.round(earlybird * 0.95) : earlybird;
+    const couponPrice = couponValid ? (campPrice && campPrice.discounted ? campPrice.discounted : Math.round(earlybird * 0.95)) : earlybird;
     const actualDuoPrice = isDuo && duoPrice ? duoPrice : earlybird;
 
     if (couponValid && isDuo && duoPrice) {
@@ -880,7 +880,7 @@ function recalcSheet(sheetName) {
     // 計算最終價格
     let finalPrice = earlybird;
     let priceLabel = '早鳥價 $' + earlybird.toLocaleString();
-    const couponPrice = couponValid ? Math.round(earlybird * 0.95) : earlybird;
+    const couponPrice = couponValid ? (campPrice && campPrice.discounted ? campPrice.discounted : Math.round(earlybird * 0.95)) : earlybird;
 
     if (couponValid && isDuo && duoPrice) {
       if (couponPrice <= duoPrice) {
