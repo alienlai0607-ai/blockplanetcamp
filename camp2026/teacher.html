@@ -8,138 +8,107 @@
   <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;700;900&display=swap" rel="stylesheet" />
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-    body { font-family: 'Noto Sans TC', sans-serif; background: #f5f5f5; color: #333; padding: 20px; line-height: 1.6; }
-    .container { max-width: 1200px; margin: 0 auto; }
-    h1 { font-size: 1.5rem; color: #F5941E; margin-bottom: 8px; }
-    .sub { font-size: .9rem; color: #888; margin-bottom: 24px; }
-    .loading { text-align: center; padding: 60px; color: #aaa; }
+    body { font-family: 'Noto Sans TC', sans-serif; background: linear-gradient(180deg, #FFF8F0, #f5f5f5); min-height: 100vh; color: #333; }
+    .container { max-width: 1400px; margin: 0 auto; padding: 20px; }
+    .header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; flex-wrap: wrap; gap: 10px; }
+    h1 { font-size: 1.5rem; color: #F5941E; font-weight: 900; }
+    .sub { font-size: .85rem; color: #888; }
+    .refresh-btn { padding: 8px 18px; background: white; border: 1.5px solid #F5941E; color: #F5941E; border-radius: 50px; font-weight: 700; cursor: pointer; font-size: .85rem; font-family: inherit; }
+    .refresh-btn:hover { background: #F5941E; color: white; }
+    .loading { text-align: center; padding: 80px 20px; color: #aaa; font-size: 1rem; }
 
+    /* 統計列 */
+    .stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 10px; margin-bottom: 20px; }
+    .stat { background: white; padding: 14px 16px; border-radius: 12px; box-shadow: 0 2px 8px rgba(0,0,0,.04); text-align: center; }
+    .stat-num { font-size: 1.4rem; font-weight: 900; color: #F5941E; }
+    .stat-label { font-size: .72rem; color: #888; font-weight: 700; margin-top: 2px; }
+
+    /* 營隊卡片格 */
+    .camps-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 14px; }
     .camp-card {
-      background: white; border-radius: 14px; margin-bottom: 14px;
-      box-shadow: 0 2px 10px rgba(0,0,0,.06); overflow: hidden;
+      background: white; border-radius: 14px; padding: 16px; cursor: pointer;
+      box-shadow: 0 2px 8px rgba(0,0,0,.06); transition: all .2s;
+      border-left: 4px solid #F5941E; position: relative;
     }
-    .camp-head {
-      padding: 14px 18px; display: flex; justify-content: space-between; align-items: center;
-      cursor: pointer; background: white; transition: background .2s;
+    .camp-card:hover { transform: translateY(-2px); box-shadow: 0 6px 20px rgba(0,0,0,.1); }
+    .camp-card-head { display: flex; justify-content: space-between; align-items: start; margin-bottom: 8px; }
+    .camp-name { font-size: .95rem; font-weight: 900; color: #333; line-height: 1.4; flex: 1; padding-right: 8px; }
+    .camp-count-badge {
+      background: linear-gradient(135deg, #F5941E, #E07A08);
+      color: white; padding: 4px 10px; border-radius: 50px;
+      font-size: .8rem; font-weight: 900; white-space: nowrap;
     }
-    .camp-head:hover { background: #FFF8F0; }
-    .camp-title { font-size: 1.05rem; font-weight: 900; color: #333; }
-    .camp-count {
-      background: #F5941E; color: white; padding: 4px 14px; border-radius: 50px;
-      font-size: .85rem; font-weight: 900;
-    }
-    .camp-body { display: none; padding: 0 18px 18px; border-top: 1px solid #f0f0f0; }
-    .camp-body.open { display: block; }
+    .camp-alerts { font-size: .7rem; color: #C93A2A; font-weight: 700; margin-top: 6px; }
+    .camp-payment-line { font-size: .72rem; color: #888; margin-top: 6px; display: flex; gap: 8px; flex-wrap: wrap; }
+    .badge-mini { padding: 2px 8px; border-radius: 50px; font-weight: 700; font-size: .7rem; }
 
-    .session-group {
-      margin-top: 14px;
-    }
-    .session-title {
-      font-size: .92rem; font-weight: 900; color: #666; padding: 8px 12px;
-      background: #f9f9f9; border-radius: 8px; margin-bottom: 8px;
-      display: flex; justify-content: space-between; align-items: center;
-    }
-    .session-count { font-size: .78rem; color: #888; font-weight: 700; }
+    /* Modal 彈窗 */
+    .modal { position: fixed; inset: 0; background: rgba(0,0,0,.6); display: none; z-index: 9999; align-items: flex-start; justify-content: center; padding: 20px; overflow-y: auto; }
+    .modal.show { display: flex; }
+    .modal-content { background: white; border-radius: 20px; width: 100%; max-width: 900px; margin: 20px 0; overflow: hidden; }
+    .modal-head { padding: 18px 24px; background: linear-gradient(135deg, #F5941E, #E07A08); color: white; display: flex; justify-content: space-between; align-items: center; }
+    .modal-title { font-size: 1.1rem; font-weight: 900; }
+    .modal-close { background: rgba(255,255,255,.3); border: none; width: 32px; height: 32px; border-radius: 50%; color: white; cursor: pointer; font-size: 1.1rem; }
+    .modal-body { padding: 16px 20px; max-height: 70vh; overflow-y: auto; }
 
-    .student-row {
-      display: grid; grid-template-columns: auto 1fr auto; gap: 10px;
-      padding: 10px 12px; border-bottom: 1px solid #f0f0f0; align-items: center;
-    }
+    .session-section { margin-bottom: 18px; }
+    .session-title { font-size: .88rem; font-weight: 900; color: #666; padding: 8px 12px; background: #FFF8F0; border-radius: 8px; margin-bottom: 10px; display: flex; justify-content: space-between; align-items: center; }
+    .session-count { font-size: .75rem; color: #888; }
+
+    .student-row { display: grid; grid-template-columns: auto 1fr auto; gap: 10px; padding: 12px; border-bottom: 1px solid #f0f0f0; align-items: start; }
     .student-row:last-child { border-bottom: none; }
-    .student-num { color: #bbb; font-weight: 700; font-size: .85rem; min-width: 28px; }
-    .student-info { font-size: .88rem; }
+    .student-num { color: #bbb; font-weight: 700; font-size: .85rem; padding-top: 2px; }
     .student-name { font-weight: 900; font-size: .95rem; color: #333; }
-    .student-name small { font-weight: 600; color: #888; font-size: .78rem; margin-left: 6px; }
-    .student-detail { font-size: .78rem; color: #888; margin-top: 2px; }
-    .student-right { text-align: right; }
-    .payment {
-      display: inline-block; padding: 2px 10px; border-radius: 50px;
-      font-size: .72rem; font-weight: 700;
-    }
+    .student-name small { font-weight: 600; color: #888; font-size: .75rem; margin-left: 6px; }
+    .sibling-tag { background: #E3F2FD; color: #1565C0; padding: 1px 7px; border-radius: 50px; font-size: .68rem; font-weight: 700; margin-left: 4px; }
+    .student-detail { font-size: .76rem; color: #888; margin-top: 3px; line-height: 1.6; }
+    .alert-box { background: #FFEBEE; border: 1.5px solid #FFCDD2; border-radius: 8px; padding: 6px 10px; margin-top: 5px; font-size: .78rem; color: #C62828; }
+    .note-box { background: #FFF8E1; border-left: 3px solid #FFC107; padding: 4px 8px; margin-top: 5px; font-size: .75rem; color: #795548; }
+    .payment { padding: 3px 10px; border-radius: 50px; font-size: .72rem; font-weight: 700; white-space: nowrap; }
     .payment-paid { background: #E8F5E9; color: #2E7D32; }
     .payment-unpaid { background: #FFEBEE; color: #C62828; }
     .payment-pending { background: #FFF3E0; color: #E65100; }
 
-    .alert {
-      background: #FFEBEE; border: 1.5px solid #FFCDD2; border-radius: 8px;
-      padding: 8px 12px; margin-top: 6px; font-size: .82rem; color: #C62828;
-    }
-    .alert-title { font-weight: 900; margin-bottom: 2px; }
-    .note {
-      background: #FFF8E1; border-left: 3px solid #FFC107; padding: 6px 10px;
-      margin-top: 6px; font-size: .8rem; color: #795548;
-    }
-    .sibling {
-      background: #E3F2FD; border-radius: 6px; padding: 2px 8px;
-      font-size: .72rem; color: #1565C0; font-weight: 700; margin-left: 6px;
-    }
+    .print-btn { display: block; width: 100%; padding: 10px; margin-top: 8px; background: #F5941E; color: white; font-weight: 900; border: none; border-radius: 8px; font-size: .9rem; cursor: pointer; font-family: inherit; }
+    .print-btn:hover { background: #E07A08; }
 
-    .btn-row { display: flex; gap: 8px; margin-top: 12px; flex-wrap: wrap; }
-    .btn {
-      padding: 8px 14px; border-radius: 8px; font-size: .85rem; font-weight: 700;
-      border: none; cursor: pointer; font-family: inherit; text-decoration: none;
-      display: inline-block; transition: transform .1s;
+    @media (max-width: 480px) {
+      .container { padding: 12px; }
+      .camps-grid { grid-template-columns: 1fr; }
+      .modal-content { margin: 0; border-radius: 12px; }
     }
-    .btn:hover { transform: translateY(-1px); }
-    .btn-primary { background: #F5941E; color: white; }
-    .btn-secondary { background: #e0e0e0; color: #333; }
-
-    .refresh {
-      position: fixed; bottom: 20px; right: 20px;
-      padding: 12px 20px; border-radius: 50px;
-      background: #F5941E; color: white; font-weight: 900; font-size: .9rem;
-      border: none; cursor: pointer; box-shadow: 0 4px 16px rgba(245,148,30,.4);
-      font-family: inherit;
-    }
-
-    /* 列印樣式 */
-    @media print {
-      body { background: white; padding: 0; }
-      .refresh, .btn-row, .no-print { display: none !important; }
-      .camp-card { box-shadow: none; page-break-after: always; margin: 0; }
-      .camp-body { display: block !important; }
-      .print-page { page-break-after: always; }
-    }
-
-    /* 點名表專用列印樣式 */
-    .print-roll-call {
-      display: none;
-    }
-    @media print {
-      .print-roll-call.active { display: block; }
-      .print-roll-call.active ~ * { display: none; }
-      body.print-mode .container > *:not(.print-roll-call) { display: none; }
-      body.print-mode .print-roll-call { display: block; }
-    }
-    .roll-call-table {
-      width: 100%; border-collapse: collapse; margin-top: 16px;
-    }
-    .roll-call-table th, .roll-call-table td {
-      border: 1.5px solid #333; padding: 10px 8px; text-align: center;
-    }
-    .roll-call-table th { background: #FFF3E0; font-weight: 900; }
-    .roll-call-title { font-size: 1.4rem; font-weight: 900; text-align: center; margin-bottom: 8px; }
-    .roll-call-info { text-align: center; margin-bottom: 16px; color: #666; }
   </style>
 </head>
 <body>
 <div class="container">
-  <h1>👩‍🏫 老師後台 — 營隊名單</h1>
-  <div class="sub">依營隊 / 梯次整理，主教老師專用</div>
+  <div class="header">
+    <div>
+      <h1>👩‍🏫 老師後台</h1>
+      <div class="sub">點選營隊查看詳細名單</div>
+    </div>
+    <button class="refresh-btn" onclick="loadData()">↻ 更新資料</button>
+  </div>
+
+  <div class="stats" id="stats" style="display:none"></div>
   <div id="content" class="loading">載入中...</div>
 </div>
 
-<button class="refresh" onclick="loadData()">↻ 更新</button>
-
-<div class="print-roll-call" id="rollCall"></div>
+<div class="modal" id="modal" onclick="closeModal(event)">
+  <div class="modal-content" onclick="event.stopPropagation()">
+    <div class="modal-head">
+      <div class="modal-title" id="modalTitle"></div>
+      <button class="modal-close" onclick="closeModal()">✕</button>
+    </div>
+    <div class="modal-body" id="modalBody"></div>
+  </div>
+</div>
 
 <script>
 const API = 'https://script.google.com/macros/s/AKfycbxA5RJsAME8NARKKWSePdCm70JZYq4PT1nDhc9TubdfeON6xSy5Rm2bbinzApr3CkIe/exec';
+let allData = null;
 
-// 從 session 文字解析日期
 function parseDates(session) {
   if (!session) return [];
-  // 抓「8/10-8/14」或「8/10（一）～8/14（五）」等格式
   const m = session.match(/(\d{1,2})\/(\d{1,2})[^\d]*?(\d{1,2})\/(\d{1,2})/);
   if (!m) return [];
   const [_, m1, d1, m2, d2] = m.map(Number);
@@ -154,22 +123,33 @@ function parseDates(session) {
   return dates;
 }
 
+function getLocation(campName, session) {
+  const text = (campName + ' ' + (session || '')).toLowerCase();
+  if (text.includes('北區')) return '北區';
+  if (text.includes('永康')) return '永康';
+  return '';
+}
+
 function paymentBadge(status) {
   const s = (status || '').trim();
   if (!s) return '<span class="payment payment-pending">⏳ 未確認</span>';
-  if (s.includes('已') || s.includes('完') || s.includes('OK') || s.includes('是')) {
-    return '<span class="payment payment-paid">✅ 已付款</span>';
-  }
-  if (s.includes('未') || s.includes('待') || s.includes('否')) {
-    return '<span class="payment payment-unpaid">❌ 未付款</span>';
-  }
+  if (/(已|完|OK|ok|是|付)/.test(s)) return '<span class="payment payment-paid">✅ 已付款</span>';
+  if (/(未|待|否)/.test(s)) return '<span class="payment payment-unpaid">❌ 未付款</span>';
   return '<span class="payment payment-pending">⏳ ' + s + '</span>';
 }
 
-// 找兄弟姐妹（同家長電話）
-function findSiblings(students, phone) {
-  if (!phone) return [];
-  return students.filter(s => s.parentPhone && s.parentPhone === phone);
+function countAlerts(students) {
+  return students.filter(s => (s.allergy && s.allergy !== '無') || (s.health && s.health !== '無' && s.health !== '良好')).length;
+}
+
+function countPayment(students) {
+  let paid = 0, unpaid = 0;
+  students.forEach(s => {
+    const p = (s.payment || '').trim();
+    if (/(已|完|OK|ok|是|付)/.test(p)) paid++;
+    else unpaid++;
+  });
+  return { paid, unpaid };
 }
 
 function render(data) {
@@ -178,106 +158,134 @@ function render(data) {
     return;
   }
 
-  // 建立跨營隊的兄弟姐妹查找表
-  const allStudents = [];
-  data.camps.forEach(c => c.students.forEach(s => allStudents.push({...s, camp: c.name})));
-
-  let html = '';
-  data.camps.forEach((camp, ci) => {
-    // 依梯次分組
-    const sessionMap = {};
-    camp.students.forEach(s => {
-      const key = s.session || '(未指定梯次)';
-      if (!sessionMap[key]) sessionMap[key] = [];
-      sessionMap[key].push(s);
-    });
-
-    html += `<div class="camp-card">
-      <div class="camp-head" onclick="this.nextElementSibling.classList.toggle('open')">
-        <div class="camp-title">${camp.name}</div>
-        <div class="camp-count">👥 ${camp.count} 人</div>
-      </div>
-      <div class="camp-body">`;
-
-    Object.keys(sessionMap).forEach(session => {
-      const students = sessionMap[session];
-      html += `<div class="session-group">
-        <div class="session-title">
-          <span>📅 ${session}</span>
-          <span class="session-count">共 ${students.length} 人</span>
-        </div>`;
-
-      students.forEach((s, i) => {
-        // 找兄弟姐妹
-        const siblings = allStudents.filter(x =>
-          x.parentPhone && s.parentPhone &&
-          x.parentPhone === s.parentPhone &&
-          x.name !== s.name
-        );
-        const siblingNames = [...new Set(siblings.map(x => x.name))];
-
-        // 重要警示
-        const alerts = [];
-        if (s.allergy && s.allergy !== '無') alerts.push('⚠️ 過敏/用藥：' + s.allergy);
-        if (s.health && s.health !== '無' && s.health !== '良好') alerts.push('🏥 健康：' + s.health);
-
-        html += `<div class="student-row">
-          <div class="student-num">${i + 1}</div>
-          <div class="student-info">
-            <div class="student-name">
-              ${s.name}
-              ${s.gender ? `<small>${s.gender}</small>` : ''}
-              ${s.grade ? `<small>${s.grade}</small>` : ''}
-              ${siblingNames.length > 0 ? `<span class="sibling">👨‍👩‍👧 兄弟姊妹：${siblingNames.join('、')}</span>` : ''}
-            </div>
-            <div class="student-detail">
-              ${s.parentName ? `👤 ${s.parentName}` : ''}
-              ${s.parentPhone ? ` ｜ 📱 ${s.parentPhone}` : ''}
-              ${s.diet ? ` ｜ 🍽️ ${s.diet}` : ''}
-              ${s.lineId ? ` ｜ LINE: ${s.lineId}` : ''}
-            </div>
-            ${alerts.length > 0 ? `<div class="alert">
-              ${alerts.map(a => '<div>' + a + '</div>').join('')}
-            </div>` : ''}
-            ${s.note ? `<div class="note">📝 備註：${s.note}</div>` : ''}
-          </div>
-          <div class="student-right">
-            ${paymentBadge(s.payment)}
-          </div>
-        </div>`;
-      });
-
-      const printData = {
-        camp: camp.name,
-        session: session,
-        students: students.map(s => ({n:s.name, g:s.grade, a:s.allergy}))
-      };
-      const encodedData = encodeURIComponent(JSON.stringify(printData));
-      html += `<div class="btn-row no-print">
-        <button class="btn btn-primary" data-print="${encodedData}" onclick="printFromData(this)">🖨️ 列印簽到單</button>
-      </div>
-      </div>`;
-    });
-
-    html += `</div></div>`;
+  // 統計列
+  const totalStudents = data.camps.reduce((sum, c) => sum + c.count, 0);
+  let totalPaid = 0, totalUnpaid = 0, totalAlerts = 0;
+  data.camps.forEach(c => {
+    const pay = countPayment(c.students);
+    totalPaid += pay.paid;
+    totalUnpaid += pay.unpaid;
+    totalAlerts += countAlerts(c.students);
   });
+
+  const stats = document.getElementById('stats');
+  stats.style.display = 'grid';
+  stats.innerHTML = `
+    <div class="stat"><div class="stat-num">${data.camps.length}</div><div class="stat-label">營隊數</div></div>
+    <div class="stat"><div class="stat-num">${totalStudents}</div><div class="stat-label">總人數</div></div>
+    <div class="stat"><div class="stat-num" style="color:#2E7D32">${totalPaid}</div><div class="stat-label">已付款</div></div>
+    <div class="stat"><div class="stat-num" style="color:#C93A2A">${totalUnpaid}</div><div class="stat-label">未付款/未確認</div></div>
+    <div class="stat"><div class="stat-num" style="color:#C93A2A">${totalAlerts}</div><div class="stat-label">⚠️ 需注意</div></div>
+  `;
+
+  // 營隊卡片格
+  let html = '<div class="camps-grid">';
+  data.camps.forEach((camp, idx) => {
+    const alerts = countAlerts(camp.students);
+    const pay = countPayment(camp.students);
+    const sessions = new Set(camp.students.map(s => s.session || '(未指定)'));
+
+    html += `<div class="camp-card" onclick="openCamp(${idx})">
+      <div class="camp-card-head">
+        <div class="camp-name">${camp.name}</div>
+        <div class="camp-count-badge">👥 ${camp.count}</div>
+      </div>
+      <div class="camp-payment-line">
+        ${pay.paid > 0 ? `<span class="badge-mini" style="background:#E8F5E9;color:#2E7D32">✅ ${pay.paid}</span>` : ''}
+        ${pay.unpaid > 0 ? `<span class="badge-mini" style="background:#FFF3E0;color:#E65100">⏳ ${pay.unpaid}</span>` : ''}
+        ${sessions.size > 1 ? `<span class="badge-mini" style="background:#E3F2FD;color:#1565C0">📅 ${sessions.size} 梯次</span>` : ''}
+      </div>
+      ${alerts > 0 ? `<div class="camp-alerts">⚠️ ${alerts} 位學員需特別注意</div>` : ''}
+    </div>`;
+  });
+  html += '</div>';
 
   document.getElementById('content').innerHTML = html;
 }
 
-function printFromData(btn) {
-  const data = JSON.parse(decodeURIComponent(btn.dataset.print));
-  printRollCall(data.camp, data.session, data.students);
+function openCamp(idx) {
+  const camp = allData.camps[idx];
+  document.getElementById('modalTitle').textContent = camp.name + ' （' + camp.count + ' 人）';
+
+  // 依梯次分組
+  const sessionMap = {};
+  camp.students.forEach(s => {
+    const key = s.session || '(未指定梯次)';
+    if (!sessionMap[key]) sessionMap[key] = [];
+    sessionMap[key].push(s);
+  });
+
+  // 找全部學員（跨營隊查兄弟姊妹）
+  const allStudents = [];
+  allData.camps.forEach(c => c.students.forEach(s => allStudents.push(s)));
+
+  let body = '';
+  Object.keys(sessionMap).forEach(session => {
+    const students = sessionMap[session];
+    body += `<div class="session-section">
+      <div class="session-title">
+        <span>📅 ${session}</span>
+        <span class="session-count">${students.length} 人</span>
+      </div>`;
+
+    students.forEach((s, i) => {
+      // 兄弟姊妹
+      const siblings = allStudents.filter(x =>
+        x.parentPhone && s.parentPhone && x.parentPhone === s.parentPhone && x.name !== s.name
+      );
+      const siblingNames = [...new Set(siblings.map(x => x.name))];
+
+      const alerts = [];
+      if (s.allergy && s.allergy !== '無') alerts.push('⚠️ 過敏/用藥：' + s.allergy);
+      if (s.health && s.health !== '無' && s.health !== '良好') alerts.push('🏥 健康：' + s.health);
+
+      body += `<div class="student-row">
+        <div class="student-num">${i + 1}</div>
+        <div>
+          <div class="student-name">
+            ${s.name}
+            ${s.gender ? `<small>${s.gender}</small>` : ''}
+            ${siblingNames.length > 0 ? `<span class="sibling-tag">👨‍👩‍👧 ${siblingNames.join('、')}</span>` : ''}
+          </div>
+          <div class="student-detail">
+            ${s.parentName ? `👤 ${s.parentName}` : ''}
+            ${s.parentPhone ? ` ｜ 📱 ${s.parentPhone}` : ''}
+            ${s.diet ? ` ｜ 🍽️ ${s.diet}` : ''}
+            ${s.lineId ? ` ｜ LINE: ${s.lineId}` : ''}
+          </div>
+          ${alerts.length > 0 ? `<div class="alert-box">${alerts.map(a => '<div>' + a + '</div>').join('')}</div>` : ''}
+          ${s.note ? `<div class="note-box">📝 ${s.note}</div>` : ''}
+        </div>
+        <div>${paymentBadge(s.payment)}</div>
+      </div>`;
+    });
+
+    body += `<button class="print-btn" data-camp="${encodeURIComponent(camp.name)}" data-session="${encodeURIComponent(session)}" data-students='${encodeURIComponent(JSON.stringify(students.map(s => ({n:s.name, g:s.gender, a:s.allergy}))))}' onclick="printFromBtn(this)">🖨️ 列印簽到單（${students.length} 人，一頁完成）</button>
+    </div>`;
+  });
+
+  document.getElementById('modalBody').innerHTML = body;
+  document.getElementById('modal').classList.add('show');
+}
+
+function closeModal(e) {
+  if (!e || e.target.id === 'modal') {
+    document.getElementById('modal').classList.remove('show');
+  }
+}
+
+function printFromBtn(btn) {
+  const camp = decodeURIComponent(btn.dataset.camp);
+  const session = decodeURIComponent(btn.dataset.session);
+  const students = JSON.parse(decodeURIComponent(btn.dataset.students));
+  printRollCall(camp, session, students);
 }
 
 function printRollCall(campName, session, students) {
   const dates = parseDates(session);
   const n = students.length;
-
-  // 根據人數動態決定字體大小，確保一頁完成
-  const rowHeight = n <= 15 ? 32 : n <= 25 ? 24 : n <= 35 ? 18 : 14;
-  const fontSize = n <= 15 ? 14 : n <= 25 ? 12 : n <= 35 ? 11 : 10;
-  const headerSize = n <= 20 ? 13 : 12;
+  const rowHeight = n <= 15 ? 32 : n <= 25 ? 26 : n <= 35 ? 20 : 16;
+  const fontSize = n <= 15 ? 13 : n <= 25 ? 12 : n <= 35 ? 11 : 10;
 
   const dateHeaders = dates.length > 0
     ? dates.map(d => `<th>${d}</th>`).join('')
@@ -287,45 +295,33 @@ function printRollCall(campName, session, students) {
   students.forEach((s, i) => {
     rows += `<tr>
       <td class="num">${i + 1}</td>
-      <td class="name">${s.n}${s.g ? ' (' + s.g + ')' : ''}</td>
+      <td class="name">${s.n}${s.g ? ' ('+s.g+')' : ''}</td>
       ${(dates.length > 0 ? dates : ['']).map(() => '<td></td>').join('')}
       <td class="note">${s.a && s.a !== '無' ? '⚠️ ' + s.a : ''}</td>
     </tr>`;
   });
 
-  const printWindow = window.open('', '_blank');
-  printWindow.document.write(`
-    <!DOCTYPE html><html><head><meta charset="UTF-8"><title>簽到單 - ${campName}</title>
-    <style>
-      @page { size: A4; margin: 12mm; }
-      * { box-sizing: border-box; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
-      html, body { margin: 0; padding: 0; font-family: 'Microsoft JhengHei','Noto Sans TC',sans-serif; }
-      body { padding: 10px; }
-      h1 { text-align: center; font-size: 18pt; margin: 0 0 4px; font-weight: 900; }
-      .info { text-align: center; color: #555; margin-bottom: 10px; font-size: ${headerSize}pt; }
-      table { width: 100%; border-collapse: collapse; table-layout: fixed; page-break-inside: avoid; }
-      tr { page-break-inside: avoid; }
-      th, td { border: 1.5px solid #333; padding: 4px 6px; text-align: center; font-size: ${fontSize}pt; height: ${rowHeight}px; overflow: hidden; }
-      th { background: #FFF3E0 !important; font-weight: 900; }
-      td.num { width: 36px; color: #888; }
-      td.name { text-align: left; padding-left: 10px; font-weight: 700; }
-      td.note { text-align: left; padding-left: 8px; font-size: ${fontSize - 1}pt; color: #C93A2A; }
-      @media print {
-        body { padding: 0; }
-        h1 { font-size: 16pt; }
-        @page { margin: 10mm; }
-      }
-    </style></head><body>
-    <h1>${campName}</h1>
-    <div class="info">${session}｜共 ${n} 位學員</div>
-    <table>
-      <tr><th style="width:40px">No.</th><th>姓名</th>${dateHeaders}<th style="width:160px">備註</th></tr>
-      ${rows}
-    </table>
-    <script>window.print();</sc` + `ript>
-    </body></html>
-  `);
-  printWindow.document.close();
+  const w = window.open('', '_blank');
+  w.document.write(`<!DOCTYPE html><html><head><meta charset="UTF-8"><title>${campName}</title><style>
+    @page { size: A4; margin: 12mm; }
+    * { box-sizing: border-box; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+    html, body { margin: 0; padding: 10px; font-family: 'Microsoft JhengHei','Noto Sans TC',sans-serif; }
+    h1 { text-align: center; font-size: 16pt; margin: 0 0 4px; font-weight: 900; }
+    .info { text-align: center; color: #555; margin-bottom: 10px; font-size: 11pt; }
+    table { width: 100%; border-collapse: collapse; table-layout: fixed; }
+    tr { page-break-inside: avoid; }
+    th, td { border: 1.5px solid #333; padding: 4px 6px; text-align: center; font-size: ${fontSize}pt; height: ${rowHeight}px; overflow: hidden; }
+    th { background: #FFF3E0 !important; font-weight: 900; }
+    td.num { width: 36px; color: #888; }
+    td.name { text-align: left; padding-left: 10px; font-weight: 700; }
+    td.note { text-align: left; padding-left: 8px; font-size: ${fontSize-1}pt; color: #C93A2A; }
+    @media print { body { padding: 0; } @page { margin: 10mm; } }
+  </style></head><body>
+  <h1>${campName}</h1>
+  <div class="info">${session}｜共 ${n} 位學員</div>
+  <table><tr><th style="width:36px">No.</th><th>姓名</th>${dateHeaders}<th style="width:140px">備註</th></tr>${rows}</table>
+  <script>window.print();</sc`+`ript></body></html>`);
+  w.document.close();
 }
 
 async function loadData() {
@@ -334,18 +330,13 @@ async function loadData() {
     const res = await fetch(API + '?action=teacher');
     const data = await res.json();
     if (data.success) {
-      try {
-        render(data);
-      } catch(renderErr) {
-        document.getElementById('content').innerHTML = '<div class="loading" style="color:#C93A2A">渲染失敗：' + renderErr.message + '</div>';
-        console.error(renderErr);
-      }
+      allData = data;
+      render(data);
     } else {
-      document.getElementById('content').innerHTML = '<div class="loading">載入失敗：' + (data.error || '未知錯誤') + '</div>';
+      document.getElementById('content').innerHTML = '<div class="loading">載入失敗</div>';
     }
   } catch(e) {
     document.getElementById('content').innerHTML = '<div class="loading" style="color:#C93A2A">載入失敗：' + e.message + '</div>';
-    console.error(e);
   }
 }
 
