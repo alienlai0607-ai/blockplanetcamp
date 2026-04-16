@@ -275,15 +275,55 @@ function countPayment(students) {
   return { paid, notified, unknown };
 }
 
-// === 載入營隊資料 ===
+// === 載入營隊資料（含快取 + 進度提示）===
+const CACHE_KEY = 'bp_admin_camps_v1';
+const CACHE_TIME_KEY = 'bp_admin_camps_time_v1';
+
 async function loadCamps() {
-  document.getElementById('camps-content').innerHTML = '<div class="loading">載入中...</div>';
+  const contentEl = document.getElementById('camps-content');
+
+  // 1. 先顯示快取（秒開）
+  try {
+    const cached = localStorage.getItem(CACHE_KEY);
+    const cachedTime = localStorage.getItem(CACHE_TIME_KEY);
+    if (cached) {
+      const data = JSON.parse(cached);
+      allData = data;
+      renderCamps(data);
+      const mins = cachedTime ? Math.round((Date.now() - Number(cachedTime)) / 60000) : 0;
+      const banner = document.createElement('div');
+      banner.id = 'updatingBanner';
+      banner.style.cssText = 'background:#FFF3E0;color:#E65100;padding:10px 14px;border-radius:10px;margin-bottom:12px;font-size:.85rem;font-weight:700;text-align:center';
+      banner.innerHTML = '🔄 正在更新最新資料…（目前顯示 ' + (mins < 1 ? '剛剛' : mins + ' 分鐘前') + ' 的快取，Google 伺服器需 5～10 秒）';
+      contentEl.parentElement.insertBefore(banner, contentEl);
+    } else {
+      contentEl.innerHTML = '<div class="loading">📡 正在從 Google 伺服器抓取資料…<br><span style="font-size:.8rem;color:#bbb">首次載入約 5～10 秒，請稍候</span></div>';
+    }
+  } catch(e) {}
+
+  // 2. 背景抓最新
   try {
     const res = await fetch(API + '?action=teacher');
     const data = await res.json();
-    if (data.success) { allData = data; renderCamps(data); }
-    else document.getElementById('camps-content').innerHTML = '<div class="loading">載入失敗</div>';
-  } catch(e) { document.getElementById('camps-content').innerHTML = '<div class="loading" style="color:#C93A2A">載入失敗：' + e.message + '</div>'; }
+    if (data.success) {
+      allData = data;
+      renderCamps(data);
+      try {
+        localStorage.setItem(CACHE_KEY, JSON.stringify(data));
+        localStorage.setItem(CACHE_TIME_KEY, String(Date.now()));
+      } catch(e) {}
+      const banner = document.getElementById('updatingBanner');
+      if (banner) banner.remove();
+    } else {
+      const banner = document.getElementById('updatingBanner');
+      if (banner) { banner.style.background = '#FFEBEE'; banner.style.color = '#C62828'; banner.textContent = '⚠️ 更新失敗，顯示的是舊資料'; }
+      else contentEl.innerHTML = '<div class="loading">載入失敗</div>';
+    }
+  } catch(e) {
+    const banner = document.getElementById('updatingBanner');
+    if (banner) { banner.style.background = '#FFEBEE'; banner.style.color = '#C62828'; banner.textContent = '⚠️ 更新失敗（' + e.message + '），顯示的是舊資料'; }
+    else contentEl.innerHTML = '<div class="loading" style="color:#C93A2A">載入失敗：' + e.message + '<br><button onclick="loadCamps()" style="margin-top:12px;padding:10px 20px;background:#F5941E;color:white;border:none;border-radius:8px;font-weight:700;cursor:pointer">↻ 重試</button></div>';
+  }
 }
 
 function renderCamps(data) {
