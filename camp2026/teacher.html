@@ -303,7 +303,7 @@ function printRollCall(campName, session, students) {
     rows += `<tr>
       <td class="num">${i + 1}</td>
       <td class="name">${s.n}${s.g ? ' ('+s.g+')' : ''}</td>
-      ${(dates.length > 0 ? dates : ['']).map(() => '<td></td>').join('')}
+      ${(dates.length > 0 ? dates : ['']).map(() => '<td class="check">☐</td>').join('')}
       <td class="note">${s.a && s.a !== '無' ? '⚠️ ' + s.a : ''}</td>
     </tr>`;
   });
@@ -321,6 +321,7 @@ function printRollCall(campName, session, students) {
     td.num { color: #888; }
     td.name { text-align: left; padding-left: 12px; font-weight: 700; }
     td.note { text-align: left; padding-left: 10px; font-size: ${fontSize-1}pt; color: #C93A2A; }
+    td.check { color: #ccc; font-size: ${fontSize + 4}pt; font-weight: 400; }
     .col-num { width: ${numWidth}%; }
     .col-name { width: ${nameWidth}%; }
     .col-date { width: ${dateWidth}%; }
