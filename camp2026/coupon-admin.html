@@ -360,6 +360,20 @@
     billResult.style.display = 'block';
   }
 
+  // 複製家長訊息
+  function copyParentMsg() {
+    const ta = document.getElementById('parentMsgText');
+    if (!ta) return;
+    navigator.clipboard.writeText(ta.value).then(() => {
+      alert('✅ 已複製！可以直接貼到 LINE 傳給家長');
+    }).catch(() => {
+      ta.style.position = 'static';
+      ta.select();
+      document.execCommand('copy');
+      alert('✅ 已複製！');
+    });
+  }
+
   // 加開優惠券
   async function addMore() {
     const count = prompt('要加開幾張優惠券？（1～100）');
@@ -463,6 +477,30 @@
             <span style="font-size:1.3rem;font-weight:900;color:#C93A2A">$${data.totalFinal.toLocaleString()}</span>
           </div>
         </div>`;
+
+        // 產生可複製的家長訊息
+        const hasAnyDiscount = data.totalSaved > 0;
+        const childName = data.registrations[0]?.childName || '';
+        let msg = hasAnyDiscount
+          ? '媽咪您好！有確認收到您們報名表單+使用優惠折扣碼✅\n\n'
+          : '媽咪您好！有確認收到您們報名表單✅\n\n';
+        if (childName) msg += '【寶貝姓名：' + childName + '】\n';
+        data.registrations.forEach(r => {
+          msg += '\n💟' + r.camp;
+          if (r.session) msg += '\n' + r.session;
+          msg += (r.hasCoupon || r.isDuo) ? '\n費用經折扣後為：$' + r.finalPrice.toLocaleString() : '\n費用為：$' + r.finalPrice.toLocaleString();
+          msg += '\n';
+        });
+        msg += '\n營隊費用總計：$' + data.totalFinal.toLocaleString();
+
+        html += `
+          <button onclick="copyParentMsg()" style="display:block;width:100%;padding:14px;margin-top:14px;border-radius:50px;background:#06C755;color:white;font-weight:900;font-size:1rem;border:none;cursor:pointer;font-family:inherit;box-shadow:0 4px 16px rgba(6,199,85,0.3)">
+            📋 複製家長訊息（可直接貼 LINE）
+          </button>
+          <textarea id="parentMsgText" style="position:absolute;left:-9999px;top:-9999px">${msg}</textarea>
+          <details style="margin-top:10px"><summary style="font-size:.82rem;color:#888;cursor:pointer;font-weight:700">👁️ 預覽訊息</summary>
+            <pre style="background:#f9f9f9;border-radius:10px;padding:12px;font-size:.82rem;white-space:pre-wrap;color:#333;margin-top:8px;font-family:inherit;line-height:1.7">${msg}</pre>
+          </details>`;
       }
 
       resultDiv.innerHTML = html;
