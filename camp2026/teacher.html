@@ -4,7 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
-  <title>老師後台｜營隊名單</title>
+  <title>2026暑期營隊總名單｜老師後台工具</title>
   <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;700;900&display=swap" rel="stylesheet" />
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
@@ -24,23 +24,23 @@
     .stat-label { font-size: .72rem; color: #888; font-weight: 700; margin-top: 2px; }
 
     /* 營隊卡片格 */
-    .camps-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 14px; }
+    .camps-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(340px, 1fr)); gap: 18px; }
     .camp-card {
-      background: white; border-radius: 14px; padding: 16px; cursor: pointer;
-      box-shadow: 0 2px 8px rgba(0,0,0,.06); transition: all .2s;
-      border-left: 4px solid #F5941E; position: relative;
+      background: white; border-radius: 18px; padding: 22px; cursor: pointer;
+      box-shadow: 0 3px 12px rgba(0,0,0,.08); transition: all .2s;
+      border-left: 6px solid #F5941E; position: relative;
     }
-    .camp-card:hover { transform: translateY(-2px); box-shadow: 0 6px 20px rgba(0,0,0,.1); }
-    .camp-card-head { display: flex; justify-content: space-between; align-items: start; margin-bottom: 8px; }
-    .camp-name { font-size: .95rem; font-weight: 900; color: #333; line-height: 1.4; flex: 1; padding-right: 8px; }
+    .camp-card:hover { transform: translateY(-3px); box-shadow: 0 8px 24px rgba(0,0,0,.12); }
+    .camp-card-head { display: flex; justify-content: space-between; align-items: start; margin-bottom: 12px; }
+    .camp-name { font-size: 1.4rem; font-weight: 900; color: #333; line-height: 1.4; flex: 1; padding-right: 10px; }
     .camp-count-badge {
       background: linear-gradient(135deg, #F5941E, #E07A08);
-      color: white; padding: 4px 10px; border-radius: 50px;
-      font-size: .8rem; font-weight: 900; white-space: nowrap;
+      color: white; padding: 6px 16px; border-radius: 50px;
+      font-size: 1.2rem; font-weight: 900; white-space: nowrap;
     }
-    .camp-alerts { font-size: .7rem; color: #C93A2A; font-weight: 700; margin-top: 6px; }
-    .camp-payment-line { font-size: .72rem; color: #888; margin-top: 6px; display: flex; gap: 8px; flex-wrap: wrap; }
-    .badge-mini { padding: 2px 8px; border-radius: 50px; font-weight: 700; font-size: .7rem; }
+    .camp-alerts { font-size: 1rem; color: #C93A2A; font-weight: 700; margin-top: 10px; }
+    .camp-payment-line { font-size: 1rem; color: #888; margin-top: 10px; display: flex; gap: 10px; flex-wrap: wrap; }
+    .badge-mini { padding: 4px 14px; border-radius: 50px; font-weight: 700; font-size: 1rem; }
 
     /* Modal 彈窗 */
     .modal { position: fixed; inset: 0; background: rgba(0,0,0,.6); display: none; z-index: 9999; align-items: flex-start; justify-content: center; padding: 20px; overflow-y: auto; }
@@ -83,8 +83,8 @@
 <div class="container">
   <div class="header">
     <div>
-      <h1>👩‍🏫 老師後台</h1>
-      <div class="sub">點選營隊查看詳細名單</div>
+      <h1>👩‍🏫 2026 暑期營隊總名單</h1>
+      <div class="sub">老師後台工具｜點選營隊查看詳細名單</div>
     </div>
     <button class="refresh-btn" onclick="loadData()">↻ 更新資料</button>
   </div>
