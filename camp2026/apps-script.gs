@@ -32,6 +32,9 @@ function isPackageMonthSheet(sheetName) {
   return sheetName.includes('七月包月') || sheetName.includes('包月營') || sheetName.includes('包月');
 }
 
+// 🆕 百位數以後無條件捨去（$6,769 → $6,700）
+function floorHundred(n) { return Math.floor(n / 100) * 100; }
+
 // ===== 網頁 API 入口 =====
 function doGet(e) {
   const lock = LockService.getScriptLock();
@@ -470,22 +473,23 @@ function lookupByPhone(phone) {
           }
         }
 
-        // 🆕 安親生：一般營隊先打95折，有券再疊95折
+        // 🆕 安親無券 = discounted 整數，安親+券 = floorHundred(discounted × 0.95)
         const isAS = isAfterSchoolStudent(childName);
-        const noCoupon = campPrice && campPrice.noCoupon;
-        const effectiveBase = (isAS && !noCoupon) ? Math.round(earlybird * 0.95) : earlybird;
-        const couponPrice = hasCoupon ? Math.round(effectiveBase * 0.95) : effectiveBase;
+        const noCpn = campPrice && campPrice.noCoupon;
+        const disc = campPrice && campPrice.discounted ? campPrice.discounted : Math.round(earlybird * 0.95);
+        const effectiveBase = (isAS && !noCpn) ? disc : earlybird;
+        const couponPrice = hasCoupon ? (isAS ? floorHundred(disc * 0.95) : disc) : effectiveBase;
 
         if (hasCoupon && isDuo) {
-          if (couponPrice <= duo) { finalPrice = couponPrice; priceType = isAS ? '共學安親95折 + 券95折' : '95折（優於兩人同行）'; }
+          if (couponPrice <= duo) { finalPrice = couponPrice; priceType = isAS ? '安親95折+券95折' : '95折（優於兩人同行）'; }
           else { finalPrice = duo; priceType = '兩人同行'; }
         } else if (hasCoupon) {
           finalPrice = couponPrice;
-          priceType = isAS ? '共學安親95折 + 券95折' : '95折';
+          priceType = isAS ? '安親95折+券95折' : '95折';
         } else if (isDuo && duo < effectiveBase) {
           finalPrice = duo;
           priceType = '兩人同行';
-        } else if (isAS && !noCoupon) {
+        } else if (isAS && !noCpn) {
           finalPrice = effectiveBase;
           priceType = '共學安親95折';
         }
@@ -503,6 +507,9 @@ function lookupByPhone(phone) {
           }
           hasCoupon = false;
         }
+
+        // 🆕 折後百位無條件捨去
+        if (finalPrice < basePrice) finalPrice = floorHundred(finalPrice);
 
         results.push({
           camp: name, childName, session,
@@ -778,16 +785,17 @@ function onFormSubmit(e) {
       }
     }
 
-    // 🆕 安親生：一般營隊先打95折，有券再疊95折
+    // 🆕 安親無券 = discounted 整數，安親+券 = floorHundred(discounted × 0.95)
     const currentChild = childNameCol >= 0 ? String(rowData[childNameCol] || '').trim() : '';
     const isAS = isAfterSchoolStudent(currentChild);
     const noCpn = campPrice && campPrice.noCoupon;
-    const effectiveBase = (isAS && !noCpn) ? Math.round(earlybird * 0.95) : earlybird;
+    const disc = campPrice && campPrice.discounted ? campPrice.discounted : Math.round(earlybird * 0.95);
+    const effectiveBase = (isAS && !noCpn) ? disc : earlybird;
 
     let finalPrice = effectiveBase;
     let priceLabel = (isAS && !noCpn) ? '共學安親95折 $' + effectiveBase.toLocaleString() : '早鳥價 $' + earlybird.toLocaleString();
 
-    const couponPrice = couponValid ? Math.round(effectiveBase * 0.95) : effectiveBase;
+    const couponPrice = couponValid ? (isAS ? floorHundred(disc * 0.95) : disc) : effectiveBase;
 
     if (couponValid && isDuo && duoPrice) {
       if (couponPrice <= duoPrice) { finalPrice = couponPrice; priceLabel = (isAS ? '安親95折+券95折' : '95折') + ' $' + couponPrice.toLocaleString(); }
@@ -876,16 +884,17 @@ function recalcSheet(sheetName) {
       }
     }
 
-    // 🆕 安親生：一般營隊先打95折，有券再疊95折
+    // 🆕 安親無券 = discounted 整數，安親+券 = floorHundred(discounted × 0.95)
     const currentChild = childNameCol >= 0 ? String(rowData[childNameCol] || '').trim() : '';
     const isAS = isAfterSchoolStudent(currentChild);
     const noCpn = campPrice && campPrice.noCoupon;
-    const effectiveBase = (isAS && !noCpn) ? Math.round(earlybird * 0.95) : earlybird;
+    const disc = campPrice && campPrice.discounted ? campPrice.discounted : Math.round(earlybird * 0.95);
+    const effectiveBase = (isAS && !noCpn) ? disc : earlybird;
 
     let finalPrice = effectiveBase;
     let priceLabel = (isAS && !noCpn) ? '共學安親95折 $' + effectiveBase.toLocaleString() : '早鳥價 $' + earlybird.toLocaleString();
 
-    const couponPrice = couponValid ? Math.round(effectiveBase * 0.95) : effectiveBase;
+    const couponPrice = couponValid ? (isAS ? floorHundred(disc * 0.95) : disc) : effectiveBase;
 
     if (couponValid && isDuo && duoPrice) {
       if (couponPrice <= duoPrice) { finalPrice = couponPrice; priceLabel = (isAS ? '安親95折+券95折' : '95折') + ' $' + couponPrice.toLocaleString(); }
