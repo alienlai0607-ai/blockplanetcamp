@@ -511,11 +511,13 @@ function lookupByPhone(phone) {
         // 🆕 折後百位無條件捨去
         if (finalPrice < basePrice) finalPrice = floorHundred(finalPrice);
 
+        const originalPrice = campPrice && campPrice.original ? campPrice.original : basePrice;
+
         results.push({
           camp: name, childName, session,
           couponCode: couponCode || '無',
           hasCoupon, isDuo, priceType, isAfterSchool,
-          basePrice, finalPrice,
+          basePrice, finalPrice, originalPrice,
           note: noteText.trim()
         });
       }
@@ -559,12 +561,12 @@ const CAMP_PRICES = {
   'HELLO MAKER':             { earlybird: 7500, discounted: 7125, original: 8800, duo: 7400 },
   'LEGO Ideas':              { earlybird: 6999, discounted: 6650, original: 8500, duo: 6800 },
   'LEGO Ideas玩具設計總監':  { earlybird: 6999, discounted: 6650, original: 8500, duo: 6800 },
-  '飛行航空科學營':          { earlybird: 7999, discounted: 7600, original: null, duo: 7800 },
-  '飛行航空':                { earlybird: 7999, discounted: 7600, original: null, duo: 7800 },
-  '科學大師營':              { earlybird: 4800, discounted: 4560, original: null, duo: 4700 },
-  '科學大師':                { earlybird: 4800, discounted: 4560, original: null, duo: 4700 },
-  '蛋仔派對':               { earlybird: 4800, discounted: 4560, original: null, duo: 4700 },
-  '3D列印':                  { earlybird: 4800, discounted: 4560, original: null, duo: 4700 },
+  '飛行航空科學營':          { earlybird: 7999, discounted: 7600, original: 9500, duo: 7800 },
+  '飛行航空':                { earlybird: 7999, discounted: 7600, original: 9500, duo: 7800 },
+  '科學大師營':              { earlybird: 4800, discounted: 4560, original: 6000, duo: 4700 },
+  '科學大師':                { earlybird: 4800, discounted: 4560, original: 6000, duo: 4700 },
+  '蛋仔派對':               { earlybird: 4800, discounted: 4560, original: 6000, duo: 4700 },
+  '3D列印':                  { earlybird: 4800, discounted: 4560, original: 6000, duo: 4700 },
 
   // 🆕 不適用優惠券、無兩人同行價
   '七月包月':                { earlybird: 16000, discounted: null, original: 16000, duo: null, noCoupon: true },

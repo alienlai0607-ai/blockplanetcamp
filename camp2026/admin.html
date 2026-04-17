@@ -599,14 +599,27 @@ async function lookupPhone() {
     } else {
       // 🔄 「去年露營活動移轉」不計費
       const isTransferred = r => (r.note || '').includes('去年露營活動移轉');
-      let totalBase = 0, totalFinal = 0, transferredCount = 0;
+      let totalBase = 0, totalFinal = 0, totalOriginal = 0, transferredCount = 0;
+      let hasAS = false, hasCpn = false, hasDuo = false;
       data.registrations.forEach(r => {
         if (isTransferred(r)) { transferredCount++; return; }
         totalBase += Number(r.basePrice) || 0;
         totalFinal += Number(r.finalPrice) || 0;
+        totalOriginal += Number(r.originalPrice) || Number(r.basePrice) || 0;
+        if (r.isAfterSchool) hasAS = true;
+        if (r.hasCoupon) hasCpn = true;
+        if (r.isDuo) hasDuo = true;
       });
       const totalSaved = totalBase - totalFinal;
+      const totalSavedFromOriginal = totalOriginal - totalFinal;
       const billingCount = data.campCount - transferredCount;
+      // 動態折扣描述
+      const discountParts = [];
+      if (hasAS) discountParts.push('共學安親95折');
+      if (hasCpn) discountParts.push('優惠券95折');
+      if (hasDuo) discountParts.push('兩人同行優惠');
+      if (discountParts.length === 0 && totalSavedFromOriginal > 0) discountParts.push('早鳥優惠');
+      const discountText = discountParts.join('＋');
 
       html += `<div style="font-size:.82rem;font-weight:900;color:#aaa;margin:12px 0 8px">📋 報名紀錄（${data.campCount} 個營隊${transferredCount > 0 ? '，其中 ' + transferredCount + ' 個為去年移轉不計費' : ''}）</div>`;
       data.registrations.forEach(r => {
@@ -660,6 +673,11 @@ async function lookupPhone() {
         msg += '\n';
       });
       msg += '\n營隊費用總計：$' + totalFinal.toLocaleString();
+      if (totalSavedFromOriginal > 0) {
+        msg += '\n💛 此次享有「' + discountText + '」優惠';
+        msg += '\n原價合計 $' + totalOriginal.toLocaleString() + '，共為您省下 $' + totalSavedFromOriginal.toLocaleString() + '！';
+        msg += '\n感謝您對布拉克星球的支持 🌟';
+      }
       html += `<button onclick="copyMsg()" style="display:block;width:100%;padding:14px;margin-top:14px;border-radius:50px;background:#06C755;color:white;font-weight:900;font-size:1rem;border:none;cursor:pointer;font-family:inherit;box-shadow:0 4px 16px rgba(6,199,85,0.3)">📋 複製家長訊息（可直接貼 LINE）</button>
       <textarea id="parentMsgText" style="position:absolute;left:-9999px">${msg}</textarea>
       <details style="margin-top:10px"><summary style="font-size:.82rem;color:#888;cursor:pointer;font-weight:700">👁️ 預覽訊息</summary><pre style="background:#f9f9f9;border-radius:10px;padding:12px;font-size:.82rem;white-space:pre-wrap;margin-top:8px;font-family:inherit;line-height:1.7">${msg}</pre></details>`;
