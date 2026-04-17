@@ -520,7 +520,7 @@ function renderSession(sessionIdx) {
 function printCurrent(sessionIdx) {
   const { camp, sessionMap, sessionKeys } = _currentCampData;
   const session = sessionKeys[sessionIdx];
-  const students = sessionMap[session].map(s => ({ n: s.name, g: s.gender, a: s.allergy }));
+  const students = sessionMap[session].map(s => ({ n: s.name, g: s.gender, a: s.allergy, note: s.note || '' }));
   printRollCall(camp.name, session, students);
 }
 function closeModal(e) { if (!e || e.target.id === 'modal') document.getElementById('modal').classList.remove('show'); }
@@ -541,7 +541,10 @@ function printRollCall(campName, session, students) {
   const dateWidth = ((100 - nameWidth - noteWidth - numWidth) / dateCount).toFixed(2);
   let rows = '';
   students.forEach((s, i) => {
-    rows += `<tr><td class="num">${i + 1}</td><td class="name">${s.n}${s.g ? ' ('+s.g+')' : ''}</td>${(dates.length > 0 ? dates : ['']).map(() => '<td class="check">☐</td>').join('')}<td class="note">${s.a && s.a !== '無' ? '⚠️ ' + s.a : ''}</td></tr>`;
+    const noteItems = [];
+    if (s.a && s.a !== '無') noteItems.push('⚠️ ' + s.a);
+    if (s.note) noteItems.push('📝 ' + s.note);
+    rows += `<tr><td class="num">${i + 1}</td><td class="name">${s.n}${s.g ? ' ('+s.g+')' : ''}</td>${(dates.length > 0 ? dates : ['']).map(() => '<td class="check">☐</td>').join('')}<td class="note">${noteItems.join('<br>')}</td></tr>`;
   });
   const html = `<!DOCTYPE html><html><head><meta charset="UTF-8"><title>${campName}</title><style>
     @page { size: A4 landscape; margin: 8mm; }
@@ -652,6 +655,7 @@ async function lookupPhone() {
           msg += '\n（去年露營活動移轉，不另收費用）';
         } else {
           msg += (r.finalPrice < r.basePrice) ? '\n費用經折扣後為：$' + r.finalPrice.toLocaleString() : '\n費用為：$' + r.finalPrice.toLocaleString();
+          if (r.note) msg += '\n📝 ' + r.note;
         }
         msg += '\n';
       });

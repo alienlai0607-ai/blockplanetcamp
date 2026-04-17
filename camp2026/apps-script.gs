@@ -470,21 +470,33 @@ function lookupByPhone(phone) {
           }
         }
 
-        const couponPrice = hasCoupon ? (campPrice && campPrice.discounted ? campPrice.discounted : Math.round(earlybird * 0.95)) : earlybird;
-        if (hasCoupon && isDuo) {
-          if (couponPrice <= duo) { finalPrice = couponPrice; priceType = '95折（優於兩人同行）'; }
-          else { finalPrice = duo; priceType = '兩人同行（優於95折）'; }
-        } else if (hasCoupon) { finalPrice = couponPrice; priceType = '95折'; }
-        else if (isDuo) { finalPrice = duo; priceType = '兩人同行'; }
+        // 🆕 安親生：一般營隊先打95折，有券再疊95折
+        const isAS = isAfterSchoolStudent(childName);
+        const noCoupon = campPrice && campPrice.noCoupon;
+        const effectiveBase = (isAS && !noCoupon) ? Math.round(earlybird * 0.95) : earlybird;
+        const couponPrice = hasCoupon ? Math.round(effectiveBase * 0.95) : effectiveBase;
 
-        // 🆕 七月包月：安親名單 $15,500，其他 $16,000（覆蓋上面）
-        let isAfterSchool = false;
+        if (hasCoupon && isDuo) {
+          if (couponPrice <= duo) { finalPrice = couponPrice; priceType = isAS ? '共學安親95折 + 券95折' : '95折（優於兩人同行）'; }
+          else { finalPrice = duo; priceType = '兩人同行'; }
+        } else if (hasCoupon) {
+          finalPrice = couponPrice;
+          priceType = isAS ? '共學安親95折 + 券95折' : '95折';
+        } else if (isDuo && duo < effectiveBase) {
+          finalPrice = duo;
+          priceType = '兩人同行';
+        } else if (isAS && !noCoupon) {
+          finalPrice = effectiveBase;
+          priceType = '共學安親95折';
+        }
+
+        // 🆕 七月包月：安親 $15,500，其他 $16,000（覆蓋上面）
+        let isAfterSchool = isAS;
         if (isPackageMonthSheet(name)) {
           basePrice = 16000;
-          if (isAfterSchoolStudent(childName)) {
+          if (isAS) {
             finalPrice = 15500;
-            priceType = '課後安親特價';
-            isAfterSchool = true;
+            priceType = '共學安親特價';
           } else {
             finalPrice = 16000;
             priceType = '早鳥價';
@@ -766,22 +778,33 @@ function onFormSubmit(e) {
       }
     }
 
-    let finalPrice = earlybird;
-    let priceLabel = '早鳥價 $' + earlybird.toLocaleString();
-    const couponPrice = couponValid ? (campPrice && campPrice.discounted ? campPrice.discounted : Math.round(earlybird * 0.95)) : earlybird;
+    // 🆕 安親生：一般營隊先打95折，有券再疊95折
+    const currentChild = childNameCol >= 0 ? String(rowData[childNameCol] || '').trim() : '';
+    const isAS = isAfterSchoolStudent(currentChild);
+    const noCpn = campPrice && campPrice.noCoupon;
+    const effectiveBase = (isAS && !noCpn) ? Math.round(earlybird * 0.95) : earlybird;
+
+    let finalPrice = effectiveBase;
+    let priceLabel = (isAS && !noCpn) ? '共學安親95折 $' + effectiveBase.toLocaleString() : '早鳥價 $' + earlybird.toLocaleString();
+
+    const couponPrice = couponValid ? Math.round(effectiveBase * 0.95) : effectiveBase;
 
     if (couponValid && isDuo && duoPrice) {
-      if (couponPrice <= duoPrice) { finalPrice = couponPrice; priceLabel = '95折 $' + couponPrice.toLocaleString() + '（優於兩人同行）'; }
-      else { finalPrice = duoPrice; priceLabel = '兩人同行 $' + duoPrice.toLocaleString() + '（優於95折）'; couponStatus += '（兩人同行更優惠）'; }
-    } else if (couponValid) { finalPrice = couponPrice; priceLabel = '95折 $' + couponPrice.toLocaleString(); }
-    else if (isDuo && duoPrice) { finalPrice = duoPrice; priceLabel = '兩人同行 $' + duoPrice.toLocaleString(); }
+      if (couponPrice <= duoPrice) { finalPrice = couponPrice; priceLabel = (isAS ? '安親95折+券95折' : '95折') + ' $' + couponPrice.toLocaleString(); }
+      else { finalPrice = duoPrice; priceLabel = '兩人同行 $' + duoPrice.toLocaleString(); }
+    } else if (couponValid) {
+      finalPrice = couponPrice;
+      priceLabel = (isAS ? '安親95折+券95折' : '95折') + ' $' + couponPrice.toLocaleString();
+    } else if (isDuo && duoPrice && duoPrice < effectiveBase) {
+      finalPrice = duoPrice;
+      priceLabel = '兩人同行 $' + duoPrice.toLocaleString();
+    }
 
-    // 🆕 七月包月：安親名單 $15,500，其他 $16,000（覆蓋上面所有邏輯）
+    // 🆕 七月包月：安親 $15,500，其他 $16,000（覆蓋上面所有邏輯）
     if (isPackageMonthSheet(sheetName)) {
-      const currentChild = childNameCol >= 0 ? String(rowData[childNameCol] || '').trim() : '';
-      if (isAfterSchoolStudent(currentChild)) {
+      if (isAS) {
         finalPrice = 15500;
-        priceLabel = '課後安親特價 $15,500';
+        priceLabel = '共學安親特價 $15,500';
       } else {
         finalPrice = 16000;
         priceLabel = '早鳥價 $16,000';
@@ -853,22 +876,33 @@ function recalcSheet(sheetName) {
       }
     }
 
-    let finalPrice = earlybird;
-    let priceLabel = '早鳥價 $' + earlybird.toLocaleString();
-    const couponPrice = couponValid ? (campPrice && campPrice.discounted ? campPrice.discounted : Math.round(earlybird * 0.95)) : earlybird;
+    // 🆕 安親生：一般營隊先打95折，有券再疊95折
+    const currentChild = childNameCol >= 0 ? String(rowData[childNameCol] || '').trim() : '';
+    const isAS = isAfterSchoolStudent(currentChild);
+    const noCpn = campPrice && campPrice.noCoupon;
+    const effectiveBase = (isAS && !noCpn) ? Math.round(earlybird * 0.95) : earlybird;
+
+    let finalPrice = effectiveBase;
+    let priceLabel = (isAS && !noCpn) ? '共學安親95折 $' + effectiveBase.toLocaleString() : '早鳥價 $' + earlybird.toLocaleString();
+
+    const couponPrice = couponValid ? Math.round(effectiveBase * 0.95) : effectiveBase;
 
     if (couponValid && isDuo && duoPrice) {
-      if (couponPrice <= duoPrice) { finalPrice = couponPrice; priceLabel = '95折 $' + couponPrice.toLocaleString() + '（優於兩人同行）'; }
-      else { finalPrice = duoPrice; priceLabel = '兩人同行 $' + duoPrice.toLocaleString() + '（優於95折）'; }
-    } else if (couponValid) { finalPrice = couponPrice; priceLabel = '95折 $' + couponPrice.toLocaleString(); }
-    else if (isDuo && duoPrice) { finalPrice = duoPrice; priceLabel = '兩人同行 $' + duoPrice.toLocaleString(); }
+      if (couponPrice <= duoPrice) { finalPrice = couponPrice; priceLabel = (isAS ? '安親95折+券95折' : '95折') + ' $' + couponPrice.toLocaleString(); }
+      else { finalPrice = duoPrice; priceLabel = '兩人同行 $' + duoPrice.toLocaleString(); }
+    } else if (couponValid) {
+      finalPrice = couponPrice;
+      priceLabel = (isAS ? '安親95折+券95折' : '95折') + ' $' + couponPrice.toLocaleString();
+    } else if (isDuo && duoPrice && duoPrice < effectiveBase) {
+      finalPrice = duoPrice;
+      priceLabel = '兩人同行 $' + duoPrice.toLocaleString();
+    }
 
-    // 🆕 七月包月：安親名單 $15,500，其他 $16,000
+    // 🆕 七月包月：安親 $15,500，其他 $16,000
     if (isPackageMonthSheet(sheetName)) {
-      const currentChild = childNameCol >= 0 ? String(rowData[childNameCol] || '').trim() : '';
-      if (isAfterSchoolStudent(currentChild)) {
+      if (isAS) {
         finalPrice = 15500;
-        priceLabel = '課後安親特價 $15,500';
+        priceLabel = '共學安親特價 $15,500';
       } else {
         finalPrice = 16000;
         priceLabel = '早鳥價 $16,000';
