@@ -613,12 +613,11 @@ async function lookupPhone() {
       const totalSaved = totalBase - totalFinal;
       const totalSavedFromOriginal = totalOriginal - totalFinal;
       const billingCount = data.campCount - transferredCount;
-      // 動態折扣描述
-      const discountParts = [];
+      // 動態折扣描述（早鳥一定列）
+      const discountParts = ['早鳥優惠'];
       if (hasAS) discountParts.push('共學安親95折');
       if (hasCpn) discountParts.push('優惠券95折');
       if (hasDuo) discountParts.push('兩人同行優惠');
-      if (discountParts.length === 0 && totalSavedFromOriginal > 0) discountParts.push('早鳥優惠');
       const discountText = discountParts.join('＋');
 
       html += `<div style="font-size:.82rem;font-weight:900;color:#aaa;margin:12px 0 8px">📋 報名紀錄（${data.campCount} 個營隊${transferredCount > 0 ? '，其中 ' + transferredCount + ' 個為去年移轉不計費' : ''}）</div>`;
