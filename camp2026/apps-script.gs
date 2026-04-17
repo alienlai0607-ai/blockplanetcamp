@@ -439,8 +439,12 @@ function lookupByPhone(phone) {
       if (!rawPhone) continue;
 
       const phonesInField = extractPhones(rawPhone);
-      const rawDigits = rawPhone.replace(/[^0-9]/g, '');
-      const matched = phonesInField.some(p => p === cleanPhone) || rawDigits.includes(cleanPhone) || cleanPhone.includes(rawDigits);
+      // 🆕 收緊比對：只接受精確 10 碼手機比對，不做子字串亂配
+      let matched = phonesInField.some(p => p === cleanPhone);
+      if (!matched && phonesInField.length === 0) {
+        const fixedField = fixPhone(rawPhone);
+        matched = (fixedField.length >= 9 && fixedField === cleanPhone);
+      }
       if (matched) {
         const campPrice = findCampPrice(name);
         const earlybird = campPrice ? campPrice.earlybird : 0;

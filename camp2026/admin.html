@@ -609,6 +609,7 @@ async function lookupPhone() {
       data.registrations.forEach(r => {
         const d = r.hasCoupon;
         const transferred = isTransferred(r);
+        const hasDiscount = r.finalPrice < r.basePrice;  // 🆕 任何折扣都適用
         html += `<div class="rec-card" ${transferred ? 'style="background:#F5F5F5;opacity:.85"' : ''}>
           <div style="display:flex;justify-content:space-between;align-items:center">
             <div>
@@ -618,7 +619,7 @@ async function lookupPhone() {
             <div style="text-align:right">
               ${transferred
                 ? `<div style="font-size:.95rem;font-weight:900;color:#777">免再收費</div><div style="font-size:.7rem;color:#aaa">（原價 $${r.basePrice.toLocaleString()}）</div>`
-                : (d ? `<div style="font-size:.75rem;color:#aaa;text-decoration:line-through">$${r.basePrice.toLocaleString()}</div><div style="font-size:1.1rem;font-weight:900;color:#2E7D32">$${r.finalPrice.toLocaleString()}</div>` : `<div style="font-size:1.1rem;font-weight:900">$${r.basePrice.toLocaleString()}</div>`)}
+                : (hasDiscount ? `<div style="font-size:.75rem;color:#aaa;text-decoration:line-through">$${r.basePrice.toLocaleString()}</div><div style="font-size:1.1rem;font-weight:900;color:#2E7D32">$${r.finalPrice.toLocaleString()}</div>` : `<div style="font-size:1.1rem;font-weight:900">$${r.finalPrice.toLocaleString()}</div>`)}
             </div>
           </div>
           <div style="display:flex;flex-wrap:wrap;gap:6px;margin-top:6px;font-size:.72rem">
@@ -650,7 +651,7 @@ async function lookupPhone() {
         if (isTransferred(r)) {
           msg += '\n（去年露營活動移轉，不另收費用）';
         } else {
-          msg += (r.hasCoupon || r.isDuo) ? '\n費用經折扣後為：$' + r.finalPrice.toLocaleString() : '\n費用為：$' + r.finalPrice.toLocaleString();
+          msg += (r.finalPrice < r.basePrice) ? '\n費用經折扣後為：$' + r.finalPrice.toLocaleString() : '\n費用為：$' + r.finalPrice.toLocaleString();
         }
         msg += '\n';
       });
