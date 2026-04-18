@@ -1137,13 +1137,13 @@
 <div class="modal-backdrop" id="modalBackdrop">
   <div class="modal">
     <h2>✅ 訂單送出成功</h2>
-    <p class="modal-sub">系統已收到您的訂單，以下為訂單摘要，可一併截圖或複製給 Alien 老師留存。</p>
+    <p class="modal-sub">系統已收到您的訂單，以下為訂單摘要，可一併截圖或複製給 布拉克行政老師留存。</p>
     <div id="syncStatus" style="margin-bottom:14px;padding:10px 14px;border-radius:10px;font-size:13px;font-weight:700;display:flex;align-items:center;gap:8px;"></div>
     <div class="modal-text" id="modalText"></div>
     <div class="modal-actions">
       <button class="btn" onclick="closeModal()">關閉</button>
       <button class="btn" id="copyBtn">📄 只複製</button>
-      <button class="btn btn-line" id="copyLineBtn">💬 複製並傳給 Alien 老師</button>
+      <button class="btn btn-line" id="copyLineBtn">💬 複製並傳給 布拉克行政老師</button>
     </div>
   </div>
 </div>
@@ -1342,14 +1342,14 @@
       const data = await res.json();
       if (data && data.success) {
         orderSubmitted = true;
-        setSyncStatus('ok', `✅ 訂單已送出，編號 ${data.orderNo || orderNo}（Alien 老師已收到）`);
+        setSyncStatus('ok', `✅ 訂單已送出，編號 ${data.orderNo || orderNo}（布拉克行政老師已收到）`);
       } else {
-        setSyncStatus('warn', `⚠️ 系統暫無法紀錄，請截圖訂單傳給 Alien 老師（${(data && data.error) || '連線失敗'}）`);
+        setSyncStatus('warn', `⚠️ 系統暫無法紀錄，請截圖訂單傳給 布拉克行政老師（${(data && data.error) || '連線失敗'}）`);
         submitBtn.disabled = false;
         submitBtn.style.opacity = '1';
       }
     } catch (err) {
-      setSyncStatus('warn', '⚠️ 網路連線不穩，請截圖訂單傳給 Alien 老師');
+      setSyncStatus('warn', '⚠️ 網路連線不穩，請截圖訂單傳給 布拉克行政老師');
       submitBtn.disabled = false;
       submitBtn.style.opacity = '1';
     }

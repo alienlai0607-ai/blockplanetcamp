@@ -425,7 +425,7 @@ function mxCopyMsg(row) {
   lines.push(`應付金額 NT$ ${(o.total || 0).toLocaleString()}`);
   if (o.saved > 0) lines.push(`（7 月前優惠已為您省下 NT$ ${o.saved.toLocaleString()}）`);
   lines.push('');
-  lines.push('付款方式將由 Alien 老師另行告知，感謝您的支持 🌟');
+  lines.push('付款方式將由 布拉克行政老師另行告知，感謝您的支持 🌟');
   const text = lines.join('\n');
   navigator.clipboard.writeText(text).then(
     () => alert('✅ 已複製訊息，可直接貼 LINE'),
