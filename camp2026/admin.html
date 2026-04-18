@@ -87,6 +87,171 @@ h1 { font-size: 1.5rem; color: #F5941E; font-weight: 900; }
 .lookup-result .rec-card { background: white; border: 1.5px solid #eee; border-radius: 12px; padding: 14px 16px; margin-bottom: 8px; }
 .lookup-result .rec-card:hover { border-color: #F5941E; }
 
+/* ===== 報價單產生器 ===== */
+.quote-builder-grid {
+  display: grid;
+  grid-template-columns: 380px 1fr;
+  height: 88vh;
+  max-height: 88vh;
+}
+.qb-form {
+  padding: 20px;
+  overflow-y: auto;
+  border-right: 2px solid #eee;
+  background: #fafafa;
+}
+.qb-section { margin-bottom: 14px; }
+.qb-label {
+  font-size: .78rem;
+  color: #666;
+  font-weight: 700;
+  margin-bottom: 5px;
+  letter-spacing: .5px;
+}
+.qb-form input[type="text"],
+.qb-form input[type="date"] {
+  width: 100%;
+  padding: 10px 12px;
+  border: 2px solid #ddd;
+  border-radius: 8px;
+  font-family: inherit;
+  font-size: .9rem;
+  outline: none;
+  transition: border-color .15s;
+}
+.qb-form input:focus { border-color: #002E51; }
+.qb-item-row {
+  display: grid;
+  grid-template-columns: 1fr 60px 80px 32px;
+  gap: 5px;
+  margin-bottom: 5px;
+  align-items: center;
+}
+.qb-item-row input {
+  padding: 7px 10px;
+  border: 1.5px solid #ddd;
+  border-radius: 6px;
+  font-family: inherit;
+  font-size: .85rem;
+  outline: none;
+  min-width: 0;
+}
+.qb-item-row input:focus { border-color: #002E51; }
+.qb-item-row input[type="number"] { text-align: center; font-variant-numeric: tabular-nums; }
+.qb-del {
+  width: 28px; height: 28px;
+  border: none;
+  background: #ffebee;
+  color: #c62828;
+  border-radius: 50%;
+  cursor: pointer;
+  font-weight: 900;
+  font-size: .9rem;
+  display: flex; align-items: center; justify-content: center;
+  padding: 0;
+}
+.qb-del:hover { background: #c62828; color: #fff; }
+.qb-actions { margin-top: 16px; }
+.qb-btn-primary {
+  width: 100%;
+  padding: 14px;
+  background: #FFD100;
+  color: #002E51;
+  border: 3px solid #002E51;
+  border-radius: 10px;
+  font-weight: 900;
+  font-size: 1rem;
+  cursor: pointer;
+  font-family: inherit;
+  box-shadow: 4px 4px 0 #0F1F3A;
+  transition: all .15s cubic-bezier(.34,1.56,.64,1);
+}
+.qb-btn-primary:hover { transform: translate(-2px,-2px); box-shadow: 6px 6px 0 #0F1F3A; }
+.qb-btn-primary:active { transform: translate(2px,2px); box-shadow: 2px 2px 0 #0F1F3A; }
+.qb-preview-wrap {
+  background: #e8e8e8;
+  overflow-y: auto;
+  padding: 20px;
+}
+.qb-preview-label {
+  font-size: .82rem;
+  color: #666;
+  font-weight: 700;
+  text-align: center;
+  margin-bottom: 10px;
+}
+.qb-preview {
+  background: #fff;
+  width: 794px;  /* A4 210mm at 96dpi */
+  margin: 0 auto;
+  padding: 50px 60px;
+  min-height: 1000px;
+  box-shadow: 0 4px 20px rgba(0,0,0,.15);
+  transform: scale(0.7);
+  transform-origin: top center;
+  font-family: 'Microsoft JhengHei', 'PingFang TC', 'Noto Sans TC', sans-serif;
+  color: #000;
+}
+@media (max-width: 1280px) {
+  .qb-preview { transform: scale(0.55); }
+}
+@media (max-width: 900px) {
+  .quote-builder-grid { grid-template-columns: 1fr; height: auto; }
+  .qb-form { border-right: none; border-bottom: 2px solid #eee; }
+  .qb-preview { transform: scale(0.42); }
+}
+
+/* 報價單 paper 內容樣式 */
+.quote-paper .q-brand {
+  font-size: 28px; font-weight: 900; text-align: center; margin: 0 0 6px; letter-spacing: 2px;
+}
+.quote-paper .q-addr, .quote-paper .q-tel {
+  text-align: center; font-size: 13px; font-weight: 700; margin: 2px 0;
+}
+.quote-paper .q-en {
+  text-align: center; font-size: 26px; margin: 20px 0 2px; font-weight: 700; letter-spacing: 3px;
+}
+.quote-paper .q-zh {
+  text-align: center; font-size: 30px; margin: 0 0 24px; font-weight: 900; letter-spacing: 14px;
+}
+.quote-paper .q-meta {
+  display: flex; justify-content: space-between;
+  font-size: 14px; font-weight: 700; margin: 10px 0 6px;
+}
+.quote-paper .q-addr-line {
+  font-size: 14px; font-weight: 700; margin-bottom: 14px;
+}
+.quote-paper table {
+  width: 100%; border-collapse: collapse; font-size: 13px;
+}
+.quote-paper table th {
+  border: 1px solid #000;
+  background: #f2f2f2;
+  padding: 8px 4px;
+  font-weight: 700;
+  text-align: center;
+}
+.quote-paper table td {
+  border: 1px solid #000;
+  padding: 10px 8px;
+  font-variant-numeric: tabular-nums;
+}
+.quote-paper table td:nth-child(1) { width: 8%; text-align: center; }
+.quote-paper table td:nth-child(2) { width: 44%; text-align: center; }
+.quote-paper table td:nth-child(3) { width: 10%; text-align: center; }
+.quote-paper table td:nth-child(4) { width: 18%; text-align: left; padding-left: 14px; }
+.quote-paper table td:nth-child(5) { width: 20%; text-align: left; padding-left: 14px; }
+.quote-paper .q-footer {
+  display: flex; justify-content: space-between; align-items: baseline;
+  margin-top: 16px; font-size: 14px; font-weight: 700;
+}
+.quote-paper .q-footer .q-total {
+  font-size: 16px; font-weight: 900;
+}
+.quote-paper .q-note {
+  font-size: 12px; margin-top: 4px;
+}
+
 /* 優惠券管理 */
 .coupon-locked { text-align: center; padding: 40px 20px; color: #888; }
 .coupon-locked button { padding: 12px 28px; border-radius: 50px; background: #F5941E; color: white; font-weight: 900; border: none; cursor: pointer; font-family: inherit; font-size: .95rem; margin-top: 12px; }
@@ -228,6 +393,15 @@ h1 { font-size: 1.5rem; color: #F5941E; font-weight: 900; }
 
   <!-- SPIKE 訂購管理 -->
   <div class="panel" id="panel-spike">
+    <div class="card" style="background:linear-gradient(135deg,#FFF9D6,#FFF4B8);border:2px dashed #FFD100">
+      <div style="display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap">
+        <div>
+          <div style="font-weight:900;font-size:1rem;color:#002E51">📄 學校／機構端報價單產生器</div>
+          <div style="font-size:.82rem;color:#4C5B6E;margin-top:3px">一鍵產出正式報價單，可列印／存 PDF 給學校對帳</div>
+        </div>
+        <button onclick="openQuoteBuilder()" style="padding:12px 22px;background:#002E51;color:#FFD100;border:none;border-radius:10px;font-weight:900;cursor:pointer;font-family:inherit;font-size:.95rem;box-shadow:3px 3px 0 #0F1F3A">開啟報價單產生器 →</button>
+      </div>
+    </div>
     <div class="card">
       <div class="card-title">📊 SPIKE 訂購即時統計</div>
       <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px">
@@ -259,6 +433,64 @@ h1 { font-size: 1.5rem; color: #F5941E; font-weight: 900; }
       <button class="modal-close" onclick="closeModal()">✕</button>
     </div>
     <div class="modal-body" id="modalBody"></div>
+  </div>
+</div>
+
+<!-- 報價單產生器 Modal -->
+<div class="modal" id="quoteModal" onclick="if(event.target.id==='quoteModal') closeQuoteBuilder()">
+  <div class="modal-content" onclick="event.stopPropagation()" style="max-width:1240px">
+    <div class="modal-head" style="background:linear-gradient(135deg,#002E51,#0F5E7A);color:#FFD100">
+      <div class="modal-title">📄 學校／機構端報價單產生器</div>
+      <button class="modal-close" onclick="closeQuoteBuilder()">✕</button>
+    </div>
+    <div class="modal-body" style="padding:0;max-height:88vh">
+      <div class="quote-builder-grid">
+        <!-- 左：表單 -->
+        <div class="qb-form">
+          <div class="qb-section">
+            <div class="qb-label">抬頭（TO）</div>
+            <input id="qSchool" type="text" placeholder="臺南市立九份子國民中小學" oninput="renderQuotePreview()">
+          </div>
+          <div class="qb-section">
+            <div class="qb-label">收件地址</div>
+            <input id="qAddress" type="text" placeholder="台南市安南區九份子大道 8 號" oninput="renderQuotePreview()">
+          </div>
+          <div class="qb-section">
+            <div class="qb-label">報價日期</div>
+            <input id="qDate" type="date" oninput="renderQuotePreview()">
+          </div>
+
+          <div class="qb-section">
+            <div class="qb-label" style="display:flex;justify-content:space-between;align-items:center">
+              <span>品項清單（最多 13 項，空項自動補 0）</span>
+              <button onclick="addQuoteItem()" style="padding:4px 12px;background:#FFD100;color:#002E51;border:none;border-radius:50px;font-weight:900;font-size:.78rem;cursor:pointer;font-family:inherit">+ 新增</button>
+            </div>
+            <div id="qItems" style="margin-top:8px"></div>
+            <div style="display:flex;gap:6px;margin-top:8px;flex-wrap:wrap">
+              <button onclick="loadQuotePreset('default')" style="padding:6px 12px;background:none;border:1.5px dashed #002E51;color:#002E51;border-radius:6px;font-weight:700;cursor:pointer;font-family:inherit;font-size:.78rem">📋 載入 SPIKE 常用組合</button>
+              <button onclick="clearQuoteItems()" style="padding:6px 12px;background:none;border:1.5px dashed #aaa;color:#666;border-radius:6px;font-weight:700;cursor:pointer;font-family:inherit;font-size:.78rem">🗑️ 清空</button>
+            </div>
+          </div>
+
+          <div class="qb-section" style="background:#002E51;color:#FFD100;padding:12px 14px;border-radius:10px">
+            <div style="display:flex;justify-content:space-between;align-items:center;font-weight:900">
+              <span>合計</span>
+              <span id="qTotal" style="font-size:1.4rem">$0</span>
+            </div>
+          </div>
+
+          <div class="qb-actions">
+            <button onclick="printQuote()" class="qb-btn-primary">🖨️ 列印／存 PDF</button>
+          </div>
+        </div>
+
+        <!-- 右：預覽 -->
+        <div class="qb-preview-wrap">
+          <div class="qb-preview-label">👁️ 即時預覽（比例縮小，列印時為 A4）</div>
+          <div id="qPreview" class="qb-preview"></div>
+        </div>
+      </div>
+    </div>
   </div>
 </div>
 
@@ -681,6 +913,196 @@ document.addEventListener('input', (e) => {
 document.addEventListener('change', (e) => {
   if (e.target.id === 'spFilter') renderSpikeList();
 });
+
+// ========== 學校報價單產生器 ==========
+const QUOTE_PRESETS = {
+  default: [
+    { name: 'LEGO SPIKE PRIME  編號 45678', qty: 2, unit: 15900 },
+    { name: 'LEGO SPIKE  擴充套件  編號 45681', qty: 2, unit: 5000 },
+    { name: '樂高矽膠輪胎', qty: 10, unit: 160 },
+    { name: '樂高搖桿＋接收器', qty: 5, unit: 1200 }
+  ]
+};
+const LS_QUOTE = 'bp_spike_quote_v1';
+let _quoteItems = [];
+
+function openQuoteBuilder() {
+  document.getElementById('quoteModal').classList.add('show');
+  // 還原 draft 或載入預設
+  try {
+    const raw = localStorage.getItem(LS_QUOTE);
+    if (raw) {
+      const d = JSON.parse(raw);
+      document.getElementById('qSchool').value = d.school || '';
+      document.getElementById('qAddress').value = d.address || '';
+      document.getElementById('qDate').value = d.date || new Date().toISOString().slice(0,10);
+      _quoteItems = Array.isArray(d.items) && d.items.length ? d.items : QUOTE_PRESETS.default.slice();
+    } else {
+      document.getElementById('qDate').value = new Date().toISOString().slice(0,10);
+      _quoteItems = QUOTE_PRESETS.default.slice();
+    }
+  } catch(_) {
+    _quoteItems = QUOTE_PRESETS.default.slice();
+  }
+  renderQuoteItems();
+  renderQuotePreview();
+}
+function closeQuoteBuilder() {
+  saveQuoteDraft();
+  document.getElementById('quoteModal').classList.remove('show');
+}
+
+function renderQuoteItems() {
+  const wrap = document.getElementById('qItems');
+  wrap.innerHTML = _quoteItems.map((it, i) => `
+    <div class="qb-item-row">
+      <input type="text" placeholder="品名／規格" value="${escapeHTML(it.name)}" data-k="name" data-i="${i}">
+      <input type="number" min="0" placeholder="數量" value="${it.qty || ''}" data-k="qty" data-i="${i}">
+      <input type="number" min="0" placeholder="單價" value="${it.unit || ''}" data-k="unit" data-i="${i}">
+      <button class="qb-del" onclick="removeQuoteItem(${i})" aria-label="刪除">✕</button>
+    </div>
+  `).join('');
+  wrap.querySelectorAll('input').forEach(inp => {
+    inp.addEventListener('input', (e) => {
+      const k = e.target.dataset.k;
+      const idx = parseInt(e.target.dataset.i);
+      if (!_quoteItems[idx]) return;
+      _quoteItems[idx][k] = (k === 'name') ? e.target.value : (parseInt(e.target.value) || 0);
+      renderQuotePreview();
+      saveQuoteDraft();
+    });
+  });
+}
+function addQuoteItem() {
+  if (_quoteItems.length >= 13) { alert('最多 13 項'); return; }
+  _quoteItems.push({ name: '', qty: 0, unit: 0 });
+  renderQuoteItems();
+  renderQuotePreview();
+  saveQuoteDraft();
+}
+function removeQuoteItem(i) {
+  _quoteItems.splice(i, 1);
+  renderQuoteItems();
+  renderQuotePreview();
+  saveQuoteDraft();
+}
+function loadQuotePreset(key) {
+  _quoteItems = (QUOTE_PRESETS[key] || []).slice();
+  renderQuoteItems();
+  renderQuotePreview();
+  saveQuoteDraft();
+}
+function clearQuoteItems() {
+  if (!confirm('確定清空所有品項？')) return;
+  _quoteItems = [];
+  renderQuoteItems();
+  renderQuotePreview();
+  saveQuoteDraft();
+}
+function saveQuoteDraft() {
+  try {
+    localStorage.setItem(LS_QUOTE, JSON.stringify({
+      school: document.getElementById('qSchool').value,
+      address: document.getElementById('qAddress').value,
+      date: document.getElementById('qDate').value,
+      items: _quoteItems
+    }));
+  } catch(_) {}
+}
+document.addEventListener('input', (e) => {
+  if (['qSchool','qAddress','qDate'].includes(e.target.id)) saveQuoteDraft();
+});
+
+function buildQuoteHTML(forPrint) {
+  const school = (document.getElementById('qSchool').value || '').trim();
+  const address = (document.getElementById('qAddress').value || '').trim();
+  const dateStr = (document.getElementById('qDate').value || '').trim();
+  const items = _quoteItems.slice(0, 13);
+  // 補滿 13 列
+  const rows = items.map((it, i) => ({ ...it, _idx: i }));
+  while (rows.length < 13) rows.push({ name: '', qty: 0, unit: 0, _idx: rows.length });
+  let total = 0;
+  const rowsHTML = rows.map((it, i) => {
+    const sub = (it.qty || 0) * (it.unit || 0);
+    const isEmpty = !it.name && (!it.qty || it.qty === 0) && (!it.unit || it.unit === 0);
+    if (!isEmpty) total += sub;
+    return `<tr>
+      <td>${i + 1}</td>
+      <td>${isEmpty ? '0' : escapeHTML(it.name)}</td>
+      <td>${isEmpty ? 0 : (it.qty || 0)}</td>
+      <td>${isEmpty ? '$0.00' : '$' + (it.unit || 0).toLocaleString()}</td>
+      <td>${isEmpty ? '$0.00' : '$' + sub.toLocaleString()}</td>
+    </tr>`;
+  }).join('');
+
+  return {
+    html: `<div class="quote-paper">
+      <h1 class="q-brand">布拉克星球教育機構</h1>
+      <div class="q-addr">台南市北區中華北路二段 113 號</div>
+      <div class="q-tel">電話：06-2089382</div>
+      <h2 class="q-en">QUOTATION</h2>
+      <h2 class="q-zh">報 價 單</h2>
+      <div class="q-meta">
+        <span>TO: ${escapeHTML(school)}</span>
+        <span>DATE: ${escapeHTML(dateStr.replace(/-/g, '/'))}</span>
+      </div>
+      <div class="q-addr-line">地址: ${escapeHTML(address)}</div>
+      <table>
+        <thead>
+          <tr><th>編號</th><th>品名／規格</th><th>數量</th><th>單價</th><th>小計</th></tr>
+        </thead>
+        <tbody>${rowsHTML}</tbody>
+      </table>
+      <div class="q-footer">
+        <span>確認無誤回傳報價單</span>
+        <span class="q-total">合 計：$${total.toLocaleString()}</span>
+      </div>
+      <div class="q-note">以上報價均為含稅價格</div>
+    </div>`,
+    total
+  };
+}
+
+function renderQuotePreview() {
+  const { html, total } = buildQuoteHTML(false);
+  document.getElementById('qPreview').innerHTML = html;
+  document.getElementById('qTotal').textContent = '$' + total.toLocaleString();
+}
+
+function printQuote() {
+  const { html } = buildQuoteHTML(true);
+  const css = `
+    @page { size: A4; margin: 15mm 18mm; }
+    * { box-sizing: border-box; }
+    html, body { margin: 0; padding: 0; font-family: 'Microsoft JhengHei','PingFang TC','Noto Sans TC',sans-serif; color:#000; -webkit-print-color-adjust:exact; print-color-adjust:exact; }
+    body { padding: 0; }
+    .quote-paper { max-width: 100%; }
+    .q-brand { font-size: 28pt; font-weight: 900; text-align: center; margin: 0 0 6px; letter-spacing: 2px; }
+    .q-addr, .q-tel { text-align: center; font-size: 11pt; font-weight: 700; margin: 2px 0; }
+    .q-en { text-align: center; font-size: 22pt; margin: 18px 0 2px; font-weight: 700; letter-spacing: 3px; }
+    .q-zh { text-align: center; font-size: 26pt; margin: 0 0 22px; font-weight: 900; letter-spacing: 14px; }
+    .q-meta { display: flex; justify-content: space-between; font-size: 12pt; font-weight: 700; margin: 10px 0 6px; }
+    .q-addr-line { font-size: 12pt; font-weight: 700; margin-bottom: 14px; }
+    table { width: 100%; border-collapse: collapse; font-size: 11pt; }
+    th { border: 1px solid #000; background: #f2f2f2; padding: 8px 4px; font-weight: 700; text-align: center; }
+    td { border: 1px solid #000; padding: 10px 8px; font-variant-numeric: tabular-nums; }
+    td:nth-child(1) { width: 8%; text-align: center; }
+    td:nth-child(2) { width: 44%; text-align: center; }
+    td:nth-child(3) { width: 10%; text-align: center; }
+    td:nth-child(4) { width: 18%; text-align: left; padding-left: 14px; }
+    td:nth-child(5) { width: 20%; text-align: left; padding-left: 14px; }
+    .q-footer { display: flex; justify-content: space-between; align-items: baseline; margin-top: 16px; font-size: 12pt; font-weight: 700; }
+    .q-footer .q-total { font-size: 14pt; font-weight: 900; }
+    .q-note { font-size: 10pt; margin-top: 4px; }
+  `;
+  const school = (document.getElementById('qSchool').value || '報價單').trim();
+  const full = `<!DOCTYPE html><html lang="zh-Hant"><head><meta charset="UTF-8"><title>${escapeHTML(school)} - 報價單</title><style>${css}</style></head><body>${html}</body></html>`;
+  const blob = new Blob([full], { type: 'text/html;charset=utf-8' });
+  const url = URL.createObjectURL(blob);
+  const w = window.open(url, '_blank');
+  if (!w) { alert('請允許彈出視窗以列印報價單'); return; }
+  w.addEventListener('load', () => { setTimeout(() => { w.print(); setTimeout(() => URL.revokeObjectURL(url), 8000); }, 400); });
+}
 
 // === 解析日期 ===
 function parseDates(session) {
