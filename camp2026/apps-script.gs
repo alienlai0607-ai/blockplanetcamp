@@ -508,9 +508,6 @@ function lookupByPhone(phone) {
           hasCoupon = false;
         }
 
-        // 🆕 折後百位無條件捨去
-        if (finalPrice < basePrice) finalPrice = floorHundred(finalPrice);
-
         const originalPrice = campPrice && campPrice.original ? campPrice.original : basePrice;
 
         results.push({
