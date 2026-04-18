@@ -18,16 +18,16 @@
 
 <style>
   :root {
-    /* SPIKE Prime 主題配色（黃 + 青綠 + 桃紅 + 黑） */
+    /* SPIKE Prime 主題配色（僅黃 + 青藍） */
     --block-orange:      #FFD100;  /* SPIKE 主黃 */
     --block-orange-dark: #E8BC00;
-    --block-red:         #E91E63;  /* 機器人桃紅亮點 */
-    --block-dark:        #0F5E7A;  /* 深青綠（header 背景） */
-    --block-blue:        #26BFBF;  /* SPIKE 青綠 */
-    --block-cream:       #FFFBE5;  /* 淡黃底 */
-    --block-brown:       #1A1A1A;  /* 黑描邊（取代棕色） */
+    --block-red:         #0088B8;  /* CTA 深青（取代紅／桃紅，統一黃藍） */
+    --block-dark:        #002E51;  /* 深海軍藍 header */
+    --block-blue:        #00A6BD;  /* SPIKE 青綠 */
+    --block-cream:       #FFF9D6;  /* 淡黃底 */
+    --block-brown:       #0F1F3A;  /* 深藍描邊 */
     --paper:             #FFFEF5;
-    --ink-60:            #5A6775;
+    --ink-60:            #4C5B6E;
     --rule:              #F5E49A;
   }
 
@@ -411,7 +411,7 @@
 
   .deadline-note {
     margin-top: 12px; padding: 8px 12px;
-    background: rgba(201,58,42,0.2);
+    background: rgba(255, 209, 0, 0.18);
     border-left: 3px solid var(--block-red);
     border-radius: 4px;
     font-size: 12px;
@@ -1156,7 +1156,8 @@
 
       <article class="product" data-id="spike-45678" data-price="15500" data-original="18000">
         <div class="product-img">
-          <img src="../assets/class-spike.jpg" alt="LEGO Education SPIKE Prime 45678">
+          <img src="../assets/spike-kit.jpg" alt="LEGO Education SPIKE Prime 45678 教具盒"
+               onerror="this.style.display='none';this.parentElement.insertAdjacentHTML('beforeend','<div style=&quot;font-size:34px;opacity:.6&quot;>🧱</div>');">
           <div class="zoom-hint">🔍 點卡片看詳情</div>
         </div>
         <template class="product-detail-tpl">
