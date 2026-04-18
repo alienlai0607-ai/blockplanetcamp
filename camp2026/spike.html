@@ -32,7 +32,7 @@
   }
 
   * { box-sizing: border-box; }
-  html, body { margin: 0; padding: 0; }
+  html, body { margin: 0; padding: 0; overflow-x: hidden; max-width: 100%; }
   body {
     font-family: 'Noto Sans TC', 'Nunito', system-ui, sans-serif;
     background: var(--block-cream);
@@ -1007,7 +1007,16 @@
       padding: 12px;
       line-height: 1.75;
       word-break: break-word;
+      overflow-wrap: anywhere;
     }
+    #syncStatus {
+      flex-wrap: wrap;
+      word-break: break-word;
+      overflow-wrap: anywhere;
+      font-size: 12px !important;
+    }
+    .stepper { gap: 2px; }
+    .step-label { font-size: 9.5px; letter-spacing: 0; white-space: nowrap; }
     .stepper { margin-bottom: 14px; }
     .stepper::before { left: 14%; right: 14%; }
     .bank-info { padding: 12px 14px; }
