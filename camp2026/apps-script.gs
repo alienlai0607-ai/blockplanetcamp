@@ -68,6 +68,16 @@ function doGet(e) {
         if (e.parameter.key !== 'bp2026admin') return respond({ success: false, error: '權限不足' });
         return respond(matrixUpdateStatus(e.parameter.row, e.parameter.status, e.parameter.memo));
 
+      // ===== SPIKE 教具訂購 =====
+      case 'spike-submit':
+        return respond(spikeSubmit(e.parameter));
+      case 'spike-list':
+        if (e.parameter.key !== 'bp2026admin') return respond({ success: false, error: '權限不足' });
+        return respond(spikeList());
+      case 'spike-status':
+        if (e.parameter.key !== 'bp2026admin') return respond({ success: false, error: '權限不足' });
+        return respond(spikeUpdateStatus(e.parameter.row, e.parameter.status, e.parameter.memo));
+
       default:       return respond({ success: false, error: '無效的操作' });
     }
   } finally {
@@ -1056,6 +1066,124 @@ function matrixUpdateStatus(row, status, memo) {
   const sh = getMatrixSheet();
   if (status) {
     if (MATRIX_STATUSES.indexOf(status) < 0) return { success: false, error: '無效的狀態' };
+    sh.getRange(r, 11).setValue(status);
+  }
+  if (memo != null && memo !== undefined) {
+    sh.getRange(r, 13).setValue(String(memo));
+  }
+  return { success: true };
+}
+
+// ========================================
+//  SPIKE 教具訂購系統
+// ========================================
+const SPIKE_SHEET = 'SPIKE教具訂單';
+const SPIKE_STATUSES = ['未付款', '已付款', '已出貨'];
+const SPIKE_HEADERS = [
+  '訂單編號','填單時間','家長姓名','聯絡電話','學生姓名','所屬隊伍',
+  '商品明細','數量合計','應付金額','優惠節省','狀態','備註','管理員備忘'
+];
+
+function getSpikeSheet() {
+  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  let sh = ss.getSheetByName(SPIKE_SHEET);
+  if (!sh) sh = ss.insertSheet(SPIKE_SHEET);
+  if (sh.getLastRow() === 0) {
+    sh.getRange(1, 1, 1, SPIKE_HEADERS.length)
+      .setValues([SPIKE_HEADERS])
+      .setFontWeight('bold')
+      .setBackground('#E3F2FD');
+    sh.setFrozenRows(1);
+    sh.setColumnWidth(1, 130);
+    sh.setColumnWidth(2, 140);
+    sh.setColumnWidth(7, 260);
+    sh.setColumnWidth(12, 180);
+    sh.setColumnWidth(13, 180);
+  }
+  return sh;
+}
+
+function spikeSubmit(p) {
+  try {
+    const sh = getSpikeSheet();
+    const now = new Date();
+    const parent = (p.parent || '').trim();
+    const phone = (p.phone || '').trim();
+    if (!parent || !phone) return { success: false, error: '家長姓名與聯絡電話必填' };
+
+    const orderNo = (p.order_no || '').trim() ||
+      ('SP' + Utilities.formatDate(now, 'Asia/Taipei', 'yyMMdd') + '-' + Math.floor(1000 + Math.random() * 9000));
+
+    const row = [
+      orderNo,
+      Utilities.formatDate(now, 'Asia/Taipei', 'yyyy-MM-dd HH:mm:ss'),
+      parent,
+      phone,
+      (p.student || '').trim() || '—',
+      (p.team || '').trim() || '—',
+      (p.items || '').trim(),
+      parseInt(p.qty) || 0,
+      parseInt(p.total) || 0,
+      parseInt(p.saved) || 0,
+      '未付款',
+      (p.note || '').trim() || '',
+      ''
+    ];
+    sh.appendRow(row);
+    return { success: true, orderNo: orderNo };
+  } catch (err) {
+    return { success: false, error: String(err && err.message || err) };
+  }
+}
+
+function spikeList() {
+  const sh = getSpikeSheet();
+  const lastRow = sh.getLastRow();
+  if (lastRow < 2) {
+    return { success: true, orders: [], stats: { count: 0, amount: 0, pending: 0, paid: 0, shipped: 0, pendingAmount: 0 } };
+  }
+  const values = sh.getRange(2, 1, lastRow - 1, SPIKE_HEADERS.length).getValues();
+  let amount = 0, pending = 0, paid = 0, shipped = 0, pendingAmount = 0;
+  const orders = values.map((r, i) => {
+    const status = String(r[10] || '未付款');
+    const total = Number(r[8]) || 0;
+    amount += total;
+    if (status === '未付款') { pending++; pendingAmount += total; }
+    else if (status === '已付款') paid++;
+    else if (status === '已出貨') shipped++;
+    return {
+      row: i + 2,
+      orderNo: String(r[0] || ''),
+      createdAt: r[1] instanceof Date
+        ? Utilities.formatDate(r[1], 'Asia/Taipei', 'yyyy-MM-dd HH:mm')
+        : String(r[1] || ''),
+      parent: String(r[2] || ''),
+      phone: String(r[3] || ''),
+      student: String(r[4] || ''),
+      team: String(r[5] || ''),
+      items: String(r[6] || ''),
+      qty: Number(r[7]) || 0,
+      total: total,
+      saved: Number(r[9]) || 0,
+      status: status,
+      note: String(r[11] || ''),
+      memo: String(r[12] || '')
+    };
+  });
+  orders.reverse();
+  return {
+    success: true,
+    orders: orders,
+    stats: { count: orders.length, amount: amount, pending: pending, paid: paid, shipped: shipped, pendingAmount: pendingAmount }
+  };
+}
+
+function spikeUpdateStatus(row, status, memo) {
+  const r = parseInt(row);
+  if (!r || r < 2) return { success: false, error: '無效的列號' };
+  const sh = getSpikeSheet();
+  if (status) {
+    if (SPIKE_STATUSES.indexOf(status) < 0) return { success: false, error: '無效的狀態' };
     sh.getRange(r, 11).setValue(status);
   }
   if (memo != null && memo !== undefined) {

@@ -152,6 +152,7 @@ h1 { font-size: 1.5rem; color: #F5941E; font-weight: 900; }
     <button class="tab" data-tab="lookup">📱 電話查詢</button>
     <button class="tab" data-tab="coupon">🎟️ 優惠券管理</button>
     <button class="tab" data-tab="matrix">🛠️ MATRIX 訂購</button>
+    <button class="tab" data-tab="spike">🧱 SPIKE 訂購</button>
   </div>
 
   <!-- 營隊總名單 -->
@@ -223,6 +224,30 @@ h1 { font-size: 1.5rem; color: #F5941E; font-weight: 900; }
       </div>
     </div>
     <div id="mxList" class="loading">載入中...</div>
+  </div>
+
+  <!-- SPIKE 訂購管理 -->
+  <div class="panel" id="panel-spike">
+    <div class="card">
+      <div class="card-title">📊 SPIKE 訂購即時統計</div>
+      <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px">
+        <div style="text-align:center"><div style="font-size:1.5rem;font-weight:900;color:#1565C0" id="spStatCount">-</div><div style="font-size:.72rem;color:#aaa;font-weight:700">總訂單數</div></div>
+        <div style="text-align:center"><div style="font-size:1.5rem;font-weight:900;color:#2E7D32" id="spStatAmount">-</div><div style="font-size:.72rem;color:#aaa;font-weight:700">累計金額</div></div>
+        <div style="text-align:center"><div style="font-size:1.5rem;font-weight:900;color:#C62828" id="spStatPending">-</div><div style="font-size:.72rem;color:#aaa;font-weight:700">未付款筆數</div></div>
+        <div style="text-align:center"><div style="font-size:1.5rem;font-weight:900;color:#E65100" id="spStatPendingAmt">-</div><div style="font-size:.72rem;color:#aaa;font-weight:700">未收金額</div></div>
+      </div>
+      <div style="display:flex;gap:8px;margin-top:14px;flex-wrap:wrap">
+        <select id="spFilter" style="flex:1;min-width:130px;padding:10px;border-radius:10px;border:2px solid #eee;font-weight:700;color:#333;font-family:inherit;font-size:.9rem">
+          <option value="all">全部狀態</option>
+          <option value="未付款">僅未付款</option>
+          <option value="已付款">僅已付款</option>
+          <option value="已出貨">僅已出貨</option>
+        </select>
+        <input id="spSearch" type="text" placeholder="搜尋姓名／電話／訂單編號／末5碼／備忘" style="flex:2;min-width:180px;padding:10px 14px;border-radius:10px;border:2px solid #eee;font-weight:700;font-family:inherit;font-size:.9rem" />
+        <button onclick="loadSpikeOrders()" style="padding:10px 18px;background:#1565C0;color:white;border:none;border-radius:10px;font-weight:900;cursor:pointer;font-family:inherit">↻ 重新整理</button>
+      </div>
+    </div>
+    <div id="spList" class="loading">載入中...</div>
   </div>
 </div>
 
@@ -305,6 +330,7 @@ document.querySelectorAll('.tab').forEach(btn => {
     if (tab === 'camps' && !allData) loadCamps();
     if (tab === 'coupon') loadCouponStats();
     if (tab === 'matrix') loadMatrixOrders();
+    if (tab === 'spike') loadSpikeOrders();
   });
 });
 
@@ -497,6 +523,163 @@ document.addEventListener('input', (e) => {
 });
 document.addEventListener('change', (e) => {
   if (e.target.id === 'mxFilter') renderMatrixList();
+});
+
+// ========== SPIKE 訂購管理 ==========
+let _spOrders = [];
+
+async function loadSpikeOrders() {
+  const list = document.getElementById('spList');
+  list.innerHTML = '<div class="loading">載入中...</div>';
+  try {
+    const res = await fetch(API + '?action=spike-list&key=' + MX_ADMIN_KEY);
+    const data = await res.json();
+    if (!data.success) { list.innerHTML = `<div class="card" style="color:#C93A2A;font-weight:700">❌ ${data.error || '載入失敗'}</div>`; return; }
+    _spOrders = data.orders || [];
+    const s = data.stats || {};
+    document.getElementById('spStatCount').textContent = s.count || 0;
+    document.getElementById('spStatAmount').textContent = '$' + (s.amount || 0).toLocaleString();
+    document.getElementById('spStatPending').textContent = s.pending || 0;
+    document.getElementById('spStatPendingAmt').textContent = '$' + (s.pendingAmount || 0).toLocaleString();
+    renderSpikeList();
+  } catch(e) {
+    list.innerHTML = `<div class="card" style="color:#C93A2A;font-weight:700">❌ 連線失敗：${e.message}</div>`;
+  }
+}
+
+function renderSpikeList() {
+  const list = document.getElementById('spList');
+  const filter = document.getElementById('spFilter').value;
+  const search = (document.getElementById('spSearch').value || '').trim().toLowerCase();
+  let orders = _spOrders.slice();
+  if (filter !== 'all') orders = orders.filter(o => o.status === filter);
+  if (search) orders = orders.filter(o =>
+    (o.parent || '').toLowerCase().includes(search) ||
+    (o.phone || '').toLowerCase().includes(search) ||
+    (o.orderNo || '').toLowerCase().includes(search) ||
+    (o.student || '').toLowerCase().includes(search) ||
+    (o.memo || '').toLowerCase().includes(search) ||
+    (o.note || '').toLowerCase().includes(search)
+  );
+  if (orders.length === 0) {
+    list.innerHTML = '<div class="card" style="text-align:center;color:#aaa;padding:40px">📋 沒有符合條件的訂單</div>';
+    return;
+  }
+  list.innerHTML = orders.map(o => {
+    const last5 = extractLast5(o.memo);
+    return `
+    <div class="card" style="margin-bottom:12px;border-left:5px solid #1565C0">
+      <div style="display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:10px;margin-bottom:10px">
+        <div>
+          <div style="font-size:.72rem;color:#aaa;font-weight:700;letter-spacing:1px">${escapeHTML(o.orderNo)}</div>
+          <div style="font-size:1.05rem;font-weight:900;margin-top:2px">${escapeHTML(o.parent)} <span style="font-size:.82rem;color:#888;font-weight:500">｜ 📱 ${escapeHTML(o.phone)}</span>
+            ${last5 ? `<span style="background:#E3F2FD;color:#1565C0;padding:2px 8px;border-radius:50px;font-size:.72rem;font-weight:900;margin-left:6px">末5碼 ${last5}</span>` : ''}
+          </div>
+          <div style="font-size:.82rem;color:#666;margin-top:2px">👦 ${escapeHTML(o.student) || '—'} ｜ 🏷️ ${escapeHTML(o.team) || '—'} ｜ 🕒 ${escapeHTML(o.createdAt)}</div>
+        </div>
+        <div style="text-align:right">
+          <div style="font-size:1.4rem;font-weight:900;color:#C93A2A">$${(o.total || 0).toLocaleString()}</div>
+          ${o.saved > 0 ? `<div style="font-size:.72rem;color:#2E7D32;font-weight:700">省 $${o.saved.toLocaleString()}</div>` : ''}
+          <div style="margin-top:4px">${mxStatusBadge(o.status)}</div>
+        </div>
+      </div>
+      <div style="background:#E3F2FD;border-left:3px solid #1565C0;padding:8px 12px;border-radius:6px;font-size:.85rem;color:#555;margin-bottom:8px">
+        🧱 ${escapeHTML(o.items || '—').replace(/\|/g, ' ｜ ')} <span style="color:#888">（共 ${o.qty} 件）</span>
+      </div>
+      ${o.note ? `<div style="font-size:.8rem;color:#888;margin-bottom:6px">📝 家長備註：${escapeHTML(o.note)}</div>` : ''}
+      <div style="margin-bottom:10px">
+        <label style="display:block;font-size:.7rem;color:#aaa;font-weight:700;letter-spacing:1px;margin-bottom:4px">🗒️ 管理員備忘（支援末5碼自動辨識；離開欄位即自動儲存）</label>
+        <textarea class="sp-memo" data-row="${o.row}" placeholder="例：末5碼 12345、3/5 已收款 $15500、3/10 到貨" style="width:100%;min-height:46px;padding:8px 10px;border:2px solid #eee;border-radius:8px;font-family:inherit;font-size:.85rem;resize:vertical;outline:none;transition:border-color .2s">${escapeHTML(o.memo)}</textarea>
+      </div>
+      <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;padding-top:8px;border-top:1px dashed #eee">
+        <span style="font-size:.75rem;color:#aaa;font-weight:700">狀態</span>
+        <select onchange="spChangeStatus(${o.row}, this.value)" style="padding:6px 12px;border-radius:8px;border:2px solid #eee;font-weight:700;font-family:inherit;font-size:.82rem;cursor:pointer">
+          <option value="未付款" ${o.status === '未付款' ? 'selected' : ''}>💰 未付款</option>
+          <option value="已付款" ${o.status === '已付款' ? 'selected' : ''}>✅ 已付款</option>
+          <option value="已出貨" ${o.status === '已出貨' ? 'selected' : ''}>📦 已出貨</option>
+        </select>
+        <button onclick="spCopyOrderMsg(${o.row})" style="padding:6px 14px;background:#06C755;color:white;border:none;border-radius:8px;font-weight:700;cursor:pointer;font-family:inherit;font-size:.82rem">💬 訂單確認</button>
+        <button onclick="spCopyDeliveryMsg(${o.row})" style="padding:6px 14px;background:#1565C0;color:white;border:none;border-radius:8px;font-weight:700;cursor:pointer;font-family:inherit;font-size:.82rem">📦 到貨通知</button>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+async function spChangeStatus(row, status) {
+  try {
+    const res = await fetch(API + '?action=spike-status&key=' + MX_ADMIN_KEY + '&row=' + row + '&status=' + encodeURIComponent(status));
+    const data = await res.json();
+    if (!data.success) { alert('❌ 更新失敗：' + (data.error || '')); return; }
+    const o = _spOrders.find(x => x.row === row);
+    if (o) o.status = status;
+    loadSpikeOrders();
+  } catch(e) { alert('❌ 連線失敗'); }
+}
+
+async function spSaveMemoInline(row, memo, el) {
+  const o = _spOrders.find(x => x.row === row);
+  if (!o) return;
+  if (memo === (o.memo || '')) return;
+  el.style.borderColor = '#F5941E';
+  try {
+    const res = await fetch(API + '?action=spike-status&key=' + MX_ADMIN_KEY + '&row=' + row + '&memo=' + encodeURIComponent(memo));
+    const data = await res.json();
+    if (!data.success) { el.style.borderColor = '#C93A2A'; alert('❌ 備忘儲存失敗：' + (data.error || '')); return; }
+    o.memo = memo;
+    el.style.borderColor = '#5BAD5B';
+    setTimeout(() => { el.style.borderColor = '#eee'; }, 900);
+    loadSpikeOrders();
+  } catch(_) { el.style.borderColor = '#C93A2A'; alert('❌ 連線失敗'); }
+}
+
+document.addEventListener('focusout', (e) => {
+  if (!e.target.classList || !e.target.classList.contains('sp-memo')) return;
+  const row = parseInt(e.target.dataset.row);
+  spSaveMemoInline(row, e.target.value, e.target);
+}, true);
+
+function spCopyOrderMsg(row) {
+  const o = _spOrders.find(x => x.row === row);
+  if (!o) return;
+  const lines = [];
+  lines.push(`您好 ${o.parent} 爸媽 🧱`);
+  lines.push('');
+  lines.push('已收到您的 LEGO SPIKE Prime 教具訂購單：');
+  lines.push(`訂單編號 ${o.orderNo}`);
+  lines.push(`商品 ${(o.items || '').replace(/\|/g, '、')}（共 ${o.qty} 件）`);
+  lines.push(`應付金額 NT$ ${(o.total || 0).toLocaleString()}`);
+  if (o.saved > 0) lines.push(`（布拉克代購已為您省下 NT$ ${o.saved.toLocaleString()}）`);
+  lines.push('');
+  lines.push('匯款資訊 💰');
+  lines.push('合作金庫 006 · 5713717233110');
+  lines.push('戶名：賴柏翰（臺南市私立布拉克星球文理技藝短期補習班）');
+  lines.push('');
+  lines.push('匯款後請提供帳號末 5 碼供我們對帳，感謝您的支持 🌟');
+  copyToClipboardWithToast(lines.join('\n'));
+}
+
+function spCopyDeliveryMsg(row) {
+  const o = _spOrders.find(x => x.row === row);
+  if (!o) return;
+  const lines = [];
+  lines.push(`您好 ${o.parent} 爸媽 📦`);
+  lines.push('');
+  lines.push(`您訂購的 LEGO SPIKE Prime 教具已到貨！`);
+  lines.push(`訂單編號 ${o.orderNo}`);
+  lines.push(`商品：${(o.items || '').replace(/\|/g, '、')}（共 ${o.qty} 件）`);
+  lines.push('');
+  lines.push('請於下次上課時間來布拉克星球領取 🌟');
+  lines.push('若需另約取貨時間，請隨時告知～');
+  lines.push('');
+  lines.push('感謝您的支持！');
+  copyToClipboardWithToast(lines.join('\n'));
+}
+
+document.addEventListener('input', (e) => {
+  if (e.target.id === 'spSearch' || e.target.id === 'spFilter') renderSpikeList();
+});
+document.addEventListener('change', (e) => {
+  if (e.target.id === 'spFilter') renderSpikeList();
 });
 
 // === 解析日期 ===
