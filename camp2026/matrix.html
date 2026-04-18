@@ -826,6 +826,114 @@
   .btn-line:hover { background: #05a046; box-shadow: 6px 6px 0 #045a2c; }
   .btn-line:active { box-shadow: 2px 2px 0 #045a2c; }
 
+  /* ===== 匯款資訊區塊 ===== */
+  .bank-info {
+    background: linear-gradient(135deg, #FFF8F0, #FFF3E0);
+    border: 2px solid var(--block-orange);
+    border-radius: 12px;
+    padding: 14px 16px;
+    margin: 14px 0 10px;
+  }
+  .bank-info-title {
+    font-size: 14px; font-weight: 900;
+    color: var(--block-dark);
+    margin-bottom: 10px;
+    letter-spacing: .5px;
+  }
+  .bank-row {
+    display: flex; align-items: center; gap: 10px;
+    padding: 4px 0;
+    font-size: 14px;
+  }
+  .bank-row > span.k {
+    color: var(--ink-60);
+    min-width: 56px;
+    font-weight: 700;
+    font-size: 12px;
+  }
+  .bank-row b {
+    color: var(--block-red);
+    font-family: 'Fredoka', monospace;
+    font-size: 15px;
+    letter-spacing: .5px;
+    font-weight: 700;
+  }
+  .mini-copy {
+    margin-left: auto;
+    padding: 3px 12px;
+    background: var(--block-orange);
+    color: #fff;
+    border: 2px solid var(--block-brown);
+    border-radius: 999px;
+    font-size: 11px;
+    font-weight: 700;
+    cursor: pointer;
+    font-family: inherit;
+    box-shadow: 2px 2px 0 var(--block-brown);
+    transition: all .15s cubic-bezier(.34,1.56,.64,1);
+  }
+  .mini-copy:hover { transform: translate(-1px,-1px); box-shadow: 3px 3px 0 var(--block-brown); }
+  .mini-copy:active { transform: translate(1px,1px); box-shadow: 1px 1px 0 var(--block-brown); }
+  .bank-note {
+    margin-top: 8px;
+    padding-top: 8px;
+    border-top: 1px dashed rgba(232,155,60,.4);
+    font-size: 11.5px;
+    color: var(--ink-60);
+    line-height: 1.5;
+  }
+
+  /* ===== 末五碼輸入 ===== */
+  .last5-row {
+    margin: 0 0 14px;
+    padding: 14px 16px;
+    background: var(--block-cream);
+    border: 2px dashed var(--block-orange);
+    border-radius: 12px;
+  }
+  .last5-row .label {
+    display: block;
+    font-size: 13px;
+    font-weight: 700;
+    color: var(--block-dark);
+    margin-bottom: 8px;
+  }
+  .last5-row .label span.hint {
+    font-size: 11px;
+    color: var(--ink-60);
+    font-weight: 500;
+    margin-left: 6px;
+  }
+  .last5-row input {
+    width: 100%;
+    padding: 10px 14px;
+    border: 2px solid var(--block-brown);
+    border-radius: 10px;
+    font-family: 'Fredoka', monospace;
+    font-size: 20px;
+    font-weight: 700;
+    text-align: center;
+    letter-spacing: 8px;
+    outline: none;
+    background: #fff;
+    color: var(--block-dark);
+  }
+  .last5-row input::placeholder { color: #ccc; letter-spacing: 6px; }
+  .last5-row input:focus {
+    border-color: var(--block-orange);
+    box-shadow: 3px 3px 0 var(--block-orange);
+    transform: translate(-1px,-1px);
+  }
+  .last5-status {
+    display: block;
+    margin-top: 6px;
+    font-size: 11.5px;
+    font-weight: 700;
+    min-height: 16px;
+  }
+  .last5-status.ok { color: #2E7D32; }
+  .last5-status.empty { color: var(--ink-60); }
+
   /* ---------- 彈窗 ---------- */
   .modal-backdrop {
     position: fixed; inset: 0;
@@ -1198,13 +1306,41 @@
 <div class="modal-backdrop" id="modalBackdrop">
   <div class="modal">
     <h2>✅ 訂單送出成功</h2>
-    <p class="modal-sub">系統已收到您的訂單，以下為訂單摘要，可一併截圖或複製給 布拉克行政老師留存。</p>
+    <p class="modal-sub">系統已收到您的訂單。下一步請匯款並填入末 5 碼，按最下方綠色按鈕一鍵傳給布拉克行政老師。</p>
     <div id="syncStatus" style="margin-bottom:14px;padding:10px 14px;border-radius:10px;font-size:13px;font-weight:700;display:flex;align-items:center;gap:8px;"></div>
     <div class="modal-text" id="modalText"></div>
+
+    <div class="bank-info">
+      <div class="bank-info-title">💰 下一步：請依下列資訊匯款</div>
+      <div class="bank-row">
+        <span class="k">銀行</span>
+        <b>006 合作金庫</b>
+      </div>
+      <div class="bank-row">
+        <span class="k">帳號</span>
+        <b id="bankAcct">5713717233110</b>
+        <button type="button" class="mini-copy" data-copy="5713717233110">複製帳號</button>
+      </div>
+      <div class="bank-row">
+        <span class="k">戶名</span>
+        <b>賴柏翰</b>
+      </div>
+      <div class="bank-note">
+        （臺南市私立布拉克星球文理技藝短期補習班）<br>
+        匯款完成後，請將帳號<b style="color:var(--block-red)">末 5 碼</b>填入下方欄位，一起傳給布拉克行政老師確認 🙏
+      </div>
+    </div>
+
+    <div class="last5-row">
+      <label class="label">匯款末 5 碼 <span class="hint">（請填 5 位數字；若尚未匯款可留空）</span></label>
+      <input id="last5" inputmode="numeric" pattern="[0-9]{5}" maxlength="5" placeholder="_ _ _ _ _" autocomplete="off">
+      <span class="last5-status empty" id="last5Status">尚未填寫（按下綠色鍵將只傳訂單摘要）</span>
+    </div>
+
     <div class="modal-actions">
       <button class="btn" onclick="closeModal()">關閉</button>
       <button class="btn" id="copyBtn">📄 只複製</button>
-      <button class="btn btn-line" id="copyLineBtn">💬 複製並傳給 布拉克行政老師</button>
+      <button class="btn btn-line" id="copyLineBtn">💬 複製並傳給布拉克行政老師</button>
     </div>
   </div>
 </div>
@@ -1470,8 +1606,21 @@
 
   const LINE_OFFICIAL = 'https://lin.ee/zFqqFzQ';
 
-  async function copyOrderText() {
-    const text = document.getElementById('modalText').textContent;
+  // 取訂單摘要 + 末 5 碼（若已填）
+  function buildFullMessage() {
+    const base = document.getElementById('modalText').textContent;
+    const last5 = getLast5();
+    if (!last5) return base;
+    return base + '\n\n【已匯款 · 帳號末 5 碼】' + last5 + '\n（匯款至合作金庫 006 · 5713717233110 · 賴柏翰）';
+  }
+
+  function getLast5() {
+    const v = (document.getElementById('last5').value || '').trim();
+    return /^\d{5}$/.test(v) ? v : '';
+  }
+
+  async function copyFullText() {
+    const text = buildFullMessage();
     try {
       await navigator.clipboard.writeText(text);
       const toast = document.getElementById('toast');
@@ -1488,14 +1637,43 @@
   }
 
   document.getElementById('copyBtn').addEventListener('click', async () => {
-    const ok = await copyOrderText();
+    const ok = await copyFullText();
     if (!ok) alert('已選取訂單內容，請按 Cmd+C / Ctrl+C 複製');
   });
 
   document.getElementById('copyLineBtn').addEventListener('click', async () => {
-    await copyOrderText();
-    // 延遲一小段讓 toast 彈出再開 LINE，使用者才感受到「已複製」
+    await copyFullText();
     setTimeout(() => { window.open(LINE_OFFICIAL, '_blank', 'noopener'); }, 350);
+  });
+
+  // ========== 末 5 碼輸入即時驗證 ==========
+  const last5Input = document.getElementById('last5');
+  const last5Status = document.getElementById('last5Status');
+  last5Input.addEventListener('input', () => {
+    last5Input.value = last5Input.value.replace(/[^0-9]/g, '').slice(0, 5);
+    if (/^\d{5}$/.test(last5Input.value)) {
+      last5Status.textContent = '✅ 已填入末 5 碼，按綠色鍵將一併傳給行政老師';
+      last5Status.className = 'last5-status ok';
+    } else if (last5Input.value.length === 0) {
+      last5Status.textContent = '尚未填寫（按下綠色鍵將只傳訂單摘要）';
+      last5Status.className = 'last5-status empty';
+    } else {
+      last5Status.textContent = `還需 ${5 - last5Input.value.length} 位數字`;
+      last5Status.className = 'last5-status empty';
+    }
+  });
+
+  // ========== 帳號一鍵複製 ==========
+  document.addEventListener('click', async (e) => {
+    const btn = e.target.closest('.mini-copy');
+    if (!btn) return;
+    const val = btn.dataset.copy;
+    try {
+      await navigator.clipboard.writeText(val);
+      const orig = btn.textContent;
+      btn.textContent = '✓ 已複製';
+      setTimeout(() => { btn.textContent = orig; }, 1200);
+    } catch(_) { alert('請手動複製：' + val); }
   });
 
   document.addEventListener('keydown', (e) => {
