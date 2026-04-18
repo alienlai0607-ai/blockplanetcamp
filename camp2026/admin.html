@@ -95,37 +95,51 @@ h1 { font-size: 1.5rem; color: #F5941E; font-weight: 900; }
 .qb-item-row input[type="number"] { text-align: center; font-variant-numeric: tabular-nums; }
 .qb-del { width: 26px; height: 26px; border: none; background: #ffebee; color: #c62828; border-radius: 50%; cursor: pointer; font-weight: 900; padding: 0; display: flex; align-items: center; justify-content: center; }
 .qb-del:hover { background: #c62828; color: #fff; }
-.qb-preview { background: #fff; width: 100%; max-width: 794px; margin: 0 auto; padding: 38px 40px; border: 1px solid #ddd; font-family: 'Microsoft JhengHei','PingFang TC','Noto Sans TC',sans-serif; color: #000; overflow-x: auto; }
-.qb-preview .q-brand { font-size: 24px; font-weight: 900; text-align: center; margin: 0 0 6px; letter-spacing: 2px; }
-.qb-preview .q-addr, .qb-preview .q-tel { text-align: center; font-size: 12px; font-weight: 700; margin: 2px 0; }
-.qb-preview .q-en { text-align: center; font-size: 22px; margin: 16px 0 2px; font-weight: 700; letter-spacing: 3px; }
-.qb-preview .q-zh { text-align: center; font-size: 26px; margin: 0 0 20px; font-weight: 900; letter-spacing: 10px; }
-.qb-preview .q-meta { display: flex; justify-content: space-between; font-size: 12px; font-weight: 700; margin: 10px 0 6px; gap: 10px; flex-wrap: wrap; }
-.qb-preview .q-addr-line { font-size: 12px; font-weight: 700; margin-bottom: 12px; }
+.qb-preview { background: #fff; width: 100%; max-width: 794px; margin: 0 auto; padding: 30px 36px; border: 1px solid #ddd; font-family: 'Microsoft JhengHei','PingFang TC','Noto Sans TC',sans-serif; color: #000; overflow-x: auto; }
+.qb-preview .q-brand { font-size: 20px; font-weight: 900; text-align: center; margin: 0 0 4px; letter-spacing: 1px; line-height: 1.3; }
+.qb-preview .q-addr, .qb-preview .q-tel { text-align: center; font-size: 11px; font-weight: 700; margin: 1px 0; }
+.qb-preview .q-en { text-align: center; font-size: 18px; margin: 10px 0 0; font-weight: 700; letter-spacing: 2px; }
+.qb-preview .q-zh { text-align: center; font-size: 22px; margin: 0 0 14px; font-weight: 900; letter-spacing: 8px; }
+.qb-preview .q-meta-grid { display: grid; grid-template-columns: 1fr auto; gap: 10px; font-size: 12px; font-weight: 700; margin-bottom: 10px; align-items: start; }
+.qb-preview .q-meta-left > div { margin-bottom: 2px; }
+.qb-preview .q-meta-inline { display: flex; gap: 20px; flex-wrap: wrap; }
+.qb-preview .q-meta-right { text-align: right; }
 .qb-preview table { width: 100%; border-collapse: collapse; font-size: 11px; table-layout: fixed; }
-.qb-preview th { border: 1px solid #000; background: #f2f2f2; padding: 6px 3px; font-weight: 700; text-align: center; }
-.qb-preview td { border: 1px solid #000; padding: 7px 5px; font-variant-numeric: tabular-nums; word-break: break-word; }
+.qb-preview th { border: 1px solid #000; background: #f2f2f2; padding: 4px 3px; font-weight: 700; text-align: center; }
+.qb-preview td { border: 1px solid #000; padding: 4px 5px; font-variant-numeric: tabular-nums; word-break: break-word; height: 22px; }
 .qb-preview td:nth-child(1) { width: 8%; text-align: center; }
-.qb-preview td:nth-child(2) { width: 44%; text-align: center; }
+.qb-preview td:nth-child(2) { width: 46%; text-align: center; }
 .qb-preview td:nth-child(3) { width: 10%; text-align: center; }
-.qb-preview td:nth-child(4) { width: 18%; text-align: left; padding-left: 10px; }
-.qb-preview td:nth-child(5) { width: 20%; text-align: left; padding-left: 10px; }
-.qb-preview .q-footer { display: flex; justify-content: space-between; align-items: baseline; margin-top: 14px; font-size: 12px; font-weight: 700; flex-wrap: wrap; gap: 10px; }
-.qb-preview .q-footer .q-total-line { font-size: 14px; font-weight: 900; }
-.qb-preview .q-note { font-size: 11px; margin-top: 4px; }
+.qb-preview td:nth-child(4) { width: 16%; text-align: left; padding-left: 8px; }
+.qb-preview td:nth-child(5) { width: 20%; text-align: left; padding-left: 8px; }
+.qb-preview .q-bottom { display: grid; grid-template-columns: 1fr auto; gap: 14px; margin-top: 10px; align-items: end; }
+.qb-preview .q-remark { font-size: 11px; font-weight: 700; line-height: 1.6; }
+.qb-preview .q-remark-title { margin-bottom: 2px; letter-spacing: 4px; }
+.qb-preview .q-total-area { display: flex; align-items: baseline; gap: 8px; font-size: 13px; font-weight: 900; white-space: nowrap; }
+.qb-preview .q-total-line { border-bottom: 1px solid #000; padding: 0 14px 2px; font-size: 15px; min-width: 120px; text-align: right; }
+.qb-preview .q-sign { display: grid; grid-template-columns: 1fr auto; gap: 20px; margin-top: 28px; align-items: end; }
+.qb-preview .q-sign-label { font-size: 12px; font-weight: 700; margin-bottom: 6px; }
+.qb-preview .q-sign-line { border-bottom: 1px solid #000; height: 28px; }
+.qb-preview .q-sign-right { text-align: right; font-size: 12px; font-weight: 700; line-height: 1.5; }
+.qb-preview .q-sign-company { font-size: 13px; font-weight: 900; }
+.qb-preview .q-sign-tel { font-size: 11px; margin-top: 2px; }
+.qb-preview .q-stamp { margin-top: 16px; font-size: 11px; color: #aaa; border: 1.5px dashed #bbb; padding: 14px 10px; width: 90px; margin-left: auto; text-align: center; letter-spacing: 2px; }
 @media (max-width: 600px) {
-  .qb-preview { padding: 20px 14px; }
-  .qb-preview .q-brand { font-size: 18px; }
-  .qb-preview .q-en { font-size: 16px; }
-  .qb-preview .q-zh { font-size: 20px; letter-spacing: 6px; }
+  .qb-preview { padding: 18px 14px; }
+  .qb-preview .q-brand { font-size: 16px; }
+  .qb-preview .q-en { font-size: 14px; }
+  .qb-preview .q-zh { font-size: 18px; letter-spacing: 5px; }
   .qb-preview table { font-size: 9.5px; }
-  .qb-preview th, .qb-preview td { padding: 5px 2px; }
+  .qb-preview th, .qb-preview td { padding: 3px 2px; }
   .qb-preview td:nth-child(4), .qb-preview td:nth-child(5) { padding-left: 4px; }
+  .qb-preview .q-bottom, .qb-preview .q-sign { grid-template-columns: 1fr; }
+  .qb-preview .q-sign-right { text-align: left; }
+  .qb-preview .q-stamp { margin-left: 0; }
 }
 @media print {
   body * { visibility: hidden; }
   #qPreview, #qPreview * { visibility: visible; }
-  #qPreview { position: absolute; left: 0; top: 0; border: none; padding: 15mm 18mm; width: 100%; max-width: 100%; }
+  #qPreview { position: absolute; left: 0; top: 0; border: none; padding: 12mm 15mm; width: 100%; max-width: 100%; }
   @page { size: A4; margin: 0; }
 }
 
@@ -311,6 +325,16 @@ h1 { font-size: 1.5rem; color: #F5941E; font-weight: 900; }
         <label style="font-size:.75rem;color:#666;font-weight:700;display:block;margin-bottom:4px">收件地址</label>
         <input id="qAddress" type="text" placeholder="台南市安南區九份子大道 8 號" style="width:100%;padding:10px 12px;border:2px solid #ddd;border-radius:8px;font-family:inherit;font-size:.9rem;outline:none">
       </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:10px">
+        <div>
+          <label style="font-size:.75rem;color:#666;font-weight:700;display:block;margin-bottom:4px">聯絡人</label>
+          <input id="qContact" type="text" placeholder="（選填）" style="width:100%;padding:10px 12px;border:2px solid #ddd;border-radius:8px;font-family:inherit;font-size:.9rem;outline:none">
+        </div>
+        <div>
+          <label style="font-size:.75rem;color:#666;font-weight:700;display:block;margin-bottom:4px">TEL</label>
+          <input id="qTel" type="text" placeholder="（選填）" style="width:100%;padding:10px 12px;border:2px solid #ddd;border-radius:8px;font-family:inherit;font-size:.9rem;outline:none">
+        </div>
+      </div>
     </div>
 
     <div class="card">
@@ -319,12 +343,21 @@ h1 { font-size: 1.5rem; color: #F5941E; font-weight: 900; }
         <button onclick="addQuoteItem()" style="padding:6px 14px;background:#FFD100;color:#002E51;border:none;border-radius:50px;font-weight:900;font-size:.8rem;cursor:pointer;font-family:inherit">+ 新增</button>
       </div>
       <div id="qItems"></div>
-      <div style="background:#FFF9D6;border:2px dashed #FFD100;border-radius:10px;padding:10px 12px;margin-top:10px">
-        <div style="font-size:.78rem;color:#002E51;font-weight:700;margin-bottom:6px">🧱 SPIKE 品項單價清單</div>
-        <button onclick="applySpikePreset()" style="width:100%;padding:10px 14px;background:#002E51;color:#FFD100;border:none;border-radius:8px;font-weight:900;cursor:pointer;font-family:inherit;font-size:.88rem">🔁 載入 SPIKE 品項（單價）</button>
-        <div style="font-size:.7rem;color:#666;margin-top:6px;line-height:1.6">
-          載入後：45678 $15,900、45681 $5,000、矽膠輪胎 $160、搖桿＋接收器 $1,200<br>
-          <b style="color:#002E51">數量請依需求填入</b>
+      <div style="display:grid;grid-template-columns:1fr;gap:8px;margin-top:10px">
+        <div style="background:#FFF9D6;border:2px dashed #FFD100;border-radius:10px;padding:10px 12px">
+          <div style="font-size:.78rem;color:#002E51;font-weight:700;margin-bottom:6px">🧱 SPIKE 品項單價清單</div>
+          <button onclick="applyPreset('spike')" style="width:100%;padding:10px 14px;background:#002E51;color:#FFD100;border:none;border-radius:8px;font-weight:900;cursor:pointer;font-family:inherit;font-size:.85rem">🔁 載入 SPIKE 品項</button>
+          <div style="font-size:.7rem;color:#666;margin-top:6px;line-height:1.5">45678 $15,900、45681 $5,000、矽膠輪胎 $160、搖桿＋接收器 $1,200</div>
+        </div>
+        <div style="background:#FFF3E0;border:2px dashed #F5941E;border-radius:10px;padding:10px 12px">
+          <div style="font-size:.78rem;color:#C93A2A;font-weight:700;margin-bottom:6px">🛠️ MATRIX 品項單價清單</div>
+          <button onclick="applyPreset('matrix')" style="width:100%;padding:10px 14px;background:#C93A2A;color:#fff;border:none;border-radius:8px;font-weight:900;cursor:pointer;font-family:inherit;font-size:.85rem">🔁 載入 MATRIX 品項</button>
+          <div style="font-size:.7rem;color:#666;margin-top:6px;line-height:1.5">MA321+MJ2 $11,500、MX120 $7,000</div>
+        </div>
+        <div style="background:#E3F2FD;border:2px dashed #1565C0;border-radius:10px;padding:10px 12px">
+          <div style="font-size:.78rem;color:#1565C0;font-weight:700;margin-bottom:6px">📦 社團設備租借品項</div>
+          <button onclick="applyPreset('club')" style="width:100%;padding:10px 14px;background:#1565C0;color:#fff;border:none;border-radius:8px;font-weight:900;cursor:pointer;font-family:inherit;font-size:.85rem">🔁 載入 社團設備租借品項</button>
+          <div style="font-size:.7rem;color:#666;margin-top:6px;line-height:1.5">WEDO2.0 $500／學期、iPad $500／學期</div>
         </div>
       </div>
       <div style="margin-top:8px">
@@ -788,6 +821,14 @@ const QUOTE_PRESETS = {
     { name: 'LEGO SPIKE  擴充套件  編號 45681', unit: 5000 },
     { name: '樂高矽膠輪胎', unit: 160 },
     { name: '樂高搖桿＋接收器', unit: 1200 }
+  ],
+  matrix: [
+    { name: 'MATRIX R4 任務賽事核心套組  編號 MA321+MJ2', unit: 11500 },
+    { name: 'MATRIX Expansion Set 120  編號 MX120', unit: 7000 }
+  ],
+  club: [
+    { name: 'LEGO WEDO2.0 程式機器人租借使用(整學期)', unit: 500 },
+    { name: 'Ipad 平板電腦 租借使用費(整學期)', unit: 500 }
   ]
 };
 const LS_QUOTE = 'bp_spike_quote_v1';
@@ -853,12 +894,14 @@ function removeQuoteItem(i) {
   renderQuotePreview();
   saveQuoteDraft();
 }
-function applySpikePreset() {
-  _quoteItems = QUOTE_PRESETS.spike.map(it => ({ name: it.name, qty: 0, unit: it.unit }));
+function applyPreset(key) {
+  const list = QUOTE_PRESETS[key] || [];
+  _quoteItems = list.map(it => ({ name: it.name, qty: 0, unit: it.unit }));
   renderQuoteItems();
   renderQuotePreview();
   saveQuoteDraft();
 }
+function applySpikePreset() { applyPreset('spike'); }  // 向後相容
 function clearQuoteItems() {
   if (!confirm('確定清空所有品項？')) return;
   _quoteItems = [];
@@ -879,19 +922,25 @@ function saveQuoteDraft() {
 function buildQuoteHTML() {
   const school = (document.getElementById('qSchool').value || '').trim();
   const address = (document.getElementById('qAddress').value || '').trim();
+  const contact = (document.getElementById('qContact').value || '').trim();
+  const tel = (document.getElementById('qTel').value || '').trim();
   const dateStr = (document.getElementById('qDate').value || '').trim();
   const rows = _quoteItems.slice(0, 13);
   while (rows.length < 13) rows.push({ name: '', qty: 0, unit: 0 });
   let total = 0;
+  let firstEmptyMarked = false;
   const rowsHTML = rows.map((it, i) => {
     const qty = it.qty || 0;
     const unit = it.unit || 0;
     const sub = qty * unit;
     const isEmpty = qty === 0;
     if (!isEmpty) total += sub;
+    let nameCell = '';
+    if (!isEmpty) nameCell = escapeHTML(it.name);
+    else if (!firstEmptyMarked) { nameCell = '以下空白'; firstEmptyMarked = true; }
     return `<tr>
       <td>${i + 1}</td>
-      <td>${isEmpty ? '0' : escapeHTML(it.name)}</td>
+      <td>${nameCell}</td>
       <td>${isEmpty ? 0 : qty}</td>
       <td>${isEmpty ? '$0.00' : '$' + unit.toLocaleString()}</td>
       <td>${isEmpty ? '$0.00' : '$' + sub.toLocaleString()}</td>
@@ -899,25 +948,50 @@ function buildQuoteHTML() {
   }).join('');
   return {
     html: `<div class="quote-paper">
-      <h1 class="q-brand">布拉克星球教育機構</h1>
-      <div class="q-addr">台南市北區中華北路二段 113 號</div>
+      <h1 class="q-brand">台南市私立布拉克星球文理技藝短期補習班</h1>
+      <div class="q-addr">台南市北區中華北路二段113號</div>
       <div class="q-tel">電話：06-2089382</div>
       <h2 class="q-en">QUOTATION</h2>
       <h2 class="q-zh">報 價 單</h2>
-      <div class="q-meta">
-        <span>TO: ${escapeHTML(school)}</span>
-        <span>DATE: ${escapeHTML(dateStr.replace(/-/g, '/'))}</span>
+      <div class="q-meta-grid">
+        <div class="q-meta-left">
+          <div>TO: ${escapeHTML(school)}</div>
+          <div>地址: ${escapeHTML(address)}</div>
+          <div class="q-meta-inline">
+            <span>聯絡人：${escapeHTML(contact)}</span>
+            <span>TEL：${escapeHTML(tel)}</span>
+          </div>
+        </div>
+        <div class="q-meta-right">
+          <div>DATE: ${escapeHTML(dateStr.replace(/-/g, '/'))}</div>
+        </div>
       </div>
-      <div class="q-addr-line">地址: ${escapeHTML(address)}</div>
       <table>
         <thead><tr><th>編號</th><th>品名／規格</th><th>數量</th><th>單價</th><th>小計</th></tr></thead>
         <tbody>${rowsHTML}</tbody>
       </table>
-      <div class="q-footer">
-        <span>確認無誤回傳報價單</span>
-        <span class="q-total-line">合 計：$${total.toLocaleString()}</span>
+      <div class="q-bottom">
+        <div class="q-remark">
+          <div class="q-remark-title">備　註</div>
+          <div>1. 確認無誤回傳報價單是同訂單處理</div>
+          <div>2. 以上報價均為含稅價格</div>
+        </div>
+        <div class="q-total-area">
+          <span>合　計：</span>
+          <span class="q-total-line">$${total.toLocaleString()}</span>
+        </div>
       </div>
-      <div class="q-note">以上報價均為含稅價格</div>
+      <div class="q-sign">
+        <div class="q-sign-left">
+          <div class="q-sign-label">客戶簽回：</div>
+          <div class="q-sign-line"></div>
+        </div>
+        <div class="q-sign-right">
+          <div class="q-sign-company">台南市私立布拉克星球<br>文理技藝短期補習班</div>
+          <div class="q-sign-tel">聯絡電話：06-2089382</div>
+          <div class="q-stamp">（蓋　章）</div>
+        </div>
+      </div>
     </div>`,
     total
   };
@@ -930,27 +1004,38 @@ function renderQuotePreview() {
 function printQuote() {
   const { html } = buildQuoteHTML();
   const css = `
-    @page { size: A4; margin: 15mm 18mm; }
+    @page { size: A4 portrait; margin: 12mm 14mm; }
     * { box-sizing: border-box; }
     html, body { margin: 0; padding: 0; font-family: 'Microsoft JhengHei','PingFang TC','Noto Sans TC',sans-serif; color:#000; -webkit-print-color-adjust:exact; print-color-adjust:exact; }
-    .quote-paper { max-width: 100%; }
-    .q-brand { font-size: 28pt; font-weight: 900; text-align: center; margin: 0 0 6px; letter-spacing: 2px; }
-    .q-addr, .q-tel { text-align: center; font-size: 11pt; font-weight: 700; margin: 2px 0; }
-    .q-en { text-align: center; font-size: 22pt; margin: 18px 0 2px; font-weight: 700; letter-spacing: 3px; }
-    .q-zh { text-align: center; font-size: 26pt; margin: 0 0 22px; font-weight: 900; letter-spacing: 14px; }
-    .q-meta { display: flex; justify-content: space-between; font-size: 12pt; font-weight: 700; margin: 10px 0 6px; }
-    .q-addr-line { font-size: 12pt; font-weight: 700; margin-bottom: 14px; }
-    table { width: 100%; border-collapse: collapse; font-size: 11pt; }
-    th { border: 1px solid #000; background: #f2f2f2; padding: 8px 4px; font-weight: 700; text-align: center; }
-    td { border: 1px solid #000; padding: 10px 8px; font-variant-numeric: tabular-nums; }
+    .quote-paper { max-width: 100%; page-break-inside: avoid; break-inside: avoid; }
+    .q-brand { font-size: 22pt; font-weight: 900; text-align: center; margin: 0 0 4px; letter-spacing: 1px; line-height: 1.3; }
+    .q-addr, .q-tel { text-align: center; font-size: 10pt; font-weight: 700; margin: 1pt 0; }
+    .q-en { text-align: center; font-size: 18pt; margin: 8pt 0 0; font-weight: 700; letter-spacing: 2px; }
+    .q-zh { text-align: center; font-size: 22pt; margin: 0 0 12pt; font-weight: 900; letter-spacing: 8px; }
+    .q-meta-grid { display: grid; grid-template-columns: 1fr auto; gap: 10pt; font-size: 10.5pt; font-weight: 700; margin-bottom: 6pt; align-items: start; }
+    .q-meta-left > div { margin-bottom: 2pt; }
+    .q-meta-inline { display: flex; gap: 20pt; }
+    .q-meta-right { text-align: right; }
+    table { width: 100%; border-collapse: collapse; font-size: 10pt; table-layout: fixed; }
+    th { border: 1px solid #000; background: #f2f2f2; padding: 4pt 3pt; font-weight: 700; text-align: center; }
+    td { border: 1px solid #000; padding: 4pt 5pt; font-variant-numeric: tabular-nums; word-break: break-word; height: 22pt; }
     td:nth-child(1) { width: 8%; text-align: center; }
-    td:nth-child(2) { width: 44%; text-align: center; }
+    td:nth-child(2) { width: 46%; text-align: center; }
     td:nth-child(3) { width: 10%; text-align: center; }
-    td:nth-child(4) { width: 18%; text-align: left; padding-left: 14px; }
-    td:nth-child(5) { width: 20%; text-align: left; padding-left: 14px; }
-    .q-footer { display: flex; justify-content: space-between; align-items: baseline; margin-top: 16px; font-size: 12pt; font-weight: 700; }
-    .q-footer .q-total-line { font-size: 14pt; font-weight: 900; }
-    .q-note { font-size: 10pt; margin-top: 4px; }
+    td:nth-child(4) { width: 16%; text-align: left; padding-left: 8pt; }
+    td:nth-child(5) { width: 20%; text-align: left; padding-left: 8pt; }
+    .q-bottom { display: grid; grid-template-columns: 1fr auto; gap: 14pt; margin-top: 8pt; align-items: end; }
+    .q-remark { font-size: 10pt; font-weight: 700; line-height: 1.7; }
+    .q-remark-title { margin-bottom: 2pt; letter-spacing: 4px; }
+    .q-total-area { display: flex; align-items: baseline; gap: 6pt; font-size: 11.5pt; font-weight: 900; white-space: nowrap; }
+    .q-total-line { border-bottom: 1px solid #000; padding: 0 12pt 2pt; font-size: 13pt; min-width: 100pt; text-align: right; }
+    .q-sign { display: grid; grid-template-columns: 1fr auto; gap: 20pt; margin-top: 20pt; align-items: end; page-break-inside: avoid; }
+    .q-sign-label { font-size: 11pt; font-weight: 700; margin-bottom: 6pt; }
+    .q-sign-line { border-bottom: 1px solid #000; height: 28pt; }
+    .q-sign-right { text-align: right; font-size: 11pt; font-weight: 700; line-height: 1.5; }
+    .q-sign-company { font-size: 12pt; font-weight: 900; }
+    .q-sign-tel { font-size: 10pt; margin-top: 2pt; }
+    .q-stamp { margin-top: 14pt; font-size: 9pt; color: #aaa; border: 1.2pt dashed #bbb; padding: 14pt 8pt; width: 80pt; margin-left: auto; text-align: center; letter-spacing: 2px; }
   `;
   const school = (document.getElementById('qSchool').value || '報價單').trim();
   const full = `<!DOCTYPE html><html lang="zh-Hant"><head><meta charset="UTF-8"><title>${escapeHTML(school)} - 報價單</title><style>${css}</style></head><body>${html}</body></html>`;
