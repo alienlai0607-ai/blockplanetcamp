@@ -1031,6 +1031,60 @@
     max-height: 340px; overflow-y: auto;
   }
   .modal-actions { display: flex; gap: 10px; justify-content: flex-end; margin-top: 18px; flex-wrap: wrap; }
+
+  /* ===== Modal 手機版優化（只能上下捲、不橫向、按鈕堆疊） ===== */
+  body.modal-open, html.modal-open { overflow: hidden; }
+  @media (max-width: 640px) {
+    .modal-backdrop {
+      align-items: flex-start;
+      padding: 0;
+      overflow-y: auto;
+      -webkit-overflow-scrolling: touch;
+      overscroll-behavior: contain;
+    }
+    .modal {
+      max-width: 100%;
+      width: 100%;
+      max-height: none;
+      border-radius: 0;
+      border-left: none;
+      border-right: none;
+      box-shadow: none;
+      padding: 20px 16px 36px;
+      min-height: 100vh;
+      overflow: visible;
+    }
+    .modal h2 { font-size: 18px; }
+    .modal .modal-sub { font-size: 12.5px; line-height: 1.6; }
+    .modal-text {
+      max-height: none;
+      overflow: visible;
+      font-size: 12px;
+      padding: 12px;
+      line-height: 1.75;
+      word-break: break-word;
+    }
+    .stepper { margin-bottom: 14px; }
+    .stepper::before { left: 14%; right: 14%; }
+    .bank-info { padding: 12px 14px; }
+    .bank-row { font-size: 13px; flex-wrap: wrap; }
+    .bank-row b { font-size: 13.5px; min-width: 0; word-break: break-word; }
+    .bank-row > span.k { min-width: 42px; }
+    .mini-copy { margin: 4px 0 0; }
+    .last5-row { padding: 12px 14px; }
+    .last5-row input { font-size: 17px; letter-spacing: 5px; }
+    .modal-actions {
+      flex-direction: column;
+      gap: 8px;
+      margin-top: 14px;
+    }
+    .modal-actions .btn {
+      width: 100%;
+      justify-content: center;
+      padding: 14px 16px;
+      font-size: 15px;
+    }
+  }
   .copied-toast {
     position: fixed; top: 24px; left: 50%;
     transform: translateX(-50%) translateY(-80px);
@@ -1737,6 +1791,8 @@
     const text = lines.join('\n');
     document.getElementById('modalText').textContent = text;
     document.getElementById('modalBackdrop').classList.add('open');
+    document.body.classList.add('modal-open');
+    document.documentElement.classList.add('modal-open');
     // 進入 Modal 時預設階段 1；若 sessionStorage 有保留階段則接續
     let savedStage = 1;
     try { savedStage = parseInt(sessionStorage.getItem(LS_STAGE)) || 1; } catch(_) {}
@@ -1797,7 +1853,11 @@
     try { document.querySelector('.modal').scrollTop = 0; } catch(_) {}
   }
 
-  function closeModal() { document.getElementById('modalBackdrop').classList.remove('open'); }
+  function closeModal() {
+    document.getElementById('modalBackdrop').classList.remove('open');
+    document.body.classList.remove('modal-open');
+    document.documentElement.classList.remove('modal-open');
+  }
   document.getElementById('modalBackdrop').addEventListener('click', (e) => {
     if (e.target.id === 'modalBackdrop') closeModal();
   });
