@@ -374,14 +374,17 @@
     while (rows.length < 13) rows.push({ name: '', qty: 0, unit: 0 });
     let total = 0;
     const rowsHTML = rows.map((it, i) => {
-      const sub = (it.qty || 0) * (it.unit || 0);
-      const isEmpty = !it.name && (!it.qty || it.qty === 0) && (!it.unit || it.unit === 0);
+      const qty = it.qty || 0;
+      const unit = it.unit || 0;
+      const sub = qty * unit;
+      // 數量為 0 視為空列：品名/單價/小計全部顯示 0（不計入合計）
+      const isEmpty = qty === 0;
       if (!isEmpty) total += sub;
       return `<tr>
         <td>${i + 1}</td>
         <td>${isEmpty ? '0' : escapeHTML(it.name)}</td>
-        <td>${isEmpty ? 0 : (it.qty || 0)}</td>
-        <td>${isEmpty ? '$0.00' : '$' + (it.unit || 0).toLocaleString()}</td>
+        <td>${isEmpty ? 0 : qty}</td>
+        <td>${isEmpty ? '$0.00' : '$' + unit.toLocaleString()}</td>
         <td>${isEmpty ? '$0.00' : '$' + sub.toLocaleString()}</td>
       </tr>`;
     }).join('');
