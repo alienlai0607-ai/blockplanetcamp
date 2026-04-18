@@ -18,16 +18,17 @@
 
 <style>
   :root {
-    --block-orange: #F5941E;
-    --block-orange-dark: #E07A08;
-    --block-red:    #C93A2A;
-    --block-dark:   #2C3E50;
-    --block-blue:   #4B9CD3;
-    --block-cream:  #FFF8F0;
-    --block-brown:  #3D2817;
-    --paper:        #FFFBF5;
-    --ink-60:       #5A6775;
-    --rule:         #F0E5CC;
+    /* SPIKE Prime 主題配色（黃 + 青綠 + 桃紅 + 黑） */
+    --block-orange:      #FFD100;  /* SPIKE 主黃 */
+    --block-orange-dark: #E8BC00;
+    --block-red:         #E91E63;  /* 機器人桃紅亮點 */
+    --block-dark:        #0F5E7A;  /* 深青綠（header 背景） */
+    --block-blue:        #26BFBF;  /* SPIKE 青綠 */
+    --block-cream:       #FFFBE5;  /* 淡黃底 */
+    --block-brown:       #1A1A1A;  /* 黑描邊（取代棕色） */
+    --paper:             #FFFEF5;
+    --ink-60:            #5A6775;
+    --rule:              #F5E49A;
   }
 
   * { box-sizing: border-box; }
@@ -888,7 +889,7 @@
 
   /* ===== 匯款資訊區塊 ===== */
   .bank-info {
-    background: linear-gradient(135deg, #FFF8F0, #FFF3E0);
+    background: linear-gradient(135deg, #FFFDE7, #FFF4B8);
     border: 2px solid var(--block-orange);
     border-radius: 12px;
     padding: 14px 16px;
@@ -1146,7 +1147,7 @@
 
   <section class="section">
     <div class="section-label"><span class="num">1</span> 商品明細 · ITEMS</div>
-    <div style="background:linear-gradient(135deg,#FFF8F0,#FFF3E0);border:2px dashed var(--block-orange);border-radius:10px;padding:14px 16px;margin-bottom:14px;font-size:13px;color:var(--block-dark);line-height:1.75;">
+    <div style="background:linear-gradient(135deg,#FFFDE7,#FFF4B8);border:2px dashed var(--block-orange);border-radius:10px;padding:14px 16px;margin-bottom:14px;font-size:13px;color:var(--block-dark);line-height:1.75;">
       <b style="color:var(--block-red);font-size:14px">🧱 史派克機器人 SPIKE Prime</b><br>
       LEGO Education SPIKE Prime 不只是積木，而是孩子邁向未來的重要學習工具。透過繽紛的樂高積木與簡單直覺的 Scratch 程式介面，孩子能培養<b style="color:var(--block-red)">邏輯思維、創意思辨與解決問題的能力</b>，在快樂的動手實作過程裡，同時累積不可或缺的 STEAM 素養。<br>
       <span style="color:var(--ink-60);font-size:12px">※ 課程包含：機器人硬體、結構設計、程式設計、比賽規劃</span>
@@ -1525,7 +1526,7 @@
     const el = document.getElementById('syncStatus');
     if (!el) return;
     const palettes = {
-      loading: { bg: '#FFF3E0', color: '#E07A08', border: '#F5941E' },
+      loading: { bg: '#FFF4B8', color: '#0F5E7A', border: '#FFD100' },
       ok:      { bg: '#E8F5E9', color: '#2E7D32', border: '#5BAD5B' },
       warn:    { bg: '#FFEBEE', color: '#C62828', border: '#C93A2A' }
     };
