@@ -625,6 +625,9 @@
   .btn:active { transform: translate(2px,2px); box-shadow: 2px 2px 0 var(--block-dark); }
   .btn-primary { background: var(--block-red); color: #fff; font-weight: 700; }
   .btn-primary:hover { background: #b2301f; }
+  .btn-line { background: #06C755; color: #fff; font-weight: 700; border-color: #05a046; box-shadow: 4px 4px 0 #045a2c; }
+  .btn-line:hover { background: #05a046; box-shadow: 6px 6px 0 #045a2c; }
+  .btn-line:active { box-shadow: 2px 2px 0 #045a2c; }
 
   /* ---------- 彈窗 ---------- */
   .modal-backdrop {
@@ -938,7 +941,8 @@
     <div class="modal-text" id="modalText"></div>
     <div class="modal-actions">
       <button class="btn" onclick="closeModal()">關閉</button>
-      <button class="btn btn-primary" id="copyBtn">📄 複製全部</button>
+      <button class="btn" id="copyBtn">📄 只複製</button>
+      <button class="btn btn-line" id="copyLineBtn">💬 複製並傳給 Alien 老師</button>
     </div>
   </div>
 </div>
@@ -1184,20 +1188,34 @@
     if (e.target.id === 'modalBackdrop') closeModal();
   });
 
-  document.getElementById('copyBtn').addEventListener('click', async () => {
+  const LINE_OFFICIAL = 'https://lin.ee/zFqqFzQ';
+
+  async function copyOrderText() {
     const text = document.getElementById('modalText').textContent;
     try {
       await navigator.clipboard.writeText(text);
       const toast = document.getElementById('toast');
       toast.classList.add('show');
       setTimeout(() => toast.classList.remove('show'), 1800);
+      return true;
     } catch(e) {
       const range = document.createRange();
       range.selectNode(document.getElementById('modalText'));
       window.getSelection().removeAllRanges();
       window.getSelection().addRange(range);
-      alert('已選取訂單內容，請按 Cmd+C / Ctrl+C 複製');
+      return false;
     }
+  }
+
+  document.getElementById('copyBtn').addEventListener('click', async () => {
+    const ok = await copyOrderText();
+    if (!ok) alert('已選取訂單內容，請按 Cmd+C / Ctrl+C 複製');
+  });
+
+  document.getElementById('copyLineBtn').addEventListener('click', async () => {
+    await copyOrderText();
+    // 延遲一小段讓 toast 彈出再開 LINE，使用者才感受到「已複製」
+    setTimeout(() => { window.open(LINE_OFFICIAL, '_blank', 'noopener'); }, 350);
   });
 
   document.addEventListener('keydown', (e) => {
