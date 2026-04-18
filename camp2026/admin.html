@@ -263,7 +263,7 @@ h1 { font-size: 1.5rem; color: #F5941E; font-weight: 900; }
 </div>
 
 <script>
-const API = 'https://script.google.com/macros/s/AKfycbzHFiNvf3C-N2S9LLoN5AonYdjFmRWfRjBUKP9tVF8rS8G1GEj6xPx7i6oK9n2kfw7U/exec';
+const API = 'https://script.google.com/macros/s/AKfycbysKHCkZ68u6VTgru6B9O2QY3udh4zPfqT8u9iSIWmkngfHnjU1QXHWlobkL_XG_Vh8/exec';
 const SITE_PASS = 'BLOCK';       // 整站進入密碼（進站後全開，無二次密碼）
 const SITE_UNLOCK_KEY = 'bp_admin_unlocked_v1';
 let allData = null;
@@ -648,7 +648,7 @@ function spCopyOrderMsg(row) {
   lines.push(`訂單編號 ${o.orderNo}`);
   lines.push(`商品 ${(o.items || '').replace(/\|/g, '、')}（共 ${o.qty} 件）`);
   lines.push(`應付金額 NT$ ${(o.total || 0).toLocaleString()}`);
-  if (o.saved > 0) lines.push(`（布拉克代購已為您省下 NT$ ${o.saved.toLocaleString()}）`);
+  if (o.saved > 0) lines.push(`（學員已為您省下 NT$ ${o.saved.toLocaleString()}）`);
   lines.push('');
   lines.push('匯款資訊 💰');
   lines.push('合作金庫 006 · 5713717233110');

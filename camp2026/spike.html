@@ -1139,8 +1139,8 @@
   <div class="deal-banner">
     <div class="deal-icon">🧱</div>
     <div class="deal-text">
-      <strong>布拉克代購 · 限時特惠</strong>
-      <span>LEGO Education 原廠 SPIKE Prime 主套件，布拉克代購價 <b>省 NT$2,500</b></span>
+      <strong>學員 · 限時特惠</strong>
+      <span>LEGO Education 原廠 SPIKE Prime 主套件，學員價 <b>省 NT$2,500</b></span>
     </div>
     <div class="deal-deadline">🎯 SPIKE Prime</div>
   </div>
@@ -1195,7 +1195,7 @@
 
           <h4>💡 為什麼跟布拉克星球訂</h4>
           <ul>
-            <li>布拉克代購價 <b>NT$15,500</b>（原價 NT$18,000，省 NT$2,500）</li>
+            <li>學員價 <b>NT$15,500</b>（原價 NT$18,000，省 NT$2,500）</li>
             <li>LEGO 原廠教具，直接銜接布拉克課程</li>
             <li>後續零件補齊、課程諮詢支援</li>
           </ul>
@@ -1219,7 +1219,7 @@
             <span class="original">NT$18,000</span>
             <span class="current">15,500</span>
           </div>
-          <span class="save-tag">布拉克代購 · 省 NT$2,500</span>
+          <span class="save-tag">學員 · 省 NT$2,500</span>
           <div class="qty-control">
             <button class="qty-btn minus" aria-label="減少">−</button>
             <input type="number" class="qty-input" value="0" min="0" max="99">
@@ -1266,7 +1266,7 @@
       <span class="value"><span id="totalQty">0</span> 件</span>
     </div>
     <div class="total-row discount" id="savedRow" style="display:none;">
-      <span class="label">布拉克代購 · 已為您節省</span>
+      <span class="label">學員 · 已為您節省</span>
       <span class="value">− NT$ <span id="totalSaved">0</span></span>
     </div>
     <div class="total-row grand">
@@ -1386,7 +1386,7 @@
 <script>
 
   // ========== 訂單邏輯 ==========
-  const MATRIX_API = 'https://script.google.com/macros/s/AKfycbzHFiNvf3C-N2S9LLoN5AonYdjFmRWfRjBUKP9tVF8rS8G1GEj6xPx7i6oK9n2kfw7U/exec';
+  const MATRIX_API = 'https://script.google.com/macros/s/AKfycbysKHCkZ68u6VTgru6B9O2QY3udh4zPfqT8u9iSIWmkngfHnjU1QXHWlobkL_XG_Vh8/exec';
 
   (function() {
     const d = new Date();
@@ -1600,7 +1600,7 @@
 
     lines.push('');
     lines.push('【金額】');
-    if (saved > 0) lines.push(`布拉克代購優惠    − NT$${fmt(saved)}`);
+    if (saved > 0) lines.push(`學員優惠    − NT$${fmt(saved)}`);
     lines.push(`應付總額       NT$${fmt(total)}`);
     lines.push('');
     lines.push(`【備註】${note}`);
