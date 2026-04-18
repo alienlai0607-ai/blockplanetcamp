@@ -252,27 +252,31 @@
   .header-deco.star1 { top: 16px; right: 120px; width: 22px; opacity: .5; animation: twinkle 3s ease-in-out infinite; }
   .header-deco.star2 { bottom: 30px; right: 140px; width: 14px; opacity: .4; animation: twinkle 3s ease-in-out infinite .8s; }
   .brand {
-    display: flex; align-items: center; gap: 14px;
+    display: flex; align-items: center; gap: 18px;
     margin-bottom: 8px;
     position: relative; z-index: 1;
   }
   .brand-mark {
-    width: 52px; height: 52px; border-radius: 50%;
+    width: 76px; height: 76px; border-radius: 50%;
     background: var(--block-cream);
-    border: 2px solid var(--block-orange);
-    box-shadow: 3px 3px 0 rgba(0,0,0,0.3);
+    border: 3px solid var(--block-orange);
+    box-shadow: 4px 4px 0 rgba(0,0,0,0.35);
     transform: rotate(-4deg);
     overflow: hidden;
     display: flex; align-items: center; justify-content: center;
+    flex-shrink: 0;
   }
   .brand-mark img { width: 92%; height: 92%; object-fit: contain; }
   .brand-name {
-    font-size: 14px; letter-spacing: 2px;
+    font-size: 20px; letter-spacing: 3px;
     color: var(--block-orange);
     font-weight: 700;
+    line-height: 1.1;
   }
   .brand-sub {
-    font-size: 11px; color: rgba(255,248,231,0.65); letter-spacing: 1px;
+    font-size: 13px; color: rgba(255,248,231,0.8); letter-spacing: 1.5px;
+    margin-top: 4px;
+    font-weight: 500;
   }
   .title-row {
     display: flex; justify-content: space-between; align-items: flex-end;
@@ -465,8 +469,169 @@
     display: flex; align-items: center; justify-content: center;
     overflow: hidden;
     position: relative;
+    cursor: zoom-in;
+    transition: transform .18s ease, border-color .18s ease;
+  }
+  .product-img:hover {
+    transform: scale(1.03);
+    border-color: var(--block-orange);
   }
   .product-img img { max-width: 100%; max-height: 100%; object-fit: contain; }
+  .zoom-hint {
+    position: absolute;
+    left: 6px; bottom: 6px;
+    background: rgba(44,62,80,.88);
+    color: var(--block-cream);
+    font-size: 10px;
+    padding: 3px 9px;
+    border-radius: 999px;
+    letter-spacing: .5px;
+    font-weight: 700;
+    pointer-events: none;
+    opacity: 0;
+    transition: opacity .2s;
+    z-index: 3;
+  }
+  .product-img:hover .zoom-hint { opacity: 1; }
+
+  /* ===== Lightbox（商品詳情放大） ===== */
+  .lb-backdrop {
+    position: fixed; inset: 0;
+    background: rgba(26,39,51,.82);
+    -webkit-backdrop-filter: blur(6px);
+    backdrop-filter: blur(6px);
+    display: none;
+    align-items: center; justify-content: center;
+    z-index: 700;
+    padding: 20px;
+    animation: fadeIn .25s ease;
+    cursor: zoom-out;
+  }
+  .lb-backdrop.open { display: flex; }
+  .lb-card {
+    background: var(--paper);
+    border: 3px solid var(--block-brown);
+    border-radius: 20px;
+    box-shadow: 10px 10px 0 rgba(0,0,0,.45);
+    max-width: 960px;
+    width: 100%;
+    max-height: 92vh;
+    overflow: hidden;
+    animation: popIn .32s cubic-bezier(.34,1.56,.64,1);
+    display: grid;
+    grid-template-columns: minmax(280px, 46%) 1fr;
+    cursor: default;
+    position: relative;
+  }
+  .lb-close {
+    position: absolute;
+    top: 12px; right: 12px;
+    width: 38px; height: 38px;
+    border: 2px solid var(--block-brown);
+    background: var(--block-red);
+    color: #fff;
+    border-radius: 50%;
+    font-size: 15px; font-weight: 900;
+    cursor: pointer;
+    box-shadow: 3px 3px 0 var(--block-dark);
+    z-index: 2;
+    transition: all .15s cubic-bezier(.34,1.56,.64,1);
+  }
+  .lb-close:hover { transform: translate(-1px,-1px); box-shadow: 4px 4px 0 var(--block-dark); }
+  .lb-close:active { transform: translate(2px,2px); box-shadow: 1px 1px 0 var(--block-dark); }
+  .lb-img-wrap {
+    background: var(--block-cream);
+    display: flex; align-items: center; justify-content: center;
+    padding: 32px;
+    border-right: 2px solid var(--rule);
+    position: relative;
+    min-height: 280px;
+  }
+  .lb-img-wrap img {
+    max-width: 100%;
+    max-height: 420px;
+    object-fit: contain;
+    filter: drop-shadow(0 6px 18px rgba(0,0,0,.12));
+  }
+  .lb-info {
+    padding: 32px 30px 28px;
+    overflow-y: auto;
+    max-height: 92vh;
+  }
+  .lb-sku {
+    display: inline-block;
+    font-family: 'Fredoka', monospace;
+    font-size: 12px; letter-spacing: 1.5px;
+    color: #fff;
+    background: var(--block-dark);
+    padding: 3px 12px;
+    border-radius: 4px;
+    margin-bottom: 10px;
+  }
+  .lb-title {
+    font-size: 22px; font-weight: 900;
+    color: var(--block-dark);
+    margin: 0 0 12px 0;
+    line-height: 1.3;
+  }
+  .lb-price-row {
+    display: flex; align-items: baseline; gap: 10px;
+    margin-bottom: 18px;
+    flex-wrap: wrap;
+    padding-bottom: 14px;
+    border-bottom: 2px dashed var(--rule);
+  }
+  .lb-orig {
+    font-size: 14px; color: var(--ink-60);
+    text-decoration: line-through;
+  }
+  .lb-curr {
+    font-family: 'Fredoka', sans-serif;
+    font-size: 28px; font-weight: 700;
+    color: var(--block-red);
+  }
+  .lb-curr::before { content: 'NT$ '; font-size: 14px; font-weight: 500; }
+  .lb-save {
+    display: inline-block;
+    background: var(--block-red); color: #fff;
+    font-size: 11px; font-weight: 700;
+    padding: 3px 10px;
+    border-radius: 4px;
+    letter-spacing: .5px;
+    transform: rotate(-2deg);
+  }
+  .lb-detail { font-size: 14px; line-height: 1.8; color: var(--block-dark); }
+  .lb-detail h4 {
+    font-size: 13px;
+    color: var(--block-orange);
+    margin: 16px 0 6px 0;
+    font-weight: 700;
+    letter-spacing: 1.5px;
+  }
+  .lb-detail h4:first-child { margin-top: 0; }
+  .lb-detail p { margin: 0 0 10px 0; }
+  .lb-detail ul { padding-left: 20px; margin: 4px 0 10px 0; }
+  .lb-detail li { margin-bottom: 4px; }
+  .lb-detail b { color: var(--block-red); }
+  .lb-detail .tag-row { display: flex; flex-wrap: wrap; gap: 6px; margin: 8px 0 12px; }
+  .lb-detail .tag {
+    background: var(--block-cream);
+    border: 1.5px solid var(--block-orange);
+    padding: 3px 12px;
+    border-radius: 999px;
+    font-size: 12px;
+    color: var(--block-dark);
+    font-weight: 700;
+  }
+
+  @media (max-width: 720px) {
+    .lb-card { grid-template-columns: 1fr; max-height: 94vh; }
+    .lb-img-wrap { border-right: none; border-bottom: 2px solid var(--rule); padding: 20px; min-height: 200px; }
+    .lb-img-wrap img { max-height: 240px; }
+    .lb-info { padding: 22px; }
+    .lb-title { font-size: 18px; }
+    .lb-curr { font-size: 22px; }
+  }
 
   .product-info h3 {
     margin: 0 0 4px 0;
@@ -775,7 +940,6 @@
       <div class="t2">MATRIX 教具訂購</div>
     </div>
   </a>
-  <a href="index.html" class="back-btn">← 返回營隊首頁</a>
 </div>
 
 <div class="sheet">
@@ -790,7 +954,7 @@
       </div>
       <div>
         <div class="brand-name">BLOCK PLANET</div>
-        <div class="brand-sub">布拉克星球 · 創客教育機構</div>
+        <div class="brand-sub">布拉克星球教育機構</div>
       </div>
     </div>
     <div class="title-row">
@@ -825,7 +989,40 @@
             <div class="img-badge-label">含搖桿</div>
             <img src="https://static.wixstatic.com/media/e86b98_969d3c96c21844cdb0b00285f94e017c~mv2.png/v1/fill/w_200,h_200,al_c,q_90,enc_avif,quality_auto/MJ2.png" alt="MJ2 搖桿">
           </div>
+          <div class="zoom-hint">🔍 點圖看詳情</div>
         </div>
+        <template class="product-detail-tpl">
+          <h4>📦 套件概覽</h4>
+          <p>MATRIX R4 為任務賽事級主套件，搭配 MJ2 無線搖桿後為 <b>MARC、WRO</b> 等任務賽的標準配備。課程銜接、賽事訓練、創客作品一次搞定。</p>
+
+          <h4>🧰 內含兩項</h4>
+          <ul>
+            <li><b>MA321 主套件 × 1</b>：包含主控、馬達、感測器、結構件、電池組</li>
+            <li><b>MJ2 無線搖桿 × 1</b>：2.4GHz 無線搖桿（含接收器，延遲低、抗干擾）</li>
+          </ul>
+
+          <h4>🏆 適用賽事 / 情境</h4>
+          <div class="tag-row">
+            <span class="tag">MARC 任務賽</span>
+            <span class="tag">WRO 任務賽</span>
+            <span class="tag">校內競賽</span>
+            <span class="tag">創客課程</span>
+          </div>
+
+          <h4>👥 推薦對象</h4>
+          <ul>
+            <li>中高年級以上、準備參加任務賽事的學員</li>
+            <li>已修完 MATRIX 基礎、需要個人主套件的家庭</li>
+            <li>教練／教室採購、共學小組</li>
+          </ul>
+
+          <h4>💡 為什麼跟布拉克星球訂</h4>
+          <ul>
+            <li>7 月前原廠優惠價（省 NT$2,000）</li>
+            <li>Alien 老師賽事教練輔導，學員可無縫銜接課程</li>
+            <li>後續零件補齊、機構設計諮詢</li>
+          </ul>
+        </template>
         <div class="product-info">
           <span class="sku">MA321 + MJ2</span>
           <h3>MATRIX R4 任務賽事核心套組<span class="bundle-tag">含搖桿</span></h3>
@@ -850,7 +1047,40 @@
       </article>
 
       <article class="product" data-id="mx120" data-price="7000" data-original="8500">
-        <div class="product-img"><img src="https://static.wixstatic.com/media/d3626f_5eb18983c83e4fd9a8a6c384761dc879~mv2.jpg/v1/fill/w_500,h_500,al_c,q_90,enc_avif,quality_auto/MX120.jpg" alt="MATRIX MX120 擴充包"></div>
+        <div class="product-img">
+          <img src="https://static.wixstatic.com/media/d3626f_5eb18983c83e4fd9a8a6c384761dc879~mv2.jpg/v1/fill/w_500,h_500,al_c,q_90,enc_avif,quality_auto/MX120.jpg" alt="MATRIX MX120 擴充包">
+          <div class="zoom-hint">🔍 點圖看詳情</div>
+        </div>
+        <template class="product-detail-tpl">
+          <h4>📦 擴充包定位</h4>
+          <p>MATRIX <b>Expansion Set 120</b> 為進階結構／機構擴充包，補齊主套件所缺的進階零件，讓隊伍在任務機構設計上有更多變化空間。</p>
+
+          <h4>🧰 主要內容</h4>
+          <ul>
+            <li>進階結構件、連接件、支架</li>
+            <li>延伸任務機構所需的齒輪組、軸件</li>
+            <li>可實現更多抓取、舉升、滑軌等任務機構</li>
+          </ul>
+
+          <h4>🧩 適用情境</h4>
+          <div class="tag-row">
+            <span class="tag">MARC 機構升級</span>
+            <span class="tag">WRO 任務設計</span>
+            <span class="tag">零件耗損補充</span>
+          </div>
+
+          <h4>⚙️ 相容性</h4>
+          <ul>
+            <li>完全相容 MATRIX R4 系列主控與馬達</li>
+            <li>與標準 MATRIX 結構件可直接銜接</li>
+          </ul>
+
+          <h4>📌 注意事項</h4>
+          <ul>
+            <li>本包為<b>結構擴充包</b>，不含主控、馬達與感測器</li>
+            <li>需搭配 MA321 或同級主套件使用</li>
+          </ul>
+        </template>
         <div class="product-info">
           <span class="sku">MX120</span>
           <h3>MATRIX Expansion Set 120</h3>
@@ -948,6 +1178,24 @@
 </div>
 
 <div class="copied-toast" id="toast">✅ 已複製到剪貼簿</div>
+
+<!-- 商品詳情 Lightbox -->
+<div class="lb-backdrop" id="lbBackdrop">
+  <div class="lb-card" id="lbCard">
+    <button class="lb-close" id="lbClose" aria-label="關閉">✕</button>
+    <div class="lb-img-wrap"><img id="lbImg" src="" alt=""></div>
+    <div class="lb-info">
+      <span class="lb-sku" id="lbSku"></span>
+      <h2 class="lb-title" id="lbTitle"></h2>
+      <div class="lb-price-row">
+        <span class="lb-orig" id="lbOrig"></span>
+        <span class="lb-curr" id="lbCurr"></span>
+        <span class="lb-save" id="lbSave"></span>
+      </div>
+      <div class="lb-detail" id="lbDetail"></div>
+    </div>
+  </div>
+</div>
 
 </div><!-- /#pageWrap -->
 
@@ -1220,6 +1468,71 @@
 
   document.addEventListener('keydown', (e) => {
     if (e.key === 'Escape') closeModal();
+  });
+
+  // ========== 商品詳情 Lightbox ==========
+  const lbBackdrop = document.getElementById('lbBackdrop');
+  const lbCard = document.getElementById('lbCard');
+  const lbImg = document.getElementById('lbImg');
+  const lbSku = document.getElementById('lbSku');
+  const lbTitle = document.getElementById('lbTitle');
+  const lbOrig = document.getElementById('lbOrig');
+  const lbCurr = document.getElementById('lbCurr');
+  const lbSave = document.getElementById('lbSave');
+  const lbDetail = document.getElementById('lbDetail');
+  let _lbActiveProductId = null;
+
+  function openLightbox(productEl) {
+    const mainImg = productEl.querySelector('.product-img img');
+    const sku = productEl.querySelector('.sku').textContent.trim();
+    const title = productEl.querySelector('h3').childNodes[0].textContent.trim();
+    const price = parseInt(productEl.dataset.price) || 0;
+    const original = parseInt(productEl.dataset.original) || 0;
+    const saved = original - price;
+    const tpl = productEl.querySelector('.product-detail-tpl');
+
+    lbImg.src = mainImg.src;
+    lbImg.alt = mainImg.alt;
+    lbSku.textContent = sku;
+    lbTitle.textContent = title;
+    lbOrig.textContent = original > 0 ? ('NT$' + original.toLocaleString()) : '';
+    lbCurr.textContent = price.toLocaleString();
+    lbSave.textContent = saved > 0 ? ('省 NT$' + saved.toLocaleString()) : '';
+    lbSave.style.display = saved > 0 ? '' : 'none';
+    lbDetail.innerHTML = tpl ? tpl.innerHTML : '';
+
+    lbBackdrop.classList.add('open');
+    document.body.style.overflow = 'hidden';
+    _lbActiveProductId = productEl.dataset.id;
+  }
+
+  function closeLightbox() {
+    lbBackdrop.classList.remove('open');
+    document.body.style.overflow = '';
+    _lbActiveProductId = null;
+  }
+
+  // 商品圖點擊切換：已開同一張 → 關；否則 → 開
+  document.querySelectorAll('.product-img').forEach(el => {
+    el.addEventListener('click', (e) => {
+      if (e.target.closest('.img-badge') && !e.target.closest('.product-img')) return;
+      const product = el.closest('.product');
+      if (!product) return;
+      if (lbBackdrop.classList.contains('open') && _lbActiveProductId === product.dataset.id) {
+        closeLightbox();
+      } else {
+        openLightbox(product);
+      }
+    });
+  });
+
+  // 點背景 / 關閉按鈕 / ESC 關閉
+  lbBackdrop.addEventListener('click', (e) => {
+    if (e.target === lbBackdrop) closeLightbox();
+  });
+  document.getElementById('lbClose').addEventListener('click', closeLightbox);
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape' && lbBackdrop.classList.contains('open')) closeLightbox();
   });
 </script>
 
