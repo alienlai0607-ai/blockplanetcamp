@@ -460,7 +460,9 @@
     box-shadow: 4px 4px 0 var(--block-dark);
     transition: transform .2s cubic-bezier(.34,1.56,.64,1);
   }
+  .product { cursor: zoom-in; }
   .product:hover { transform: translate(-2px,-2px); box-shadow: 6px 6px 0 var(--block-dark); }
+  .product .qty-control, .product .qty-btn, .product .qty-input { cursor: auto; }
   .product-img {
     width: 140px; height: 120px;
     background: var(--block-cream);
@@ -973,9 +975,9 @@
     <div class="deal-icon">🎯</div>
     <div class="deal-text">
       <strong>設備商限時優惠 · DEALER EXCLUSIVE</strong>
-      <span>MATRIX 原廠於 <b>7 月前下訂</b>享優惠價，錯過即恢復原價。</span>
+      <span>MATRIX 原廠於 <b>6/15 前下訂</b>享優惠價，錯過即恢復原價。</span>
     </div>
-    <div class="deal-deadline">⏰ 2026 / 06 / 30 截止</div>
+    <div class="deal-deadline">⏰ 2026 / 06 / 15 截止</div>
   </div>
 
   <section class="section">
@@ -989,7 +991,7 @@
             <div class="img-badge-label">含搖桿</div>
             <img src="https://static.wixstatic.com/media/e86b98_969d3c96c21844cdb0b00285f94e017c~mv2.png/v1/fill/w_200,h_200,al_c,q_90,enc_avif,quality_auto/MJ2.png" alt="MJ2 搖桿">
           </div>
-          <div class="zoom-hint">🔍 點圖看詳情</div>
+          <div class="zoom-hint">🔍 點卡片看詳情</div>
         </div>
         <template class="product-detail-tpl">
           <h4>📦 套件概覽</h4>
@@ -1018,7 +1020,7 @@
 
           <h4>💡 為什麼跟布拉克星球訂</h4>
           <ul>
-            <li>7 月前原廠優惠價（省 NT$2,000）</li>
+            <li>6/15 前原廠優惠價（省 NT$2,000）</li>
             <li>MARC 戰隊訓練專用</li>
             <li>後續零件補齊、機構設計諮詢</li>
           </ul>
@@ -1036,7 +1038,7 @@
             <span class="original">NT$13,500</span>
             <span class="current">11,500</span>
           </div>
-          <span class="save-tag">7 月前優惠 · 省 NT$2,000</span>
+          <span class="save-tag">6/15 前優惠 · 省 NT$2,000</span>
           <div class="qty-control">
             <button class="qty-btn minus" aria-label="減少">−</button>
             <input type="number" class="qty-input" value="0" min="0" max="99">
@@ -1049,7 +1051,7 @@
       <article class="product" data-id="mx120" data-price="7000" data-original="8500">
         <div class="product-img">
           <img src="https://static.wixstatic.com/media/d3626f_5eb18983c83e4fd9a8a6c384761dc879~mv2.jpg/v1/fill/w_500,h_500,al_c,q_90,enc_avif,quality_auto/MX120.jpg" alt="MATRIX MX120 擴充包">
-          <div class="zoom-hint">🔍 點圖看詳情</div>
+          <div class="zoom-hint">🔍 點卡片看詳情</div>
         </div>
         <template class="product-detail-tpl">
           <h4>📦 擴充包定位</h4>
@@ -1094,7 +1096,7 @@
             <span class="original">NT$8,500</span>
             <span class="current">7,000</span>
           </div>
-          <span class="save-tag">7 月前優惠 · 省 NT$1,500</span>
+          <span class="save-tag">6/15 前優惠 · 省 NT$1,500</span>
           <div class="qty-control">
             <button class="qty-btn minus" aria-label="減少">−</button>
             <input type="number" class="qty-input" value="0" min="0" max="99">
@@ -1141,7 +1143,7 @@
       <span class="value"><span id="totalQty">0</span> 件</span>
     </div>
     <div class="total-row discount" id="savedRow" style="display:none;">
-      <span class="label">7 月前優惠 · 已為您節省</span>
+      <span class="label">6/15 前優惠 · 已為您節省</span>
       <span class="value">− NT$ <span id="totalSaved">0</span></span>
     </div>
     <div class="total-row grand">
@@ -1149,7 +1151,7 @@
       <span class="value" id="grandTotal">0</span>
     </div>
     <div class="deadline-note">
-      ⏰ <strong>本優惠價限 2026 年 6 月 30 日前下訂有效</strong>，之後依原廠原價計算。
+      ⏰ <strong>本優惠價限 2026 年 6 月 15 日前下訂有效</strong>，之後依原廠原價計算。
     </div>
   </footer>
 
@@ -1348,7 +1350,7 @@
     let lines = [];
     lines.push('━━━━━━━━━━━━━━━━━━━━━━━━');
     lines.push('  布拉克星球 · MATRIX 教具訂購單');
-    lines.push('  🎯 設備商 7 月前限時優惠');
+    lines.push('  🎯 設備商 6/15 前限時優惠');
     lines.push('━━━━━━━━━━━━━━━━━━━━━━━━');
     lines.push(`訂單編號 ${orderNo}`);
     lines.push(`填單日期 ${orderDate}`);
@@ -1381,12 +1383,12 @@
 
     lines.push('');
     lines.push('【金額】');
-    if (saved > 0) lines.push(`7月前優惠節省  − NT$${fmt(saved)}`);
+    if (saved > 0) lines.push(`6/15 前優惠節省  − NT$${fmt(saved)}`);
     lines.push(`應付總額       NT$${fmt(total)}`);
     lines.push('');
     lines.push(`【備註】${note}`);
     lines.push('');
-    lines.push('⏰ 本優惠價限 2026/06/30 前下訂有效');
+    lines.push('⏰ 本優惠價限 2026/06/15 前下訂有效');
     lines.push('━━━━━━━━━━━━━━━━━━━━━━━━');
 
     const text = lines.join('\n');
@@ -1512,12 +1514,16 @@
     _lbActiveProductId = null;
   }
 
-  // 商品圖點擊切換：已開同一張 → 關；否則 → 開
-  document.querySelectorAll('.product-img').forEach(el => {
-    el.addEventListener('click', (e) => {
-      if (e.target.closest('.img-badge') && !e.target.closest('.product-img')) return;
-      const product = el.closest('.product');
-      if (!product) return;
+  // 整張卡片點擊切換：已開同一張 → 關；否則 → 開
+  // 但點到數量 +/-／input 等互動元件時不觸發
+  document.querySelectorAll('.product').forEach(product => {
+    product.addEventListener('click', (e) => {
+      if (e.target.closest('.qty-control') ||
+          e.target.closest('button') ||
+          e.target.closest('input') ||
+          e.target.closest('select') ||
+          e.target.closest('textarea') ||
+          e.target.closest('a')) return;
       if (lbBackdrop.classList.contains('open') && _lbActiveProductId === product.dataset.id) {
         closeLightbox();
       } else {
