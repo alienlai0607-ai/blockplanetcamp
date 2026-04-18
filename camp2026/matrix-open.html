@@ -826,6 +826,66 @@
   .btn-line:hover { background: #05a046; box-shadow: 6px 6px 0 #045a2c; }
   .btn-line:active { box-shadow: 2px 2px 0 #045a2c; }
 
+  /* ===== Modal Stepper ===== */
+  .stepper {
+    display: flex; justify-content: space-between;
+    gap: 6px;
+    margin: 0 0 18px;
+    position: relative;
+  }
+  .stepper::before {
+    content: '';
+    position: absolute;
+    top: 17px; left: 16%; right: 16%;
+    height: 3px;
+    background: var(--rule);
+    z-index: 0;
+  }
+  .step { flex: 1; text-align: center; position: relative; z-index: 1; }
+  .step-num {
+    width: 36px; height: 36px; margin: 0 auto 4px;
+    border-radius: 50%;
+    background: #fff;
+    border: 2.5px solid var(--rule);
+    color: var(--ink-60);
+    font-family: 'Fredoka', sans-serif;
+    font-size: 15px; font-weight: 700;
+    display: flex; align-items: center; justify-content: center;
+    transition: all .3s cubic-bezier(.34,1.56,.64,1);
+  }
+  .step.active .step-num {
+    border-color: var(--block-orange);
+    background: var(--block-orange);
+    color: #fff;
+    box-shadow: 2px 2px 0 var(--block-brown);
+    transform: scale(1.08);
+  }
+  .step.done .step-num {
+    border-color: var(--block-orange);
+    background: #fff;
+    color: var(--block-orange);
+  }
+  .step.done .step-num::before { content: '✓'; font-size: 18px; }
+  .step.done .step-num-val { display: none; }
+  .step-label {
+    font-size: 11px;
+    color: var(--ink-60);
+    font-weight: 700;
+    letter-spacing: .5px;
+  }
+  .step.active .step-label { color: var(--block-orange); }
+  .step.done .step-label { color: var(--block-dark); }
+
+  .stage-panel { animation: stageIn .25s ease; }
+  @keyframes stageIn { from { opacity: 0; transform: translateY(6px) } to { opacity: 1; transform: none } }
+
+  @media (max-width: 520px) {
+    .step-num { width: 30px; height: 30px; font-size: 13px; }
+    .step.done .step-num::before { font-size: 15px; }
+    .step-label { font-size: 10px; letter-spacing: 0; }
+    .stepper::before { top: 14px; }
+  }
+
   /* ===== 匯款資訊區塊 ===== */
   .bank-info {
     background: linear-gradient(135deg, #FFF8F0, #FFF3E0);
@@ -1024,7 +1084,7 @@
   <div class="deal-banner">
     <div class="deal-icon">🎯</div>
     <div class="deal-text">
-      <strong>設備商限時優惠 · DEALER EXCLUSIVE</strong>
+      <strong>MARC 戰隊家長限定 · 原廠特惠</strong>
       <span>MATRIX 原廠於 <b>6/15 前下訂</b>享優惠價，錯過即恢復原價。</span>
     </div>
     <div class="deal-deadline">⏰ 2026 / 06 / 15 截止</div>
@@ -1032,6 +1092,9 @@
 
   <section class="section">
     <div class="section-label"><span class="num">1</span> 商品明細 · ITEMS</div>
+    <div style="background:linear-gradient(135deg,#FFF8F0,#FFF3E0);border:2px dashed var(--block-orange);border-radius:10px;padding:10px 14px;margin-bottom:14px;font-size:13px;color:var(--block-dark);line-height:1.6;">
+      💡 <b style="color:var(--block-red)">推薦組合</b>：主套件 + 擴充包一起買，MARC 任務機構設計自由度最高，零件也更齊全 🧩
+    </div>
     <div class="products">
 
       <article class="product" data-id="ma321-bundle" data-price="11500" data-original="13500">
@@ -1049,7 +1112,7 @@
 
           <h4>🧰 內含兩項</h4>
           <ul>
-            <li><b>MA321 主套件 × 1</b>：包含主控、馬達、感測器、結構件、電池組</li>
+            <li><b>MA321 主套件 × 1</b>：包含主控、馬達、感測器、結構件（不含電池）</li>
             <li><b>MJ2 無線搖桿 × 1</b>：2.4GHz 無線搖桿（含接收器，延遲低、抗干擾）</li>
           </ul>
 
@@ -1059,6 +1122,14 @@
             <span class="tag">WRO 任務賽</span>
             <span class="tag">校內競賽</span>
             <span class="tag">創客課程</span>
+          </div>
+
+          <h4>🎓 適合年級</h4>
+          <div class="tag-row">
+            <span class="tag">國小中年級</span>
+            <span class="tag">國小高年級</span>
+            <span class="tag">國中</span>
+            <span class="tag">高中</span>
           </div>
 
           <h4>👥 推薦對象</h4>
@@ -1119,6 +1190,14 @@
             <span class="tag">MARC 機構升級</span>
             <span class="tag">WRO 任務設計</span>
             <span class="tag">零件耗損補充</span>
+          </div>
+
+          <h4>🎓 適合年級</h4>
+          <div class="tag-row">
+            <span class="tag">國小中年級</span>
+            <span class="tag">國小高年級</span>
+            <span class="tag">國中</span>
+            <span class="tag">高中</span>
           </div>
 
           <h4>⚙️ 相容性</h4>
@@ -1217,36 +1296,71 @@
 
 <div class="modal-backdrop" id="modalBackdrop">
   <div class="modal">
-    <h2>✅ 訂單送出成功</h2>
-    <p class="modal-sub">系統已收到您的訂單。下一步請匯款並填入末 5 碼，按最下方綠色按鈕一鍵傳給布拉克行政老師。</p>
-    <div id="syncStatus" style="margin-bottom:14px;padding:10px 14px;border-radius:10px;font-size:13px;font-weight:700;display:flex;align-items:center;gap:8px;"></div>
-    <div class="modal-text" id="modalText"></div>
+    <h2 id="modalTitle">✅ 訂單送出成功</h2>
 
-    <div class="bank-info">
-      <div class="bank-info-title">💰 下一步：請依下列資訊匯款</div>
-      <div class="bank-row"><span class="k">銀行</span><b>006 合作金庫</b></div>
-      <div class="bank-row">
-        <span class="k">帳號</span>
-        <b id="bankAcct">5713717233110</b>
-        <button type="button" class="mini-copy" data-copy="5713717233110">複製帳號</button>
+    <div class="stepper" id="stepper">
+      <div class="step active" data-step="1">
+        <div class="step-num"><span class="step-num-val">1</span></div>
+        <div class="step-label">訂單確認</div>
       </div>
-      <div class="bank-row"><span class="k">戶名</span><b>賴柏翰</b></div>
-      <div class="bank-note">
-        （臺南市私立布拉克星球文理技藝短期補習班）<br>
-        匯款完成後，請將帳號<b style="color:var(--block-red)">末 5 碼</b>填入下方欄位，一起傳給布拉克行政老師確認 🙏
+      <div class="step" data-step="2">
+        <div class="step-num"><span class="step-num-val">2</span></div>
+        <div class="step-label">匯款</div>
+      </div>
+      <div class="step" data-step="3">
+        <div class="step-num"><span class="step-num-val">3</span></div>
+        <div class="step-label">通知老師</div>
       </div>
     </div>
 
-    <div class="last5-row">
-      <label class="label">匯款末 5 碼 <span class="hint">（請填 5 位數字；若尚未匯款可留空）</span></label>
-      <input id="last5" inputmode="numeric" pattern="[0-9]{5}" maxlength="5" placeholder="_ _ _ _ _" autocomplete="off">
-      <span class="last5-status empty" id="last5Status">尚未填寫（按下綠色鍵將只傳訂單摘要）</span>
+    <div id="syncStatus" style="margin-bottom:14px;padding:10px 14px;border-radius:10px;font-size:13px;font-weight:700;display:none;align-items:center;gap:8px;"></div>
+
+    <!-- 階段 1：訂單摘要 -->
+    <div class="stage-panel" data-stage="1">
+      <p class="modal-sub">系統已收到您的訂單，下方為摘要。請保留這個頁面依序完成 <b>匯款</b> 與 <b>通知老師</b> 兩步 🙏</p>
+      <div class="modal-text" id="modalText"></div>
+      <div class="modal-actions">
+        <button type="button" class="btn" onclick="closeModal()">先關閉</button>
+        <button type="button" class="btn btn-primary" onclick="gotoStage(2)">下一步：前往匯款 →</button>
+      </div>
     </div>
 
-    <div class="modal-actions">
-      <button class="btn" onclick="closeModal()">關閉</button>
-      <button class="btn" id="copyBtn">📄 只複製</button>
-      <button class="btn btn-line" id="copyLineBtn">💬 複製並傳給布拉克行政老師</button>
+    <!-- 階段 2：匯款資訊 -->
+    <div class="stage-panel" data-stage="2" style="display:none">
+      <p class="modal-sub">請依下列資訊匯款。手機家長可點「複製帳號」再貼到您的銀行 App。</p>
+      <div class="bank-info">
+        <div class="bank-info-title">💰 匯款資訊</div>
+        <div class="bank-row"><span class="k">銀行</span><b>006 合作金庫</b></div>
+        <div class="bank-row">
+          <span class="k">帳號</span>
+          <b id="bankAcct">5713717233110</b>
+          <button type="button" class="mini-copy" data-copy="5713717233110">複製帳號</button>
+        </div>
+        <div class="bank-row"><span class="k">戶名</span><b>賴柏翰</b></div>
+        <div class="bank-note">
+          （臺南市私立布拉克星球文理技藝短期補習班）<br>
+          匯款完成後，請點「下一步」填入帳號<b style="color:var(--block-red)">末 5 碼</b>通知行政老師 🙏
+        </div>
+      </div>
+      <div class="modal-actions">
+        <button type="button" class="btn" onclick="gotoStage(1)">← 上一步</button>
+        <button type="button" class="btn btn-primary" onclick="gotoStage(3)">下一步：我已匯款 →</button>
+      </div>
+    </div>
+
+    <!-- 階段 3：末 5 碼 + LINE -->
+    <div class="stage-panel" data-stage="3" style="display:none">
+      <p class="modal-sub">填入匯款帳號末 5 碼，一鍵複製訂單摘要 + 末 5 碼，並開啟 LINE 貼給行政老師。</p>
+      <div class="last5-row">
+        <label class="label">匯款末 5 碼 <span class="hint">（請填 5 位數字；尚未匯款可留空）</span></label>
+        <input id="last5" inputmode="numeric" pattern="[0-9]{5}" maxlength="5" placeholder="_ _ _ _ _" autocomplete="off">
+        <span class="last5-status empty" id="last5Status">尚未填寫（按下綠色鍵將只傳訂單摘要）</span>
+      </div>
+      <div class="modal-actions">
+        <button type="button" class="btn" onclick="gotoStage(2)">← 上一步</button>
+        <button type="button" class="btn" id="copyBtn">📄 只複製</button>
+        <button type="button" class="btn btn-line" id="copyLineBtn">💬 複製並傳給行政老師</button>
+      </div>
     </div>
   </div>
 </div>
@@ -1316,18 +1430,99 @@
     p.querySelector('.minus').addEventListener('click', () => {
       input.value = Math.max(0, (parseInt(input.value) || 0) - 1);
       recalc();
+      saveDraft();
     });
     p.querySelector('.plus').addEventListener('click', () => {
       input.value = Math.min(99, (parseInt(input.value) || 0) + 1);
       recalc();
+      saveDraft();
     });
     input.addEventListener('input', () => {
       let v = parseInt(input.value) || 0;
       v = Math.max(0, Math.min(99, v));
       input.value = v;
       recalc();
+      saveDraft();
     });
   });
+
+  // ========== 表單草稿（localStorage）==========
+  const LS_DRAFT = 'bp_matrix_draft_v1';
+  const LS_DRAFT_TTL = 7 * 24 * 3600 * 1000;
+
+  function saveDraft() {
+    const data = {
+      ts: Date.now(),
+      parentName: document.getElementById('parentName').value,
+      phone: document.getElementById('phone').value,
+      studentName: document.getElementById('studentName').value,
+      team: document.getElementById('team').value,
+      note: document.getElementById('note').value,
+      qty: Array.from(products).map(p => p.querySelector('.qty-input').value)
+    };
+    try { localStorage.setItem(LS_DRAFT, JSON.stringify(data)); } catch(_) {}
+  }
+
+  function restoreDraft() {
+    try {
+      const raw = localStorage.getItem(LS_DRAFT);
+      if (!raw) return false;
+      const data = JSON.parse(raw);
+      if (!data || !data.ts || Date.now() - data.ts > LS_DRAFT_TTL) {
+        localStorage.removeItem(LS_DRAFT);
+        return false;
+      }
+      let restored = false;
+      ['parentName','phone','studentName','team','note'].forEach(id => {
+        if (data[id]) { document.getElementById(id).value = data[id]; restored = true; }
+      });
+      if (Array.isArray(data.qty)) {
+        products.forEach((p, i) => {
+          if (data.qty[i] != null) {
+            const v = parseInt(data.qty[i]) || 0;
+            if (v > 0) { p.querySelector('.qty-input').value = v; restored = true; }
+          }
+        });
+        recalc();
+      }
+      return restored;
+    } catch(_) { return false; }
+  }
+
+  function showDraftRestoredHint() {
+    const el = document.createElement('div');
+    el.textContent = '✨ 已為您還原上次未完成的填寫';
+    el.style.cssText = 'position:fixed;top:70px;left:50%;transform:translateX(-50%);background:var(--block-orange);color:#fff;padding:10px 20px;border-radius:999px;font-size:13px;font-weight:700;box-shadow:4px 4px 0 var(--block-brown);z-index:300;';
+    document.body.appendChild(el);
+    setTimeout(() => { el.style.opacity = '0'; el.style.transition = 'opacity .5s'; }, 2800);
+    setTimeout(() => el.remove(), 3400);
+  }
+
+  ['parentName','phone','studentName','team','note'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.addEventListener('input', saveDraft);
+  });
+
+  setTimeout(() => {
+    if (restoreDraft()) showDraftRestoredHint();
+  }, 300);
+
+  // ===== Modal 階段切換 =====
+  const LS_STAGE = 'bp_matrix_stage_v1';
+  function gotoStage(n) {
+    n = parseInt(n) || 1;
+    if (n < 1) n = 1; if (n > 3) n = 3;
+    document.querySelectorAll('.stage-panel').forEach(p => {
+      p.style.display = (parseInt(p.dataset.stage) === n) ? '' : 'none';
+    });
+    document.querySelectorAll('.stepper .step').forEach(s => {
+      const sn = parseInt(s.dataset.step);
+      s.classList.toggle('active', sn === n);
+      s.classList.toggle('done', sn < n);
+    });
+    try { sessionStorage.setItem(LS_STAGE, String(n)); } catch(_) {}
+    try { document.querySelector('.modal').scrollTop = 0; } catch(_) {}
+  }
 
   let orderSubmitted = false;  // 防重送（同一批訂單不重覆寫入）
 
@@ -1343,6 +1538,7 @@
     el.style.background = p.bg;
     el.style.color = p.color;
     el.style.border = `2px solid ${p.border}`;
+    el.style.display = 'flex';
     el.textContent = msg;
   }
 
@@ -1375,7 +1571,7 @@
     let lines = [];
     lines.push('━━━━━━━━━━━━━━━━━━━━━━━━');
     lines.push('  布拉克星球 · MATRIX 教具訂購單');
-    lines.push('  🎯 設備商 6/15 前限時優惠');
+    lines.push('  🎯 MARC 戰隊家長限定 · 6/15 前特惠');
     lines.push('━━━━━━━━━━━━━━━━━━━━━━━━');
     lines.push(`訂單編號 ${orderNo}`);
     lines.push(`填單日期 ${orderDate}`);
@@ -1419,6 +1615,9 @@
     const text = lines.join('\n');
     document.getElementById('modalText').textContent = text;
     document.getElementById('modalBackdrop').classList.add('open');
+    let savedStage = 1;
+    try { savedStage = parseInt(sessionStorage.getItem(LS_STAGE)) || 1; } catch(_) {}
+    gotoStage(savedStage);
 
     // 同步到 Google 試算表（只在第一次送出才寫入）
     if (orderSubmitted) {

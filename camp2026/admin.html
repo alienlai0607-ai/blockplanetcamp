@@ -218,7 +218,7 @@ h1 { font-size: 1.5rem; color: #F5941E; font-weight: 900; }
           <option value="已付款">僅已付款</option>
           <option value="已出貨">僅已出貨</option>
         </select>
-        <input id="mxSearch" type="text" placeholder="搜尋姓名／電話／訂單編號" style="flex:2;min-width:180px;padding:10px 14px;border-radius:10px;border:2px solid #eee;font-weight:700;font-family:inherit;font-size:.9rem" />
+        <input id="mxSearch" type="text" placeholder="搜尋姓名／電話／訂單編號／末5碼／備忘" style="flex:2;min-width:180px;padding:10px 14px;border-radius:10px;border:2px solid #eee;font-weight:700;font-family:inherit;font-size:.9rem" />
         <button onclick="loadMatrixOrders()" style="padding:10px 18px;background:#F5941E;color:white;border:none;border-radius:10px;font-weight:900;cursor:pointer;font-family:inherit">↻ 重新整理</button>
       </div>
     </div>
@@ -341,6 +341,18 @@ function mxStatusBadge(status) {
   return `<span style="background:${c.bg};color:${c.color};padding:3px 10px;border-radius:50px;font-size:.78rem;font-weight:900;white-space:nowrap">${c.icon} ${status}</span>`;
 }
 
+function extractLast5(memo) {
+  if (!memo) return '';
+  const m1 = String(memo).match(/末\s*5\s*碼[^\d]*(\d{5})/);
+  if (m1) return m1[1];
+  const m2 = String(memo).match(/\b(\d{5})\b/);
+  return m2 ? m2[1] : '';
+}
+
+function escapeHTML(s) {
+  return String(s || '').replace(/[&<>"']/g, c => ({ '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#39;' }[c]));
+}
+
 function renderMatrixList() {
   const list = document.getElementById('mxList');
   const filter = document.getElementById('mxFilter').value;
@@ -351,19 +363,25 @@ function renderMatrixList() {
     (o.parent || '').toLowerCase().includes(search) ||
     (o.phone || '').toLowerCase().includes(search) ||
     (o.orderNo || '').toLowerCase().includes(search) ||
-    (o.student || '').toLowerCase().includes(search)
+    (o.student || '').toLowerCase().includes(search) ||
+    (o.memo || '').toLowerCase().includes(search) ||
+    (o.note || '').toLowerCase().includes(search)
   );
   if (orders.length === 0) {
     list.innerHTML = '<div class="card" style="text-align:center;color:#aaa;padding:40px">📋 沒有符合條件的訂單</div>';
     return;
   }
-  list.innerHTML = orders.map(o => `
+  list.innerHTML = orders.map(o => {
+    const last5 = extractLast5(o.memo);
+    return `
     <div class="card" style="margin-bottom:12px">
       <div style="display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:10px;margin-bottom:10px">
         <div>
-          <div style="font-size:.72rem;color:#aaa;font-weight:700;letter-spacing:1px">${o.orderNo}</div>
-          <div style="font-size:1.05rem;font-weight:900;margin-top:2px">${o.parent} <span style="font-size:.82rem;color:#888;font-weight:500">｜ 📱 ${o.phone}</span></div>
-          <div style="font-size:.82rem;color:#666;margin-top:2px">👦 ${o.student || '—'} ｜ 🏷️ ${o.team || '—'} ｜ 🕒 ${o.createdAt}</div>
+          <div style="font-size:.72rem;color:#aaa;font-weight:700;letter-spacing:1px">${escapeHTML(o.orderNo)}</div>
+          <div style="font-size:1.05rem;font-weight:900;margin-top:2px">${escapeHTML(o.parent)} <span style="font-size:.82rem;color:#888;font-weight:500">｜ 📱 ${escapeHTML(o.phone)}</span>
+            ${last5 ? `<span style="background:#E3F2FD;color:#1565C0;padding:2px 8px;border-radius:50px;font-size:.72rem;font-weight:900;margin-left:6px">末5碼 ${last5}</span>` : ''}
+          </div>
+          <div style="font-size:.82rem;color:#666;margin-top:2px">👦 ${escapeHTML(o.student) || '—'} ｜ 🏷️ ${escapeHTML(o.team) || '—'} ｜ 🕒 ${escapeHTML(o.createdAt)}</div>
         </div>
         <div style="text-align:right">
           <div style="font-size:1.4rem;font-weight:900;color:#C93A2A">$${(o.total || 0).toLocaleString()}</div>
@@ -372,22 +390,25 @@ function renderMatrixList() {
         </div>
       </div>
       <div style="background:#FFF8F0;border-left:3px solid #F5941E;padding:8px 12px;border-radius:6px;font-size:.85rem;color:#555;margin-bottom:8px">
-        📦 ${(o.items || '—').replace(/\|/g, ' ｜ ')} <span style="color:#888">（共 ${o.qty} 件）</span>
+        📦 ${escapeHTML(o.items || '—').replace(/\|/g, ' ｜ ')} <span style="color:#888">（共 ${o.qty} 件）</span>
       </div>
-      ${o.note ? `<div style="font-size:.8rem;color:#888;margin-bottom:6px">📝 訂購備註：${o.note}</div>` : ''}
-      <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-top:10px;padding-top:10px;border-top:1px dashed #eee">
-        <span style="font-size:.75rem;color:#aaa;font-weight:700">狀態：</span>
+      ${o.note ? `<div style="font-size:.8rem;color:#888;margin-bottom:6px">📝 家長備註：${escapeHTML(o.note)}</div>` : ''}
+      <div style="margin-bottom:10px">
+        <label style="display:block;font-size:.7rem;color:#aaa;font-weight:700;letter-spacing:1px;margin-bottom:4px">🗒️ 管理員備忘（支援末5碼自動辨識；離開欄位即自動儲存）</label>
+        <textarea class="mx-memo" data-row="${o.row}" placeholder="例：末5碼 12345、3/5 已收款 $11500、3/10 到貨" style="width:100%;min-height:46px;padding:8px 10px;border:2px solid #eee;border-radius:8px;font-family:inherit;font-size:.85rem;resize:vertical;outline:none;transition:border-color .2s">${escapeHTML(o.memo)}</textarea>
+      </div>
+      <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;padding-top:8px;border-top:1px dashed #eee">
+        <span style="font-size:.75rem;color:#aaa;font-weight:700">狀態</span>
         <select onchange="mxChangeStatus(${o.row}, this.value)" style="padding:6px 12px;border-radius:8px;border:2px solid #eee;font-weight:700;font-family:inherit;font-size:.82rem;cursor:pointer">
           <option value="未付款" ${o.status === '未付款' ? 'selected' : ''}>💰 未付款</option>
           <option value="已付款" ${o.status === '已付款' ? 'selected' : ''}>✅ 已付款</option>
           <option value="已出貨" ${o.status === '已出貨' ? 'selected' : ''}>📦 已出貨</option>
         </select>
-        <button onclick="mxEditMemo(${o.row})" style="padding:6px 14px;background:none;border:2px solid #eee;border-radius:8px;font-weight:700;color:#666;cursor:pointer;font-family:inherit;font-size:.82rem">📝 ${o.memo ? '編輯備忘' : '加備忘'}</button>
-        <button onclick="mxCopyMsg(${o.row})" style="padding:6px 14px;background:#06C755;color:white;border:none;border-radius:8px;font-weight:700;cursor:pointer;font-family:inherit;font-size:.82rem">💬 複製訊息</button>
-        ${o.memo ? `<div style="flex:1;min-width:200px;padding:6px 10px;background:#FFF8E1;border-left:3px solid #FFC107;font-size:.78rem;color:#795548;border-radius:4px">🗒️ ${o.memo}</div>` : ''}
+        <button onclick="mxCopyOrderMsg(${o.row})" style="padding:6px 14px;background:#06C755;color:white;border:none;border-radius:8px;font-weight:700;cursor:pointer;font-family:inherit;font-size:.82rem">💬 訂單確認</button>
+        <button onclick="mxCopyDeliveryMsg(${o.row})" style="padding:6px 14px;background:#1565C0;color:white;border:none;border-radius:8px;font-weight:700;cursor:pointer;font-family:inherit;font-size:.82rem">📦 到貨通知</button>
       </div>
-    </div>
-  `).join('');
+    </div>`;
+  }).join('');
 }
 
 async function mxChangeStatus(row, status) {
@@ -401,19 +422,32 @@ async function mxChangeStatus(row, status) {
   } catch(e) { alert('❌ 連線失敗'); }
 }
 
-async function mxEditMemo(row) {
+// Inline 備忘儲存（blur 時觸發，只有變動才存）
+async function saveMemoInline(row, memo, el) {
   const o = _mxOrders.find(x => x.row === row);
-  const memo = prompt('管理員備忘（例：已收款 $11500、3/5 到貨）', o ? o.memo : '');
-  if (memo === null) return;
+  if (!o) return;
+  if (memo === (o.memo || '')) return;
+  el.style.borderColor = '#F5941E';
   try {
     const res = await fetch(API + '?action=matrix-status&key=' + MX_ADMIN_KEY + '&row=' + row + '&memo=' + encodeURIComponent(memo));
     const data = await res.json();
-    if (!data.success) { alert('❌ 更新失敗：' + (data.error || '')); return; }
+    if (!data.success) { el.style.borderColor = '#C93A2A'; alert('❌ 備忘儲存失敗：' + (data.error || '')); return; }
+    o.memo = memo;
+    el.style.borderColor = '#5BAD5B';
+    setTimeout(() => { el.style.borderColor = '#eee'; }, 900);
+    // 重抓 stats + 末5碼 badge（不完全重繪以免焦點丟失）
     loadMatrixOrders();
-  } catch(e) { alert('❌ 連線失敗'); }
+  } catch(_) { el.style.borderColor = '#C93A2A'; alert('❌ 連線失敗'); }
 }
 
-function mxCopyMsg(row) {
+document.addEventListener('focusout', (e) => {
+  if (!e.target.classList || !e.target.classList.contains('mx-memo')) return;
+  const row = parseInt(e.target.dataset.row);
+  saveMemoInline(row, e.target.value, e.target);
+}, true);
+
+// 訂單確認訊息
+function mxCopyOrderMsg(row) {
   const o = _mxOrders.find(x => x.row === row);
   if (!o) return;
   const lines = [];
@@ -423,10 +457,35 @@ function mxCopyMsg(row) {
   lines.push(`訂單編號 ${o.orderNo}`);
   lines.push(`商品 ${(o.items || '').replace(/\|/g, '、')}（共 ${o.qty} 件）`);
   lines.push(`應付金額 NT$ ${(o.total || 0).toLocaleString()}`);
-  if (o.saved > 0) lines.push(`（7 月前優惠已為您省下 NT$ ${o.saved.toLocaleString()}）`);
+  if (o.saved > 0) lines.push(`（6/15 前優惠已為您省下 NT$ ${o.saved.toLocaleString()}）`);
   lines.push('');
-  lines.push('付款方式將由 布拉克行政老師另行告知，感謝您的支持 🌟');
-  const text = lines.join('\n');
+  lines.push('匯款資訊 💰');
+  lines.push('合作金庫 006 · 5713717233110');
+  lines.push('戶名：賴柏翰（臺南市私立布拉克星球文理技藝短期補習班）');
+  lines.push('');
+  lines.push('匯款後請提供帳號末 5 碼供我們對帳，感謝您的支持 🌟');
+  copyToClipboardWithToast(lines.join('\n'));
+}
+
+// 到貨通知訊息
+function mxCopyDeliveryMsg(row) {
+  const o = _mxOrders.find(x => x.row === row);
+  if (!o) return;
+  const lines = [];
+  lines.push(`您好 ${o.parent} 爸媽 📦`);
+  lines.push('');
+  lines.push(`您訂購的 MATRIX 教具已到貨！`);
+  lines.push(`訂單編號 ${o.orderNo}`);
+  lines.push(`商品：${(o.items || '').replace(/\|/g, '、')}（共 ${o.qty} 件）`);
+  lines.push('');
+  lines.push('請於下次上課時間來布拉克星球領取 🌟');
+  lines.push('若需另約取貨時間，請隨時告知～');
+  lines.push('');
+  lines.push('感謝您的支持！');
+  copyToClipboardWithToast(lines.join('\n'));
+}
+
+function copyToClipboardWithToast(text) {
   navigator.clipboard.writeText(text).then(
     () => alert('✅ 已複製訊息，可直接貼 LINE'),
     () => { prompt('請手動複製：', text); }
