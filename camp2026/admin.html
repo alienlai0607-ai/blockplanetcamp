@@ -466,9 +466,19 @@ h1 { font-size: 1.5rem; color: #F5941E; font-weight: 900; }
               <button onclick="addQuoteItem()" style="padding:4px 12px;background:#FFD100;color:#002E51;border:none;border-radius:50px;font-weight:900;font-size:.78rem;cursor:pointer;font-family:inherit">+ 新增</button>
             </div>
             <div id="qItems" style="margin-top:8px"></div>
+            <div style="background:#FFF9D6;border:2px dashed #FFD100;border-radius:10px;padding:10px 12px;margin-top:10px">
+              <div style="font-size:.78rem;color:#002E51;font-weight:700;margin-bottom:6px">🧱 SPIKE 標準套裝（一鍵按套數倍增）</div>
+              <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+                <label style="font-size:.82rem;font-weight:700;color:#002E51">套數</label>
+                <input id="qSets" type="number" min="1" max="50" value="1" style="width:70px;padding:6px 10px;border:2px solid #002E51;border-radius:6px;text-align:center;font-weight:900;font-family:inherit;font-size:.95rem" oninput="updatePresetBtnLabel()">
+                <button id="qPresetBtn" onclick="applySpikePreset()" style="flex:1;min-width:140px;padding:8px 14px;background:#002E51;color:#FFD100;border:none;border-radius:8px;font-weight:900;cursor:pointer;font-family:inherit;font-size:.85rem">🔁 套用 1 套預設</button>
+              </div>
+              <div style="font-size:.7rem;color:#666;margin-top:6px;line-height:1.5">
+                一套 = 45678×2 ／ 45681×2 ／ 矽膠輪胎×10 ／ 搖桿＋接收器×5
+              </div>
+            </div>
             <div style="display:flex;gap:6px;margin-top:8px;flex-wrap:wrap">
-              <button onclick="loadQuotePreset('default')" style="padding:6px 12px;background:none;border:1.5px dashed #002E51;color:#002E51;border-radius:6px;font-weight:700;cursor:pointer;font-family:inherit;font-size:.78rem">📋 載入 SPIKE 常用組合</button>
-              <button onclick="clearQuoteItems()" style="padding:6px 12px;background:none;border:1.5px dashed #aaa;color:#666;border-radius:6px;font-weight:700;cursor:pointer;font-family:inherit;font-size:.78rem">🗑️ 清空</button>
+              <button onclick="clearQuoteItems()" style="padding:6px 12px;background:none;border:1.5px dashed #aaa;color:#666;border-radius:6px;font-weight:700;cursor:pointer;font-family:inherit;font-size:.78rem">🗑️ 清空全部品項</button>
             </div>
           </div>
 
@@ -915,14 +925,32 @@ document.addEventListener('change', (e) => {
 });
 
 // ========== 學校報價單產生器 ==========
+// 每套基本配比（qtyPerSet = 一套的數量）
 const QUOTE_PRESETS = {
-  default: [
-    { name: 'LEGO SPIKE PRIME  編號 45678', qty: 2, unit: 15900 },
-    { name: 'LEGO SPIKE  擴充套件  編號 45681', qty: 2, unit: 5000 },
-    { name: '樂高矽膠輪胎', qty: 10, unit: 160 },
-    { name: '樂高搖桿＋接收器', qty: 5, unit: 1200 }
+  spike: [
+    { name: 'LEGO SPIKE PRIME  編號 45678', qtyPerSet: 2, unit: 15900 },
+    { name: 'LEGO SPIKE  擴充套件  編號 45681', qtyPerSet: 2, unit: 5000 },
+    { name: '樂高矽膠輪胎', qtyPerSet: 10, unit: 160 },
+    { name: '樂高搖桿＋接收器', qtyPerSet: 5, unit: 1200 }
   ]
 };
+
+function updatePresetBtnLabel() {
+  const sets = parseInt(document.getElementById('qSets')?.value) || 1;
+  const btn = document.getElementById('qPresetBtn');
+  if (btn) btn.textContent = `🔁 套用 ${sets} 套預設`;
+}
+function applySpikePreset() {
+  const sets = Math.max(1, parseInt(document.getElementById('qSets').value) || 1);
+  _quoteItems = QUOTE_PRESETS.spike.map(it => ({
+    name: it.name,
+    qty: (it.qtyPerSet || 0) * sets,
+    unit: it.unit
+  }));
+  renderQuoteItems();
+  renderQuotePreview();
+  saveQuoteDraft();
+}
 const LS_QUOTE = 'bp_spike_quote_v1';
 let _quoteItems = [];
 
@@ -936,13 +964,13 @@ function openQuoteBuilder() {
       document.getElementById('qSchool').value = d.school || '';
       document.getElementById('qAddress').value = d.address || '';
       document.getElementById('qDate').value = d.date || new Date().toISOString().slice(0,10);
-      _quoteItems = Array.isArray(d.items) && d.items.length ? d.items : QUOTE_PRESETS.default.slice();
+      _quoteItems = Array.isArray(d.items) && d.items.length ? d.items : QUOTE_PRESETS.spike.map(it => ({ name: it.name, qty: it.qtyPerSet || 0, unit: it.unit }));
     } else {
       document.getElementById('qDate').value = new Date().toISOString().slice(0,10);
-      _quoteItems = QUOTE_PRESETS.default.slice();
+      _quoteItems = QUOTE_PRESETS.spike.map(it => ({ name: it.name, qty: it.qtyPerSet || 0, unit: it.unit }));
     }
   } catch(_) {
-    _quoteItems = QUOTE_PRESETS.default.slice();
+    _quoteItems = QUOTE_PRESETS.spike.map(it => ({ name: it.name, qty: it.qtyPerSet || 0, unit: it.unit }));
   }
   renderQuoteItems();
   renderQuotePreview();
