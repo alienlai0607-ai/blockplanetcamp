@@ -105,7 +105,11 @@
       border-radius:50px; padding:5px 14px; font-size:.85rem; font-weight:700;
       margin-left:10px; white-space:nowrap; box-shadow:0 2px 6px rgba(245,148,30,.3);
     }
-    .nav-links { display:flex; gap:2px; list-style:none; }
+    .nav-links {
+      display:flex; gap:2px; list-style:none;
+      position:fixed; top:0; right:5%; height:var(--nav-h);
+      align-items:center; z-index:1001;
+    }
     .nav-links a {
       color:var(--black); font-weight:700; font-size:.85rem;
       padding:7px 13px; border-radius:50px;
@@ -835,18 +839,18 @@
     <div class="nav-logo-text">布拉克星球<span>Block Planet</span></div>
     <span class="nav-badge">2026 暑期營隊</span>
   </a>
-  <ul class="nav-links" id="navLinks">
-    <li><a href="quiz.html">找營隊</a></li>
-    <li><a href="#monthly">七月包月</a></li>
-    <li><a href="#weekly">主題週</a></li>
-    <li><a href="#grade1">小一新生</a></li>
-    <li><a href="admin.html">🔒 後台</a></li>
-    <li><a href="#footer" class="nav-cta">聯絡我們</a></li>
-  </ul>
   <button class="nav-hamburger" id="hamburger" aria-label="選單">
     <span></span><span></span><span></span>
   </button>
 </nav>
+<ul class="nav-links" id="navLinks">
+  <li><a href="quiz.html">找營隊</a></li>
+  <li><a href="#monthly">七月包月</a></li>
+  <li><a href="#weekly">主題週</a></li>
+  <li><a href="#grade1">小一新生</a></li>
+  <li><a href="admin.html">🔒 後台</a></li>
+  <li><a href="#footer" class="nav-cta">聯絡我們</a></li>
+</ul>
 
 
 <!-- ===== HERO ===== -->
