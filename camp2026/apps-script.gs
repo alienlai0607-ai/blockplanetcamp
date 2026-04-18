@@ -421,7 +421,7 @@ function lookupByPhone(phone) {
 
   for (const sheet of allSheets) {
     const name = sheet.getName();
-    if (name === '優惠券' || name === '設定') continue;
+    if (name === '優惠券' || name === '設定' || name === '總帳') continue;
 
     const lastRow = sheet.getLastRow();
     if (lastRow < 2) continue;
@@ -662,7 +662,7 @@ function getCouponBoundName(code) {
 
   for (const sheet of allSheets) {
     const name = sheet.getName();
-    if (name === '優惠券' || name === '設定') continue;
+    if (name === '優惠券' || name === '設定' || name === '總帳') continue;
     const lastRow = sheet.getLastRow();
     if (lastRow < 2) continue;
 
@@ -929,7 +929,7 @@ function recalcAll() {
   const sheets = ss.getSheets();
   for (const sheet of sheets) {
     const name = sheet.getName();
-    if (name === '優惠券' || name === '設定') continue;
+    if (name === '優惠券' || name === '設定' || name === '總帳') continue;
     if (findCampPrice(name)) recalcSheet(name);
   }
   Logger.log('✅ 全部工作表重新計算完成');
