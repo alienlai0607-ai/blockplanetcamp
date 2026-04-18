@@ -934,6 +934,7 @@
   <div class="modal">
     <h2>訂購摘要已產生</h2>
     <p class="modal-sub">請將以下內容複製或截圖，傳給布拉克星球（Alien 老師）完成訂購。</p>
+    <div id="syncStatus" style="margin-bottom:14px;padding:10px 14px;border-radius:10px;font-size:13px;font-weight:700;display:flex;align-items:center;gap:8px;"></div>
     <div class="modal-text" id="modalText"></div>
     <div class="modal-actions">
       <button class="btn" onclick="closeModal()">關閉</button>
@@ -996,6 +997,8 @@
   })();
 
   // ========== 訂單邏輯 ==========
+  const MATRIX_API = 'https://script.google.com/macros/s/AKfycbxjX9Mxs_wRfJQXi6yDNCdD6TNnJOKFBDRxM6PcQ8iYtntXBa-g2r9LoZSCfVhHqV2k/exec';
+
   (function() {
     const d = new Date();
     const pad = n => String(n).padStart(2, '0');
@@ -1047,7 +1050,25 @@
     });
   });
 
-  document.getElementById('submitBtn').addEventListener('click', () => {
+  let orderSubmitted = false;  // 防重送（同一批訂單不重覆寫入）
+
+  function setSyncStatus(state, msg) {
+    const el = document.getElementById('syncStatus');
+    if (!el) return;
+    const palettes = {
+      loading: { bg: '#FFF3E0', color: '#E07A08', border: '#F5941E' },
+      ok:      { bg: '#E8F5E9', color: '#2E7D32', border: '#5BAD5B' },
+      warn:    { bg: '#FFEBEE', color: '#C62828', border: '#C93A2A' }
+    };
+    const p = palettes[state] || palettes.loading;
+    el.style.background = p.bg;
+    el.style.color = p.color;
+    el.style.border = `2px solid ${p.border}`;
+    el.textContent = msg;
+  }
+
+  document.getElementById('submitBtn').addEventListener('click', async () => {
+    const submitBtn = document.getElementById('submitBtn');
     let ok = true;
     const required = ['parentName', 'phone'];
     required.forEach(id => {
@@ -1088,7 +1109,8 @@
     lines.push('');
     lines.push('【商品明細】');
 
-    let total = 0, saved = 0;
+    let total = 0, saved = 0, totalQty = 0;
+    const itemsCompact = [];
     products.forEach(p => {
       const qty = parseInt(p.querySelector('.qty-input').value) || 0;
       if (qty === 0) return;
@@ -1098,10 +1120,11 @@
       const original = parseInt(p.dataset.original);
       const sub = qty * price;
       const ss = qty * (original - price);
-      total += sub; saved += ss;
+      total += sub; saved += ss; totalQty += qty;
       lines.push(`・${sku} ${name}`);
       lines.push(`   優惠單價 NT$${fmt(price)}（原價 NT$${fmt(original)}） × ${qty}`);
       lines.push(`   小計 NT$${fmt(sub)}`);
+      itemsCompact.push(`${sku}×${qty}=${sub}`);
     });
 
     lines.push('');
@@ -1117,6 +1140,43 @@
     const text = lines.join('\n');
     document.getElementById('modalText').textContent = text;
     document.getElementById('modalBackdrop').classList.add('open');
+
+    // 同步到 Google 試算表（只在第一次送出才寫入）
+    if (orderSubmitted) {
+      setSyncStatus('ok', '✅ 此訂單已送出，無須重複填寫');
+      return;
+    }
+    setSyncStatus('loading', '⏳ 訂單同步至管理系統中…');
+    submitBtn.disabled = true;
+    submitBtn.style.opacity = '0.6';
+
+    const params = new URLSearchParams({
+      action: 'matrix-submit',
+      order_no: orderNo,
+      parent, phone, student, team,
+      items: itemsCompact.join('|'),
+      qty: String(totalQty),
+      total: String(total),
+      saved: String(saved),
+      note: note === '—' ? '' : note
+    });
+
+    try {
+      const res = await fetch(`${MATRIX_API}?${params.toString()}`);
+      const data = await res.json();
+      if (data && data.success) {
+        orderSubmitted = true;
+        setSyncStatus('ok', `✅ 訂單已送出，編號 ${data.orderNo || orderNo}（Alien 老師已收到）`);
+      } else {
+        setSyncStatus('warn', `⚠️ 系統暫無法紀錄，請截圖訂單傳給 Alien 老師（${(data && data.error) || '連線失敗'}）`);
+        submitBtn.disabled = false;
+        submitBtn.style.opacity = '1';
+      }
+    } catch (err) {
+      setSyncStatus('warn', '⚠️ 網路連線不穩，請截圖訂單傳給 Alien 老師');
+      submitBtn.disabled = false;
+      submitBtn.style.opacity = '1';
+    }
   });
 
   function closeModal() { document.getElementById('modalBackdrop').classList.remove('open'); }

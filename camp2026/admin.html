@@ -151,6 +151,7 @@ h1 { font-size: 1.5rem; color: #F5941E; font-weight: 900; }
     <button class="tab active" data-tab="camps">📋 營隊總名單</button>
     <button class="tab" data-tab="lookup">📱 電話查詢</button>
     <button class="tab" data-tab="coupon">🎟️ 優惠券管理</button>
+    <button class="tab" data-tab="matrix">🛠️ MATRIX 訂購</button>
   </div>
 
   <!-- 營隊總名單 -->
@@ -198,6 +199,30 @@ h1 { font-size: 1.5rem; color: #F5941E; font-weight: 900; }
         <div id="verifyResult" style="margin-top:14px"></div>
       </div>
     </div>
+  </div>
+
+  <!-- MATRIX 訂購管理 -->
+  <div class="panel" id="panel-matrix">
+    <div class="card">
+      <div class="card-title">📊 訂購即時統計</div>
+      <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px">
+        <div style="text-align:center"><div style="font-size:1.5rem;font-weight:900;color:#F5941E" id="mxStatCount">-</div><div style="font-size:.72rem;color:#aaa;font-weight:700">總訂單數</div></div>
+        <div style="text-align:center"><div style="font-size:1.5rem;font-weight:900;color:#2E7D32" id="mxStatAmount">-</div><div style="font-size:.72rem;color:#aaa;font-weight:700">累計金額</div></div>
+        <div style="text-align:center"><div style="font-size:1.5rem;font-weight:900;color:#C62828" id="mxStatPending">-</div><div style="font-size:.72rem;color:#aaa;font-weight:700">未付款筆數</div></div>
+        <div style="text-align:center"><div style="font-size:1.5rem;font-weight:900;color:#E65100" id="mxStatPendingAmt">-</div><div style="font-size:.72rem;color:#aaa;font-weight:700">未收金額</div></div>
+      </div>
+      <div style="display:flex;gap:8px;margin-top:14px;flex-wrap:wrap">
+        <select id="mxFilter" style="flex:1;min-width:130px;padding:10px;border-radius:10px;border:2px solid #eee;font-weight:700;color:#333;font-family:inherit;font-size:.9rem">
+          <option value="all">全部狀態</option>
+          <option value="未付款">僅未付款</option>
+          <option value="已付款">僅已付款</option>
+          <option value="已出貨">僅已出貨</option>
+        </select>
+        <input id="mxSearch" type="text" placeholder="搜尋姓名／電話／訂單編號" style="flex:2;min-width:180px;padding:10px 14px;border-radius:10px;border:2px solid #eee;font-weight:700;font-family:inherit;font-size:.9rem" />
+        <button onclick="loadMatrixOrders()" style="padding:10px 18px;background:#F5941E;color:white;border:none;border-radius:10px;font-weight:900;cursor:pointer;font-family:inherit">↻ 重新整理</button>
+      </div>
+    </div>
+    <div id="mxList" class="loading">載入中...</div>
   </div>
 </div>
 
@@ -279,7 +304,140 @@ document.querySelectorAll('.tab').forEach(btn => {
     document.getElementById('panel-' + tab).classList.add('active');
     if (tab === 'camps' && !allData) loadCamps();
     if (tab === 'coupon') loadCouponStats();
+    if (tab === 'matrix') loadMatrixOrders();
   });
+});
+
+// ========== MATRIX 訂購管理 ==========
+const MX_ADMIN_KEY = 'bp2026admin';
+let _mxOrders = [];
+
+async function loadMatrixOrders() {
+  const list = document.getElementById('mxList');
+  list.innerHTML = '<div class="loading">載入中...</div>';
+  try {
+    const res = await fetch(API + '?action=matrix-list&key=' + MX_ADMIN_KEY);
+    const data = await res.json();
+    if (!data.success) { list.innerHTML = `<div class="card" style="color:#C93A2A;font-weight:700">❌ ${data.error || '載入失敗'}</div>`; return; }
+    _mxOrders = data.orders || [];
+    const s = data.stats || {};
+    document.getElementById('mxStatCount').textContent = s.count || 0;
+    document.getElementById('mxStatAmount').textContent = '$' + (s.amount || 0).toLocaleString();
+    document.getElementById('mxStatPending').textContent = s.pending || 0;
+    document.getElementById('mxStatPendingAmt').textContent = '$' + (s.pendingAmount || 0).toLocaleString();
+    renderMatrixList();
+  } catch(e) {
+    list.innerHTML = `<div class="card" style="color:#C93A2A;font-weight:700">❌ 連線失敗：${e.message}</div>`;
+  }
+}
+
+function mxStatusBadge(status) {
+  const cfg = {
+    '未付款': { bg: '#FFEBEE', color: '#C62828', icon: '💰' },
+    '已付款': { bg: '#E8F5E9', color: '#2E7D32', icon: '✅' },
+    '已出貨': { bg: '#E3F2FD', color: '#1565C0', icon: '📦' }
+  };
+  const c = cfg[status] || cfg['未付款'];
+  return `<span style="background:${c.bg};color:${c.color};padding:3px 10px;border-radius:50px;font-size:.78rem;font-weight:900;white-space:nowrap">${c.icon} ${status}</span>`;
+}
+
+function renderMatrixList() {
+  const list = document.getElementById('mxList');
+  const filter = document.getElementById('mxFilter').value;
+  const search = (document.getElementById('mxSearch').value || '').trim().toLowerCase();
+  let orders = _mxOrders.slice();
+  if (filter !== 'all') orders = orders.filter(o => o.status === filter);
+  if (search) orders = orders.filter(o =>
+    (o.parent || '').toLowerCase().includes(search) ||
+    (o.phone || '').toLowerCase().includes(search) ||
+    (o.orderNo || '').toLowerCase().includes(search) ||
+    (o.student || '').toLowerCase().includes(search)
+  );
+  if (orders.length === 0) {
+    list.innerHTML = '<div class="card" style="text-align:center;color:#aaa;padding:40px">📋 沒有符合條件的訂單</div>';
+    return;
+  }
+  list.innerHTML = orders.map(o => `
+    <div class="card" style="margin-bottom:12px">
+      <div style="display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:10px;margin-bottom:10px">
+        <div>
+          <div style="font-size:.72rem;color:#aaa;font-weight:700;letter-spacing:1px">${o.orderNo}</div>
+          <div style="font-size:1.05rem;font-weight:900;margin-top:2px">${o.parent} <span style="font-size:.82rem;color:#888;font-weight:500">｜ 📱 ${o.phone}</span></div>
+          <div style="font-size:.82rem;color:#666;margin-top:2px">👦 ${o.student || '—'} ｜ 🏷️ ${o.team || '—'} ｜ 🕒 ${o.createdAt}</div>
+        </div>
+        <div style="text-align:right">
+          <div style="font-size:1.4rem;font-weight:900;color:#C93A2A">$${(o.total || 0).toLocaleString()}</div>
+          ${o.saved > 0 ? `<div style="font-size:.72rem;color:#2E7D32;font-weight:700">省 $${o.saved.toLocaleString()}</div>` : ''}
+          <div style="margin-top:4px">${mxStatusBadge(o.status)}</div>
+        </div>
+      </div>
+      <div style="background:#FFF8F0;border-left:3px solid #F5941E;padding:8px 12px;border-radius:6px;font-size:.85rem;color:#555;margin-bottom:8px">
+        📦 ${(o.items || '—').replace(/\|/g, ' ｜ ')} <span style="color:#888">（共 ${o.qty} 件）</span>
+      </div>
+      ${o.note ? `<div style="font-size:.8rem;color:#888;margin-bottom:6px">📝 訂購備註：${o.note}</div>` : ''}
+      <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-top:10px;padding-top:10px;border-top:1px dashed #eee">
+        <span style="font-size:.75rem;color:#aaa;font-weight:700">狀態：</span>
+        <select onchange="mxChangeStatus(${o.row}, this.value)" style="padding:6px 12px;border-radius:8px;border:2px solid #eee;font-weight:700;font-family:inherit;font-size:.82rem;cursor:pointer">
+          <option value="未付款" ${o.status === '未付款' ? 'selected' : ''}>💰 未付款</option>
+          <option value="已付款" ${o.status === '已付款' ? 'selected' : ''}>✅ 已付款</option>
+          <option value="已出貨" ${o.status === '已出貨' ? 'selected' : ''}>📦 已出貨</option>
+        </select>
+        <button onclick="mxEditMemo(${o.row})" style="padding:6px 14px;background:none;border:2px solid #eee;border-radius:8px;font-weight:700;color:#666;cursor:pointer;font-family:inherit;font-size:.82rem">📝 ${o.memo ? '編輯備忘' : '加備忘'}</button>
+        <button onclick="mxCopyMsg(${o.row})" style="padding:6px 14px;background:#06C755;color:white;border:none;border-radius:8px;font-weight:700;cursor:pointer;font-family:inherit;font-size:.82rem">💬 複製訊息</button>
+        ${o.memo ? `<div style="flex:1;min-width:200px;padding:6px 10px;background:#FFF8E1;border-left:3px solid #FFC107;font-size:.78rem;color:#795548;border-radius:4px">🗒️ ${o.memo}</div>` : ''}
+      </div>
+    </div>
+  `).join('');
+}
+
+async function mxChangeStatus(row, status) {
+  try {
+    const res = await fetch(API + '?action=matrix-status&key=' + MX_ADMIN_KEY + '&row=' + row + '&status=' + encodeURIComponent(status));
+    const data = await res.json();
+    if (!data.success) { alert('❌ 更新失敗：' + (data.error || '')); return; }
+    const o = _mxOrders.find(x => x.row === row);
+    if (o) o.status = status;
+    loadMatrixOrders();
+  } catch(e) { alert('❌ 連線失敗'); }
+}
+
+async function mxEditMemo(row) {
+  const o = _mxOrders.find(x => x.row === row);
+  const memo = prompt('管理員備忘（例：已收款 $11500、3/5 到貨）', o ? o.memo : '');
+  if (memo === null) return;
+  try {
+    const res = await fetch(API + '?action=matrix-status&key=' + MX_ADMIN_KEY + '&row=' + row + '&memo=' + encodeURIComponent(memo));
+    const data = await res.json();
+    if (!data.success) { alert('❌ 更新失敗：' + (data.error || '')); return; }
+    loadMatrixOrders();
+  } catch(e) { alert('❌ 連線失敗'); }
+}
+
+function mxCopyMsg(row) {
+  const o = _mxOrders.find(x => x.row === row);
+  if (!o) return;
+  const lines = [];
+  lines.push(`您好 ${o.parent} 爸媽 🛠️`);
+  lines.push('');
+  lines.push('已收到您的 MATRIX 教具訂購單：');
+  lines.push(`訂單編號 ${o.orderNo}`);
+  lines.push(`商品 ${(o.items || '').replace(/\|/g, '、')}（共 ${o.qty} 件）`);
+  lines.push(`應付金額 NT$ ${(o.total || 0).toLocaleString()}`);
+  if (o.saved > 0) lines.push(`（7 月前優惠已為您省下 NT$ ${o.saved.toLocaleString()}）`);
+  lines.push('');
+  lines.push('付款方式將由 Alien 老師另行告知，感謝您的支持 🌟');
+  const text = lines.join('\n');
+  navigator.clipboard.writeText(text).then(
+    () => alert('✅ 已複製訊息，可直接貼 LINE'),
+    () => { prompt('請手動複製：', text); }
+  );
+}
+
+document.addEventListener('input', (e) => {
+  if (e.target.id === 'mxSearch' || e.target.id === 'mxFilter') renderMatrixList();
+});
+document.addEventListener('change', (e) => {
+  if (e.target.id === 'mxFilter') renderMatrixList();
 });
 
 // === 解析日期 ===
