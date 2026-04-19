@@ -663,10 +663,11 @@
       background:linear-gradient(180deg,#1a1a1a,var(--black));
       color:rgba(255,255,255,.7); padding:56px 6% 36px; position:relative;
     }
-    /* ===== FAQ（圖片 gallery + lightbox） ===== */
+    /* ===== FAQ（封面觸發 + Modal 輪播） ===== */
     .faq-section {
       background:linear-gradient(180deg,#FFFBF5,#FFF4E0);
-      padding:60px 5% 80px; position:relative;
+      padding:70px 5% 90px; position:relative;
+      text-align:center;
     }
     .faq-section::before {
       content:''; position:absolute; top:0; left:0; right:0; height:3px;
@@ -674,65 +675,164 @@
       background-size:200% auto; animation:gradient-shift 6s ease infinite;
       opacity:.4;
     }
-    .faq-cover {
-      display:block; max-width:520px; width:100%;
-      margin:0 auto 36px;
-      border-radius:24px;
-      box-shadow:0 12px 32px rgba(245,148,30,.18);
+    .faq-trigger {
+      display:inline-block; cursor:pointer;
+      border:none; background:transparent; padding:0;
+      max-width:480px; width:100%;
+      position:relative;
+      transition:transform .3s cubic-bezier(.34,1.56,.64,1);
     }
-    .faq-grid {
-      display:grid;
-      grid-template-columns:repeat(auto-fit, minmax(320px, 1fr));
-      gap:20px;
-      max-width:1040px; margin:0 auto;
+    .faq-trigger:hover { transform:translateY(-6px) scale(1.02); }
+    .faq-trigger:active { transform:scale(.98); }
+    .faq-trigger img {
+      width:100%; display:block;
+      border-radius:28px;
+      box-shadow:0 14px 38px rgba(245,148,30,.25);
+      animation:coverFloat 4s ease-in-out infinite;
     }
-    .faq-card {
-      background:#fff; border-radius:20px; overflow:hidden;
-      box-shadow:0 4px 18px rgba(0,0,0,.08);
-      transition:transform .2s, box-shadow .2s;
+    .faq-trigger::after {
+      content:'👆 點我看常見問題'; position:absolute;
+      bottom:-22px; left:50%; transform:translateX(-50%);
+      background:linear-gradient(135deg,var(--orange),#F7C948);
+      color:#fff; padding:12px 28px; border-radius:50px;
+      font-weight:900; font-size:1rem; white-space:nowrap;
+      box-shadow:0 8px 22px rgba(245,148,30,.5);
+      animation:tapPulse 2s ease-in-out infinite;
     }
-    .faq-card:hover { transform:translateY(-4px); box-shadow:0 14px 32px rgba(245,148,30,.25); }
-    .faq-card img {
-      width:100%; display:block; cursor:zoom-in;
-      transition:opacity .2s;
+    @keyframes coverFloat { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-8px)} }
+    @keyframes tapPulse { 0%,100%{transform:translateX(-50%) scale(1)} 50%{transform:translateX(-50%) scale(1.06)} }
+
+    .faq-hint {
+      margin-top:40px; font-size:.88rem; color:#999; font-weight:700;
+      letter-spacing:1px;
     }
-    .faq-card img:hover { opacity:.92; }
-    .faq-card-link {
-      display:flex; align-items:center; justify-content:center; gap:6px;
-      padding:12px 16px;
-      background:var(--orange); color:#fff !important;
-      text-decoration:none; font-weight:900; font-size:.92rem;
-      transition:background .2s;
+
+    /* ===== FAQ Modal 翻頁式輪播 ===== */
+    .faq-modal {
+      position:fixed; inset:0; z-index:99999;
+      background:#000;
+      display:none; flex-direction:column;
+      animation:lbFade .25s ease;
     }
-    .faq-card-link:hover { background:var(--orange-dark); }
-    .faq-lb {
-      position:fixed; inset:0;
-      background:rgba(0,0,0,.88);
-      display:none; align-items:center; justify-content:center;
-      z-index:9999; padding:20px;
-      cursor:zoom-out;
-      animation:lbFade .2s ease;
-    }
-    .faq-lb.open { display:flex; }
+    .faq-modal.open { display:flex; }
     @keyframes lbFade { from{opacity:0} to{opacity:1} }
-    .faq-lb img {
-      max-width:96%; max-height:94%;
-      border-radius:14px;
-      box-shadow:0 20px 60px rgba(0,0,0,.5);
+
+    .faq-modal-head {
+      position:relative; z-index:5;
+      display:flex; align-items:center; justify-content:space-between;
+      padding:14px 20px;
+      color:#fff;
+      background:rgba(0,0,0,.85);
     }
-    .faq-lb-close {
-      position:fixed; top:18px; right:18px;
+    .faq-modal-title {
+      font-weight:900; font-size:1rem;
+      display:flex; align-items:center; gap:10px;
+    }
+    .faq-modal-counter {
+      background:var(--orange); color:#fff;
+      padding:4px 12px; border-radius:50px;
+      font-size:.82rem; font-weight:900;
+    }
+    .faq-modal-close {
       background:#fff; color:#000; border:none;
-      width:44px; height:44px; border-radius:50%;
+      width:42px; height:42px; border-radius:50%;
       font-size:1.2rem; cursor:pointer; font-weight:900;
       box-shadow:0 6px 18px rgba(0,0,0,.4);
+      transition:background .2s, transform .2s;
     }
-    .faq-lb-close:hover { background:#FFD100; }
-    @media(max-width:600px){
-      .faq-section { padding:40px 4% 64px; }
-      .faq-cover { max-width:360px; margin-bottom:24px; }
-      .faq-grid { grid-template-columns:1fr; gap:14px; }
-      .faq-card-link { padding:14px; font-size:.95rem; }
+    .faq-modal-close:hover { background:var(--yellow); transform:rotate(90deg); }
+
+    .faq-carousel-wrap {
+      flex:1; position:relative;
+      overflow:hidden;
+      min-height:0;
+      touch-action:pan-y;
+    }
+    .faq-track {
+      display:flex;
+      width:500%; height:100%;
+      transform:translateX(0);
+      transition:transform .42s cubic-bezier(.22,.61,.36,1);
+      will-change:transform;
+    }
+    .faq-track.dragging { transition:none; }
+    .faq-slide {
+      flex:0 0 20%;
+      display:flex; flex-direction:column;
+      align-items:center; justify-content:center;
+      padding:20px 20px 16px;
+      gap:18px;
+      height:100%; box-sizing:border-box;
+    }
+    .faq-slide img {
+      max-width:min(92%, 820px);
+      max-height:calc(100% - 80px);
+      object-fit:contain;
+      border-radius:18px;
+      box-shadow:0 20px 60px rgba(0,0,0,.5);
+      background:#fff;
+      pointer-events:none;
+      user-select:none;
+      -webkit-user-drag:none;
+    }
+    .faq-slide-cta {
+      display:inline-flex; align-items:center; gap:8px;
+      padding:14px 30px; border-radius:50px;
+      background:linear-gradient(135deg,var(--orange),#F7C948);
+      color:#fff !important; text-decoration:none;
+      font-weight:900; font-size:1rem;
+      box-shadow:0 8px 22px rgba(245,148,30,.5);
+      transition:transform .2s, filter .2s;
+      white-space:nowrap;
+    }
+    .faq-slide-cta:hover { filter:brightness(1.1); transform:scale(1.05); }
+    .faq-slide-cta:active { transform:scale(.97); }
+
+    /* 左右箭頭 */
+    .faq-arrow {
+      position:absolute; top:50%; transform:translateY(-50%);
+      width:52px; height:52px; border-radius:50%;
+      background:rgba(255,255,255,.95); color:#000;
+      border:none; cursor:pointer;
+      font-size:1.6rem; font-weight:900; line-height:1;
+      box-shadow:0 8px 22px rgba(0,0,0,.4);
+      z-index:6;
+      display:flex; align-items:center; justify-content:center;
+      transition:background .2s, transform .2s, opacity .2s;
+    }
+    .faq-arrow:hover { background:var(--yellow); transform:translateY(-50%) scale(1.1); }
+    .faq-arrow:disabled { opacity:.25; cursor:not-allowed; }
+    .faq-arrow.prev { left:24px; }
+    .faq-arrow.next { right:24px; }
+
+    /* 底部 dots */
+    .faq-dots {
+      display:flex; justify-content:center; gap:10px;
+      padding:14px 20px 22px;
+      background:rgba(0,0,0,.85);
+      position:relative; z-index:5;
+    }
+    .faq-dot {
+      width:10px; height:10px; border-radius:50%;
+      background:rgba(255,255,255,.35);
+      border:none; cursor:pointer; padding:0;
+      transition:all .25s;
+    }
+    .faq-dot.active {
+      width:28px; background:var(--orange);
+      border-radius:50px;
+    }
+    .faq-dot:hover { background:rgba(255,255,255,.6); }
+    .faq-dot.active:hover { background:var(--orange); }
+
+    @media(max-width:700px){
+      .faq-section { padding:50px 4% 70px; }
+      .faq-arrow { width:42px; height:42px; font-size:1.3rem; }
+      .faq-arrow.prev { left:10px; }
+      .faq-arrow.next { right:10px; }
+      .faq-slide img { max-width:94%; }
+      .faq-modal-title { font-size:.9rem; }
+      .faq-slide-cta { padding:12px 24px; font-size:.92rem; }
     }
 
     footer::before {
@@ -920,7 +1020,7 @@
   <li><a href="#monthly">七月包月</a></li>
   <li><a href="#weekly">主題週</a></li>
   <li><a href="#grade1">小一新生</a></li>
-  <li><a href="#faq">Q&amp;A</a></li>
+  <li><a href="#faq" onclick="event.preventDefault(); openFaqModal(0);">Q&amp;A</a></li>
   <li><a href="admin.html">🔒 後台</a></li>
   <li><a href="#footer" class="nav-cta">聯絡我們</a></li>
 </ul>
@@ -1185,33 +1285,54 @@
 
 <!-- ===== FAQ ===== -->
 <section class="faq-section sec" id="faq">
-  <img src="posters/faq/faq-cover.jpg" alt="暑期營隊 Q&A" class="faq-cover fade-in from-bottom" loading="lazy">
-  <div class="faq-grid">
-    <div class="faq-card fade-in from-bottom">
-      <img src="posters/faq/faq-01-week-split.jpg" alt="包月方案能否拆週" loading="lazy" onclick="openFaqLb(this.src)">
-    </div>
-    <div class="faq-card fade-in from-bottom">
-      <img src="posters/faq/faq-02-monthly.jpg" alt="七月包月營隊" loading="lazy" onclick="openFaqLb(this.src)">
-      <a href="#monthly" class="faq-card-link">📅 點擊了解七月包月詳情 →</a>
-    </div>
-    <div class="faq-card fade-in from-bottom">
-      <img src="posters/faq/faq-03-last-week.jpg" alt="八月最後一週" loading="lazy" onclick="openFaqLb(this.src)">
-    </div>
-    <div class="faq-card fade-in from-bottom">
-      <img src="posters/faq/faq-04-weekly.jpg" alt="特色營隊" loading="lazy" onclick="openFaqLb(this.src)">
-      <a href="#weekly" class="faq-card-link">🎯 點擊了解主題週詳情 →</a>
-    </div>
-    <div class="faq-card fade-in from-bottom">
-      <img src="posters/faq/faq-05-grade1.jpg" alt="小一新生營隊" loading="lazy" onclick="openFaqLb(this.src)">
-      <a href="#grade1" class="faq-card-link">🎒 點擊了解小一新生營詳情 →</a>
-    </div>
-  </div>
+  <button class="faq-trigger fade-in from-bottom" onclick="openFaqModal(0)" aria-label="開啟常見問題">
+    <img src="posters/faq/faq-cover.jpg" alt="暑期營隊 Q&A" loading="lazy">
+  </button>
+  <p class="faq-hint fade-in">共 5 則常見問題 ・ 可左右滑動查看</p>
 </section>
 
-<!-- FAQ Lightbox -->
-<div class="faq-lb" id="faqLb" onclick="if(event.target.id==='faqLb') closeFaqLb()">
-  <img id="faqLbImg" src="" alt="">
-  <button class="faq-lb-close" onclick="closeFaqLb()" aria-label="關閉">✕</button>
+<!-- FAQ Modal（輪播） -->
+<div class="faq-modal" id="faqModal" role="dialog" aria-modal="true" aria-label="常見問題">
+  <div class="faq-modal-head">
+    <div class="faq-modal-title">
+      <span>📖 暑期營隊 Q&A</span>
+      <span class="faq-modal-counter"><span id="faqCurrent">1</span> / 5</span>
+    </div>
+    <button class="faq-modal-close" onclick="closeFaqModal()" aria-label="關閉">✕</button>
+  </div>
+
+  <div class="faq-carousel-wrap" id="faqCarouselWrap">
+    <button class="faq-arrow prev" onclick="faqGo(-1)" aria-label="上一題">‹</button>
+    <div class="faq-track" id="faqTrack">
+      <div class="faq-slide">
+        <img src="posters/faq/faq-02-monthly.jpg" alt="七月包月營隊">
+        <a href="#monthly" class="faq-slide-cta" onclick="closeFaqModal()">📅 看七月包月方案</a>
+      </div>
+      <div class="faq-slide">
+        <img src="posters/faq/faq-04-weekly.jpg" alt="特色營隊">
+        <a href="#weekly" class="faq-slide-cta" onclick="closeFaqModal()">🎯 看主題週營隊</a>
+      </div>
+      <div class="faq-slide">
+        <img src="posters/faq/faq-05-grade1.jpg" alt="小一新生營隊">
+        <a href="#grade1" class="faq-slide-cta" onclick="closeFaqModal()">🎒 看小一新生</a>
+      </div>
+      <div class="faq-slide">
+        <img src="posters/faq/faq-01-week-split.jpg" alt="包月方案能否拆週">
+      </div>
+      <div class="faq-slide">
+        <img src="posters/faq/faq-03-last-week.jpg" alt="八月最後一週">
+      </div>
+    </div>
+    <button class="faq-arrow next" onclick="faqGo(1)" aria-label="下一題">›</button>
+  </div>
+
+  <div class="faq-dots" id="faqDots">
+    <button class="faq-dot active" onclick="faqTo(0)" aria-label="第 1 題"></button>
+    <button class="faq-dot" onclick="faqTo(1)" aria-label="第 2 題"></button>
+    <button class="faq-dot" onclick="faqTo(2)" aria-label="第 3 題"></button>
+    <button class="faq-dot" onclick="faqTo(3)" aria-label="第 4 題"></button>
+    <button class="faq-dot" onclick="faqTo(4)" aria-label="第 5 題"></button>
+  </div>
 </div>
 
 <!-- 浮動報名（手機版） -->
@@ -1265,20 +1386,90 @@
     nl.addEventListener('click',e=>{ if(e.target===nl) closeMenu(); });
   })();
 
-  /* FAQ Lightbox */
-  function openFaqLb(src){
-    const lb=document.getElementById('faqLb');
-    document.getElementById('faqLbImg').src=src;
-    lb.classList.add('open');
-    document.body.style.overflow='hidden';
-  }
-  function closeFaqLb(){
-    document.getElementById('faqLb').classList.remove('open');
-    document.body.style.overflow='';
-  }
-  document.addEventListener('keydown',e=>{
-    if(e.key==='Escape' && document.getElementById('faqLb').classList.contains('open')) closeFaqLb();
-  });
+  /* FAQ Modal 翻頁輪播（transform + 拖曳） */
+  (function(){
+    const modal = document.getElementById('faqModal');
+    const wrap = document.getElementById('faqCarouselWrap');
+    const track = document.getElementById('faqTrack');
+    const dots = document.querySelectorAll('#faqDots .faq-dot');
+    const counter = document.getElementById('faqCurrent');
+    const prevBtn = document.querySelector('.faq-arrow.prev');
+    const nextBtn = document.querySelector('.faq-arrow.next');
+    const total = 5;
+    let current = 0;
+    let dragStartX = 0, dragDX = 0, dragging = false, pointerId = null;
+
+    function render(withTransition){
+      if (withTransition === false) track.classList.add('dragging');
+      else track.classList.remove('dragging');
+      const w = wrap.clientWidth;
+      track.style.transform = `translateX(${-current * w + dragDX}px)`;
+      dots.forEach((d,idx)=>d.classList.toggle('active', idx===current));
+      counter.textContent = current + 1;
+      prevBtn.disabled = current === 0;
+      nextBtn.disabled = current === total - 1;
+    }
+
+    window.openFaqModal = function(idx){
+      current = Math.max(0, Math.min(total-1, idx||0));
+      modal.classList.add('open');
+      document.body.style.overflow = 'hidden';
+      requestAnimationFrame(()=>render(true));
+    };
+    window.closeFaqModal = function(){
+      modal.classList.remove('open');
+      document.body.style.overflow = '';
+    };
+    window.faqTo = function(idx){
+      current = Math.max(0, Math.min(total-1, idx));
+      dragDX = 0;
+      render(true);
+    };
+    window.faqGo = function(delta){ faqTo(current + delta); };
+
+    // 鍵盤
+    document.addEventListener('keydown', e=>{
+      if (!modal.classList.contains('open')) return;
+      if (e.key === 'Escape') closeFaqModal();
+      if (e.key === 'ArrowLeft') faqGo(-1);
+      if (e.key === 'ArrowRight') faqGo(1);
+    });
+
+    // 視窗改變：重新計算
+    window.addEventListener('resize', ()=>{
+      if (modal.classList.contains('open')) render(true);
+    });
+
+    // 拖曳翻頁
+    wrap.addEventListener('pointerdown', e=>{
+      if (e.target.closest('.faq-arrow') || e.target.closest('.faq-slide-cta')) return;
+      dragging = true; pointerId = e.pointerId;
+      dragStartX = e.clientX; dragDX = 0;
+      wrap.setPointerCapture(pointerId);
+    });
+    wrap.addEventListener('pointermove', e=>{
+      if (!dragging) return;
+      dragDX = e.clientX - dragStartX;
+      // 邊界阻尼
+      if ((current === 0 && dragDX > 0) || (current === total-1 && dragDX < 0)) {
+        dragDX = dragDX * 0.3;
+      }
+      render(false);
+    });
+    function endDrag(){
+      if (!dragging) return;
+      dragging = false;
+      try { wrap.releasePointerCapture(pointerId); } catch(_) {}
+      const threshold = wrap.clientWidth * 0.18;
+      if (dragDX < -threshold && current < total-1) current++;
+      else if (dragDX > threshold && current > 0) current--;
+      dragDX = 0;
+      render(true);
+    }
+    wrap.addEventListener('pointerup', endDrag);
+    wrap.addEventListener('pointercancel', endDrag);
+    wrap.addEventListener('pointerleave', endDrag);
+  })();
 
   /* Lightbox */
   function openLightbox(src){
