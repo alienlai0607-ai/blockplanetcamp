@@ -147,6 +147,14 @@ h1 { font-size: 1.5rem; color: #F5941E; font-weight: 900; }
 .coupon-locked { text-align: center; padding: 40px 20px; color: #888; }
 .coupon-locked button { padding: 12px 28px; border-radius: 50px; background: #F5941E; color: white; font-weight: 900; border: none; cursor: pointer; font-family: inherit; font-size: .95rem; margin-top: 12px; }
 
+/* 報價單表單：防止 input[type=date] 在 iOS 上爆欄 */
+#panel-quote input, #panel-quote select { box-sizing: border-box; max-width: 100%; width: 100%; }
+#panel-quote input[type=date] { -webkit-appearance: none; appearance: none; min-width: 0; }
+#panel-quote .card > div[style*="grid"] > div { min-width: 0; }
+@media (max-width: 480px) {
+  #panel-quote .card > div[style*="grid-template-columns:1fr 1fr"] { grid-template-columns: 1fr !important; }
+}
+
 @media (max-width: 480px) {
   .container { padding: 14px 12px 20px; }
   .header { margin-bottom: 14px; }
