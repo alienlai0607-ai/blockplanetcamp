@@ -981,6 +981,7 @@ function getMatrixSheet() {
     sh.setColumnWidth(7, 260);
     sh.setColumnWidth(12, 180);
     sh.setColumnWidth(13, 180);
+    sh.getRange('D:D').setNumberFormat('@');
   }
   return sh;
 }
@@ -1012,6 +1013,7 @@ function matrixSubmit(p) {
       ''
     ];
     sh.appendRow(row);
+    sh.getRange(sh.getLastRow(), 4).setNumberFormat('@').setValue(phone);
     return { success: true, orderNo: orderNo };
   } catch (err) {
     return { success: false, error: String(err && err.message || err) };
@@ -1099,6 +1101,7 @@ function getSpikeSheet() {
     sh.setColumnWidth(7, 260);
     sh.setColumnWidth(12, 180);
     sh.setColumnWidth(13, 180);
+    sh.getRange('D:D').setNumberFormat('@');
   }
   return sh;
 }
@@ -1130,6 +1133,7 @@ function spikeSubmit(p) {
       ''
     ];
     sh.appendRow(row);
+    sh.getRange(sh.getLastRow(), 4).setNumberFormat('@').setValue(phone);
     return { success: true, orderNo: orderNo };
   } catch (err) {
     return { success: false, error: String(err && err.message || err) };
