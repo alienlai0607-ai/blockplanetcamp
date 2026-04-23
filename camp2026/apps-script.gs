@@ -78,6 +78,18 @@ function doGet(e) {
         if (e.parameter.key !== 'bp2026admin') return respond({ success: false, error: '權限不足' });
         return respond(spikeUpdateStatus(e.parameter.row, e.parameter.status, e.parameter.memo));
 
+      // ===== 💰 營隊收支 (密碼保護) =====
+      case 'finance-summary':
+        return respond(financeSummary(e.parameter));
+      case 'expense-list':
+        return respond(expenseList(e.parameter));
+      case 'expense-add':
+        return respond(expenseAdd(e.parameter));
+      case 'expense-update':
+        return respond(expenseUpdate(e.parameter));
+      case 'expense-delete':
+        return respond(expenseDelete(e.parameter));
+
       default:       return respond({ success: false, error: '無效的操作' });
     }
   } finally {
@@ -1194,4 +1206,278 @@ function spikeUpdateStatus(row, status, memo) {
     sh.getRange(r, 13).setValue(String(memo));
   }
   return { success: true };
+}
+
+// ========================================
+//  💰 營隊收支系統 (2026-04-23)
+//  密碼保護 · 自動分類教室 · 支出 CRUD
+// ========================================
+const FINANCE_PASSWORD = 'block0607';
+const EXPENSE_SHEET = '支出記錄';
+const EXPENSE_CATEGORIES = ['耗材', '講師費', '場地', '餐飲', '交通', '行政'];
+const EXPENSE_HEADERS = ['日期','營隊','教室','類別','項目','金額','備註','填單時間'];
+
+function checkFinanceAuth(p) {
+  if (String(p.password || '') !== FINANCE_PASSWORD) {
+    return { success: false, error: '密碼錯誤或未提供' };
+  }
+  return null;
+}
+
+function getExpenseSheet() {
+  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  let sh = ss.getSheetByName(EXPENSE_SHEET);
+  if (!sh) sh = ss.insertSheet(EXPENSE_SHEET);
+  if (sh.getLastRow() === 0) {
+    sh.getRange(1, 1, 1, EXPENSE_HEADERS.length)
+      .setValues([EXPENSE_HEADERS])
+      .setFontWeight('bold')
+      .setBackground('#FFEBEE');
+    sh.setFrozenRows(1);
+    sh.setColumnWidth(1, 100);
+    sh.setColumnWidth(2, 180);
+    sh.setColumnWidth(3, 80);
+    sh.setColumnWidth(4, 90);
+    sh.setColumnWidth(5, 220);
+    sh.setColumnWidth(6, 100);
+    sh.setColumnWidth(7, 200);
+    sh.setColumnWidth(8, 140);
+  }
+  return sh;
+}
+
+// 教室分類：根據營隊名 + session 字串
+function classifyClassroom(campName, session) {
+  const cn = String(campName || '');
+  const sess = String(session || '');
+  if (cn.indexOf('猴囝仔') >= 0) return '聯合';
+  if (cn.indexOf('無人機') >= 0) return '北區';
+  if (sess.indexOf('北區') >= 0) return '北區';
+  if (sess.indexOf('永康') >= 0) return '永康';
+  if (sess.indexOf('7/') >= 0 || sess.indexOf('第1⃣️梯') >= 0 || sess.indexOf('第1️⃣梯') >= 0 || sess.indexOf('第一梯') >= 0) return '北區';
+  return '未分類';
+}
+
+// 判斷付款狀態（已收 = v/V/移轉/已付/已繳/已匯）
+function isPaid(payment) {
+  const p = String(payment || '').trim();
+  if (!p) return false;
+  if (p.toUpperCase() === 'V') return true;
+  if (p.indexOf('移轉') >= 0) return true;
+  if (p.indexOf('已付') >= 0) return true;
+  if (p.indexOf('已繳') >= 0) return true;
+  if (p.indexOf('已匯') >= 0) return true;
+  return false;
+}
+
+function financeSummary(p) {
+  const authErr = checkFinanceAuth(p);
+  if (authErr) return authErr;
+
+  try {
+    const teacherData = getTeacherData();
+    const camps = teacherData.camps || [];
+
+    // 支出按 "營隊|教室" 分組加總
+    const expSh = getExpenseSheet();
+    const expLastRow = expSh.getLastRow();
+    const expensesByKey = {};
+    if (expLastRow >= 2) {
+      const expData = expSh.getRange(2, 1, expLastRow - 1, EXPENSE_HEADERS.length).getValues();
+      expData.forEach(function(r) {
+        const camp = String(r[1] || '').trim();
+        const cls = String(r[2] || '').trim();
+        const amt = parseInt(r[5]) || 0;
+        const key = camp + '|' + cls;
+        expensesByKey[key] = (expensesByKey[key] || 0) + amt;
+      });
+    }
+
+    // 分組：每 (教室, 營隊)
+    const groups = { '聯合': {}, '永康': {}, '北區': {}, '未分類': {} };
+
+    camps.forEach(function(camp) {
+      const price = findCampPrice(camp.name);
+      const unitPrice = price ? (price.earlybird || price.original || 0) : 0;
+
+      camp.students.forEach(function(s) {
+        const cls = classifyClassroom(camp.name, s.session);
+        if (!groups[cls][camp.name]) {
+          groups[cls][camp.name] = {
+            campName: camp.name,
+            classroom: cls,
+            unitPrice: unitPrice,
+            priceTiers: price || null,
+            headcount: 0,
+            paid: 0,
+            unpaid: 0,
+            revenuePaid: 0,
+            revenueUnpaid: 0,
+            revenueTotal: 0,
+            expense: 0,
+            profit: 0,
+            unpaidStudents: []
+          };
+        }
+        const g = groups[cls][camp.name];
+        g.headcount++;
+        if (isPaid(s.payment)) {
+          g.paid++;
+          g.revenuePaid += unitPrice;
+        } else {
+          g.unpaid++;
+          g.revenueUnpaid += unitPrice;
+          g.unpaidStudents.push({
+            name: s.name,
+            parentPhone: s.parentPhone,
+            parentName: s.parentName,
+            payment: s.payment
+          });
+        }
+        g.revenueTotal += unitPrice;
+      });
+    });
+
+    // 套用支出
+    Object.keys(groups).forEach(function(cls) {
+      Object.keys(groups[cls]).forEach(function(campName) {
+        const g = groups[cls][campName];
+        const key = campName + '|' + cls;
+        g.expense = expensesByKey[key] || 0;
+        g.profit = g.revenueTotal - g.expense;
+      });
+    });
+
+    // 陣列化 + 總計
+    let totalPeople = 0, totalRevenue = 0, totalPaid = 0, totalUnpaid = 0, totalExpense = 0;
+    const result = {};
+    ['聯合', '永康', '北區', '未分類'].forEach(function(cls) {
+      result[cls] = Object.keys(groups[cls]).map(function(k) { return groups[cls][k]; });
+      result[cls].sort(function(a, b) { return b.revenueTotal - a.revenueTotal; });
+      result[cls].forEach(function(g) {
+        totalPeople += g.headcount;
+        totalRevenue += g.revenueTotal;
+        totalPaid += g.revenuePaid;
+        totalUnpaid += g.revenueUnpaid;
+        totalExpense += g.expense;
+      });
+    });
+
+    return {
+      success: true,
+      groups: result,
+      stats: {
+        totalPeople: totalPeople,
+        totalRevenue: totalRevenue,
+        totalPaid: totalPaid,
+        totalUnpaid: totalUnpaid,
+        totalExpense: totalExpense,
+        totalProfit: totalRevenue - totalExpense
+      },
+      categories: EXPENSE_CATEGORIES,
+      generatedAt: Utilities.formatDate(new Date(), 'Asia/Taipei', 'yyyy-MM-dd HH:mm:ss')
+    };
+  } catch (err) {
+    return { success: false, error: String(err && err.message || err) };
+  }
+}
+
+function expenseList(p) {
+  const authErr = checkFinanceAuth(p);
+  if (authErr) return authErr;
+
+  try {
+    const sh = getExpenseSheet();
+    const lastRow = sh.getLastRow();
+    if (lastRow < 2) return { success: true, expenses: [] };
+    const data = sh.getRange(2, 1, lastRow - 1, EXPENSE_HEADERS.length).getValues();
+    const expenses = data.map(function(r, i) {
+      return {
+        row: i + 2,
+        date: r[0] instanceof Date
+          ? Utilities.formatDate(r[0], 'Asia/Taipei', 'yyyy-MM-dd')
+          : String(r[0] || ''),
+        camp: String(r[1] || ''),
+        classroom: String(r[2] || ''),
+        category: String(r[3] || ''),
+        item: String(r[4] || ''),
+        amount: Number(r[5]) || 0,
+        note: String(r[6] || ''),
+        createdAt: r[7] instanceof Date
+          ? Utilities.formatDate(r[7], 'Asia/Taipei', 'yyyy-MM-dd HH:mm')
+          : String(r[7] || '')
+      };
+    });
+    return { success: true, expenses: expenses };
+  } catch (err) {
+    return { success: false, error: String(err && err.message || err) };
+  }
+}
+
+function expenseAdd(p) {
+  const authErr = checkFinanceAuth(p);
+  if (authErr) return authErr;
+
+  try {
+    const date = String(p.date || '').trim() || Utilities.formatDate(new Date(), 'Asia/Taipei', 'yyyy-MM-dd');
+    const camp = String(p.camp || '').trim();
+    const classroom = String(p.classroom || '').trim();
+    const category = String(p.category || '').trim();
+    const item = String(p.item || '').trim();
+    const amount = parseInt(p.amount) || 0;
+    const note = String(p.note || '').trim();
+
+    if (!camp) return { success: false, error: '請選擇營隊' };
+    if (!classroom) return { success: false, error: '請選擇教室' };
+    if (!category) return { success: false, error: '請選擇類別' };
+    if (!item) return { success: false, error: '請填寫項目' };
+    if (amount <= 0) return { success: false, error: '金額需大於 0' };
+
+    const sh = getExpenseSheet();
+    const now = Utilities.formatDate(new Date(), 'Asia/Taipei', 'yyyy-MM-dd HH:mm:ss');
+    sh.appendRow([date, camp, classroom, category, item, amount, note, now]);
+    return { success: true, row: sh.getLastRow() };
+  } catch (err) {
+    return { success: false, error: String(err && err.message || err) };
+  }
+}
+
+function expenseUpdate(p) {
+  const authErr = checkFinanceAuth(p);
+  if (authErr) return authErr;
+
+  try {
+    const row = parseInt(p.row);
+    if (!row || row < 2) return { success: false, error: '無效的列號' };
+    const sh = getExpenseSheet();
+    if (row > sh.getLastRow()) return { success: false, error: '列號超出範圍' };
+
+    const updates = { date: 1, camp: 2, classroom: 3, category: 4, item: 5, amount: 6, note: 7 };
+    Object.keys(updates).forEach(function(k) {
+      if (p[k] !== undefined && p[k] !== null) {
+        const col = updates[k];
+        const val = (k === 'amount') ? (parseInt(p[k]) || 0) : String(p[k]);
+        sh.getRange(row, col).setValue(val);
+      }
+    });
+    return { success: true };
+  } catch (err) {
+    return { success: false, error: String(err && err.message || err) };
+  }
+}
+
+function expenseDelete(p) {
+  const authErr = checkFinanceAuth(p);
+  if (authErr) return authErr;
+
+  try {
+    const row = parseInt(p.row);
+    if (!row || row < 2) return { success: false, error: '無效的列號' };
+    const sh = getExpenseSheet();
+    if (row > sh.getLastRow()) return { success: false, error: '列號超出範圍' };
+    sh.deleteRow(row);
+    return { success: true };
+  } catch (err) {
+    return { success: false, error: String(err && err.message || err) };
+  }
 }

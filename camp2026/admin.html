@@ -218,6 +218,7 @@ h1 { font-size: 1.5rem; color: #F5941E; font-weight: 900; }
     <button class="tab" data-tab="matrix">🛠️ MATRIX 訂購</button>
     <button class="tab" data-tab="spike">🧱 SPIKE 訂購</button>
     <button class="tab" data-tab="quote">📄 學校報價單</button>
+    <button class="tab" data-tab="finance">💰 營隊收支</button>
   </div>
 
   <!-- 營隊總名單 -->
@@ -388,6 +389,98 @@ h1 { font-size: 1.5rem; color: #F5941E; font-weight: 900; }
   </div>
 </div>
 
+<!-- ============ 💰 營隊收支 ============ -->
+<div class="panel" id="panel-finance">
+  <div id="finGate" class="card" style="max-width:440px;margin:40px auto;text-align:center">
+    <div class="card-title" style="justify-content:center">🔐 營隊收支 · 密碼驗證</div>
+    <div style="font-size:.8rem;color:#888;margin-bottom:12px">此分頁含敏感收支資料，需密碼解鎖</div>
+    <input type="password" id="finPwInput" placeholder="輸入密碼" style="width:100%;padding:12px;margin-bottom:10px;border-radius:8px;border:2px solid #eee;font-size:1rem;text-align:center;letter-spacing:3px;font-family:inherit;box-sizing:border-box" onkeydown="if(event.key==='Enter')finUnlock()" />
+    <button onclick="finUnlock()" class="verify-btn" style="width:100%">🔓 解鎖</button>
+    <div id="finGateMsg" style="margin-top:10px;color:#C93A2A;font-weight:700;font-size:.85rem;min-height:1.2em"></div>
+  </div>
+
+  <div id="finContent" style="display:none">
+    <div class="card">
+      <div class="card-title">📊 總覽</div>
+      <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px">
+        <div style="text-align:center"><div style="font-size:1.5rem;font-weight:900;color:#1976D2" id="finTotalPeople">-</div><div style="font-size:.72rem;color:#aaa;font-weight:700">總報名人數</div></div>
+        <div style="text-align:center"><div style="font-size:1.5rem;font-weight:900;color:#2E7D32" id="finTotalRevenue">-</div><div style="font-size:.72rem;color:#aaa;font-weight:700">應收總額</div></div>
+        <div style="text-align:center"><div style="font-size:1.5rem;font-weight:900;color:#C62828" id="finTotalExpense">-</div><div style="font-size:.72rem;color:#aaa;font-weight:700">總支出</div></div>
+        <div style="text-align:center"><div style="font-size:1.5rem;font-weight:900;color:#F5941E" id="finTotalProfit">-</div><div style="font-size:.72rem;color:#aaa;font-weight:700">毛利</div></div>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:10px;padding-top:10px;border-top:1px dashed #eee">
+        <div style="text-align:center"><div style="font-size:1.1rem;font-weight:900;color:#388E3C" id="finTotalPaid">-</div><div style="font-size:.7rem;color:#aaa;font-weight:700">✅ 已收金額</div></div>
+        <div style="text-align:center"><div style="font-size:1.1rem;font-weight:900;color:#E65100" id="finTotalUnpaid">-</div><div style="font-size:.7rem;color:#aaa;font-weight:700">⏳ 未收金額</div></div>
+      </div>
+      <div style="display:flex;gap:8px;margin-top:14px;flex-wrap:wrap">
+        <button onclick="loadFinance()" style="flex:1;min-width:120px;padding:10px;background:none;border:1.5px solid #eee;border-radius:10px;font-weight:700;color:#888;cursor:pointer;font-family:inherit">↻ 重新整理</button>
+        <button onclick="openExpenseForm()" style="flex:1;min-width:120px;padding:10px;background:#F5941E;color:#fff;border:none;border-radius:10px;font-weight:900;cursor:pointer;font-family:inherit">💸 新增支出</button>
+        <button onclick="finLock()" style="padding:10px 14px;background:none;border:1.5px solid #C93A2A;color:#C93A2A;border-radius:10px;font-weight:700;cursor:pointer;font-family:inherit">🔒 鎖定</button>
+      </div>
+      <div id="finGeneratedAt" style="margin-top:8px;font-size:.7rem;color:#aaa;text-align:center"></div>
+    </div>
+
+    <div id="finGroups"></div>
+
+    <div class="card" style="margin-top:14px">
+      <div class="card-title">💸 支出記錄</div>
+      <div id="finExpList" class="loading">尚未載入</div>
+    </div>
+  </div>
+
+  <!-- 新增/編輯支出 Modal -->
+  <div class="modal" id="expModal" onclick="closeExpModal(event)">
+    <div class="modal-content" onclick="event.stopPropagation()" style="max-width:460px">
+      <div class="modal-head">
+        <div class="modal-title" id="expModalTitle">💸 新增支出</div>
+        <button class="modal-close" onclick="closeExpModal()">✕</button>
+      </div>
+      <div class="modal-body">
+        <div style="display:grid;gap:10px">
+          <div>
+            <label style="font-size:.8rem;color:#666;font-weight:700;display:block;margin-bottom:4px">日期</label>
+            <input type="date" id="expDate" style="width:100%;padding:10px;border-radius:8px;border:2px solid #eee;font-size:.95rem;font-family:inherit;box-sizing:border-box" />
+          </div>
+          <div>
+            <label style="font-size:.8rem;color:#666;font-weight:700;display:block;margin-bottom:4px">營隊</label>
+            <select id="expCamp" style="width:100%;padding:10px;border-radius:8px;border:2px solid #eee;font-size:.95rem;font-family:inherit;box-sizing:border-box"><option value="">-- 請選擇 --</option></select>
+          </div>
+          <div>
+            <label style="font-size:.8rem;color:#666;font-weight:700;display:block;margin-bottom:4px">教室</label>
+            <select id="expClassroom" style="width:100%;padding:10px;border-radius:8px;border:2px solid #eee;font-size:.95rem;font-family:inherit;box-sizing:border-box">
+              <option value="">-- 請選擇 --</option>
+              <option value="北區">北區</option>
+              <option value="永康">永康</option>
+              <option value="聯合">聯合</option>
+            </select>
+          </div>
+          <div>
+            <label style="font-size:.8rem;color:#666;font-weight:700;display:block;margin-bottom:4px">類別</label>
+            <select id="expCategory" style="width:100%;padding:10px;border-radius:8px;border:2px solid #eee;font-size:.95rem;font-family:inherit;box-sizing:border-box"><option value="">-- 請選擇 --</option></select>
+          </div>
+          <div>
+            <label style="font-size:.8rem;color:#666;font-weight:700;display:block;margin-bottom:4px">項目</label>
+            <input type="text" id="expItem" placeholder="例如：LEGO 零件包 10 組" style="width:100%;padding:10px;border-radius:8px;border:2px solid #eee;font-size:.95rem;font-family:inherit;box-sizing:border-box" />
+          </div>
+          <div>
+            <label style="font-size:.8rem;color:#666;font-weight:700;display:block;margin-bottom:4px">金額（元）</label>
+            <input type="number" id="expAmount" min="1" step="1" placeholder="0" style="width:100%;padding:10px;border-radius:8px;border:2px solid #eee;font-size:.95rem;font-family:inherit;box-sizing:border-box" />
+          </div>
+          <div>
+            <label style="font-size:.8rem;color:#666;font-weight:700;display:block;margin-bottom:4px">備註（可選）</label>
+            <input type="text" id="expNote" style="width:100%;padding:10px;border-radius:8px;border:2px solid #eee;font-size:.95rem;font-family:inherit;box-sizing:border-box" />
+          </div>
+          <div id="expModalMsg" style="color:#C93A2A;font-weight:700;font-size:.85rem;min-height:1.2em"></div>
+          <div style="display:flex;gap:8px">
+            <button onclick="closeExpModal()" style="flex:1;padding:12px;background:none;border:1.5px solid #eee;border-radius:10px;font-weight:700;color:#888;cursor:pointer;font-family:inherit">取消</button>
+            <button onclick="submitExpense()" style="flex:2;padding:12px;background:#F5941E;color:#fff;border:none;border-radius:10px;font-weight:900;cursor:pointer;font-family:inherit">💾 儲存</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
 <!-- 學員名單 Modal -->
 <div class="modal" id="modal" onclick="closeModal(event)">
   <div class="modal-content" onclick="event.stopPropagation()">
@@ -401,7 +494,7 @@ h1 { font-size: 1.5rem; color: #F5941E; font-weight: 900; }
 
 
 <script>
-const API = 'https://script.google.com/macros/s/AKfycbxSO5GPBrdrfP8pEPXBiQ6gahgwQ-r50WRNdtlLsmkGw0ZiDZ5NwRnJW4Cpbd1tbhJN/exec';
+const API = 'https://script.google.com/macros/s/AKfycbxvdHexWJHz0pnfPGdmO3O7n9Nwu5BjXJNx7L8ejOjRfCGX75BE9OeFIrb0G__wf0LH/exec';
 const SITE_PASS = 'BLOCK';       // 整站進入密碼（進站後全開，無二次密碼）
 const SITE_UNLOCK_KEY = 'bp_admin_unlocked_v1';
 let allData = null;
@@ -470,6 +563,7 @@ document.querySelectorAll('.tab').forEach(btn => {
     if (tab === 'matrix') loadMatrixOrders();
     if (tab === 'spike') loadSpikeOrders();
     if (tab === 'quote') initQuoteBuilder();
+    if (tab === 'finance') enterFinanceTab();
   });
 });
 
@@ -1542,6 +1636,301 @@ async function verify() {
         ${data.expiresAt ? `<div style="color:#aaa;font-weight:700">到期時間</div><div style="font-weight:700">${data.expiresAt}</div>` : ''}
       </div>`;
   } catch(e) { resultDiv.innerHTML = '<div style="padding:16px;color:#C93A2A;font-weight:700">❌ 查詢失敗</div>'; }
+}
+
+// === 💰 營隊收支 ===
+const FIN_SESSION_KEY = 'fin_pw_session';
+let _finPw = '';
+let _finData = null;
+let _finExpenses = [];
+let _editingExpRow = null;
+
+function enterFinanceTab() {
+  // sessionStorage 記住密碼（關頁就忘）
+  const saved = sessionStorage.getItem(FIN_SESSION_KEY);
+  if (saved) {
+    _finPw = saved;
+    showFinanceContent();
+    loadFinance();
+  } else {
+    document.getElementById('finGate').style.display = 'block';
+    document.getElementById('finContent').style.display = 'none';
+    setTimeout(() => document.getElementById('finPwInput').focus(), 100);
+  }
+}
+
+function showFinanceContent() {
+  document.getElementById('finGate').style.display = 'none';
+  document.getElementById('finContent').style.display = 'block';
+}
+
+async function finUnlock() {
+  const pw = document.getElementById('finPwInput').value;
+  const msg = document.getElementById('finGateMsg');
+  msg.textContent = '';
+  if (!pw) { msg.textContent = '請輸入密碼'; return; }
+  msg.textContent = '🔍 驗證中…';
+  // 用 finance-summary 當做密碼驗證
+  try {
+    const res = await fetch(API + '?action=finance-summary&password=' + encodeURIComponent(pw));
+    const data = await res.json();
+    if (data.success) {
+      _finPw = pw;
+      sessionStorage.setItem(FIN_SESSION_KEY, pw);
+      _finData = data;
+      msg.textContent = '';
+      showFinanceContent();
+      renderFinance(data);
+      loadExpenses();
+    } else {
+      msg.textContent = '❌ ' + (data.error || '密碼錯誤');
+    }
+  } catch(e) {
+    msg.textContent = '❌ 連線失敗：' + e.message;
+  }
+}
+
+function finLock() {
+  _finPw = '';
+  _finData = null;
+  sessionStorage.removeItem(FIN_SESSION_KEY);
+  document.getElementById('finPwInput').value = '';
+  document.getElementById('finGateMsg').textContent = '';
+  document.getElementById('finGate').style.display = 'block';
+  document.getElementById('finContent').style.display = 'none';
+}
+
+async function loadFinance() {
+  if (!_finPw) { enterFinanceTab(); return; }
+  try {
+    const res = await fetch(API + '?action=finance-summary&password=' + encodeURIComponent(_finPw));
+    const data = await res.json();
+    if (!data.success) {
+      if (data.error && data.error.indexOf('密碼') >= 0) { finLock(); return; }
+      alert('載入失敗：' + data.error);
+      return;
+    }
+    _finData = data;
+    renderFinance(data);
+    loadExpenses();
+  } catch(e) {
+    alert('連線失敗：' + e.message);
+  }
+}
+
+function fmtMoney(n) {
+  return '$' + (Number(n) || 0).toLocaleString();
+}
+
+function renderFinance(data) {
+  const s = data.stats || {};
+  document.getElementById('finTotalPeople').textContent = s.totalPeople || 0;
+  document.getElementById('finTotalRevenue').textContent = fmtMoney(s.totalRevenue);
+  document.getElementById('finTotalExpense').textContent = fmtMoney(s.totalExpense);
+  document.getElementById('finTotalProfit').textContent = fmtMoney(s.totalProfit);
+  document.getElementById('finTotalPaid').textContent = fmtMoney(s.totalPaid);
+  document.getElementById('finTotalUnpaid').textContent = fmtMoney(s.totalUnpaid);
+  document.getElementById('finGeneratedAt').textContent = '資料時間：' + (data.generatedAt || '-');
+
+  // 填支出 modal 的 dropdown
+  fillExpenseDropdowns(data);
+
+  // 分區渲染
+  const container = document.getElementById('finGroups');
+  container.innerHTML = '';
+  const zoneColor = { '聯合': '#9C27B0', '永康': '#F5941E', '北區': '#1976D2', '未分類': '#999' };
+  const zoneIcon = { '聯合': '🌲', '永康': '🏫', '北區': '🏫', '未分類': '⚠️' };
+
+  ['聯合', '永康', '北區', '未分類'].forEach(cls => {
+    const camps = (data.groups || {})[cls] || [];
+    if (camps.length === 0) return;
+    const color = zoneColor[cls];
+    const icon = zoneIcon[cls];
+
+    let zoneSubtotal = { ppl: 0, rev: 0, exp: 0 };
+    camps.forEach(c => { zoneSubtotal.ppl += c.headcount; zoneSubtotal.rev += c.revenueTotal; zoneSubtotal.exp += c.expense; });
+
+    let html = `<div class="card" style="border-left:6px solid ${color};margin-top:14px">
+      <div class="card-title" style="color:${color}">${icon} ${cls}教室 <span style="font-size:.8rem;color:#aaa;font-weight:700;margin-left:8px">${zoneSubtotal.ppl} 人 · 收入 ${fmtMoney(zoneSubtotal.rev)} · 支出 ${fmtMoney(zoneSubtotal.exp)} · 毛利 ${fmtMoney(zoneSubtotal.rev - zoneSubtotal.exp)}</span></div>
+      <div style="display:grid;gap:10px">`;
+
+    camps.forEach((c, idx) => {
+      const profitColor = c.profit >= 0 ? '#2E7D32' : '#C62828';
+      const unpaidListId = 'unpaid-' + cls + '-' + idx;
+      html += `<div style="border:1.5px solid #eee;border-radius:10px;padding:12px;background:#fafafa">
+        <div style="display:flex;justify-content:space-between;align-items:start;flex-wrap:wrap;gap:8px;margin-bottom:8px">
+          <div style="font-weight:900;font-size:1rem;color:#333">${c.campName}</div>
+          <div style="font-size:.8rem;color:#666;font-weight:700">單價 ${fmtMoney(c.unitPrice)}</div>
+        </div>
+        <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:6px;font-size:.82rem;margin-bottom:8px">
+          <div style="text-align:center;padding:6px;background:#E8F5E9;border-radius:6px"><div style="color:#388E3C;font-weight:900">${c.paid}</div><div style="color:#666;font-size:.7rem">已繳</div></div>
+          <div style="text-align:center;padding:6px;background:#FFF3E0;border-radius:6px"><div style="color:#E65100;font-weight:900">${c.unpaid}</div><div style="color:#666;font-size:.7rem">未繳</div></div>
+          <div style="text-align:center;padding:6px;background:#E3F2FD;border-radius:6px"><div style="color:#1976D2;font-weight:900">${c.headcount}</div><div style="color:#666;font-size:.7rem">總人數</div></div>
+          <div style="text-align:center;padding:6px;background:#FFEBEE;border-radius:6px"><div style="color:#C62828;font-weight:900">${fmtMoney(c.expense)}</div><div style="color:#666;font-size:.7rem">支出</div></div>
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px;font-size:.8rem;padding:8px 0;border-top:1px dashed #eee">
+          <div><span style="color:#388E3C">✅ 已收</span> <b>${fmtMoney(c.revenuePaid)}</b></div>
+          <div><span style="color:#E65100">⏳ 未收</span> <b>${fmtMoney(c.revenueUnpaid)}</b></div>
+          <div style="color:${profitColor};font-weight:900">📈 毛利 ${fmtMoney(c.profit)}</div>
+        </div>
+        ${c.unpaid > 0 ? `<div style="margin-top:6px"><button onclick="toggleUnpaidList('${unpaidListId}')" style="background:none;border:1px solid #FFA726;color:#E65100;padding:4px 10px;border-radius:6px;font-size:.75rem;font-weight:700;cursor:pointer;font-family:inherit">🔍 未繳名單 (${c.unpaid})</button><div id="${unpaidListId}" style="display:none;margin-top:8px;font-size:.8rem;background:#FFF8E1;padding:8px;border-radius:6px">${(c.unpaidStudents || []).map(u => `<div style="padding:4px 0;border-bottom:1px dashed #eee"><b>${u.name}</b> ${u.parentName ? '｜家長 ' + u.parentName : ''} ${u.parentPhone ? '<a href="tel:' + u.parentPhone + '" style="color:#1976D2;margin-left:6px">📞 ' + u.parentPhone + '</a>' : ''} ${u.payment ? '<span style="color:#888;margin-left:6px">(' + u.payment + ')</span>' : ''}</div>`).join('')}</div></div>` : ''}
+      </div>`;
+    });
+
+    html += `</div></div>`;
+    container.innerHTML += html;
+  });
+}
+
+function toggleUnpaidList(id) {
+  const el = document.getElementById(id);
+  if (!el) return;
+  el.style.display = el.style.display === 'none' ? 'block' : 'none';
+}
+
+async function loadExpenses() {
+  if (!_finPw) return;
+  try {
+    const res = await fetch(API + '?action=expense-list&password=' + encodeURIComponent(_finPw));
+    const data = await res.json();
+    if (!data.success) { document.getElementById('finExpList').innerHTML = '<div style="color:#C93A2A">' + (data.error || '載入失敗') + '</div>'; return; }
+    _finExpenses = data.expenses || [];
+    renderExpenses();
+  } catch(e) {
+    document.getElementById('finExpList').innerHTML = '<div style="color:#C93A2A">連線失敗：' + e.message + '</div>';
+  }
+}
+
+function renderExpenses() {
+  const el = document.getElementById('finExpList');
+  if (_finExpenses.length === 0) {
+    el.innerHTML = '<div style="text-align:center;color:#aaa;padding:20px">尚無支出記錄，點上方「💸 新增支出」開始</div>';
+    return;
+  }
+  let html = '<div style="overflow-x:auto"><table style="width:100%;border-collapse:collapse;font-size:.85rem"><thead><tr style="background:#f5f5f5"><th style="padding:8px;text-align:left">日期</th><th style="padding:8px;text-align:left">營隊</th><th style="padding:8px;text-align:left">教室</th><th style="padding:8px;text-align:left">類別</th><th style="padding:8px;text-align:left">項目</th><th style="padding:8px;text-align:right">金額</th><th style="padding:8px"></th></tr></thead><tbody>';
+  _finExpenses.slice().reverse().forEach(e => {
+    html += `<tr style="border-bottom:1px solid #eee">
+      <td style="padding:8px">${e.date}</td>
+      <td style="padding:8px;font-weight:700">${e.camp}</td>
+      <td style="padding:8px">${e.classroom}</td>
+      <td style="padding:8px;color:#666">${e.category}</td>
+      <td style="padding:8px;color:#333">${e.item}${e.note ? '<div style="font-size:.75rem;color:#aaa">' + e.note + '</div>' : ''}</td>
+      <td style="padding:8px;text-align:right;font-weight:900;color:#C62828">${fmtMoney(e.amount)}</td>
+      <td style="padding:8px;text-align:center"><button onclick="editExpense(${e.row})" style="background:none;border:1px solid #F5941E;color:#F5941E;padding:2px 8px;border-radius:4px;font-size:.7rem;cursor:pointer;font-family:inherit;margin-right:2px">改</button><button onclick="deleteExpense(${e.row})" style="background:none;border:1px solid #C93A2A;color:#C93A2A;padding:2px 8px;border-radius:4px;font-size:.7rem;cursor:pointer;font-family:inherit">刪</button></td>
+    </tr>`;
+  });
+  html += '</tbody></table></div>';
+  el.innerHTML = html;
+}
+
+function fillExpenseDropdowns(data) {
+  const campSel = document.getElementById('expCamp');
+  const catSel = document.getElementById('expCategory');
+  if (!campSel || !catSel) return;
+
+  // 營隊 dropdown
+  const campNames = new Set();
+  Object.values(data.groups || {}).forEach(arr => arr.forEach(c => campNames.add(c.campName)));
+  campSel.innerHTML = '<option value="">-- 請選擇 --</option>';
+  Array.from(campNames).sort().forEach(n => {
+    const opt = document.createElement('option');
+    opt.value = n; opt.textContent = n;
+    campSel.appendChild(opt);
+  });
+
+  // 類別 dropdown
+  catSel.innerHTML = '<option value="">-- 請選擇 --</option>';
+  (data.categories || []).forEach(c => {
+    const opt = document.createElement('option');
+    opt.value = c; opt.textContent = c;
+    catSel.appendChild(opt);
+  });
+}
+
+function openExpenseForm() {
+  _editingExpRow = null;
+  document.getElementById('expModalTitle').textContent = '💸 新增支出';
+  document.getElementById('expDate').value = new Date().toISOString().slice(0, 10);
+  document.getElementById('expCamp').value = '';
+  document.getElementById('expClassroom').value = '';
+  document.getElementById('expCategory').value = '';
+  document.getElementById('expItem').value = '';
+  document.getElementById('expAmount').value = '';
+  document.getElementById('expNote').value = '';
+  document.getElementById('expModalMsg').textContent = '';
+  document.getElementById('expModal').classList.add('show');
+}
+
+function editExpense(row) {
+  const e = _finExpenses.find(x => x.row === row);
+  if (!e) return;
+  _editingExpRow = row;
+  document.getElementById('expModalTitle').textContent = '✏️ 編輯支出';
+  document.getElementById('expDate').value = e.date;
+  document.getElementById('expCamp').value = e.camp;
+  document.getElementById('expClassroom').value = e.classroom;
+  document.getElementById('expCategory').value = e.category;
+  document.getElementById('expItem').value = e.item;
+  document.getElementById('expAmount').value = e.amount;
+  document.getElementById('expNote').value = e.note || '';
+  document.getElementById('expModalMsg').textContent = '';
+  document.getElementById('expModal').classList.add('show');
+}
+
+function closeExpModal(ev) {
+  if (ev && ev.target !== ev.currentTarget) return;
+  document.getElementById('expModal').classList.remove('show');
+}
+
+async function submitExpense() {
+  const date = document.getElementById('expDate').value;
+  const camp = document.getElementById('expCamp').value;
+  const classroom = document.getElementById('expClassroom').value;
+  const category = document.getElementById('expCategory').value;
+  const item = document.getElementById('expItem').value.trim();
+  const amount = parseInt(document.getElementById('expAmount').value) || 0;
+  const note = document.getElementById('expNote').value.trim();
+  const msg = document.getElementById('expModalMsg');
+  msg.textContent = '';
+
+  if (!camp) { msg.textContent = '請選擇營隊'; return; }
+  if (!classroom) { msg.textContent = '請選擇教室'; return; }
+  if (!category) { msg.textContent = '請選擇類別'; return; }
+  if (!item) { msg.textContent = '請填寫項目'; return; }
+  if (amount <= 0) { msg.textContent = '金額需大於 0'; return; }
+
+  msg.textContent = '⏳ 儲存中…';
+  const params = new URLSearchParams({
+    action: _editingExpRow ? 'expense-update' : 'expense-add',
+    password: _finPw,
+    date, camp, classroom, category, item,
+    amount: String(amount), note
+  });
+  if (_editingExpRow) params.set('row', String(_editingExpRow));
+
+  try {
+    const res = await fetch(API + '?' + params.toString());
+    const data = await res.json();
+    if (!data.success) { msg.textContent = '❌ ' + (data.error || '儲存失敗'); return; }
+    closeExpModal();
+    await loadFinance();
+  } catch(e) {
+    msg.textContent = '❌ 連線失敗：' + e.message;
+  }
+}
+
+async function deleteExpense(row) {
+  const e = _finExpenses.find(x => x.row === row);
+  if (!e) return;
+  if (!confirm(`確定刪除這筆支出？\n\n${e.date} · ${e.camp} · ${e.item} · ${fmtMoney(e.amount)}`)) return;
+  try {
+    const res = await fetch(API + `?action=expense-delete&password=${encodeURIComponent(_finPw)}&row=${row}`);
+    const data = await res.json();
+    if (!data.success) { alert('刪除失敗：' + (data.error || '')); return; }
+    await loadFinance();
+  } catch(err) {
+    alert('連線失敗：' + err.message);
+  }
 }
 
 // === 初始化（只有已解鎖才載入）===
