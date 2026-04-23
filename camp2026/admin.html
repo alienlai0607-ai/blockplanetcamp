@@ -521,7 +521,7 @@ h1 { font-size: 1.5rem; color: #F5941E; font-weight: 900; }
 
 
 <script>
-const API = 'https://script.google.com/macros/s/AKfycbxvdHexWJHz0pnfPGdmO3O7n9Nwu5BjXJNx7L8ejOjRfCGX75BE9OeFIrb0G__wf0LH/exec';
+const API = 'https://script.google.com/macros/s/AKfycbxo8ntrShgNi4LtPzJ7wf4F4_92MtTao_u8Pzf2YommEBw1FTvu42WPKljZAUE-HMjO/exec';
 const SITE_PASS = 'BLOCK';       // 整站進入密碼（進站後全開，無二次密碼）
 const SITE_UNLOCK_KEY = 'bp_admin_unlocked_v1';
 let allData = null;
@@ -1786,11 +1786,26 @@ function renderFinance(data) {
     camps.forEach((c, idx) => {
       const profitColor = c.profit >= 0 ? '#2E7D32' : '#C62828';
       const unpaidListId = 'unpaid-' + cls + '-' + idx;
+      const plans = Object.values(c.plans || {}).sort((a, b) => b.count - a.count);
+      const plansHtml = plans.length === 0 ? '' : `
+        <div style="background:#fff;border:1px solid #eee;border-radius:8px;padding:8px 10px;margin-bottom:10px">
+          <div style="font-size:.72rem;font-weight:700;color:#888;margin-bottom:4px">📋 方案明細</div>
+          ${plans.map(p => {
+            const subtotal = p.revenuePaid + p.revenueUnpaid;
+            const estIcon = p.isEstimated ? '<span style="color:#E65100" title="金額估算">⚠️</span> ' : '';
+            return `<div style="display:flex;justify-content:space-between;align-items:center;padding:4px 0;border-bottom:1px dashed #f0f0f0;flex-wrap:wrap;gap:6px;font-size:.8rem">
+              <div style="flex:2;min-width:160px">${estIcon}<b>${p.label}</b></div>
+              <div style="color:#666;font-size:.75rem">× ${p.count} 人（<span style="color:#388E3C">${p.paid} 繳</span>／<span style="color:#E65100">${p.unpaid} 未</span>）</div>
+              <div style="font-weight:900;color:#2E7D32">${fmtMoney(subtotal)}</div>
+            </div>`;
+          }).join('')}
+        </div>`;
       html += `<div style="border:1.5px solid #eee;border-radius:10px;padding:12px;background:#fafafa">
         <div style="display:flex;justify-content:space-between;align-items:start;flex-wrap:wrap;gap:8px;margin-bottom:8px">
           <div style="font-weight:900;font-size:1rem;color:#333">${c.campName}</div>
-          <div style="font-size:.8rem;color:#666;font-weight:700">單價 ${fmtMoney(c.unitPrice)}</div>
+          <div style="font-size:.75rem;color:#888;font-weight:700;text-align:right">早鳥參考價 ${fmtMoney(c.earlybirdPrice)}</div>
         </div>
+        ${plansHtml}
         <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:6px;font-size:.82rem;margin-bottom:8px">
           <div style="text-align:center;padding:6px;background:#E8F5E9;border-radius:6px"><div style="color:#388E3C;font-weight:900">${c.paid}</div><div style="color:#666;font-size:.7rem">已繳</div></div>
           <div style="text-align:center;padding:6px;background:#FFF3E0;border-radius:6px"><div style="color:#E65100;font-weight:900">${c.unpaid}</div><div style="color:#666;font-size:.7rem">未繳</div></div>
@@ -1802,7 +1817,7 @@ function renderFinance(data) {
           <div><span style="color:#E65100">⏳ 未收</span> <b>${fmtMoney(c.revenueUnpaid)}</b></div>
           <div style="color:${profitColor};font-weight:900">📈 毛利 ${fmtMoney(c.profit)}</div>
         </div>
-        ${c.unpaid > 0 ? `<div style="margin-top:6px"><button onclick="toggleUnpaidList('${unpaidListId}')" style="background:none;border:1px solid #FFA726;color:#E65100;padding:4px 10px;border-radius:6px;font-size:.75rem;font-weight:700;cursor:pointer;font-family:inherit">🔍 未繳名單 (${c.unpaid})</button><div id="${unpaidListId}" style="display:none;margin-top:8px;font-size:.8rem;background:#FFF8E1;padding:8px;border-radius:6px">${(c.unpaidStudents || []).map(u => `<div style="padding:4px 0;border-bottom:1px dashed #eee"><b>${u.name}</b> ${u.parentName ? '｜家長 ' + u.parentName : ''} ${u.parentPhone ? '<a href="tel:' + u.parentPhone + '" style="color:#1976D2;margin-left:6px">📞 ' + u.parentPhone + '</a>' : ''} ${u.payment ? '<span style="color:#888;margin-left:6px">(' + u.payment + ')</span>' : ''}</div>`).join('')}</div></div>` : ''}
+        ${c.unpaid > 0 ? `<div style="margin-top:6px"><button onclick="toggleUnpaidList('${unpaidListId}')" style="background:none;border:1px solid #FFA726;color:#E65100;padding:4px 10px;border-radius:6px;font-size:.75rem;font-weight:700;cursor:pointer;font-family:inherit">🔍 未繳名單 (${c.unpaid})</button><div id="${unpaidListId}" style="display:none;margin-top:8px;font-size:.8rem;background:#FFF8E1;padding:8px;border-radius:6px">${(c.unpaidStudents || []).map(u => `<div style="padding:5px 0;border-bottom:1px dashed #eee"><b>${u.name}</b> ${u.parentName ? '｜家長 ' + u.parentName : ''} ${u.parentPhone ? '<a href="tel:' + u.parentPhone + '" style="color:#1976D2;margin-left:6px">📞 ' + u.parentPhone + '</a>' : ''} ${u.payment ? '<span style="color:#888;margin-left:6px">(' + u.payment + ')</span>' : ''}${u.amount ? '<span style="color:#2E7D32;font-weight:700;margin-left:6px">' + fmtMoney(u.amount) + '</span>' : ''}${u.plan ? '<div style="font-size:.72rem;color:#999;margin-top:2px;margin-left:4px">' + u.plan + '</div>' : ''}</div>`).join('')}</div></div>` : ''}
       </div>`;
     });
 
@@ -1982,15 +1997,26 @@ function downloadCSV(filename, rows) {
 
 function exportRevenueCSV() {
   if (!_finData) { alert('尚未載入資料'); return; }
-  const rows = [['營隊','教室','單價','總人數','已繳人數','未繳人數','應收總額','已收金額','未收金額','支出','毛利']];
+  // 彙總表
+  const rows = [['營隊','教室','早鳥參考價','總人數','已繳人數','未繳人數','應收總額','已收金額','未收金額','支出','毛利']];
   ['聯合','永康','北區','未分類'].forEach(cls => {
     (_finData.groups[cls] || []).forEach(c => {
-      rows.push([c.campName, cls, c.unitPrice, c.headcount, c.paid, c.unpaid, c.revenueTotal, c.revenuePaid, c.revenueUnpaid, c.expense, c.profit]);
+      rows.push([c.campName, cls, c.earlybirdPrice, c.headcount, c.paid, c.unpaid, c.revenueTotal, c.revenuePaid, c.revenueUnpaid, c.expense, c.profit]);
     });
   });
-  // 加總計列
   const s = _finData.stats || {};
   rows.push(['（總計）','-','-', s.totalPeople,'-','-', s.totalRevenue, s.totalPaid, s.totalUnpaid, s.totalExpense, s.totalProfit]);
+  // 方案明細表（接在後面）
+  rows.push([]);
+  rows.push(['=== 方案明細 ===']);
+  rows.push(['營隊','教室','方案','單價','人數','已繳','未繳','已收金額','未收金額','小計']);
+  ['聯合','永康','北區','未分類'].forEach(cls => {
+    (_finData.groups[cls] || []).forEach(c => {
+      Object.values(c.plans || {}).sort((a,b) => b.count - a.count).forEach(p => {
+        rows.push([c.campName, cls, p.label, p.unitPrice, p.count, p.paid, p.unpaid, p.revenuePaid, p.revenueUnpaid, p.revenuePaid + p.revenueUnpaid]);
+      });
+    });
+  });
   const ts = new Date().toISOString().slice(0,10);
   downloadCSV(`布拉克星球-營隊收入-${ts}.csv`, rows);
 }

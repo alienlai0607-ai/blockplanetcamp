@@ -370,12 +370,25 @@ function getTeacherData() {
         lineId: findColumnIndex(headers, ['LINE ID', 'LINE']),
         note: findColumnIndex(headers, ['備註', '備注', '其他']),
         payment: findColumnIndex(headers, ['付款狀態', '付款', '繳費']),
+        plan: findColumnIndex(headers, ['💰 方案', '方案'], []),
+        amount: findColumnIndex(headers, ['💵 應付金額', '應付金額'], []),
       };
 
       for (let i = 0; i < data.length; i++) {
         const row = data[i];
         const sname = cols.name >= 0 ? String(row[cols.name] || '').trim() : '';
         if (!sname) continue;
+
+        // 解析應付金額：可能是 "$7,500" 字串或純數字
+        let amt = 0;
+        if (cols.amount >= 0) {
+          const raw = row[cols.amount];
+          if (typeof raw === 'number') amt = raw;
+          else {
+            const num = String(raw || '').replace(/[^0-9]/g, '');
+            amt = num ? parseInt(num) : 0;
+          }
+        }
 
         students.push({
           name: sname,
@@ -390,6 +403,8 @@ function getTeacherData() {
           lineId: cols.lineId >= 0 ? String(row[cols.lineId] || '').trim() : '',
           note: cols.note >= 0 ? String(row[cols.note] || '').trim() : '',
           payment: cols.payment >= 0 ? String(row[cols.payment] || '').trim() : '',
+          plan: cols.plan >= 0 ? String(row[cols.plan] || '').trim() : '',
+          amount: amt,
         });
       }
     }
@@ -1224,6 +1239,52 @@ function checkFinanceAuth(p) {
   return null;
 }
 
+function fmtMoneyGS(n) {
+  const v = Number(n) || 0;
+  return '$' + v.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+}
+
+// 根據金額 + sheet 方案欄位 + 營隊名產生有意義的方案 label
+// 規則（跟 onFormSubmit 一致）:
+//   - 早鳥價 = priceTiers.earlybird
+//   - 優惠券 95 折 = priceTiers.discounted
+//   - 兩人同行 = priceTiers.duo
+//   - 安親無券 = priceTiers.discounted（跟一般 95 折同價）
+//   - 安親 + 券 = floorHundred(discounted × 0.95)
+//   - 七月包月安親特價 = $15,500
+//   - 七月包月早鳥 = $16,000
+function classifyPlanLabel(priceTiers, amount, rawPlan, campName) {
+  const raw = String(rawPlan || '').trim();
+  // sheet 方案欄有描述性文字時優先用（能區分「安親 95 折」vs「一般人用券 95 折」）
+  if (raw && /[價折安親早鳥特價同行包月]/.test(raw)) return raw;
+
+  const cn = String(campName || '');
+  // 七月包月特殊
+  if (cn.indexOf('包月') >= 0) {
+    if (amount === 15500) return '共學安親特價 ' + fmtMoneyGS(amount);
+    if (amount === 16000) return '早鳥價 ' + fmtMoneyGS(amount);
+  }
+
+  if (!priceTiers) return '特價 ' + fmtMoneyGS(amount);
+  const eb = priceTiers.earlybird;
+  const disc = priceTiers.discounted;
+  const duo = priceTiers.duo;
+  const orig = priceTiers.original;
+
+  if (eb && amount === eb) return '早鳥價 ' + fmtMoneyGS(amount);
+  if (disc && amount === disc) return '95折／安親無券 ' + fmtMoneyGS(amount);
+  if (duo && amount === duo) return '兩人同行 ' + fmtMoneyGS(amount);
+  if (orig && amount === orig) return '原價 ' + fmtMoneyGS(amount);
+
+  // 安親+券 = floorHundred(disc × 0.95)
+  if (disc) {
+    const asCpn = Math.floor((disc * 0.95) / 100) * 100;
+    if (amount === asCpn) return '安親+券 ' + fmtMoneyGS(amount);
+  }
+
+  return '特價 ' + fmtMoneyGS(amount);
+}
+
 function getExpenseSheet() {
   const ss = SpreadsheetApp.getActiveSpreadsheet();
   let sh = ss.getSheetByName(EXPENSE_SHEET);
@@ -1298,7 +1359,7 @@ function financeSummary(p) {
 
     camps.forEach(function(camp) {
       const price = findCampPrice(camp.name);
-      const unitPrice = price ? (price.earlybird || price.original || 0) : 0;
+      const earlybirdPrice = price ? (price.earlybird || price.original || 0) : 0;
 
       camp.students.forEach(function(s) {
         const cls = classifyClassroom(camp.name, s.session);
@@ -1306,7 +1367,7 @@ function financeSummary(p) {
           groups[cls][camp.name] = {
             campName: camp.name,
             classroom: cls,
-            unitPrice: unitPrice,
+            earlybirdPrice: earlybirdPrice,
             priceTiers: price || null,
             headcount: 0,
             paid: 0,
@@ -1316,25 +1377,55 @@ function financeSummary(p) {
             revenueTotal: 0,
             expense: 0,
             profit: 0,
-            unpaidStudents: []
+            unpaidStudents: [],
+            plans: {}
           };
         }
         const g = groups[cls][camp.name];
+
+        // 每筆實際金額；沒有 → fallback 早鳥並標註估算
+        const hasAmount = s.amount && s.amount > 0;
+        const effective = hasAmount ? s.amount : earlybirdPrice;
+        const planLabel = hasAmount
+          ? classifyPlanLabel(price, s.amount, s.plan, camp.name)
+          : ('⚠️ 方案未計算（估早鳥 ' + fmtMoneyGS(earlybirdPrice) + '）');
+
+        if (!g.plans[planLabel]) {
+          g.plans[planLabel] = {
+            label: planLabel,
+            unitPrice: effective,
+            count: 0,
+            paid: 0,
+            unpaid: 0,
+            revenuePaid: 0,
+            revenueUnpaid: 0,
+            isEstimated: !hasAmount
+          };
+        }
+        const pb = g.plans[planLabel];
+        pb.count++;
+
         g.headcount++;
         if (isPaid(s.payment)) {
+          pb.paid++;
+          pb.revenuePaid += effective;
           g.paid++;
-          g.revenuePaid += unitPrice;
+          g.revenuePaid += effective;
         } else {
+          pb.unpaid++;
+          pb.revenueUnpaid += effective;
           g.unpaid++;
-          g.revenueUnpaid += unitPrice;
+          g.revenueUnpaid += effective;
           g.unpaidStudents.push({
             name: s.name,
             parentPhone: s.parentPhone,
             parentName: s.parentName,
-            payment: s.payment
+            payment: s.payment,
+            plan: s.plan,
+            amount: s.amount
           });
         }
-        g.revenueTotal += unitPrice;
+        g.revenueTotal += effective;
       });
     });
 
