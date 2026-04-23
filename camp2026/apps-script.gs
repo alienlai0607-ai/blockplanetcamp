@@ -1244,6 +1244,21 @@ function fmtMoneyGS(n) {
   return '$' + v.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ',');
 }
 
+// 估算沒抓到金額時的 price + label（跟 onFormSubmit 一致的安親邏輯）
+function estimateStudentPrice(campName, studentName, priceTiers, earlybirdPrice) {
+  const isAS = isAfterSchoolStudent(studentName);
+  const isPackage = isPackageMonthSheet(campName);
+
+  if (isPackage) {
+    if (isAS) return { amount: 15500, label: '⚠️ 估算 共學安親特價 $15,500' };
+    return { amount: 16000, label: '⚠️ 估算 早鳥價 $16,000' };
+  }
+  if (isAS && priceTiers && priceTiers.discounted) {
+    return { amount: priceTiers.discounted, label: '⚠️ 估算 95折／安親無券 ' + fmtMoneyGS(priceTiers.discounted) };
+  }
+  return { amount: earlybirdPrice, label: '⚠️ 估算 早鳥價 ' + fmtMoneyGS(earlybirdPrice) };
+}
+
 // 根據金額 + sheet 方案欄位 + 營隊名產生有意義的方案 label
 // 規則（跟 onFormSubmit 一致）:
 //   - 早鳥價 = priceTiers.earlybird
@@ -1383,12 +1398,17 @@ function financeSummary(p) {
         }
         const g = groups[cls][camp.name];
 
-        // 每筆實際金額；沒有 → fallback 早鳥並標註估算
+        // 每筆實際金額；沒有 → 用「安親名單 + 營隊類型」重新估算（跟 onFormSubmit 一致）
         const hasAmount = s.amount && s.amount > 0;
-        const effective = hasAmount ? s.amount : earlybirdPrice;
-        const planLabel = hasAmount
-          ? classifyPlanLabel(price, s.amount, s.plan, camp.name)
-          : ('⚠️ 方案未計算（估早鳥 ' + fmtMoneyGS(earlybirdPrice) + '）');
+        let effective, planLabel;
+        if (hasAmount) {
+          effective = s.amount;
+          planLabel = classifyPlanLabel(price, s.amount, s.plan, camp.name);
+        } else {
+          const est = estimateStudentPrice(camp.name, s.name, price, earlybirdPrice);
+          effective = est.amount;
+          planLabel = est.label;
+        }
 
         if (!g.plans[planLabel]) {
           g.plans[planLabel] = {
