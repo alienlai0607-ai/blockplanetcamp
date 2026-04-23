@@ -155,6 +155,12 @@ h1 { font-size: 1.5rem; color: #F5941E; font-weight: 900; }
   #panel-quote .card > div[style*="grid-template-columns:1fr 1fr"] { grid-template-columns: 1fr !important; }
 }
 
+/* 📊 營隊收支圖表 RWD */
+@media (max-width: 900px) {
+  #finChartsGrid { grid-template-columns: 1fr !important; }
+  #finChartsGrid > div > div[style*="height:380px"] { height: 300px !important; }
+}
+
 @media (max-width: 480px) {
   .container { padding: 14px 12px 20px; }
   .header { margin-bottom: 14px; }
@@ -413,11 +419,32 @@ h1 { font-size: 1.5rem; color: #F5941E; font-weight: 900; }
         <div style="text-align:center"><div style="font-size:1.1rem;font-weight:900;color:#E65100" id="finTotalUnpaid">-</div><div style="font-size:.7rem;color:#aaa;font-weight:700">⏳ 未收金額</div></div>
       </div>
       <div style="display:flex;gap:8px;margin-top:14px;flex-wrap:wrap">
-        <button onclick="loadFinance()" style="flex:1;min-width:120px;padding:10px;background:none;border:1.5px solid #eee;border-radius:10px;font-weight:700;color:#888;cursor:pointer;font-family:inherit">↻ 重新整理</button>
-        <button onclick="openExpenseForm()" style="flex:1;min-width:120px;padding:10px;background:#F5941E;color:#fff;border:none;border-radius:10px;font-weight:900;cursor:pointer;font-family:inherit">💸 新增支出</button>
+        <button onclick="loadFinance()" style="flex:1;min-width:110px;padding:10px;background:none;border:1.5px solid #eee;border-radius:10px;font-weight:700;color:#888;cursor:pointer;font-family:inherit">↻ 重新整理</button>
+        <button onclick="openExpenseForm()" style="flex:1;min-width:110px;padding:10px;background:#F5941E;color:#fff;border:none;border-radius:10px;font-weight:900;cursor:pointer;font-family:inherit">💸 新增支出</button>
+        <button onclick="exportRevenueCSV()" style="flex:1;min-width:110px;padding:10px;background:#2E7D32;color:#fff;border:none;border-radius:10px;font-weight:900;cursor:pointer;font-family:inherit">📤 收入 CSV</button>
+        <button onclick="exportExpenseCSV()" style="flex:1;min-width:110px;padding:10px;background:#C62828;color:#fff;border:none;border-radius:10px;font-weight:900;cursor:pointer;font-family:inherit">📤 支出 CSV</button>
         <button onclick="finLock()" style="padding:10px 14px;background:none;border:1.5px solid #C93A2A;color:#C93A2A;border-radius:10px;font-weight:700;cursor:pointer;font-family:inherit">🔒 鎖定</button>
       </div>
       <div id="finGeneratedAt" style="margin-top:8px;font-size:.7rem;color:#aaa;text-align:center"></div>
+    </div>
+
+    <!-- 📊 圖表分析 -->
+    <div class="card" id="finChartsCard" style="margin-top:14px;display:none">
+      <div class="card-title">📊 圖表分析</div>
+      <div id="finChartsGrid" style="display:grid;grid-template-columns:2fr 1fr 1fr;gap:14px">
+        <div>
+          <div style="font-weight:700;color:#666;margin-bottom:6px;font-size:.85rem">🏆 各營隊毛利排名</div>
+          <div style="position:relative;height:380px"><canvas id="finChartProfit"></canvas></div>
+        </div>
+        <div>
+          <div style="font-weight:700;color:#666;margin-bottom:6px;font-size:.85rem">🏫 教室收入佔比</div>
+          <div style="position:relative;height:380px"><canvas id="finChartClassroom"></canvas></div>
+        </div>
+        <div>
+          <div style="font-weight:700;color:#666;margin-bottom:6px;font-size:.85rem">💸 支出類別佔比</div>
+          <div style="position:relative;height:380px"><canvas id="finChartCategory"></canvas></div>
+        </div>
+      </div>
     </div>
 
     <div id="finGroups"></div>
@@ -1681,7 +1708,8 @@ async function finUnlock() {
       msg.textContent = '';
       showFinanceContent();
       renderFinance(data);
-      loadExpenses();
+      await loadExpenses();
+      renderCharts(data);
     } else {
       msg.textContent = '❌ ' + (data.error || '密碼錯誤');
     }
@@ -1712,7 +1740,8 @@ async function loadFinance() {
     }
     _finData = data;
     renderFinance(data);
-    loadExpenses();
+    await loadExpenses();
+    renderCharts(data);
   } catch(e) {
     alert('連線失敗：' + e.message);
   }
@@ -1931,6 +1960,164 @@ async function deleteExpense(row) {
   } catch(err) {
     alert('連線失敗：' + err.message);
   }
+}
+
+// === 📤 CSV 匯出 ===
+function downloadCSV(filename, rows) {
+  const csv = rows.map(r => r.map(v => {
+    const s = (v === null || v === undefined) ? '' : String(v);
+    return '"' + s.replace(/"/g, '""') + '"';
+  }).join(',')).join('\n');
+  // BOM 讓 Excel 正確辨識 UTF-8
+  const blob = new Blob(['﻿' + csv], { type: 'text/csv;charset=utf-8;' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = filename;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  setTimeout(() => URL.revokeObjectURL(url), 100);
+}
+
+function exportRevenueCSV() {
+  if (!_finData) { alert('尚未載入資料'); return; }
+  const rows = [['營隊','教室','單價','總人數','已繳人數','未繳人數','應收總額','已收金額','未收金額','支出','毛利']];
+  ['聯合','永康','北區','未分類'].forEach(cls => {
+    (_finData.groups[cls] || []).forEach(c => {
+      rows.push([c.campName, cls, c.unitPrice, c.headcount, c.paid, c.unpaid, c.revenueTotal, c.revenuePaid, c.revenueUnpaid, c.expense, c.profit]);
+    });
+  });
+  // 加總計列
+  const s = _finData.stats || {};
+  rows.push(['（總計）','-','-', s.totalPeople,'-','-', s.totalRevenue, s.totalPaid, s.totalUnpaid, s.totalExpense, s.totalProfit]);
+  const ts = new Date().toISOString().slice(0,10);
+  downloadCSV(`布拉克星球-營隊收入-${ts}.csv`, rows);
+}
+
+function exportExpenseCSV() {
+  if (!_finExpenses || _finExpenses.length === 0) { alert('尚無支出記錄可匯出'); return; }
+  const rows = [['日期','營隊','教室','類別','項目','金額','備註','填單時間']];
+  // 按日期正序排（_finExpenses 是資料庫順序）
+  const sorted = _finExpenses.slice().sort((a,b) => (a.date||'').localeCompare(b.date||''));
+  let total = 0;
+  sorted.forEach(e => {
+    rows.push([e.date, e.camp, e.classroom, e.category, e.item, e.amount, e.note || '', e.createdAt || '']);
+    total += Number(e.amount) || 0;
+  });
+  rows.push(['（總計）','-','-','-','-', total,'-','-']);
+  const ts = new Date().toISOString().slice(0,10);
+  downloadCSV(`布拉克星球-支出明細-${ts}.csv`, rows);
+}
+
+// === 📊 Chart.js 圖表 ===
+const _finCharts = {};
+
+function loadChartJs() {
+  return new Promise((resolve, reject) => {
+    if (window.Chart) return resolve();
+    const s = document.createElement('script');
+    s.src = 'https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js';
+    s.onload = () => resolve();
+    s.onerror = () => reject(new Error('Chart.js 載入失敗'));
+    document.head.appendChild(s);
+  });
+}
+
+async function renderCharts(data) {
+  try {
+    await loadChartJs();
+  } catch(e) {
+    document.getElementById('finChartsCard').style.display = 'none';
+    return;
+  }
+  document.getElementById('finChartsCard').style.display = 'block';
+
+  // 收集全部營隊（跨教室合併同名營隊 → 個別顯示，用 "營隊 (教室)" 命名）
+  const allCamps = [];
+  ['聯合','永康','北區','未分類'].forEach(cls => {
+    (data.groups[cls] || []).forEach(c => allCamps.push({
+      label: c.campName + (cls === '聯合' ? '' : ' (' + cls + ')'),
+      profit: c.profit,
+      revenue: c.revenueTotal,
+      classroom: cls
+    }));
+  });
+  // Top 10 by profit
+  const top = allCamps.slice().sort((a,b) => b.profit - a.profit).slice(0, 10);
+
+  // 1. 毛利排名橫條圖
+  if (_finCharts.profit) _finCharts.profit.destroy();
+  _finCharts.profit = new Chart(document.getElementById('finChartProfit'), {
+    type: 'bar',
+    data: {
+      labels: top.map(c => c.label),
+      datasets: [{
+        label: '毛利',
+        data: top.map(c => c.profit),
+        backgroundColor: top.map(c => ({'聯合':'#9C27B0','永康':'#F5941E','北區':'#1976D2','未分類':'#999'})[c.classroom]),
+      }]
+    },
+    options: {
+      indexAxis: 'y', responsive: true, maintainAspectRatio: false,
+      plugins: { legend: { display: false } },
+      scales: { x: { ticks: { callback: v => '$' + v.toLocaleString() } } }
+    }
+  });
+
+  // 2. 教室收入佔比（圓餅）
+  const classRev = {};
+  ['聯合','永康','北區','未分類'].forEach(cls => {
+    const sum = (data.groups[cls] || []).reduce((a,c) => a + c.revenueTotal, 0);
+    if (sum > 0) classRev[cls] = sum;
+  });
+  if (_finCharts.classroom) _finCharts.classroom.destroy();
+  _finCharts.classroom = new Chart(document.getElementById('finChartClassroom'), {
+    type: 'doughnut',
+    data: {
+      labels: Object.keys(classRev),
+      datasets: [{
+        data: Object.values(classRev),
+        backgroundColor: Object.keys(classRev).map(k => ({'聯合':'#9C27B0','永康':'#F5941E','北區':'#1976D2','未分類':'#999'})[k]),
+      }]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      plugins: {
+        legend: { position: 'bottom' },
+        tooltip: { callbacks: { label: ctx => ctx.label + ': $' + ctx.parsed.toLocaleString() } }
+      }
+    }
+  });
+
+  // 3. 支出類別佔比（圓餅）
+  const catSum = {};
+  _finExpenses.forEach(e => { catSum[e.category] = (catSum[e.category] || 0) + e.amount; });
+  const catCanvas = document.getElementById('finChartCategory');
+  const catColors = { '耗材':'#1976D2', '講師費':'#F5941E', '場地':'#2E7D32', '餐飲':'#C62828', '交通':'#9C27B0', '行政':'#607D8B' };
+  if (_finCharts.category) _finCharts.category.destroy();
+
+  const hasExpense = Object.keys(catSum).length > 0;
+  _finCharts.category = new Chart(catCanvas, {
+    type: 'doughnut',
+    data: {
+      labels: hasExpense ? Object.keys(catSum) : ['尚無支出'],
+      datasets: [{
+        data: hasExpense ? Object.values(catSum) : [1],
+        backgroundColor: hasExpense ? Object.keys(catSum).map(k => catColors[k] || '#888') : ['#E0E0E0'],
+      }]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      plugins: {
+        legend: { position: 'bottom' },
+        tooltip: {
+          enabled: hasExpense,
+          callbacks: { label: ctx => ctx.label + ': $' + ctx.parsed.toLocaleString() }
+        }
+      }
+    }
+  });
 }
 
 // === 初始化（只有已解鎖才載入）===
