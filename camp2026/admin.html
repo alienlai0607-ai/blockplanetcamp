@@ -293,6 +293,7 @@ h1 { font-size: 1.5rem; color: #F5941E; font-weight: 900; }
         </select>
         <input id="mxSearch" type="text" placeholder="搜尋姓名／電話／訂單編號／末5碼／備忘" style="flex:2;min-width:180px;padding:10px 14px;border-radius:10px;border:2px solid #eee;font-weight:700;font-family:inherit;font-size:.9rem" />
         <button onclick="loadMatrixOrders()" style="padding:10px 18px;background:#F5941E;color:white;border:none;border-radius:10px;font-weight:900;cursor:pointer;font-family:inherit">↻ 重新整理</button>
+        <button onclick="printOrders('matrix')" style="padding:10px 18px;background:#37474F;color:white;border:none;border-radius:10px;font-weight:900;cursor:pointer;font-family:inherit">🖨️ 列印報表</button>
       </div>
     </div>
     <div id="mxList" class="loading">載入中...</div>
@@ -317,6 +318,7 @@ h1 { font-size: 1.5rem; color: #F5941E; font-weight: 900; }
         </select>
         <input id="spSearch" type="text" placeholder="搜尋姓名／電話／訂單編號／末5碼／備忘" style="flex:2;min-width:180px;padding:10px 14px;border-radius:10px;border:2px solid #eee;font-weight:700;font-family:inherit;font-size:.9rem" />
         <button onclick="loadSpikeOrders()" style="padding:10px 18px;background:#1565C0;color:white;border:none;border-radius:10px;font-weight:900;cursor:pointer;font-family:inherit">↻ 重新整理</button>
+        <button onclick="printOrders('spike')" style="padding:10px 18px;background:#37474F;color:white;border:none;border-radius:10px;font-weight:900;cursor:pointer;font-family:inherit">🖨️ 列印報表</button>
       </div>
     </div>
     <div id="spList" class="loading">載入中...</div>
@@ -941,6 +943,201 @@ document.addEventListener('input', (e) => {
 document.addEventListener('change', (e) => {
   if (e.target.id === 'spFilter') renderSpikeList();
 });
+
+
+// ========== 🖨️ MATRIX / SPIKE 訂單列印報表 ==========
+function printOrders(type) {
+  const isSpike = type === 'spike';
+  const orders = isSpike ? _spOrders : _mxOrders;
+  if (!orders || orders.length === 0) { alert('尚未載入訂單資料，請先按「重新整理」'); return; }
+
+  const filterEl = document.getElementById(isSpike ? 'spFilter' : 'mxFilter');
+  const searchEl = document.getElementById(isSpike ? 'spSearch' : 'mxSearch');
+  const filter = filterEl.value;
+  const search = (searchEl.value || '').trim().toLowerCase();
+
+  let filtered = orders.slice();
+  if (filter !== 'all') filtered = filtered.filter(o => o.status === filter);
+  if (search) filtered = filtered.filter(o =>
+    (o.parent || '').toLowerCase().includes(search) ||
+    (o.phone || '').toLowerCase().includes(search) ||
+    (o.orderNo || '').toLowerCase().includes(search) ||
+    (o.student || '').toLowerCase().includes(search) ||
+    (o.memo || '').toLowerCase().includes(search) ||
+    (o.note || '').toLowerCase().includes(search)
+  );
+  if (filtered.length === 0) { alert('目前篩選條件下沒有訂單可列印'); return; }
+
+  // 排序：先按狀態（未付款 → 已付款 → 已出貨），再按建立時間
+  const statusOrder = { '未付款': 0, '已付款': 1, '已出貨': 2 };
+  filtered.sort((a, b) => {
+    const so = (statusOrder[a.status] ?? 9) - (statusOrder[b.status] ?? 9);
+    if (so !== 0) return so;
+    return (a.createdAt || '').localeCompare(b.createdAt || '');
+  });
+
+  // 統計
+  let totalAmount = 0, pendingCount = 0, pendingAmount = 0, paidCount = 0, paidAmount = 0, shippedCount = 0, shippedAmount = 0, totalSaved = 0;
+  filtered.forEach(o => {
+    const amt = o.total || 0;
+    totalAmount += amt;
+    totalSaved += o.saved || 0;
+    if (o.status === '未付款') { pendingCount++; pendingAmount += amt; }
+    else if (o.status === '已付款') { paidCount++; paidAmount += amt; }
+    else if (o.status === '已出貨') { shippedCount++; shippedAmount += amt; }
+  });
+
+  const title = isSpike ? 'LEGO SPIKE Prime' : 'MATRIX';
+  const themeColor = isSpike ? '#1565C0' : '#F5941E';
+  const now = new Date();
+  const pad2 = n => String(n).padStart(2, '0');
+  const dateStr = `${now.getFullYear()}/${pad2(now.getMonth()+1)}/${pad2(now.getDate())} ${pad2(now.getHours())}:${pad2(now.getMinutes())}`;
+
+  const filterDesc = [];
+  if (filter !== 'all') filterDesc.push('狀態=' + filter);
+  if (search) filterDesc.push('關鍵字="' + search + '"');
+  const filterText = filterDesc.length ? '（篩選: ' + filterDesc.join(' / ') + '）' : '';
+
+  const css = `
+    @page { size: A4 portrait; margin: 12mm 10mm; }
+    * { box-sizing: border-box; }
+    html, body { margin: 0; padding: 0; font-family: 'PingFang TC','Microsoft JhengHei','Noto Sans TC',sans-serif; color: #111; -webkit-print-color-adjust: exact; print-color-adjust: exact; font-size: 10pt; }
+    .hdr { border-bottom: 3px solid ${themeColor}; padding-bottom: 8px; margin-bottom: 12px; }
+    .hdr h1 { margin: 0; font-size: 18pt; color: ${themeColor}; }
+    .hdr .meta { font-size: 9pt; color: #555; margin-top: 4px; }
+    .stats { display: grid; grid-template-columns: repeat(5, 1fr); gap: 6px; margin-bottom: 14px; }
+    .stat { border: 1.5px solid #eee; border-radius: 6px; padding: 6px 8px; text-align: center; }
+    .stat .v { font-size: 12pt; font-weight: 900; }
+    .stat .l { font-size: 8pt; color: #666; margin-top: 2px; }
+    table { width: 100%; border-collapse: collapse; font-size: 9pt; }
+    thead { display: table-header-group; }
+    tr { page-break-inside: avoid; break-inside: avoid; }
+    th { background: ${themeColor}; color: white; padding: 6px 4px; text-align: left; font-weight: 700; font-size: 9pt; border: 1px solid ${themeColor}; }
+    th.right { text-align: right; }
+    th.center { text-align: center; }
+    td { padding: 6px 4px; border: 1px solid #ddd; vertical-align: top; }
+    td.right { text-align: right; }
+    td.center { text-align: center; }
+    tr.unpaid td { background: #FFF3E0; }
+    tr.paid td { background: #E8F5E9; }
+    tr.shipped td { background: #E3F2FD; }
+    .badge { display: inline-block; padding: 2px 8px; border-radius: 50px; font-size: 8pt; font-weight: 900; color: white; }
+    .badge-未付款 { background: #C62828; }
+    .badge-已付款 { background: #2E7D32; }
+    .badge-已出貨 { background: #1565C0; }
+    .order-no { font-weight: 900; font-size: 8.5pt; letter-spacing: .5px; }
+    .small { font-size: 8pt; color: #666; }
+    .saved { font-size: 8pt; color: #2E7D32; font-weight: 700; }
+    .memo-line { font-size: 8.2pt; color: #555; margin-top: 2px; line-height: 1.4; }
+    .memo-line.note { color: #666; }
+    .memo-line.admin { color: #C93A2A; }
+    .footer { margin-top: 20px; padding-top: 14px; border-top: 1px dashed #aaa; }
+    .footer .note-text { font-size: 8.5pt; color: #666; line-height: 1.6; }
+    .sign { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 22px; margin-top: 22px; }
+    .sign-cell { text-align: center; padding-top: 32px; border-top: 1px solid #333; font-size: 9pt; color: #444; }
+    .controls { position: fixed; top: 8px; right: 8px; }
+    .controls button { padding: 8px 16px; font-size: 11pt; cursor: pointer; border: 0; border-radius: 6px; margin-left: 4px; font-family: inherit; font-weight: 700; }
+    .btn-print { background: ${themeColor}; color: white; }
+    .btn-close { background: #888; color: white; }
+    @media print { .controls { display: none !important; } body { padding: 0; } }
+  `;
+
+  const tbodyHTML = filtered.map(o => {
+    const cls = o.status === '未付款' ? 'unpaid' : (o.status === '已付款' ? 'paid' : 'shipped');
+    const itemsClean = (o.items || '').replace(/\|/g, '｜');
+    const noteHTML = o.note ? `<div class="memo-line note">📝 家長備註：${escapeHTML(o.note)}</div>` : '';
+    const memoHTML = o.memo ? `<div class="memo-line admin">🗒️ 管理員：${escapeHTML(o.memo)}</div>` : '';
+    return `<tr class="${cls}">
+      <td><span class="order-no">${escapeHTML(o.orderNo)}</span><div class="small">${escapeHTML(o.createdAt)}</div></td>
+      <td><b>${escapeHTML(o.parent)}</b><div class="small">📱 ${escapeHTML(o.phone)}</div></td>
+      <td>${escapeHTML(o.student) || '—'}<div class="small">${escapeHTML(o.team) || ''}</div></td>
+      <td>${escapeHTML(itemsClean)} <span class="small">(共 ${o.qty} 件)</span>${noteHTML}${memoHTML}</td>
+      <td class="right"><b style="color:#C93A2A">$${(o.total || 0).toLocaleString()}</b>${o.saved > 0 ? `<div class="saved">省 $${o.saved.toLocaleString()}</div>` : ''}</td>
+      <td class="center"><span class="badge badge-${o.status}">${o.status}</span></td>
+    </tr>`;
+  }).join('');
+
+  const fullHTML = `<!DOCTYPE html><html lang="zh-Hant"><head><meta charset="UTF-8"><title>布拉克星球 ${title} 訂購清單 ${dateStr}</title><style>${css}</style></head>
+<body>
+<div class="controls">
+  <button class="btn-print" onclick="window.print()">🖨️ 列印</button>
+  <button class="btn-close" onclick="window.close()">✕ 關閉</button>
+</div>
+
+<div class="hdr">
+  <h1>🌟 布拉克星球 ${title} 教具訂購清單</h1>
+  <div class="meta">列印日期：${dateStr}　共 ${filtered.length} 筆訂單${filterText ? '　' + filterText : ''}</div>
+</div>
+
+<div class="stats">
+  <div class="stat"><div class="v" style="color:${themeColor}">${filtered.length}</div><div class="l">總訂單</div></div>
+  <div class="stat"><div class="v" style="color:#2E7D32">$${totalAmount.toLocaleString()}</div><div class="l">累計金額</div></div>
+  <div class="stat"><div class="v" style="color:#C62828">${pendingCount}<span class="small"> 筆</span></div><div class="l">未付款 $${pendingAmount.toLocaleString()}</div></div>
+  <div class="stat"><div class="v" style="color:#388E3C">${paidCount}<span class="small"> 筆</span></div><div class="l">已付款 $${paidAmount.toLocaleString()}</div></div>
+  <div class="stat"><div class="v" style="color:#1565C0">${shippedCount}<span class="small"> 筆</span></div><div class="l">已出貨 $${shippedAmount.toLocaleString()}</div></div>
+</div>
+
+<table>
+  <thead>
+    <tr>
+      <th style="width:14%">訂單編號 / 時間</th>
+      <th style="width:12%">家長</th>
+      <th style="width:9%">學生</th>
+      <th>商品明細 / 備忘</th>
+      <th class="right" style="width:10%">金額</th>
+      <th class="center" style="width:8%">狀態</th>
+    </tr>
+  </thead>
+  <tbody>${tbodyHTML}</tbody>
+</table>
+
+<div class="footer">
+  <div class="note-text">
+    本清單由布拉克星球系統自動產生，僅供內部對帳與出貨核對使用。<br>
+    ・<b>底色說明</b>：橘色＝未付款；綠色＝已付款；藍色＝已出貨。<br>
+    ・<b>累計優惠</b>：本批訂單共為家長節省 $${totalSaved.toLocaleString()}。<br>
+    ・<b>核對事項</b>：請承辦人逐筆核對訂單編號、金額、狀態與備忘是否與系統一致。
+  </div>
+  <div class="sign">
+    <div class="sign-cell">承辦人簽名 ／ 日期</div>
+    <div class="sign-cell">主管核章 ／ 日期</div>
+    <div class="sign-cell">會計核對 ／ 日期</div>
+  </div>
+</div>
+</body></html>`;
+
+  // iframe 列印（同 printQuote 模式）
+  let iframe = document.getElementById('orderPrintFrame');
+  if (iframe) iframe.remove();
+  iframe = document.createElement('iframe');
+  iframe.id = 'orderPrintFrame';
+  iframe.style.cssText = 'position:fixed;right:0;bottom:0;width:210mm;height:297mm;border:0;visibility:hidden;';
+  document.body.appendChild(iframe);
+
+  const doc = iframe.contentDocument || iframe.contentWindow.document;
+  doc.open();
+  doc.write(fullHTML);
+  doc.close();
+
+  const triggerPrint = () => {
+    try {
+      iframe.contentWindow.focus();
+      iframe.contentWindow.print();
+    } catch(e) {
+      const w = window.open('', '_blank');
+      if (!w) { alert('列印失敗：' + e.message); return; }
+      w.document.write(fullHTML);
+      w.document.close();
+      setTimeout(() => w.print(), 400);
+    }
+  };
+
+  if (doc.readyState === 'complete') {
+    setTimeout(triggerPrint, 300);
+  } else {
+    iframe.addEventListener('load', () => setTimeout(triggerPrint, 300));
+  }
+}
 
 
 // ========== 學校報價單產生器 ==========
