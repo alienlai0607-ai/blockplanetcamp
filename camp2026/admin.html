@@ -1039,6 +1039,8 @@ function printOrders(type) {
     .badge-已付款 { background: #2E7D32; }
     .badge-已出貨 { background: #1565C0; }
     .order-no { font-weight: 900; font-size: 8.5pt; letter-spacing: .5px; }
+    .student-name { font-size: 13pt; font-weight: 900; color: #111; letter-spacing: 1px; line-height: 1.25; }
+    .parent-small { font-size: 8.5pt; color: #555; }
     .small { font-size: 8pt; color: #666; }
     .saved { font-size: 8pt; color: #2E7D32; font-weight: 700; }
     .memo-line { font-size: 8.2pt; color: #555; margin-top: 2px; line-height: 1.4; }
@@ -1065,8 +1067,8 @@ function printOrders(type) {
     // 管理員備忘可能含金額（末5碼/收款數字）→ 列印時不顯示
     return `<tr class="${cls}">
       <td><span class="order-no">${escapeHTML(o.orderNo)}</span><div class="small">${escapeHTML(o.createdAt)}</div></td>
-      <td><b>${escapeHTML(o.parent)}</b><div class="small">📱 ${escapeHTML(o.phone)}</div></td>
-      <td>${escapeHTML(o.student) || '—'}<div class="small">${escapeHTML(o.team) || ''}</div></td>
+      <td><b class="student-name">${escapeHTML(o.student) || '—'}</b>${o.team ? '<div class="small">' + escapeHTML(o.team) + '</div>' : ''}</td>
+      <td><span class="parent-small">${escapeHTML(o.parent)}</span><div class="small">📱 ${escapeHTML(o.phone)}</div></td>
       <td>${escapeHTML(itemsClean)} <span class="small">(共 ${o.qty} 件)</span>${noteHTML}</td>
       <td class="center"><span class="badge badge-${o.status}">${o.status}</span></td>
     </tr>`;
@@ -1095,8 +1097,8 @@ function printOrders(type) {
   <thead>
     <tr>
       <th style="width:18%">訂單編號 / 時間</th>
-      <th style="width:14%">家長</th>
-      <th style="width:11%">學生</th>
+      <th style="width:13%">學生</th>
+      <th style="width:13%">家長</th>
       <th>商品明細</th>
       <th class="center" style="width:10%">狀態</th>
     </tr>
