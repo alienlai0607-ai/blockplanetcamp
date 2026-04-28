@@ -1018,7 +1018,7 @@ function printOrders(type) {
     .hdr { border-bottom: 3px solid ${themeColor}; padding-bottom: 8px; margin-bottom: 12px; }
     .hdr h1 { margin: 0; font-size: 18pt; color: ${themeColor}; }
     .hdr .meta { font-size: 9pt; color: #555; margin-top: 4px; }
-    .stats { display: grid; grid-template-columns: repeat(5, 1fr); gap: 6px; margin-bottom: 14px; }
+    .stats { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; margin-bottom: 14px; }
     .stat { border: 1.5px solid #eee; border-radius: 6px; padding: 6px 8px; text-align: center; }
     .stat .v { font-size: 12pt; font-weight: 900; }
     .stat .l { font-size: 8pt; color: #666; margin-top: 2px; }
@@ -1057,15 +1057,17 @@ function printOrders(type) {
 
   const tbodyHTML = filtered.map(o => {
     const cls = o.status === '未付款' ? 'unpaid' : (o.status === '已付款' ? 'paid' : 'shipped');
-    const itemsClean = (o.items || '').replace(/\|/g, '｜');
+    // 清掉 =價錢 跟 |分隔（避免老師看到金額）
+    const itemsClean = (o.items || '')
+      .replace(/=\s*\d[\d,]*/g, '')
+      .replace(/\|/g, '、');
     const noteHTML = o.note ? `<div class="memo-line note">📝 家長備註：${escapeHTML(o.note)}</div>` : '';
-    const memoHTML = o.memo ? `<div class="memo-line admin">🗒️ 管理員：${escapeHTML(o.memo)}</div>` : '';
+    // 管理員備忘可能含金額（末5碼/收款數字）→ 列印時不顯示
     return `<tr class="${cls}">
       <td><span class="order-no">${escapeHTML(o.orderNo)}</span><div class="small">${escapeHTML(o.createdAt)}</div></td>
       <td><b>${escapeHTML(o.parent)}</b><div class="small">📱 ${escapeHTML(o.phone)}</div></td>
       <td>${escapeHTML(o.student) || '—'}<div class="small">${escapeHTML(o.team) || ''}</div></td>
-      <td>${escapeHTML(itemsClean)} <span class="small">(共 ${o.qty} 件)</span>${noteHTML}${memoHTML}</td>
-      <td class="right"><b style="color:#C93A2A">$${(o.total || 0).toLocaleString()}</b>${o.saved > 0 ? `<div class="saved">省 $${o.saved.toLocaleString()}</div>` : ''}</td>
+      <td>${escapeHTML(itemsClean)} <span class="small">(共 ${o.qty} 件)</span>${noteHTML}</td>
       <td class="center"><span class="badge badge-${o.status}">${o.status}</span></td>
     </tr>`;
   }).join('');
@@ -1084,21 +1086,19 @@ function printOrders(type) {
 
 <div class="stats">
   <div class="stat"><div class="v" style="color:${themeColor}">${filtered.length}</div><div class="l">總訂單</div></div>
-  <div class="stat"><div class="v" style="color:#2E7D32">$${totalAmount.toLocaleString()}</div><div class="l">累計金額</div></div>
-  <div class="stat"><div class="v" style="color:#C62828">${pendingCount}<span class="small"> 筆</span></div><div class="l">未付款 $${pendingAmount.toLocaleString()}</div></div>
-  <div class="stat"><div class="v" style="color:#388E3C">${paidCount}<span class="small"> 筆</span></div><div class="l">已付款 $${paidAmount.toLocaleString()}</div></div>
-  <div class="stat"><div class="v" style="color:#1565C0">${shippedCount}<span class="small"> 筆</span></div><div class="l">已出貨 $${shippedAmount.toLocaleString()}</div></div>
+  <div class="stat"><div class="v" style="color:#C62828">${pendingCount}</div><div class="l">未付款</div></div>
+  <div class="stat"><div class="v" style="color:#388E3C">${paidCount}</div><div class="l">已付款</div></div>
+  <div class="stat"><div class="v" style="color:#1565C0">${shippedCount}</div><div class="l">已出貨</div></div>
 </div>
 
 <table>
   <thead>
     <tr>
-      <th style="width:14%">訂單編號 / 時間</th>
-      <th style="width:12%">家長</th>
-      <th style="width:9%">學生</th>
-      <th>商品明細 / 備忘</th>
-      <th class="right" style="width:10%">金額</th>
-      <th class="center" style="width:8%">狀態</th>
+      <th style="width:18%">訂單編號 / 時間</th>
+      <th style="width:14%">家長</th>
+      <th style="width:11%">學生</th>
+      <th>商品明細</th>
+      <th class="center" style="width:10%">狀態</th>
     </tr>
   </thead>
   <tbody>${tbodyHTML}</tbody>
@@ -1106,11 +1106,10 @@ function printOrders(type) {
 
 <div class="footer">
   <div class="note-text">
-    本清單由布拉克星球系統自動產生，僅供內部對帳與出貨核對使用。<br>
+    本清單由布拉克星球系統自動產生，供出貨核對使用。<br>
     ・<b>底色說明</b>：橘色＝未付款；綠色＝已付款。<br>
-    ・<b>已出貨自動排除</b>：${archiveExcluded > 0 ? '本次列印已自動排除 <b>' + archiveExcluded + '</b> 筆「已出貨」訂單（避免重複處理）。' : '尚無已出貨訂單。'}如需查歸檔，請於後台篩選「僅已出貨」後再列印。<br>
-    ・<b>累計優惠</b>：本批訂單共為家長節省 $${totalSaved.toLocaleString()}。<br>
-    ・<b>核對事項</b>：請承辦人逐筆核對訂單編號、金額、狀態與備忘是否與系統一致。
+    ・<b>已出貨自動排除</b>：${archiveExcluded > 0 ? '本次列印已自動排除 <b>' + archiveExcluded + '</b> 筆「已出貨」訂單。' : '尚無已出貨訂單。'}<br>
+    ・<b>核對事項</b>：請承辦人逐筆核對訂單編號、商品明細、狀態是否與系統一致。
   </div>
   <div class="sign">
     <div class="sign-cell">承辦人簽名 ／ 日期</div>
