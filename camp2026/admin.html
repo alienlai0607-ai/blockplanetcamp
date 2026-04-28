@@ -155,6 +155,11 @@ h1 { font-size: 1.5rem; color: #F5941E; font-weight: 900; }
   #panel-quote .card > div[style*="grid-template-columns:1fr 1fr"] { grid-template-columns: 1fr !important; }
 }
 
+/* ✨ 新增訂單徽章 */
+.tab .new-badge { display: inline-flex; align-items: center; background: #C62828; color: #fff; border-radius: 50px; padding: 1px 7px; font-size: .68rem; font-weight: 900; margin-left: 5px; line-height: 1.4; animation: bp-newpulse 1.4s ease-in-out infinite; }
+.is-new-marker { display: inline-block; background: #C62828; color: #fff; padding: 1px 8px; border-radius: 50px; font-size: .7rem; font-weight: 900; margin-left: 6px; letter-spacing: .5px; animation: bp-newpulse 1.4s ease-in-out infinite; }
+@keyframes bp-newpulse { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.12); } }
+
 /* 📊 營隊收支圖表 RWD */
 @media (max-width: 900px) {
   #finChartsGrid { grid-template-columns: 1fr !important; }
@@ -539,6 +544,7 @@ function unlockSite() {
     document.getElementById('siteLock').style.display = 'none';
     document.getElementById('mainContainer').style.display = 'block';
     loadCamps();
+    setTimeout(() => preloadOrderBadges && preloadOrderBadges(), 800);
   } else {
     err.textContent = '❌ 密碼錯誤，請再試一次';
     input.value = '';
@@ -549,6 +555,7 @@ function unlockSite() {
 if (sessionStorage.getItem(SITE_UNLOCK_KEY) === '1') {
   document.getElementById('siteLock').style.display = 'none';
   document.getElementById('mainContainer').style.display = 'block';
+  setTimeout(() => preloadOrderBadges && preloadOrderBadges(), 800);
 } else {
   setTimeout(() => document.getElementById('siteLockPass').focus(), 100);
 }
@@ -596,6 +603,51 @@ document.querySelectorAll('.tab').forEach(btn => {
   });
 });
 
+// ========== ✨ 新增訂單偵測（lastSeen + 紅點 +N）==========
+const _newSnapshot = { matrix: 0, spike: 0 };
+function getLastSeenMs(key) {
+  const v = localStorage.getItem('bp_lastseen_' + key);
+  return v === null ? 0 : (parseInt(v) || 0);
+}
+function setLastSeenNow(key) {
+  localStorage.setItem('bp_lastseen_' + key, String(Date.now()));
+}
+function parseCreatedAt(str) {
+  if (!str) return 0;
+  const t = new Date(String(str).replace(' ', 'T') + (str.length <= 16 ? ':00' : '')).getTime();
+  return isNaN(t) ? 0 : t;
+}
+function updateTabNewBadge(tabKey, count) {
+  const tab = document.querySelector('.tab[data-tab="' + tabKey + '"]');
+  if (!tab) return;
+  const old = tab.querySelector('.new-badge');
+  if (old) old.remove();
+  if (count > 0) {
+    const b = document.createElement('span');
+    b.className = 'new-badge';
+    b.textContent = '+' + count;
+    tab.appendChild(b);
+  }
+}
+async function preloadOrderBadges() {
+  try {
+    const [mx, sp] = await Promise.all([
+      fetch(API + '?action=matrix-list&key=bp2026admin').then(r => r.json()).catch(() => ({})),
+      fetch(API + '?action=spike-list&key=bp2026admin').then(r => r.json()).catch(() => ({}))
+    ]);
+    if (mx.success) {
+      const seen = getLastSeenMs('matrix');
+      if (seen === 0) { setLastSeenNow('matrix'); updateTabNewBadge('matrix', 0); }
+      else updateTabNewBadge('matrix', (mx.orders || []).filter(o => parseCreatedAt(o.createdAt) > seen).length);
+    }
+    if (sp.success) {
+      const seen = getLastSeenMs('spike');
+      if (seen === 0) { setLastSeenNow('spike'); updateTabNewBadge('spike', 0); }
+      else updateTabNewBadge('spike', (sp.orders || []).filter(o => parseCreatedAt(o.createdAt) > seen).length);
+    }
+  } catch(e) { /* silent */ }
+}
+
 // ========== MATRIX 訂購管理 ==========
 const MX_ADMIN_KEY = 'bp2026admin';
 let _mxOrders = [];
@@ -603,6 +655,10 @@ let _mxOrders = [];
 async function loadMatrixOrders() {
   const list = document.getElementById('mxList');
   list.innerHTML = '<div class="loading">載入中...</div>';
+  // 載入前先 snapshot lastSeen → 用來標 ✨ 新訂單
+  let seen = getLastSeenMs('matrix');
+  if (seen === 0) seen = Date.now();   // 第一次：當下不標新
+  _newSnapshot.matrix = seen;
   try {
     const res = await fetch(API + '?action=matrix-list&key=' + MX_ADMIN_KEY);
     const data = await res.json();
@@ -613,7 +669,10 @@ async function loadMatrixOrders() {
     document.getElementById('mxStatAmount').textContent = '$' + (s.amount || 0).toLocaleString();
     document.getElementById('mxStatPending').textContent = s.pending || 0;
     document.getElementById('mxStatPendingAmt').textContent = '$' + (s.pendingAmount || 0).toLocaleString();
+    const newCount = _mxOrders.filter(o => parseCreatedAt(o.createdAt) > _newSnapshot.matrix).length;
+    updateTabNewBadge('matrix', newCount);
     renderMatrixList();
+    setLastSeenNow('matrix');   // 看過了 → 下次只看再之後新增的
   } catch(e) {
     list.innerHTML = `<div class="card" style="color:#C93A2A;font-weight:700">❌ 連線失敗：${e.message}</div>`;
   }
@@ -661,11 +720,12 @@ function renderMatrixList() {
   }
   list.innerHTML = orders.map(o => {
     const last5 = extractLast5(o.memo);
+    const isNew = parseCreatedAt(o.createdAt) > _newSnapshot.matrix;
     return `
-    <div class="card" style="margin-bottom:12px">
+    <div class="card${isNew ? ' is-new' : ''}" style="margin-bottom:12px${isNew ? ';border:2px solid #C62828;box-shadow:0 0 0 3px #FFEBEE' : ''}">
       <div style="display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:10px;margin-bottom:10px">
         <div>
-          <div style="font-size:.72rem;color:#aaa;font-weight:700;letter-spacing:1px">${escapeHTML(o.orderNo)}</div>
+          <div style="font-size:.72rem;color:#aaa;font-weight:700;letter-spacing:1px">${escapeHTML(o.orderNo)}${isNew ? ' <span class="is-new-marker">✨ 新增</span>' : ''}</div>
           <div style="font-size:1.05rem;font-weight:900;margin-top:2px">${escapeHTML(o.parent)} <span style="font-size:.82rem;color:#888;font-weight:500">｜ 📱 ${escapeHTML(o.phone)}</span>
             ${last5 ? `<span style="background:#E3F2FD;color:#1565C0;padding:2px 8px;border-radius:50px;font-size:.72rem;font-weight:900;margin-left:6px">末5碼 ${last5}</span>` : ''}
           </div>
@@ -793,6 +853,9 @@ let _spOrders = [];
 async function loadSpikeOrders() {
   const list = document.getElementById('spList');
   list.innerHTML = '<div class="loading">載入中...</div>';
+  let seen = getLastSeenMs('spike');
+  if (seen === 0) seen = Date.now();
+  _newSnapshot.spike = seen;
   try {
     const res = await fetch(API + '?action=spike-list&key=' + MX_ADMIN_KEY);
     const data = await res.json();
@@ -803,7 +866,10 @@ async function loadSpikeOrders() {
     document.getElementById('spStatAmount').textContent = '$' + (s.amount || 0).toLocaleString();
     document.getElementById('spStatPending').textContent = s.pending || 0;
     document.getElementById('spStatPendingAmt').textContent = '$' + (s.pendingAmount || 0).toLocaleString();
+    const newCount = _spOrders.filter(o => parseCreatedAt(o.createdAt) > _newSnapshot.spike).length;
+    updateTabNewBadge('spike', newCount);
     renderSpikeList();
+    setLastSeenNow('spike');
   } catch(e) {
     list.innerHTML = `<div class="card" style="color:#C93A2A;font-weight:700">❌ 連線失敗：${e.message}</div>`;
   }
@@ -829,11 +895,12 @@ function renderSpikeList() {
   }
   list.innerHTML = orders.map(o => {
     const last5 = extractLast5(o.memo);
+    const isNew = parseCreatedAt(o.createdAt) > _newSnapshot.spike;
     return `
-    <div class="card" style="margin-bottom:12px;border-left:5px solid #1565C0">
+    <div class="card${isNew ? ' is-new' : ''}" style="margin-bottom:12px;border-left:5px solid #1565C0${isNew ? ';outline:2px solid #C62828;outline-offset:2px;box-shadow:0 0 0 5px #FFEBEE' : ''}">
       <div style="display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:10px;margin-bottom:10px">
         <div>
-          <div style="font-size:.72rem;color:#aaa;font-weight:700;letter-spacing:1px">${escapeHTML(o.orderNo)}</div>
+          <div style="font-size:.72rem;color:#aaa;font-weight:700;letter-spacing:1px">${escapeHTML(o.orderNo)}${isNew ? ' <span class="is-new-marker">✨ 新增</span>' : ''}</div>
           <div style="font-size:1.05rem;font-weight:900;margin-top:2px">${escapeHTML(o.parent)} <span style="font-size:.82rem;color:#888;font-weight:500">｜ 📱 ${escapeHTML(o.phone)}</span>
             ${last5 ? `<span style="background:#E3F2FD;color:#1565C0;padding:2px 8px;border-radius:50px;font-size:.72rem;font-weight:900;margin-left:6px">末5碼 ${last5}</span>` : ''}
           </div>
