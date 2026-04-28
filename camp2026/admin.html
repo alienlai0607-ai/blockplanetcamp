@@ -958,6 +958,13 @@ function printOrders(type) {
 
   let filtered = orders.slice();
   if (filter !== 'all') filtered = filtered.filter(o => o.status === filter);
+  // 預設排除「已出貨」（已交貨完成，不需重複列印）；只有手動選「僅已出貨」才會顯示
+  let archiveExcluded = 0;
+  if (filter === 'all') {
+    const before = filtered.length;
+    filtered = filtered.filter(o => o.status !== '已出貨');
+    archiveExcluded = before - filtered.length;
+  }
   if (search) filtered = filtered.filter(o =>
     (o.parent || '').toLowerCase().includes(search) ||
     (o.phone || '').toLowerCase().includes(search) ||
@@ -966,7 +973,12 @@ function printOrders(type) {
     (o.memo || '').toLowerCase().includes(search) ||
     (o.note || '').toLowerCase().includes(search)
   );
-  if (filtered.length === 0) { alert('目前篩選條件下沒有訂單可列印'); return; }
+  if (filtered.length === 0) {
+    const msg = archiveExcluded > 0
+      ? `沒有可列印的活躍訂單（${archiveExcluded} 筆「已出貨」已自動排除）。\n如需列印已出貨歸檔，請在篩選選擇「僅已出貨」。`
+      : '目前篩選條件下沒有訂單可列印';
+    alert(msg); return;
+  }
 
   // 排序：先按狀態（未付款 → 已付款 → 已出貨），再按建立時間
   const statusOrder = { '未付款': 0, '已付款': 1, '已出貨': 2 };
@@ -995,8 +1007,9 @@ function printOrders(type) {
 
   const filterDesc = [];
   if (filter !== 'all') filterDesc.push('狀態=' + filter);
+  else if (archiveExcluded > 0) filterDesc.push('已自動排除 ' + archiveExcluded + ' 筆已出貨');
   if (search) filterDesc.push('關鍵字="' + search + '"');
-  const filterText = filterDesc.length ? '（篩選: ' + filterDesc.join(' / ') + '）' : '';
+  const filterText = filterDesc.length ? '（' + filterDesc.join(' / ') + '）' : '';
 
   const css = `
     @page { size: A4 portrait; margin: 12mm 10mm; }
@@ -1094,7 +1107,8 @@ function printOrders(type) {
 <div class="footer">
   <div class="note-text">
     本清單由布拉克星球系統自動產生，僅供內部對帳與出貨核對使用。<br>
-    ・<b>底色說明</b>：橘色＝未付款；綠色＝已付款；藍色＝已出貨。<br>
+    ・<b>底色說明</b>：橘色＝未付款；綠色＝已付款。<br>
+    ・<b>已出貨自動排除</b>：${archiveExcluded > 0 ? '本次列印已自動排除 <b>' + archiveExcluded + '</b> 筆「已出貨」訂單（避免重複處理）。' : '尚無已出貨訂單。'}如需查歸檔，請於後台篩選「僅已出貨」後再列印。<br>
     ・<b>累計優惠</b>：本批訂單共為家長節省 $${totalSaved.toLocaleString()}。<br>
     ・<b>核對事項</b>：請承辦人逐筆核對訂單編號、金額、狀態與備忘是否與系統一致。
   </div>
