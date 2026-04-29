@@ -39,6 +39,7 @@ h1 { font-size: 1.5rem; color: #F5941E; font-weight: 900; }
 .camps-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 12px; }
 .camp-card { background: white; border-radius: 12px; padding: 14px 16px; cursor: pointer; box-shadow: 0 2px 8px rgba(0,0,0,.06); transition: all .2s; border-left: 5px solid #F5941E; }
 .camp-card:hover { transform: translateY(-2px); box-shadow: 0 6px 18px rgba(0,0,0,.1); }
+.camp-card-new { border-left-color: #C62828; box-shadow: 0 2px 12px rgba(198,40,40,.18); }
 .camp-card-head { display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px; gap: 8px; }
 .camp-name { font-size: 1.15rem; font-weight: 900; color: #333; line-height: 1.3; flex: 1; }
 .camp-count-badge { background: linear-gradient(135deg, #F5941E, #E07A08); color: white; padding: 4px 12px; border-radius: 50px; font-size: 1rem; font-weight: 900; }
@@ -646,6 +647,25 @@ async function preloadOrderBadges() {
       else updateTabNewBadge('spike', (sp.orders || []).filter(o => parseCreatedAt(o.createdAt) > seen).length);
     }
   } catch(e) { /* silent */ }
+}
+
+// ========== ✨ 營隊新增偵測（per-camp 人數 delta）==========
+function getCampLastSeenCount(name) {
+  const v = localStorage.getItem('bp_camp_count_' + name);
+  return v === null ? null : (parseInt(v) || 0);
+}
+function setCampLastSeenCount(name, count) {
+  localStorage.setItem('bp_camp_count_' + name, String(count));
+}
+function computeCampNewCount(camp) {
+  const prev = getCampLastSeenCount(camp.name);
+  if (prev === null) return 0;
+  return Math.max(0, (camp.count || 0) - prev);
+}
+function seedUnseenCamps(camps) {
+  camps.forEach(c => {
+    if (getCampLastSeenCount(c.name) === null) setCampLastSeenCount(c.name, c.count || 0);
+  });
 }
 
 // ========== MATRIX 訂購管理 ==========
@@ -1592,6 +1612,12 @@ async function loadCamps() {
 
 function renderCamps(data) {
   if (!data.camps || data.camps.length === 0) { document.getElementById('camps-content').innerHTML = '<div class="loading">尚無報名資料</div>'; return; }
+
+  seedUnseenCamps(data.camps);
+  let totalNew = 0;
+  data.camps.forEach(c => { totalNew += computeCampNewCount(c); });
+  updateTabNewBadge('camps', totalNew);
+
   const totalStudents = data.camps.reduce((s, c) => s + c.count, 0);
   let totalPaid = 0, totalNotified = 0, totalUnknown = 0, totalAlerts = 0;
   data.camps.forEach(c => { const p = countPayment(c.students); totalPaid += p.paid; totalNotified += p.notified; totalUnknown += p.unknown; totalAlerts += countAlerts(c.students); });
@@ -1599,7 +1625,7 @@ function renderCamps(data) {
   stats.style.display = 'grid';
   stats.innerHTML = `
     <div class="stat"><div class="stat-num">${data.camps.length}</div><div class="stat-label">營隊數</div></div>
-    <div class="stat"><div class="stat-num">${totalStudents}</div><div class="stat-label">總人數</div></div>
+    <div class="stat"><div class="stat-num">${totalStudents}${totalNew > 0 ? ` <span class="is-new-marker" style="font-size:.55em;vertical-align:middle">+${totalNew}</span>` : ''}</div><div class="stat-label">總人數</div></div>
     <div class="stat"><div class="stat-num" style="color:#2E7D32">${totalPaid}</div><div class="stat-label">✅ 已付款</div></div>
     <div class="stat"><div class="stat-num" style="color:#E65100">${totalNotified}</div><div class="stat-label">🔔 已通知</div></div>
     <div class="stat"><div class="stat-num" style="color:#C93A2A">${totalUnknown}</div><div class="stat-label">⏳ 待通知</div></div>
@@ -1620,9 +1646,10 @@ function renderCamps(data) {
     const alerts = countAlerts(camp.students);
     const pay = countPayment(camp.students);
     const sessions = new Set(camp.students.map(s => s.session || '(未指定)'));
-    html += `<div class="camp-card" onclick="openCamp(${idx})">
+    const newCount = computeCampNewCount(camp);
+    html += `<div class="camp-card${newCount > 0 ? ' camp-card-new' : ''}" onclick="openCamp(${idx})">
       <div class="camp-card-head">
-        <div class="camp-name">${camp.name}</div>
+        <div class="camp-name">${camp.name}${newCount > 0 ? ` <span class="is-new-marker">+${newCount} 新增</span>` : ''}</div>
         <div class="camp-count-badge">👥 報名 ${camp.count} 人</div>
       </div>
       <div class="camp-payment-line">
@@ -1656,6 +1683,11 @@ let _currentCampData = null;
 
 function openCamp(idx) {
   const camp = allData.camps[idx];
+  // 標記為已看過 → 清掉這張卡片的 +N 徽章
+  if (computeCampNewCount(camp) > 0) {
+    setCampLastSeenCount(camp.name, camp.count || 0);
+    renderCamps(allData);
+  }
   document.getElementById('modalTitle').textContent = camp.name + '（共 ' + camp.count + ' 人）';
   const sessionMap = {};
   camp.students.forEach(s => { const k = s.session || '(未指定梯次)'; if (!sessionMap[k]) sessionMap[k] = []; sessionMap[k].push(s); });
