@@ -1449,6 +1449,51 @@ function financeSummary(p) {
       });
     });
 
+    // 「聯合」支出按該營隊「北區 vs 永康」人數比例分攤回去
+    // 因為支出是合買的，但 groups['聯合'][campName] 通常不存在（學員不會被分到「聯合」教室）
+    // 不分攤的話：北區/永康卡片支出顯示 0、totalExpense 也漏掉這筆
+    Object.keys(expensesByKey).slice().forEach(function(key) {
+      const sepIdx = key.lastIndexOf('|');
+      if (sepIdx < 0) return;
+      const cls = key.substring(sepIdx + 1);
+      if (cls !== '聯合') return;
+      const campName = key.substring(0, sepIdx);
+      const amt = expensesByKey[key];
+      const bHead = (groups['北區'][campName] || {}).headcount || 0;
+      const yHead = (groups['永康'][campName] || {}).headcount || 0;
+      const totalHead = bHead + yHead;
+
+      if (totalHead === 0) {
+        // 邊界：北區永康都沒人 → 保留為「聯合」，建空殼卡讓支出有歸宿
+        if (!groups['聯合'][campName]) {
+          const price = findCampPrice(campName);
+          groups['聯合'][campName] = {
+            campName: campName,
+            classroom: '聯合',
+            earlybirdPrice: price ? (price.earlybird || price.original || 0) : 0,
+            priceTiers: price || null,
+            headcount: 0,
+            paid: 0,
+            unpaid: 0,
+            revenuePaid: 0,
+            revenueUnpaid: 0,
+            revenueTotal: 0,
+            expense: 0,
+            profit: 0,
+            unpaidStudents: [],
+            plans: {}
+          };
+        }
+        return; // 保留原 key 給 apply 階段使用
+      }
+
+      const bShare = Math.floor(amt * bHead / totalHead);
+      const yShare = amt - bShare; // 餘數補給永康，保證總和 = amt
+      if (bShare > 0) expensesByKey[campName + '|北區'] = (expensesByKey[campName + '|北區'] || 0) + bShare;
+      if (yShare > 0) expensesByKey[campName + '|永康'] = (expensesByKey[campName + '|永康'] || 0) + yShare;
+      delete expensesByKey[key];
+    });
+
     // 套用支出
     Object.keys(groups).forEach(function(cls) {
       Object.keys(groups[cls]).forEach(function(campName) {
