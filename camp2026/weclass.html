@@ -315,6 +315,8 @@
     </div>
   </div>
 
+  <div id="kindTabs" style="display:flex; gap:8px; margin-bottom:12px"></div>
+
   <div style="margin-bottom: 10px;">
     <input id="searchBox" placeholder="🔍 搜尋學生姓名 / 學號 / 班級..." oninput="setSearch(this.value)"
       style="width: 100%; padding: 10px 12px; background: var(--card); border: 1px solid var(--line); border-radius: 6px; color: var(--text); font-size: 14px;" />
@@ -338,7 +340,7 @@ const LS_URL = 'weclass_api_url';
 const LS_TK = 'weclass_passcode';
 const LS_FILTER = 'weclass_filter';
 
-let CACHE = { rows: [], lastSync: null, filter: { school: 'ALL', class: 'ALL', kind: 'ALL' }, search: '' };
+let CACHE = { rows: [], lastSync: null, filter: { school: 'ALL', class: 'ALL', kind: 'hobby' }, search: '' };
 const SELECTED = new Set();  // key = student_number||class_id
 
 // 預設備註（建單時自動帶）
@@ -526,10 +528,31 @@ function showLoading() {
 
 // ---------- Render ----------
 function render() {
+  renderKindTabs();
   renderMeta();
   renderStats();
   renderSections();
   renderBatchBar();
+}
+
+function renderKindTabs() {
+  const el = document.getElementById('kindTabs');
+  if (!el) return;
+  const hobbyN = CACHE.rows.filter(r => r.kind === 'hobby').length;
+  const anqinN = CACHE.rows.filter(r => r.kind === 'anqin').length;
+  const cur = CACHE.filter.kind;
+  const tab = (key, label, count, color) => `
+    <button onclick="setFilter('kind', '${key}')" style="
+      flex:1; padding:14px; border-radius:8px; border:2px solid ${cur===key ? color : 'var(--line)'};
+      background:${cur===key ? color : 'var(--card)'}; color:${cur===key ? '#0f172a' : 'var(--text)'};
+      font-size:16px; font-weight:${cur===key ? '700' : '500'}; cursor:pointer;
+      transition:all 0.15s;">
+      ${label} <span style="opacity:0.7;font-size:13px">(${count})</span>
+    </button>`;
+  el.innerHTML = `
+    ${tab('hobby', '🎨 才藝班', hobbyN, 'var(--primary)')}
+    ${tab('anqin', '🎒 安親班', anqinN, 'var(--green)')}
+  `;
 }
 
 function renderMeta() {
@@ -538,18 +561,15 @@ function renderMeta() {
   const schools = uniq(CACHE.rows.map(r => r.school_name).filter(Boolean));
   const classes = uniq(CACHE.rows.map(r => r.class_name).filter(Boolean));
 
+  // 統計各 kind 筆數（給 tab 顯示）
+  const hobbyCount = CACHE.rows.filter(r => r.kind === 'hobby').length;
+  const anqinCount = CACHE.rows.filter(r => r.kind === 'anqin').length;
+
   document.getElementById('metaBar').innerHTML = `
     <span class="dot ${stale ? 'stale' : ''}"></span>
     <span>${timeAgo(time)}</span>
     <span>·</span>
-    <span>類型：
-      <select onchange="setFilter('kind', this.value)">
-        <option value="ALL" ${CACHE.filter.kind === 'ALL' ? 'selected' : ''}>全部</option>
-        <option value="hobby" ${CACHE.filter.kind === 'hobby' ? 'selected' : ''}>🎨 才藝班</option>
-        <option value="anqin" ${CACHE.filter.kind === 'anqin' ? 'selected' : ''}>🎒 安親班</option>
-      </select>
-    </span>
-    <span>分校：
+    <span>分校:
       <select onchange="setFilter('school', this.value)">
         <option value="ALL">全部</option>
         ${schools.map(s => `<option value="${s}" ${CACHE.filter.school === s ? 'selected' : ''}>${s}</option>`).join('')}
@@ -561,7 +581,7 @@ function renderMeta() {
         ${classes.map(c => `<option value="${c}" ${CACHE.filter.class === c ? 'selected' : ''}>${c}</option>`).join('')}
       </select>
     </span>
-    ${(CACHE.filter.school !== 'ALL' || CACHE.filter.class !== 'ALL' || CACHE.filter.kind !== 'ALL')
+    ${(CACHE.filter.school !== 'ALL' || CACHE.filter.class !== 'ALL')
       ? `<button class="secondary" style="padding:4px 10px;font-size:12px" onclick="resetFilter()">清除篩選</button>` : ''}
   `;
 }
@@ -572,7 +592,7 @@ function setFilter(k, v) {
   render();
 }
 function resetFilter() {
-  CACHE.filter = { school: 'ALL', class: 'ALL', kind: 'ALL' };
+  CACHE.filter = { school: 'ALL', class: 'ALL', kind: 'hobby' };
   localStorage.removeItem(LS_FILTER);
   render();
 }
