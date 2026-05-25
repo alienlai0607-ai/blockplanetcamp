@@ -295,7 +295,7 @@
   <div class="gate-box">
     <h2>🪐 WeClass 接管系統</h2>
     <input id="apiUrl" placeholder="Apps Script Web App URL（/exec 結尾）"
-      value="https://script.google.com/macros/s/AKfycbzSeZ0I7QFoEXSaamE1BpKpxg0oBJjpYY9jiMnKOuuIffl14ekrLELGh-Pg4V22zdRf/exec" />
+      value="https://script.google.com/macros/s/AKfycbyDTfVPIDTEmpojWouV4q2XdiQZYxi8IaIASOekvUMZhWafd-ucdlOAZ4OEvhNUQPAg/exec" />
     <p class="hint">URL 已預設好（每次重新部署 Apps Script 時要更新）</p>
     <input id="passcode" type="password" placeholder="通行密碼" autofocus />
     <button onclick="login()">進入</button>
@@ -341,7 +341,7 @@ const LS_URL = 'weclass_api_url';
 const LS_TK = 'weclass_passcode';
 const LS_FILTER = 'weclass_filter';
 
-let CACHE = { rows: [], lastSync: null, filter: { school: 'ALL', class: 'ALL', kind: 'hobby' }, search: '' };
+let CACHE = { rows: [], lastSync: null, filter: { school: '永康分校', class: 'ALL', kind: 'hobby' }, search: '' };
 const SELECTED = new Set();  // key = student_number||class_id
 
 // 預設備註（建單時自動帶）
@@ -560,24 +560,21 @@ function renderKindTabs() {
 function renderSchoolTabs() {
   const el = document.getElementById('schoolTabs');
   if (!el) return;
-  // 依目前 kind 計算各分校人數
   const inKind = CACHE.rows.filter(r => CACHE.filter.kind === 'ALL' || r.kind === CACHE.filter.kind);
-  const allN = inKind.length;
   const yongN = inKind.filter(r => r.school_name === '永康分校').length;
   const beiN  = inKind.filter(r => r.school_name === '北區分校').length;
   const cur = CACHE.filter.school;
-  const sub = (key, label, count) => `
+  const sub = (key, label, count, color) => `
     <button onclick="setFilter('school', '${key}')" style="
-      flex:1; padding:8px 12px; border-radius:6px; border:1px solid ${cur===key ? 'var(--primary)' : 'var(--line)'};
-      background:${cur===key ? 'rgba(56,189,248,0.12)' : 'var(--card)'};
-      color:${cur===key ? 'var(--primary)' : 'var(--muted)'};
-      font-size:13px; font-weight:${cur===key ? '600' : '400'}; cursor:pointer;">
-      ${label} <span style="opacity:0.7">(${count})</span>
+      flex:1; padding:12px; border-radius:8px; border:2px solid ${cur===key ? color : 'var(--line)'};
+      background:${cur===key ? color : 'var(--card)'}; color:${cur===key ? '#0f172a' : 'var(--text)'};
+      font-size:15px; font-weight:${cur===key ? '700' : '500'}; cursor:pointer;
+      transition:all 0.15s;">
+      ${label} <span style="opacity:0.75;font-size:13px">(${count})</span>
     </button>`;
   el.innerHTML = `
-    ${sub('ALL', '全部', allN)}
-    ${sub('永康分校', '永康', yongN)}
-    ${sub('北區分校', '北區', beiN)}
+    ${sub('永康分校', '🏠 永康', yongN, 'var(--yellow)')}
+    ${sub('北區分校', '🏠 北區', beiN, 'var(--orange)')}
   `;
 }
 
@@ -612,7 +609,7 @@ function setFilter(k, v) {
   render();
 }
 function resetFilter() {
-  CACHE.filter = { school: 'ALL', class: 'ALL', kind: 'hobby' };
+  CACHE.filter = { school: '永康分校', class: 'ALL', kind: 'hobby' };
   localStorage.removeItem(LS_FILTER);
   render();
 }
