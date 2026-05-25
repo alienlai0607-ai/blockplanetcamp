@@ -295,7 +295,7 @@
   <div class="gate-box">
     <h2>🪐 WeClass 接管系統</h2>
     <input id="apiUrl" placeholder="Apps Script Web App URL（/exec 結尾）"
-      value="https://script.google.com/macros/s/AKfycbzK_Ytc2DvuogS4PosEqb2xsjOSv-gA0iEwe2WdeKzXVkP5-u8gKn0aCuO8VMB6paFD/exec" />
+      value="https://script.google.com/macros/s/AKfycbzSeZ0I7QFoEXSaamE1BpKpxg0oBJjpYY9jiMnKOuuIffl14ekrLELGh-Pg4V22zdRf/exec" />
     <p class="hint">URL 已預設好（每次重新部署 Apps Script 時要更新）</p>
     <input id="passcode" type="password" placeholder="通行密碼" autofocus />
     <button onclick="login()">進入</button>
@@ -1060,6 +1060,7 @@ function rowHtml(r, withCheckbox) {
   }
   if (r.package_type) flags.push(`<span class="badge yellow" title="套餐">${r.package_type}</span>`);
   if (r.multi_class) flags.push('<span class="badge purple" title="此學生上多個班">多班</span>');
+  if (r.baseline_calibrated) flags.push('<span class="badge ok" title="已用真實基準堂數校正">✔基準校正</span>');
   if (r.unreliable_count) flags.push('<span class="badge outline" title="班名無法解析時段，次數可能不準">⚠次數估算</span>');
   if (r.duplicate_name) flags.push('<span class="badge outline" title="有同名學生">同名</span>');
   if (r.discount_note) flags.push(`<span class="badge yellow">${r.discount_note}</span>`);
