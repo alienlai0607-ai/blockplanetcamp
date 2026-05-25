@@ -1,0 +1,1138 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>WeClass 接管系統 · 布拉克星球</title>
+<style>
+  :root {
+    --bg: #0f172a;
+    --card: #1e293b;
+    --card2: #273449;
+    --text: #f1f5f9;
+    --muted: #94a3b8;
+    --line: #334155;
+    --primary: #38bdf8;
+    --red: #ef4444;
+    --orange: #fb923c;
+    --yellow: #fbbf24;
+    --green: #4ade80;
+    --purple: #c084fc;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: -apple-system, "PingFang TC", "Microsoft JhengHei", sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    padding: 16px;
+  }
+  .container { max-width: 1280px; margin: 0 auto; }
+
+  /* Header */
+  .header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 16px;
+    flex-wrap: wrap;
+    gap: 12px;
+  }
+  h1 { font-size: 22px; letter-spacing: 1px; }
+  h1 .tag { font-size: 13px; color: var(--muted); font-weight: normal; margin-left: 8px; }
+  .actions { display: flex; gap: 8px; flex-wrap: wrap; }
+  button {
+    background: var(--primary);
+    color: #0f172a;
+    border: none;
+    padding: 8px 14px;
+    border-radius: 6px;
+    cursor: pointer;
+    font-weight: 600;
+    font-size: 14px;
+    transition: all 0.15s;
+  }
+  button:hover { opacity: 0.85; transform: translateY(-1px); }
+  button:active { transform: translateY(0); }
+  button:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
+  button.secondary { background: var(--card2); color: var(--text); border: 1px solid var(--line); }
+  button.danger { background: var(--red); color: white; }
+
+  /* Meta bar */
+  .meta-bar {
+    display: flex;
+    gap: 16px;
+    margin-bottom: 16px;
+    align-items: center;
+    flex-wrap: wrap;
+    font-size: 13px;
+    color: var(--muted);
+  }
+  .meta-bar .dot { width: 6px; height: 6px; border-radius: 50%; background: var(--green); }
+  .meta-bar .dot.stale { background: var(--orange); }
+  .meta-bar select {
+    background: var(--card);
+    color: var(--text);
+    border: 1px solid var(--line);
+    padding: 5px 10px;
+    border-radius: 4px;
+    font-size: 13px;
+    cursor: pointer;
+  }
+
+  /* Stat strip */
+  .stats {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
+    gap: 10px;
+    margin-bottom: 20px;
+  }
+  .stat {
+    background: var(--card);
+    padding: 14px;
+    border-radius: 8px;
+    border-left: 4px solid var(--primary);
+    cursor: pointer;
+    transition: all 0.15s;
+  }
+  .stat:hover { background: var(--card2); }
+  .stat.urgent { border-left-color: var(--red); }
+  .stat.warn { border-left-color: var(--orange); }
+  .stat.yellow { border-left-color: var(--yellow); }
+  .stat.ok { border-left-color: var(--green); }
+  .stat .num { font-size: 26px; font-weight: 700; }
+  .stat .label { font-size: 12px; color: var(--muted); margin-top: 2px; }
+
+  /* Sections */
+  .section {
+    background: var(--card);
+    border-radius: 8px;
+    margin-bottom: 14px;
+    overflow: hidden;
+  }
+  .section-header {
+    padding: 12px 16px;
+    border-bottom: 1px solid var(--line);
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-weight: 600;
+    font-size: 15px;
+  }
+  .section-header.urgent { background: rgba(239, 68, 68, 0.08); }
+  .section-header.warn { background: rgba(251, 146, 60, 0.06); }
+  .section-header.yellow { background: rgba(251, 191, 36, 0.05); }
+  .section-header .icon { font-size: 18px; }
+  .section-header .count {
+    background: var(--line);
+    padding: 2px 8px;
+    border-radius: 10px;
+    font-size: 12px;
+    font-weight: normal;
+  }
+
+  /* Table */
+  table { width: 100%; border-collapse: collapse; }
+  th, td { padding: 10px 14px; text-align: left; border-bottom: 1px solid var(--line); font-size: 14px; vertical-align: top; }
+  th { color: var(--muted); font-size: 12px; font-weight: normal; background: rgba(0,0,0,0.2); position: sticky; top: 0; }
+  tr:hover td { background: rgba(255,255,255,0.03); }
+
+  .badge {
+    display: inline-block;
+    padding: 2px 8px;
+    border-radius: 4px;
+    font-size: 11px;
+    font-weight: 600;
+    margin-right: 4px;
+  }
+  .badge.urgent { background: var(--red); color: white; }
+  .badge.warn { background: var(--orange); color: white; }
+  .badge.yellow { background: var(--yellow); color: #0f172a; }
+  .badge.ok { background: var(--green); color: #0f172a; }
+  .badge.purple { background: var(--purple); color: #0f172a; }
+  .badge.muted { background: var(--line); color: var(--muted); }
+  .badge.outline { background: transparent; border: 1px solid var(--line); color: var(--muted); }
+
+  .count-bar { display: inline-flex; align-items: center; gap: 6px; }
+  .count-bar .num { font-weight: 700; font-size: 16px; }
+  .count-bar .of { color: var(--muted); font-size: 12px; }
+  .count-bar .progress {
+    width: 60px;
+    height: 6px;
+    background: var(--line);
+    border-radius: 3px;
+    overflow: hidden;
+  }
+  .count-bar .fill { height: 100%; background: var(--primary); transition: width 0.3s; }
+  .count-bar .fill.urgent { background: var(--red); }
+  .count-bar .fill.warn { background: var(--orange); }
+  .count-bar .fill.yellow { background: var(--yellow); }
+  .count-bar .fill.ok { background: var(--green); }
+
+  .empty {
+    padding: 36px 20px;
+    text-align: center;
+    color: var(--muted);
+    font-size: 14px;
+  }
+  .loading { text-align: center; padding: 40px; color: var(--muted); }
+
+  /* Login gate */
+  .gate {
+    position: fixed;
+    inset: 0;
+    background: rgba(15, 23, 42, 0.96);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 100;
+  }
+  .gate-box {
+    background: var(--card);
+    padding: 32px;
+    border-radius: 10px;
+    width: 360px;
+    max-width: 90vw;
+  }
+  .gate-box h2 { margin-bottom: 16px; font-size: 20px; }
+  .gate-box .hint { font-size: 11px; color: var(--muted); margin: -8px 0 12px; }
+  .gate-box input {
+    width: 100%;
+    padding: 10px 12px;
+    background: var(--bg);
+    border: 1px solid var(--line);
+    border-radius: 6px;
+    color: var(--text);
+    font-size: 15px;
+    margin-bottom: 12px;
+  }
+  .gate-box input:focus { outline: none; border-color: var(--primary); }
+  .gate-box button { width: 100%; padding: 12px; font-size: 15px; }
+
+  /* Toast & overlay */
+  .toast {
+    position: fixed;
+    bottom: 24px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: var(--card);
+    border: 1px solid var(--line);
+    padding: 12px 20px;
+    border-radius: 6px;
+    z-index: 200;
+    box-shadow: 0 8px 24px rgba(0,0,0,0.4);
+    font-size: 14px;
+    max-width: 90vw;
+  }
+  .toast.success { border-left: 4px solid var(--green); }
+  .toast.error { border-left: 4px solid var(--red); }
+
+  .overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(15, 23, 42, 0.7);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 150;
+    flex-direction: column;
+    gap: 16px;
+  }
+  .spinner {
+    width: 50px; height: 50px;
+    border: 4px solid var(--line);
+    border-top-color: var(--primary);
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  .overlay .msg { color: var(--text); font-size: 15px; }
+  .overlay .sub { color: var(--muted); font-size: 12px; }
+
+  /* Specific cells */
+  .name-cell strong { font-size: 15px; }
+  .name-cell .num { font-size: 11px; color: var(--muted); }
+  .name-cell .school { font-size: 11px; color: var(--muted); }
+
+  .pay-cell .amount { font-size: 16px; font-weight: 600; color: var(--text); }
+  .pay-cell .due { font-size: 12px; color: var(--muted); }
+  .pay-cell .due.over { color: var(--red); font-weight: 600; }
+
+  .action-btn {
+    display: inline-block;
+    background: var(--primary);
+    color: #0f172a;
+    padding: 4px 10px;
+    border-radius: 4px;
+    text-decoration: none;
+    font-size: 12px;
+    font-weight: 600;
+    margin-top: 4px;
+  }
+  .action-btn:hover { opacity: 0.85; }
+  .action-btn.muted { background: var(--card2); color: var(--text); border: 1px solid var(--line); }
+
+  /* Mobile */
+  @media (max-width: 720px) {
+    body { padding: 10px; }
+    h1 { font-size: 18px; }
+    h1 .tag { display: none; }
+    /* 行動版隱藏「時程」欄（最不關鍵），保留學生/班/堂數/狀態金額 */
+    th.col-time, td.col-time { display: none; }
+    .meta-bar { font-size: 12px; }
+    th, td { padding: 8px 10px; font-size: 13px; }
+    .count-bar .progress { width: 40px; }
+    .stats { gap: 6px; }
+    .stat { padding: 10px; }
+    .stat .num { font-size: 20px; }
+  }
+</style>
+</head>
+<body>
+
+<!-- 通行密碼 -->
+<div class="gate" id="gate">
+  <div class="gate-box">
+    <h2>🪐 WeClass 接管系統</h2>
+    <input id="apiUrl" placeholder="Apps Script Web App URL（/exec 結尾）" />
+    <p class="hint">Apps Script 編輯器 → 部署 → 新增部署作業 → 網頁應用程式</p>
+    <input id="passcode" type="password" placeholder="通行密碼" />
+    <button onclick="login()">進入</button>
+    <p class="hint" style="margin-top: 16px;">設定會記在此瀏覽器，下次自動帶入</p>
+  </div>
+</div>
+
+<div class="container" style="display:none" id="app">
+  <div class="header">
+    <h1>🪐 WeClass 接管系統<span class="tag">布拉克星球</span></h1>
+    <div class="actions">
+      <button class="secondary" onclick="refresh()" id="btnRefresh">🔄 重新載入</button>
+      <button onclick="runSync()" id="btnSync">⚡ 立即同步</button>
+      <button class="secondary" onclick="showHealth()">🩺 健康檢查</button>
+      <button class="secondary" onclick="exportCsv()">📥 匯出 CSV</button>
+      <button class="secondary" onclick="logout()">登出</button>
+    </div>
+  </div>
+
+  <div style="margin-bottom: 10px;">
+    <input id="searchBox" placeholder="🔍 搜尋學生姓名 / 學號 / 班級..." oninput="setSearch(this.value)"
+      style="width: 100%; padding: 10px 12px; background: var(--card); border: 1px solid var(--line); border-radius: 6px; color: var(--text); font-size: 14px;" />
+  </div>
+
+  <div class="meta-bar" id="metaBar"></div>
+
+  <div id="batchBar" style="display:none; background: var(--card); border:1px solid var(--primary); border-radius:8px; padding:12px 16px; margin-bottom:12px; display:flex; gap:12px; align-items:center; flex-wrap:wrap; position:sticky; top:0; z-index:50; box-shadow: 0 4px 12px rgba(0,0,0,0.3);"></div>
+
+  <div class="stats" id="stats"></div>
+
+  <div id="sections"></div>
+
+</div>
+
+<div id="toastHost"></div>
+<div id="overlayHost"></div>
+
+<script>
+const LS_URL = 'weclass_api_url';
+const LS_TK = 'weclass_passcode';
+const LS_FILTER = 'weclass_filter';
+
+let CACHE = { rows: [], lastSync: null, filter: { school: 'ALL', class: 'ALL', kind: 'ALL' }, search: '' };
+const SELECTED = new Set();  // key = student_number||class_id
+
+// 預設備註（建單時自動帶）
+function defaultMemo(maxLessons) {
+  if (Number(maxLessons) === 24) {
+    return '半年24堂，請假請在系統上請假，30週內需上完';
+  }
+  return '一期八堂，請假請在系統上請假，一期課程需10週內需上完';
+}
+
+function setSearch(v) { CACHE.search = String(v || '').trim().toLowerCase(); render(); }
+function rowKey(r) { return r.student_number + '||' + r.class_id; }
+function isSelectable(r) {
+  // 只有「需要開單」的能勾選
+  return r.status_code === 'WAITING_INVOICE' || r.status_code === 'FULL_NO_ORDER' || r.student_name === 'dai測試';
+}
+function toggleSelect(key, checked) {
+  if (checked) SELECTED.add(key); else SELECTED.delete(key);
+  renderBatchBar();
+}
+function selectAllVisible() {
+  filteredRows().filter(isSelectable).forEach(r => SELECTED.add(rowKey(r)));
+  render();
+}
+function clearSelection() {
+  SELECTED.clear();
+  render();
+}
+function renderBatchBar() {
+  const el = document.getElementById('batchBar');
+  if (!el) return;
+  if (SELECTED.size === 0) { el.style.display = 'none'; return; }
+  el.style.display = '';
+  el.innerHTML = `
+    <strong>已選 ${SELECTED.size} 筆</strong>
+    <button onclick="openBatchModal()">🚀 一鍵發佈 ${SELECTED.size} 筆</button>
+    <button class="secondary" onclick="clearSelection()">取消選擇</button>
+  `;
+}
+
+const STATUS = {
+  FULL_NO_ORDER:   { label: '已滿堂未開單', color: 'urgent', icon: '⛔' },
+  FULL_UNPAID:     { label: '已滿堂未繳',   color: 'urgent', icon: '⛔' },
+  WAITING_INVOICE: { label: '待開單',       color: 'urgent', icon: '🔴' },
+  OVERDUE_PAY:     { label: '逾期未繳',     color: 'urgent', icon: '🔴' },
+  PENDING_PAY:     { label: '已開單待繳',   color: 'yellow', icon: '🟡' },
+  IN_PROGRESS:     { label: '未開單，需補開繳費單', color: 'ok', icon: '🔵' },
+  NEW:             { label: '新生',         color: 'muted',  icon: '⚪' },
+  PAID_OK:         { label: '本月已繳',     color: 'ok',     icon: '✅' },
+};
+
+const SECTIONS = [
+  { key: 'critical',  title: '緊急（已滿堂）',           codes: ['FULL_NO_ORDER', 'FULL_UNPAID'], tone: 'urgent', defaultOpen: true },
+  { key: 'invoice',   title: '待開單',                  codes: ['WAITING_INVOICE'],              tone: 'urgent', defaultOpen: true },
+  { key: 'overdue',   title: '逾期未繳',                codes: ['OVERDUE_PAY'],                  tone: 'urgent', defaultOpen: true },
+  { key: 'pending',   title: '已開單，等家長繳費',      codes: ['PENDING_PAY'],                  tone: 'yellow', defaultOpen: true },
+  { key: 'progress',  title: '未開單，需補開繳費單',     codes: ['IN_PROGRESS'],                  tone: 'ok',     defaultOpen: false },
+  { key: 'paid',      title: '本月已繳（安親）',        codes: ['PAID_OK'],                      tone: 'ok',     defaultOpen: false },
+  { key: 'new',       title: '新生 / 未開始',           codes: ['NEW'],                          tone: 'muted',  defaultOpen: false },
+];
+const OPEN_STATE = {};
+
+// ---------- Auth ----------
+function login() {
+  const url = document.getElementById('apiUrl').value.trim();
+  const tk = document.getElementById('passcode').value.trim();
+  if (!url || !tk) { toast('請填 URL 與密碼', 'error'); return; }
+  if (!/\/exec$/.test(url)) { toast('URL 應該以 /exec 結尾', 'error'); return; }
+  localStorage.setItem(LS_URL, url);
+  localStorage.setItem(LS_TK, tk);
+  enter();
+}
+function logout() {
+  if (!confirm('登出？下次要重新輸入 URL 跟密碼')) return;
+  localStorage.removeItem(LS_URL);
+  localStorage.removeItem(LS_TK);
+  location.reload();
+}
+function enter() {
+  document.getElementById('gate').style.display = 'none';
+  document.getElementById('app').style.display = '';
+  // 還原 filter
+  try {
+    const f = JSON.parse(localStorage.getItem(LS_FILTER));
+    if (f) CACHE.filter = Object.assign(CACHE.filter, f);
+  } catch (e) {}
+  refresh();
+}
+
+// ---------- API ----------
+async function api(action) {
+  const url = localStorage.getItem(LS_URL);
+  const tk = localStorage.getItem(LS_TK);
+  const r = await fetch(`${url}?action=${action}&tk=${encodeURIComponent(tk)}`);
+  return r.json();
+}
+
+async function refresh() {
+  showLoading();
+  setBtn('btnRefresh', true);
+  try {
+    const res = await api('dashboard');
+    if (!res.success) { toast('讀取失敗：' + res.message, 'error'); return; }
+    CACHE.rows = res.data || [];
+    CACHE.lastSync = res.last_sync;
+    render();
+  } catch (e) {
+    toast('網路錯誤：' + e.message, 'error');
+  } finally {
+    setBtn('btnRefresh', false);
+  }
+}
+
+async function runSync() {
+  if (!confirm('立即向 WeClass 同步資料？需要 60 秒。')) return;
+  showOverlay('正在同步…', '撈點名／訂單／請假，預計 30~60 秒');
+  setBtn('btnSync', true);
+  try {
+    const res = await api('sync');
+    if (!res.success) { toast('同步失敗：' + res.message, 'error'); return; }
+    const d = res.data || {};
+    toast(`✅ 同步完成：${d.students} 學生 / ${d.orders} 訂單 / ${d.dashboard} 名單`, 'success');
+    await refresh();
+  } catch (e) {
+    toast('同步出錯：' + e.message, 'error');
+  } finally {
+    hideOverlay();
+    setBtn('btnSync', false);
+  }
+}
+
+// ---------- Utils ----------
+function fmt(v) {
+  if (!v) return '';
+  const s = String(v);
+  if (s.length >= 10 && s.indexOf('T') < 0) return s.slice(0, 10);
+  const d = new Date(s);
+  if (isNaN(d.getTime())) return s;
+  const utc8 = new Date(d.getTime() + 8 * 3600 * 1000);
+  return utc8.toISOString().slice(0, 10);
+}
+function money(n) {
+  if (n === '' || n === null || n === undefined) return '';
+  return '$' + Number(n).toLocaleString('zh-TW');
+}
+function timeAgo(iso) {
+  if (!iso) return '從未同步';
+  const d = new Date(iso);
+  const diff = Date.now() - d.getTime();
+  const mins = Math.floor(diff / 60000);
+  if (mins < 1) return '剛剛同步';
+  if (mins < 60) return `${mins} 分鐘前同步`;
+  const hours = Math.floor(mins / 60);
+  if (hours < 24) return `${hours} 小時前同步`;
+  const days = Math.floor(hours / 24);
+  return `${days} 天前同步`;
+}
+function isStale(iso) {
+  if (!iso) return true;
+  return Date.now() - new Date(iso).getTime() > 26 * 3600 * 1000;
+}
+function setBtn(id, busy) {
+  const b = document.getElementById(id);
+  if (b) b.disabled = busy;
+}
+
+// ---------- Toast / Overlay ----------
+function toast(msg, kind) {
+  const t = document.createElement('div');
+  t.className = 'toast ' + (kind || '');
+  t.textContent = msg;
+  document.getElementById('toastHost').appendChild(t);
+  setTimeout(() => t.remove(), 3500);
+}
+function showOverlay(msg, sub) {
+  document.getElementById('overlayHost').innerHTML =
+    `<div class="overlay"><div class="spinner"></div><div class="msg">${msg}</div><div class="sub">${sub || ''}</div></div>`;
+}
+function hideOverlay() {
+  document.getElementById('overlayHost').innerHTML = '';
+}
+function showLoading() {
+  document.getElementById('sections').innerHTML = '<div class="section"><div class="loading">載入中…</div></div>';
+}
+
+// ---------- Render ----------
+function render() {
+  renderMeta();
+  renderStats();
+  renderSections();
+  renderBatchBar();
+}
+
+function renderMeta() {
+  const stale = isStale(CACHE.lastSync && CACHE.lastSync.time);
+  const time = CACHE.lastSync && CACHE.lastSync.time;
+  const schools = uniq(CACHE.rows.map(r => r.school_name).filter(Boolean));
+  const classes = uniq(CACHE.rows.map(r => r.class_name).filter(Boolean));
+
+  document.getElementById('metaBar').innerHTML = `
+    <span class="dot ${stale ? 'stale' : ''}"></span>
+    <span>${timeAgo(time)}</span>
+    <span>·</span>
+    <span>類型：
+      <select onchange="setFilter('kind', this.value)">
+        <option value="ALL" ${CACHE.filter.kind === 'ALL' ? 'selected' : ''}>全部</option>
+        <option value="hobby" ${CACHE.filter.kind === 'hobby' ? 'selected' : ''}>🎨 才藝班</option>
+        <option value="anqin" ${CACHE.filter.kind === 'anqin' ? 'selected' : ''}>🎒 安親班</option>
+      </select>
+    </span>
+    <span>分校：
+      <select onchange="setFilter('school', this.value)">
+        <option value="ALL">全部</option>
+        ${schools.map(s => `<option value="${s}" ${CACHE.filter.school === s ? 'selected' : ''}>${s}</option>`).join('')}
+      </select>
+    </span>
+    <span>班級：
+      <select onchange="setFilter('class', this.value)">
+        <option value="ALL">全部</option>
+        ${classes.map(c => `<option value="${c}" ${CACHE.filter.class === c ? 'selected' : ''}>${c}</option>`).join('')}
+      </select>
+    </span>
+    ${(CACHE.filter.school !== 'ALL' || CACHE.filter.class !== 'ALL' || CACHE.filter.kind !== 'ALL')
+      ? `<button class="secondary" style="padding:4px 10px;font-size:12px" onclick="resetFilter()">清除篩選</button>` : ''}
+  `;
+}
+function uniq(arr) { return [...new Set(arr)].sort(); }
+function setFilter(k, v) {
+  CACHE.filter[k] = v;
+  localStorage.setItem(LS_FILTER, JSON.stringify(CACHE.filter));
+  render();
+}
+function resetFilter() {
+  CACHE.filter = { school: 'ALL', class: 'ALL', kind: 'ALL' };
+  localStorage.removeItem(LS_FILTER);
+  render();
+}
+function filteredRows() {
+  const q = CACHE.search;
+  return CACHE.rows.filter(r => {
+    if (CACHE.filter.school !== 'ALL' && r.school_name !== CACHE.filter.school) return false;
+    if (CACHE.filter.class !== 'ALL' && r.class_name !== CACHE.filter.class) return false;
+    if (CACHE.filter.kind !== 'ALL' && r.kind !== CACHE.filter.kind) return false;
+    if (q) {
+      const hay = `${r.student_name||''} ${r.student_number||''} ${r.class_name||''} ${r.school_name||''}`.toLowerCase();
+      if (hay.indexOf(q) < 0) return false;
+    }
+    return true;
+  });
+}
+
+// ---- CSV 匯出 ----
+function exportCsv() {
+  const rows = filteredRows();
+  if (rows.length === 0) { toast('沒有資料可以匯出', 'error'); return; }
+  const cols = [
+    ['kind', '類型'], ['student_number', '學號'], ['student_name', '學生'],
+    ['school_name', '分校'], ['class_name', '班級'],
+    ['lessons_count', '已上'], ['max_lessons', '滿堂'],
+    ['status_label', '狀態'],
+    ['base_date', '起算日'], ['last_lesson_date', '最近上課'],
+    ['pending_due_date', '繳費期限'], ['pending_amount', '應收'],
+    ['days_overdue', '逾期天數'], ['discount_note', '折扣'],
+  ];
+  const head = cols.map(c => c[1]).join(',');
+  const body = rows.map(r =>
+    cols.map(c => {
+      let v = r[c[0]] === undefined ? '' : r[c[0]];
+      if (c[0] === 'kind') v = v === 'anqin' ? '安親' : '才藝';
+      if (c[0].endsWith('_date') || c[0] === 'base_date' || c[0] === 'last_lesson_date') v = fmt(v);
+      const s = String(v).replace(/"/g, '""');
+      return /[,"\n]/.test(s) ? `"${s}"` : s;
+    }).join(',')
+  ).join('\n');
+  const csv = '﻿' + head + '\n' + body;  // BOM 讓 Excel 正確顯示中文
+  const blob = new Blob([csv], { type: 'text/csv;charset=utf-8' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = `weclass-dashboard-${new Date().toISOString().slice(0,10)}.csv`;
+  a.click();
+  setTimeout(() => URL.revokeObjectURL(a.href), 1000);
+  toast(`✅ 已匯出 ${rows.length} 筆`, 'success');
+}
+
+// ---- 批次發佈 ----
+async function openBatchModal() {
+  if (SELECTED.size === 0) return;
+  // 取得所選 rows
+  const selectedRows = CACHE.rows.filter(r => SELECTED.has(rowKey(r)));
+  // 推測各 row 預設值
+  const today = new Date(Date.now() + 8*3600000).toISOString().slice(0,10);
+  const due = new Date(Date.now() + (8+7*24)*3600000).toISOString().slice(0,10);
+
+  // 為每 row 找預設金額
+  const items = selectedRows.map((r, idx) => {
+    let amt = '';
+    const sameClass = CACHE.rows.find(x => x.class_name === r.class_name && x.pending_amount);
+    if (sameClass) amt = sameClass.pending_amount;
+    if (!amt) amt = (r.max_lessons == 24) ? 11400 : 4400;
+    const memo = defaultMemo(r.max_lessons);
+    const sbid = r.school_name === '永康分校' ? 340 : (r.school_name === '北區分校' ? 355 : '');
+    return { idx, row: r, amount: amt, memo, receive_date: today, due_date: due, school_branch_id: sbid };
+  });
+  window._batchItems = items;
+
+  document.getElementById('overlayHost').innerHTML = `
+    <div class="overlay" onclick="if(event.target===this)hideOverlay()">
+      <div style="background:var(--card);border-radius:10px;max-width:920px;width:95vw;max-height:90vh;overflow:hidden;display:flex;flex-direction:column">
+        <div style="padding:14px 18px;border-bottom:1px solid var(--line);display:flex;justify-content:space-between;align-items:center">
+          <strong>🚀 批次發佈 ${items.length} 筆繳費單</strong>
+          <button class="secondary" onclick="hideOverlay()" style="padding:4px 10px;font-size:12px">取消</button>
+        </div>
+        <div style="padding:10px 18px;background:rgba(0,0,0,0.2);border-bottom:1px solid var(--line);display:flex;gap:8px;align-items:center;font-size:13px">
+          <span>統一工具：</span>
+          <input id="bulk_due" type="date" value="${due}" style="padding:4px;background:var(--bg);border:1px solid var(--line);border-radius:4px;color:var(--text)" />
+          <button class="secondary" onclick="applyBulkDue()" style="padding:4px 10px;font-size:12px">套用繳費期限到全部</button>
+          <input id="bulk_memo" type="text" placeholder="統一備註" style="padding:4px;background:var(--bg);border:1px solid var(--line);border-radius:4px;color:var(--text);flex:1" />
+          <button class="secondary" onclick="applyBulkMemo()" style="padding:4px 10px;font-size:12px">套用備註到全部</button>
+        </div>
+        <div style="overflow-y:auto;flex:1" id="batchList">
+          ${items.map(renderBatchItem).join('')}
+        </div>
+        <div style="padding:14px 18px;border-top:1px solid var(--line);display:flex;justify-content:space-between;align-items:center;gap:12px">
+          <div class="meta" id="batchSummary">共 ${items.length} 筆，預計通知 ${items.length} 個家長</div>
+          <div style="display:flex;gap:8px">
+            <button class="secondary" onclick="hideOverlay()">取消</button>
+            <button onclick="executeBatch()" style="background:var(--red)">✅ 確認全部開單並通知</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  `;
+}
+
+function renderBatchItem(item) {
+  const r = item.row;
+  return `
+    <div style="padding:10px 18px;border-bottom:1px solid var(--line);display:grid;grid-template-columns:1fr 100px 130px 1fr;gap:10px;align-items:center" data-idx="${item.idx}">
+      <div>
+        <strong>${r.student_name}</strong> <span class="meta">${r.student_number}</span>
+        <div class="meta">${r.school_name} · ${r.class_name}</div>
+      </div>
+      <input type="number" value="${item.amount}" onchange="window._batchItems[${item.idx}].amount=this.value" placeholder="金額"
+        style="padding:6px;background:var(--bg);border:1px solid var(--line);border-radius:4px;color:var(--text)" />
+      <input type="date" value="${item.due_date}" onchange="window._batchItems[${item.idx}].due_date=this.value"
+        style="padding:6px;background:var(--bg);border:1px solid var(--line);border-radius:4px;color:var(--text)" />
+      <input type="text" value="${item.memo}" onchange="window._batchItems[${item.idx}].memo=this.value" placeholder="備註"
+        style="padding:6px;background:var(--bg);border:1px solid var(--line);border-radius:4px;color:var(--text)" />
+    </div>
+  `;
+}
+
+function applyBulkDue() {
+  const v = document.getElementById('bulk_due').value;
+  if (!v) return;
+  window._batchItems.forEach(i => i.due_date = v);
+  // 重 render
+  document.getElementById('batchList').innerHTML = window._batchItems.map(renderBatchItem).join('');
+  toast('已套用期限', 'success');
+}
+
+function applyBulkMemo() {
+  const v = document.getElementById('bulk_memo').value.trim();
+  if (!v) return;
+  window._batchItems.forEach(i => i.memo = v);
+  document.getElementById('batchList').innerHTML = window._batchItems.map(renderBatchItem).join('');
+  toast('已套用備註', 'success');
+}
+
+async function executeBatch() {
+  const items = window._batchItems || [];
+  if (items.length === 0) return;
+  if (!confirm(`確認對 ${items.length} 個家長發送繳費通知？\n\nWeClass 會自動推播到家長 App。`)) return;
+
+  showOverlay(`批次建單中 0/${items.length}`, '逐筆呼叫 WeClass API');
+
+  // 對每筆先 lookup student_id
+  const orders = [];
+  for (const it of items) {
+    try {
+      const sres = await api('lookup_student&num=' + encodeURIComponent(it.row.student_number));
+      const sid = sres && sres.data && sres.data.id;
+      if (!sid) { orders.push(null); continue; }
+      orders.push({
+        student_id: sid,
+        school_branch_id: it.school_branch_id,
+        class_id: Number(it.row.class_id),
+        item_id: 620,
+        amount: Number(it.amount),
+        receive_date: it.receive_date,
+        due_date: it.due_date,
+        memo: it.memo || '',
+        label: it.row.student_name + ' / ' + it.row.class_name,
+      });
+    } catch (e) {
+      orders.push(null);
+    }
+  }
+
+  const validOrders = orders.filter(o => o);
+  if (validOrders.length === 0) {
+    hideOverlay();
+    toast('沒有有效訂單可送出（學生 ID 找不到）', 'error');
+    return;
+  }
+
+  // 送 batch API
+  try {
+    const url = localStorage.getItem(LS_URL);
+    const tk = localStorage.getItem(LS_TK);
+    const resp = await fetch(`${url}?action=batch_create_order&tk=${encodeURIComponent(tk)}`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+      body: JSON.stringify({ orders: validOrders }),
+    });
+    const j = await resp.json();
+    hideOverlay();
+    if (!j.success) { toast('批次失敗：' + j.message, 'error'); return; }
+    const d = j.data;
+    const failedList = (d.results || []).filter(r => !r.success);
+    if (failedList.length === 0) {
+      toast(`✅ 全部 ${d.ok} 筆都成功！WeClass 已通知家長`, 'success');
+    } else {
+      toast(`完成 ${d.ok}/${d.total}，失敗 ${d.failed} 筆`, 'error');
+      alert('失敗清單：\n' + failedList.map(r => `${r.label}: ${r.message}`).join('\n'));
+    }
+    SELECTED.clear();
+    setTimeout(() => refresh(), 800);
+  } catch (e) {
+    hideOverlay();
+    toast('批次出錯：' + e.message, 'error');
+  }
+}
+
+// ---- 一鍵開單 ----
+let _orderRowCache = null;
+function openCreateOrderModal(safeRow) {
+  const r = JSON.parse(decodeURIComponent(safeRow));
+  _orderRowCache = r;
+
+  // 推測金額（從 dashboard 看歷史訂單）
+  let suggestAmount = '';
+  const suggestMemo = defaultMemo(r.max_lessons);
+  // 從 CACHE.rows 找該班的歷史訂單金額
+  const sameClass = CACHE.rows.find(x => x.class_name === r.class_name && x.last_receive_amount);
+  if (sameClass && sameClass.last_receive_amount) suggestAmount = sameClass.last_receive_amount;
+
+  // 預設收費日今天，繳費期限 7 天後
+  const today = new Date(Date.now() + 8*3600000).toISOString().slice(0,10);
+  const dueDate = new Date(Date.now() + (8+7*24)*3600000).toISOString().slice(0,10);
+
+  document.getElementById('overlayHost').innerHTML = `
+    <div class="overlay" onclick="if(event.target===this)hideOverlay()">
+      <div style="background:var(--card);border-radius:10px;max-width:480px;width:90vw;padding:20px">
+        <h3 style="margin-bottom:12px">✅ 透過 WeClass 開單並通知家長</h3>
+        <div style="background:rgba(0,0,0,0.2);padding:12px;border-radius:6px;margin-bottom:14px">
+          <div><strong>${r.student_name}</strong> <span class="meta">(${r.student_number})</span></div>
+          <div class="meta">${r.school_name} · ${r.class_name}</div>
+        </div>
+        <div style="display:grid;grid-template-columns:auto 1fr;gap:8px;align-items:center;margin-bottom:14px">
+          <label>金額</label>
+          <input id="ord_amount" type="number" value="${suggestAmount}" placeholder="4800"
+            style="padding:6px;background:var(--bg);border:1px solid var(--line);border-radius:4px;color:var(--text)" />
+          <label>收費日</label>
+          <input id="ord_receive_date" type="date" value="${today}"
+            style="padding:6px;background:var(--bg);border:1px solid var(--line);border-radius:4px;color:var(--text)" />
+          <label>繳費期限</label>
+          <input id="ord_due_date" type="date" value="${dueDate}"
+            style="padding:6px;background:var(--bg);border:1px solid var(--line);border-radius:4px;color:var(--text)" />
+          <label>備註</label>
+          <input id="ord_memo" type="text" value="${suggestMemo}" placeholder="一期八堂"
+            style="padding:6px;background:var(--bg);border:1px solid var(--line);border-radius:4px;color:var(--text)" />
+        </div>
+        <p class="meta" style="margin-bottom:14px;line-height:1.5">
+          ⚠️ 確認後系統會在 WeClass 建立 PENDING 訂單<br>
+          WeClass 會自動推播 App 給家長
+        </p>
+        <div style="display:flex;gap:8px;justify-content:flex-end">
+          <button class="secondary" onclick="hideOverlay()">取消</button>
+          <button onclick="confirmCreateOrder()" style="background:var(--red)">確認開單並通知</button>
+        </div>
+      </div>
+    </div>
+  `;
+}
+
+async function confirmCreateOrder() {
+  const r = _orderRowCache;
+  if (!r) return;
+  const amount = document.getElementById('ord_amount').value.trim();
+  const receive_date = document.getElementById('ord_receive_date').value;
+  const due_date = document.getElementById('ord_due_date').value;
+  const memo = document.getElementById('ord_memo').value.trim();
+  if (!amount || !receive_date || !due_date) { toast('請填齊金額/收費日/繳費期限', 'error'); return; }
+
+  // 找學生資料 → student_id（從同步表後端會自動找）
+  // 找分校 id：永康=340 / 北區=355
+  const school_branch_id = r.school_name === '永康分校' ? 340 : (r.school_name === '北區分校' ? 355 : null);
+  if (!school_branch_id) { toast('未知分校 ' + r.school_name, 'error'); return; }
+
+  // 先請後端拿 student_id（用 student_number 查）
+  showOverlay('開單中...', '呼叫 WeClass API');
+  try {
+    // 透過後端 helper 取 student_id（後端讀 students sheet）
+    const sres = await api('lookup_student&num=' + encodeURIComponent(r.student_number));
+    console.log('lookup_student response:', sres, 'student_number:', r.student_number);
+    let student_id = sres && sres.data && sres.data.id;
+    if (!student_id) {
+      hideOverlay();
+      toast(`找不到 student_id (${r.student_number}): ${JSON.stringify(sres).slice(0,200)}`, 'error');
+      return;
+    }
+
+    // 送出建單
+    const url = localStorage.getItem(LS_URL);
+    const tk = localStorage.getItem(LS_TK);
+    const body = {
+      school_branch_id,
+      class_id: Number(r.class_id),
+      student_ids: [Number(student_id)],
+      item_id: 620,  // 學費
+      amount: Number(amount),
+      receive_date,
+      due_date,
+      memo,
+    };
+    const resp = await fetch(`${url}?action=create_order&tk=${encodeURIComponent(tk)}`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'text/plain;charset=utf-8' },  // 避免 CORS preflight
+      body: JSON.stringify(body),
+    });
+    const j = await resp.json();
+    hideOverlay();
+    if (!j.success) { toast('開單失敗：' + j.message, 'error'); return; }
+    toast('✅ 已開單，WeClass 推播給家長中', 'success');
+    setTimeout(() => refresh(), 800);
+  } catch (e) {
+    hideOverlay();
+    toast('錯誤：' + e.message, 'error');
+  }
+}
+
+// ---- 健康度檢查 ----
+async function showHealth() {
+  showOverlay('檢查中...', '掃描資料異常');
+  try {
+    const res = await api('health');
+    hideOverlay();
+    if (!res.success) { toast('檢查失敗：' + res.message, 'error'); return; }
+    const issues = res.data || [];
+    renderHealthModal(issues);
+  } catch (e) {
+    hideOverlay();
+    toast('檢查出錯：' + e.message, 'error');
+  }
+}
+
+function renderHealthModal(issues) {
+  const byKind = {};
+  issues.forEach(i => { byKind[i.kind] = (byKind[i.kind] || 0) + 1; });
+
+  const sevIcon = { error: '🔴', warn: '🟠', info: '🔵' };
+  const content = issues.length === 0
+    ? '<div style="padding:30px;text-align:center;color:var(--green)">✅ 資料健康，沒有異常</div>'
+    : issues.map(i => `
+        <div style="padding:10px;border-bottom:1px solid var(--line)">
+          <div><span style="margin-right:6px">${sevIcon[i.severity] || '⚪'}</span><strong>${i.title}</strong></div>
+          <div class="meta" style="margin-top:4px">${i.detail}</div>
+        </div>
+      `).join('');
+
+  const summary = Object.keys(byKind).length === 0 ? '' :
+    `<div style="padding:10px;background:rgba(0,0,0,0.2);border-bottom:1px solid var(--line)">
+      <strong>${issues.length}</strong> 項異常：
+      ${Object.entries(byKind).map(([k,n]) => `<span class="badge muted">${k}:${n}</span>`).join(' ')}
+    </div>`;
+
+  document.getElementById('overlayHost').innerHTML = `
+    <div class="overlay" onclick="if(event.target===this)hideOverlay()">
+      <div style="background:var(--card);border-radius:10px;max-width:760px;width:90vw;max-height:80vh;overflow:hidden;display:flex;flex-direction:column">
+        <div style="padding:14px 18px;border-bottom:1px solid var(--line);display:flex;justify-content:space-between;align-items:center">
+          <strong>🩺 資料健康檢查</strong>
+          <button class="secondary" onclick="hideOverlay()" style="padding:4px 10px;font-size:12px">關閉</button>
+        </div>
+        ${summary}
+        <div style="overflow-y:auto;flex:1">${content}</div>
+      </div>
+    </div>
+  `;
+}
+
+function renderStats() {
+  const rows = filteredRows();
+  const counts = {};
+  rows.forEach(r => counts[r.status_code] = (counts[r.status_code] || 0) + 1);
+
+  // 接近滿堂統計（從 rows 算）
+  const nearLimit = rows.filter(r =>
+    r.status_code === 'IN_PROGRESS' && r.kind === 'hobby' &&
+    (Number(r.max_lessons) - Number(r.lessons_count)) <= 2
+  ).length;
+
+  const cards = [
+    { label: '緊急(已滿堂)',  key: ['FULL_NO_ORDER', 'FULL_UNPAID'], cls: 'urgent' },
+    { label: '待開單',         key: ['WAITING_INVOICE'], cls: 'urgent' },
+    { label: '逾期未繳',       key: ['OVERDUE_PAY'], cls: 'urgent' },
+    { label: '已開單待繳',     key: ['PENDING_PAY'], cls: 'yellow' },
+    { label: '⚡ 接近滿堂',    custom: nearLimit, cls: 'warn' },
+    { label: '未開單(上課中)', key: ['IN_PROGRESS'], cls: 'ok' },
+    { label: '新生',           key: ['NEW'], cls: '' },
+  ];
+
+  document.getElementById('stats').innerHTML = cards.map(c => {
+    const n = c.custom !== undefined ? c.custom : c.key.reduce((s, k) => s + (counts[k] || 0), 0);
+    return `<div class="stat ${c.cls}">
+      <div class="num">${n}</div>
+      <div class="label">${c.label}</div>
+    </div>`;
+  }).join('');
+}
+
+function renderSections() {
+  const rows = filteredRows();
+  const alwaysShow = ['critical', 'invoice', 'overdue'];  // 關鍵區即使空也顯示「沒事」
+  const html = SECTIONS.map(sec => {
+    const sectionRows = rows.filter(r => sec.codes.indexOf(r.status_code) >= 0);
+    if (sectionRows.length === 0 && alwaysShow.indexOf(sec.key) < 0) return '';
+    return renderSection(sec, sectionRows);
+  }).join('');
+
+  document.getElementById('sections').innerHTML = html ||
+    `<div class="section"><div class="empty">✨ 今天沒有要處理的事，太棒了！</div></div>`;
+}
+
+function renderSection(sec, rows) {
+  const status = STATUS[sec.codes[0]];
+  if (OPEN_STATE[sec.key] === undefined) OPEN_STATE[sec.key] = sec.defaultOpen;
+  const isOpen = OPEN_STATE[sec.key];
+  const chevron = isOpen ? '▼' : '▶';
+
+  const body = rows.length === 0
+    ? emptyMessageFor(sec)
+    : (() => {
+        const anySelectable = rows.some(isSelectable);
+        return `<div style="overflow-x:auto"><table>
+        <thead><tr>
+          ${anySelectable ? `<th style="width:36px"><input type="checkbox" onchange="toggleAllInSection(this, '${sec.key}')" /></th>` : '<th style="width:0"></th>'}
+          <th>學生</th>
+          <th>班級</th>
+          <th>已上 / 滿</th>
+          <th>狀態 / 金額</th>
+          <th class="col-time">時程</th>
+          <th></th>
+        </tr></thead>
+        <tbody>${rows.map(r => rowHtml(r, anySelectable)).join('')}</tbody>
+      </table></div>`;
+      })();
+
+  return `
+    <div class="section">
+      <div class="section-header ${sec.tone}" onclick="toggleSection('${sec.key}')" style="cursor:pointer;user-select:none">
+        <span style="color:var(--muted);font-size:12px">${chevron}</span>
+        <span class="icon">${status.icon}</span>
+        <span>${sec.title}</span>
+        <span class="count">${rows.length}</span>
+      </div>
+      ${isOpen ? body : ''}
+    </div>
+  `;
+}
+
+function toggleSection(key) {
+  OPEN_STATE[key] = !OPEN_STATE[key];
+  renderSections();
+}
+
+function emptyMessageFor(sec) {
+  const msgs = {
+    invoice:  '🎉 沒人需要立即開單',
+    overdue:  '🙌 沒有逾期未繳的學生',
+    critical: '✅ 沒有已滿 8 堂的緊急狀況',
+  };
+  return `<div class="empty">${msgs[sec.key] || '目前沒有資料'}</div>`;
+}
+
+function toggleAllInSection(checkbox, sectionKey) {
+  const sec = SECTIONS.find(s => s.key === sectionKey);
+  if (!sec) return;
+  const rows = filteredRows().filter(r => sec.codes.indexOf(r.status_code) >= 0).filter(isSelectable);
+  if (checkbox.checked) rows.forEach(r => SELECTED.add(rowKey(r)));
+  else rows.forEach(r => SELECTED.delete(rowKey(r)));
+  render();
+}
+
+function rowHtml(r, withCheckbox) {
+  const status = STATUS[r.status_code] || STATUS.NEW;
+  const fillClass = status.color;
+  const isAnqin = r.kind === 'anqin';
+  const pct = isAnqin ? 100 : Math.min(100, (Number(r.lessons_count) / Number(r.max_lessons || 8)) * 100);
+  const selectable = isSelectable(r);
+  const checked = SELECTED.has(rowKey(r));
+  const checkCell = withCheckbox
+    ? `<td>${selectable ? `<input type="checkbox" ${checked ? 'checked' : ''} onchange="toggleSelect('${rowKey(r)}', this.checked)" />` : ''}</td>`
+    : '<td></td>';
+
+  // 各種旗標
+  const flags = [];
+  if (r.week_flag === 'EXPIRED') flags.push('<span class="badge urgent">超過10週</span>');
+  else if (r.week_flag === 'WEEK_WARNING') flags.push('<span class="badge warn">10週快到</span>');
+  if (isAnqin) flags.push('<span class="badge ok">🎒 安親(月結)</span>');
+  else flags.push('<span class="badge purple">🎨 才藝</span>');
+  // 接近滿堂提示（only IN_PROGRESS hobby）
+  if (r.status_code === 'IN_PROGRESS' && r.kind === 'hobby') {
+    const c = Number(r.lessons_count) || 0;
+    const max = Number(r.max_lessons) || 8;
+    const remain = max - c;
+    if (remain === 2) flags.push('<span class="badge yellow" title="再 2 堂就滿了">⚡ 接近滿堂</span>');
+    else if (remain === 1) flags.push('<span class="badge warn" title="再 1 堂就滿了!">⚡⚡ 即將達標</span>');
+  }
+  if (r.package_type) flags.push(`<span class="badge yellow" title="套餐">${r.package_type}</span>`);
+  if (r.multi_class) flags.push('<span class="badge purple" title="此學生上多個班">多班</span>');
+  if (r.unreliable_count) flags.push('<span class="badge outline" title="班名無法解析時段，次數可能不準">⚠次數估算</span>');
+  if (r.duplicate_name) flags.push('<span class="badge outline" title="有同名學生">同名</span>');
+  if (r.discount_note) flags.push(`<span class="badge yellow">${r.discount_note}</span>`);
+
+  const todayStr = new Date(Date.now() + 8 * 3600000).toISOString().slice(0, 10);
+  const dueStr = fmt(r.pending_due_date);
+  const dueOver = dueStr && dueStr < todayStr;
+
+  // 開單按鈕
+  const orderUrl = 'https://school-service.weclass.com.tw/blockplanet#/school-affairs/toll-management/order-management';
+  let actionBtn = '';
+  const isTestStudent = r.student_name === 'dai測試';
+  const showCreateBtn = isTestStudent || r.status_code === 'WAITING_INVOICE' || r.status_code === 'FULL_NO_ORDER';
+  if (showCreateBtn) {
+    const safeRow = encodeURIComponent(JSON.stringify({
+      student_number: r.student_number, student_name: r.student_name,
+      class_id: r.class_id, class_name: r.class_name,
+      school_name: r.school_name, max_lessons: r.max_lessons,
+    }));
+    const label = isTestStudent && r.status_code !== 'WAITING_INVOICE' ? '🧪 測試開單' : '✅ 一鍵開單通知家長';
+    actionBtn = `<button class="action-btn" onclick="openCreateOrderModal('${safeRow}')">${label}</button>
+                 <a class="action-btn muted" href="${orderUrl}" target="_blank" style="margin-left:4px">手動 ↗</a>`;
+  } else if (r.status_code === 'OVERDUE_PAY' || r.status_code === 'FULL_UNPAID') {
+    actionBtn = `<a class="action-btn muted" href="${orderUrl}" target="_blank">查單 ↗</a>`;
+  }
+
+  return `
+    <tr>
+      ${checkCell}
+      <td class="name-cell">
+        <strong>${r.student_name}</strong>
+        <div class="num">${r.student_number || ''}</div>
+        ${r.school_name ? `<div class="school">${r.school_name}</div>` : ''}
+      </td>
+      <td>${r.class_name || ''}</td>
+      <td>
+        ${isAnqin
+          ? `<div style="font-size:13px;color:var(--muted)">月結模式</div>`
+          : `<div class="count-bar">
+              <span class="num">${r.lessons_count}</span>
+              <span class="of">/ ${r.max_lessons}</span>
+              <div class="progress"><div class="fill ${fillClass}" style="width:${pct}%"></div></div>
+            </div>`
+        }
+        ${flags.join(' ')}
+      </td>
+      <td class="pay-cell">
+        <div>${status.label}</div>
+        ${r.pending_amount ? `<div class="amount">${money(r.pending_amount)}</div>` : ''}
+        ${dueStr ? `<div class="due ${dueOver ? 'over' : ''}">${dueOver ? `逾期 ${r.days_overdue} 天 (${dueStr})` : `繳費期限：${dueStr}`}</div>` : ''}
+      </td>
+      <td class="col-time">
+        ${isAnqin
+          ? `<div class="num">月結（安親班）</div>`
+          : `<div class="num">起算：${fmt(r.base_date) || '—'}</div>
+             <div class="num">最近上課：${fmt(r.last_lesson_date) || '—'}</div>
+             ${r.weeks_used !== '' ? `<div class="num">${r.weeks_used} 週用 / 剩 ${r.weeks_left} 週</div>` : ''}`
+        }
+      </td>
+      <td>${actionBtn}</td>
+    </tr>
+  `;
+}
+
+// 開機自動帶入
+window.addEventListener('DOMContentLoaded', () => {
+  const url = localStorage.getItem(LS_URL);
+  const tk = localStorage.getItem(LS_TK);
+  if (url && tk) {
+    document.getElementById('apiUrl').value = url;
+    document.getElementById('passcode').value = tk;
+    enter();
+  }
+});
+</script>
+</body>
+</html>
