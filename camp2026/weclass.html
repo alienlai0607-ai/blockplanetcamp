@@ -1083,7 +1083,12 @@ function rowHtml(r, withCheckbox) {
 
   // 各種旗標
   const flags = [];
-  if (r.week_flag === 'EXPIRED') flags.push('<span class="badge urgent">超過10週</span>');
+  if (r.week_flag === 'EXPIRED') {
+    flags.push('<span class="badge urgent">超過10週</span>');
+    if (Number(r.forfeited_lessons) > 0) {
+      flags.push(`<span class="badge urgent" title="超過 ${r.max_weeks} 週未上完，未上的堂數視為放棄">⛔ 放棄 ${r.forfeited_lessons} 堂</span>`);
+    }
+  }
   else if (r.week_flag === 'WEEK_WARNING') flags.push('<span class="badge warn">10週快到</span>');
   if (isAnqin) flags.push('<span class="badge ok">🎒 安親(月結)</span>');
   else flags.push('<span class="badge purple">🎨 才藝</span>');
