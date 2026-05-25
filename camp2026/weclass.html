@@ -315,7 +315,8 @@
     </div>
   </div>
 
-  <div id="kindTabs" style="display:flex; gap:8px; margin-bottom:12px"></div>
+  <div id="kindTabs" style="display:flex; gap:8px; margin-bottom:8px"></div>
+  <div id="schoolTabs" style="display:flex; gap:6px; margin-bottom:12px"></div>
 
   <div style="margin-bottom: 10px;">
     <input id="searchBox" placeholder="🔍 搜尋學生姓名 / 學號 / 班級..." oninput="setSearch(this.value)"
@@ -529,6 +530,7 @@ function showLoading() {
 // ---------- Render ----------
 function render() {
   renderKindTabs();
+  renderSchoolTabs();
   renderMeta();
   renderStats();
   renderSections();
@@ -555,6 +557,30 @@ function renderKindTabs() {
   `;
 }
 
+function renderSchoolTabs() {
+  const el = document.getElementById('schoolTabs');
+  if (!el) return;
+  // 依目前 kind 計算各分校人數
+  const inKind = CACHE.rows.filter(r => CACHE.filter.kind === 'ALL' || r.kind === CACHE.filter.kind);
+  const allN = inKind.length;
+  const yongN = inKind.filter(r => r.school_name === '永康分校').length;
+  const beiN  = inKind.filter(r => r.school_name === '北區分校').length;
+  const cur = CACHE.filter.school;
+  const sub = (key, label, count) => `
+    <button onclick="setFilter('school', '${key}')" style="
+      flex:1; padding:8px 12px; border-radius:6px; border:1px solid ${cur===key ? 'var(--primary)' : 'var(--line)'};
+      background:${cur===key ? 'rgba(56,189,248,0.12)' : 'var(--card)'};
+      color:${cur===key ? 'var(--primary)' : 'var(--muted)'};
+      font-size:13px; font-weight:${cur===key ? '600' : '400'}; cursor:pointer;">
+      ${label} <span style="opacity:0.7">(${count})</span>
+    </button>`;
+  el.innerHTML = `
+    ${sub('ALL', '全部', allN)}
+    ${sub('永康分校', '永康', yongN)}
+    ${sub('北區分校', '北區', beiN)}
+  `;
+}
+
 function renderMeta() {
   const stale = isStale(CACHE.lastSync && CACHE.lastSync.time);
   const time = CACHE.lastSync && CACHE.lastSync.time;
@@ -569,12 +595,6 @@ function renderMeta() {
     <span class="dot ${stale ? 'stale' : ''}"></span>
     <span>${timeAgo(time)}</span>
     <span>·</span>
-    <span>分校:
-      <select onchange="setFilter('school', this.value)">
-        <option value="ALL">全部</option>
-        ${schools.map(s => `<option value="${s}" ${CACHE.filter.school === s ? 'selected' : ''}>${s}</option>`).join('')}
-      </select>
-    </span>
     <span>班級：
       <select onchange="setFilter('class', this.value)">
         <option value="ALL">全部</option>
