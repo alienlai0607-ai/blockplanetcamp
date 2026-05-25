@@ -388,7 +388,7 @@ const STATUS = {
   WAITING_INVOICE: { label: '待開單',       color: 'urgent', icon: '🔴' },
   OVERDUE_PAY:     { label: '逾期未繳',     color: 'urgent', icon: '🔴' },
   PENDING_PAY:     { label: '已開單待繳',   color: 'yellow', icon: '🟡' },
-  IN_PROGRESS:     { label: '未開單，需補開繳費單', color: 'ok', icon: '🔵' },
+  IN_PROGRESS:     { label: '課程進行中',             color: 'ok', icon: '🔵' },
   NEW:             { label: '新生',         color: 'muted',  icon: '⚪' },
   PAID_OK:         { label: '本月已繳',     color: 'ok',     icon: '✅' },
 };
@@ -398,7 +398,7 @@ const SECTIONS = [
   { key: 'invoice',   title: '待開單',                  codes: ['WAITING_INVOICE'],              tone: 'urgent', defaultOpen: true },
   { key: 'overdue',   title: '逾期未繳',                codes: ['OVERDUE_PAY'],                  tone: 'urgent', defaultOpen: true },
   { key: 'pending',   title: '已開單，等家長繳費',      codes: ['PENDING_PAY'],                  tone: 'yellow', defaultOpen: true },
-  { key: 'progress',  title: '未開單，需補開繳費單',     codes: ['IN_PROGRESS'],                  tone: 'ok',     defaultOpen: false },
+  { key: 'progress',  title: '課程進行中',                 codes: ['IN_PROGRESS'],                  tone: 'ok',     defaultOpen: false },
   { key: 'paid',      title: '本月已繳（安親）',        codes: ['PAID_OK'],                      tone: 'ok',     defaultOpen: false },
   { key: 'new',       title: '新生 / 未開始',           codes: ['NEW'],                          tone: 'muted',  defaultOpen: false },
 ];
@@ -987,7 +987,7 @@ function renderStats() {
     { label: '逾期未繳',       key: ['OVERDUE_PAY'], cls: 'urgent' },
     { label: '已開單待繳',     key: ['PENDING_PAY'], cls: 'yellow' },
     { label: '⚡ 接近滿堂',    custom: nearLimit, cls: 'warn' },
-    { label: '未開單(上課中)', key: ['IN_PROGRESS'], cls: 'ok' },
+    { label: '課程進行中',     key: ['IN_PROGRESS'], cls: 'ok' },
     { label: '新生',           key: ['NEW'], cls: '' },
   ];
 
