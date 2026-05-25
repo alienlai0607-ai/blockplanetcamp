@@ -294,9 +294,10 @@
 <div class="gate" id="gate">
   <div class="gate-box">
     <h2>🪐 WeClass 接管系統</h2>
-    <input id="apiUrl" placeholder="Apps Script Web App URL（/exec 結尾）" />
-    <p class="hint">Apps Script 編輯器 → 部署 → 新增部署作業 → 網頁應用程式</p>
-    <input id="passcode" type="password" placeholder="通行密碼" />
+    <input id="apiUrl" placeholder="Apps Script Web App URL（/exec 結尾）"
+      value="https://script.google.com/macros/s/AKfycbzK_Ytc2DvuogS4PosEqb2xsjOSv-gA0iEwe2WdeKzXVkP5-u8gKn0aCuO8VMB6paFD/exec" />
+    <p class="hint">URL 已預設好（每次重新部署 Apps Script 時要更新）</p>
+    <input id="passcode" type="password" placeholder="通行密碼" autofocus />
     <button onclick="login()">進入</button>
     <p class="hint" style="margin-top: 16px;">設定會記在此瀏覽器，下次自動帶入</p>
   </div>
