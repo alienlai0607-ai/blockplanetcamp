@@ -338,9 +338,19 @@
 
   <!-- ========== 支出記帳 模式 ========== -->
   <div id="modeExpenses" style="display:none">
+    <div id="expSchoolTabs" style="display:flex; gap:6px; margin-bottom:12px"></div>
+
     <div style="background: var(--card); border-radius: 10px; padding: 20px; margin-bottom: 20px;">
       <h3 style="margin-bottom:14px">💰 新增支出</h3>
       <div style="display:grid; grid-template-columns:1fr 1fr; gap:12px;">
+        <div>
+          <label style="font-size:12px;color:var(--muted)">分校</label>
+          <select id="exp_school"
+            style="width:100%;padding:10px;background:var(--bg);border:1px solid var(--line);border-radius:6px;color:var(--text);font-size:14px">
+            <option value="永康分校">永康分校</option>
+            <option value="北區分校">北區分校</option>
+          </select>
+        </div>
         <div>
           <label style="font-size:12px;color:var(--muted)">記錄人</label>
           <input id="exp_submitter" placeholder="老師姓名"
@@ -356,7 +366,7 @@
           <select id="exp_category"
             style="width:100%;padding:10px;background:var(--bg);border:1px solid var(--line);border-radius:6px;color:var(--text);font-size:14px"></select>
         </div>
-        <div>
+        <div style="grid-column: 1 / 3">
           <label style="font-size:12px;color:var(--muted)">時間</label>
           <input id="exp_time_display" disabled style="width:100%;padding:10px;background:var(--card2);border:1px solid var(--line);border-radius:6px;color:var(--muted);font-size:14px" />
         </div>
@@ -650,6 +660,26 @@ function setMode(mode) {
 // ---- 支出記帳 ----
 let EXPENSES = [];
 let EXPENSE_CATEGORIES = ['餐費','教材','文具','清潔','交通','雜費','其他'];
+let EXP_SCHOOL_FILTER = '永康分校';  // 預設永康
+
+function renderExpSchoolTabs() {
+  const el = document.getElementById('expSchoolTabs');
+  if (!el) return;
+  const yongN = EXPENSES.filter(e => e.school === '永康分校').length;
+  const beiN  = EXPENSES.filter(e => e.school === '北區分校').length;
+  const cur = EXP_SCHOOL_FILTER;
+  const sub = (key, label, count, color) => `
+    <button onclick="EXP_SCHOOL_FILTER='${key}';renderExpSchoolTabs();renderExpenses();" style="
+      flex:1; padding:12px; border-radius:8px; border:2px solid ${cur===key ? color : 'var(--line)'};
+      background:${cur===key ? color : 'var(--card)'}; color:${cur===key ? '#0f172a' : 'var(--text)'};
+      font-size:15px; font-weight:${cur===key ? '700' : '500'}; cursor:pointer;">
+      ${label} <span style="opacity:0.75;font-size:13px">(${count})</span>
+    </button>`;
+  el.innerHTML = `
+    ${sub('永康分校', '🏠 永康', yongN, 'var(--yellow)')}
+    ${sub('北區分校', '🏠 北區', beiN, 'var(--orange)')}
+  `;
+}
 
 async function loadExpenses() {
   // 預填時間
@@ -658,10 +688,15 @@ async function loadExpenses() {
     now.getFullYear() + '/' + String(now.getMonth()+1).padStart(2,'0') + '/' + String(now.getDate()).padStart(2,'0') +
     ' ' + String(now.getHours()).padStart(2,'0') + ':' + String(now.getMinutes()).padStart(2,'0');
 
-  // 還原記錄人名（記在 localStorage）
+  // 還原記錄人名 + 預設分校（記在 localStorage）
   const lastName = localStorage.getItem('weclass_exp_submitter');
   if (lastName && !document.getElementById('exp_submitter').value) {
     document.getElementById('exp_submitter').value = lastName;
+  }
+  const lastSchool = localStorage.getItem('weclass_exp_school');
+  if (lastSchool) {
+    document.getElementById('exp_school').value = lastSchool;
+    EXP_SCHOOL_FILTER = lastSchool;
   }
 
   try {
@@ -678,6 +713,7 @@ async function loadExpenses() {
       const curMonth = new Date().toISOString().slice(0,7).replace('-','-');
       filterSel.innerHTML = `<option value="ALL">全部</option>` +
         months.map(m => `<option value="${m}" ${m === curMonth ? 'selected' : ''}>${m}</option>`).join('');
+      renderExpSchoolTabs();
       renderExpenses();
     }
   } catch (e) {
@@ -687,7 +723,9 @@ async function loadExpenses() {
 
 function renderExpenses() {
   const filter = document.getElementById('exp_filter_month').value;
-  const filtered = filter === 'ALL' ? EXPENSES : EXPENSES.filter(e => String(e.time).slice(0,7) === filter);
+  let filtered = filter === 'ALL' ? EXPENSES : EXPENSES.filter(e => String(e.time).slice(0,7) === filter);
+  // 分校篩選
+  filtered = filtered.filter(e => e.school === EXP_SCHOOL_FILTER);
   // 統計
   const total = filtered.reduce((s, e) => s + (Number(e.amount)||0), 0);
   const byCat = {};
@@ -729,21 +767,24 @@ function renderExpenses() {
 }
 
 async function addExpense() {
+  const school = document.getElementById('exp_school').value;
   const submitter = document.getElementById('exp_submitter').value.trim();
   const amount = document.getElementById('exp_amount').value.trim();
   const category = document.getElementById('exp_category').value;
   const memo = document.getElementById('exp_memo').value.trim();
+  if (!school) { toast('請選分校', 'error'); return; }
   if (!submitter) { toast('請填記錄人姓名', 'error'); return; }
   if (!amount || Number(amount) <= 0) { toast('請填正確金額', 'error'); return; }
   if (!memo) { toast('請填備註說明', 'error'); return; }
   localStorage.setItem('weclass_exp_submitter', submitter);
+  localStorage.setItem('weclass_exp_school', school);
   try {
     const url = localStorage.getItem(LS_URL);
     const tk = localStorage.getItem(LS_TK);
     const resp = await fetch(`${url}?action=add_expense&tk=${encodeURIComponent(tk)}`, {
       method: 'POST',
       headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-      body: JSON.stringify({ submitter, amount: Number(amount), category, memo }),
+      body: JSON.stringify({ school, submitter, amount: Number(amount), category, memo }),
     });
     const j = await resp.json();
     if (!j.success) { toast('記錄失敗：' + j.message, 'error'); return; }
