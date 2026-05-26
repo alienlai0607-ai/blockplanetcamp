@@ -480,7 +480,27 @@ function enter() {
     const f = JSON.parse(localStorage.getItem(LS_FILTER));
     if (f) CACHE.filter = Object.assign(CACHE.filter, f);
   } catch (e) {}
-  CACHE.mode = localStorage.getItem('weclass_mode') || 'dashboard';
+  // 行政模式：query string role=admin → 鎖定支出記帳
+  const params = new URLSearchParams(location.search);
+  CACHE.isAdmin = params.get('role') === 'admin';
+  if (CACHE.isAdmin) {
+    CACHE.mode = 'expenses';
+    // 修改標題
+    const h1 = document.querySelector('.header h1');
+    if (h1) h1.innerHTML = '💰 支出記帳 · 行政<span class="tag">布拉克星球</span>';
+    // 隱藏接管系統相關按鈕
+    ['btnRefresh','btnSync'].forEach(id => {
+      const b = document.getElementById(id);
+      if (b) b.style.display = 'none';
+    });
+    // 健康檢查/CSV 匯出也隱藏（給行政比較簡潔）
+    document.querySelectorAll('.actions button').forEach(b => {
+      const t = b.textContent;
+      if (t.indexOf('健康') >= 0 || t.indexOf('CSV') >= 0) b.style.display = 'none';
+    });
+  } else {
+    CACHE.mode = localStorage.getItem('weclass_mode') || 'dashboard';
+  }
   refresh();
 }
 
@@ -602,6 +622,11 @@ function render() {
 function renderModeTabs() {
   const el = document.getElementById('modeTabs');
   if (!el) return;
+  // 行政模式：隱藏 mode tabs（只能用支出）
+  if (CACHE.isAdmin) {
+    el.style.display = 'none';
+    return;
+  }
   const cur = CACHE.mode || 'dashboard';
   const tab = (key, label, color) => `
     <button onclick="setMode('${key}')" style="
