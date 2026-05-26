@@ -376,8 +376,10 @@
         </div>
         <div>
           <label style="font-size:12px;color:var(--muted)">記錄人</label>
-          <input id="exp_submitter" placeholder="老師姓名"
-            style="width:100%;padding:10px;background:var(--bg);border:1px solid var(--line);border-radius:6px;color:var(--text);font-size:14px" />
+          <select id="exp_submitter"
+            style="width:100%;padding:10px;background:var(--bg);border:1px solid var(--line);border-radius:6px;color:var(--text);font-size:14px">
+            <option value="">— 載入中 —</option>
+          </select>
         </div>
         <div>
           <label style="font-size:12px;color:var(--muted)">金額 (NT$)</label>
@@ -722,15 +724,24 @@ async function loadExpenses() {
     now.getFullYear() + '/' + String(now.getMonth()+1).padStart(2,'0') + '/' + String(now.getDate()).padStart(2,'0') +
     ' ' + String(now.getHours()).padStart(2,'0') + ':' + String(now.getMinutes()).padStart(2,'0');
 
-  // 還原記錄人名 + 預設分校（記在 localStorage）
-  const lastName = localStorage.getItem('weclass_exp_submitter');
-  if (lastName && !document.getElementById('exp_submitter').value) {
-    document.getElementById('exp_submitter').value = lastName;
-  }
+  // 還原預設分校
   const lastSchool = localStorage.getItem('weclass_exp_school');
   if (lastSchool) {
     document.getElementById('exp_school').value = lastSchool;
     EXP_SCHOOL_FILTER = lastSchool;
+  }
+
+  // 載入老師清單（並還原上次選擇）
+  try {
+    const tres = await api('list_teachers');
+    const sel = document.getElementById('exp_submitter');
+    const lastName = localStorage.getItem('weclass_exp_submitter') || '';
+    if (tres.success && tres.data) {
+      sel.innerHTML = '<option value="">— 請選 —</option>' +
+        tres.data.map(t => `<option value="${t.name}" ${t.name === lastName ? 'selected' : ''}>${t.name}</option>`).join('');
+    }
+  } catch (e) {
+    console.log('load teachers fail:', e);
   }
 
   try {
