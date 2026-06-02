@@ -952,7 +952,18 @@ let ANQIN_DATA = { students: [], orders: [] };
 let ANQIN_SCHOOL = '永康分校';
 
 function anqinOrderYm(o) {
-  const d = o.receive_date || o.due_date || '';
+  // 安親月費慣例：月底先開「下個月」的單，故 memo 才是真正歸屬月份。
+  // 例：memo「2026六月月費」但 receive_date 是 2026-05-30 → 應歸 2026-06，不能用 receive_date。
+  const memo = String(o.order_memo || '');
+  const CN = { 一:1, 二:2, 三:3, 四:4, 五:5, 六:6, 七:7, 八:8, 九:9, 十:10, 十一:11, 十二:12 };
+  const mm = memo.match(/([一二三四五六七八九十]+)月/);
+  if (mm && CN[mm[1]]) {
+    const y = memo.match(/(20\d{2})/);
+    const year = y ? +y[1] : (+String(o.due_date || o.receive_date || '').slice(0, 4) || new Date().getFullYear());
+    return year + '-' + String(CN[mm[1]]).padStart(2, '0');
+  }
+  // 無「X月」字樣（如餐費儲值等雜費）→ 用 due_date 當所屬月，再退回 receive_date
+  const d = o.due_date || o.receive_date || '';
   return String(d).slice(0, 7);
 }
 
