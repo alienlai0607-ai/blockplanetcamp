@@ -1096,8 +1096,6 @@ function renderAnqinBilling() {
     <div class="stat warn"><div class="num">${cnt.PENDING}</div><div class="label">⏳ 待繳</div></div>
     <div class="stat urgent"><div class="num">${cnt.OVERDUE}</div><div class="label">❌ 逾期未繳</div></div>
     <div class="stat"><div class="num">${cnt.NONE}</div><div class="label">⬜ 未開單</div></div>
-    <div class="stat yellow"><div class="num">$${dueTotal.toLocaleString('zh-TW')}</div><div class="label">未收（應收）</div></div>
-    <div class="stat ok"><div class="num">$${paidTotal.toLocaleString('zh-TW')}</div><div class="label">本月已收</div></div>
   `;
 
   // 依費用類別統計（以「訂單筆數+金額」為單位，一人多筆會各自歸類）
