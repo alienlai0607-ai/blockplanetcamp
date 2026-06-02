@@ -339,7 +339,7 @@
   <div class="gate-box">
     <h2>🪐 WeClass 接管系統</h2>
     <input id="apiUrl" autocomplete="off" placeholder="Apps Script Web App URL（/exec 結尾）"
-      value="https://script.google.com/macros/s/AKfycbxdxjNwZlPb861fOf69QawKzffYB8zaJuXeXdcBpPYIb2l9ZSLe2v7LJYTN_Gusx682/exec" />
+      value="https://script.google.com/macros/s/AKfycbyDkoTE5369MC5W35XH6Xmx9SyG1HzJ5ONLU7cM84BmZDTK-vaBkzo-mOMyYlnZiCJo/exec" />
     <p class="hint">URL 已預設好（每次重新部署 Apps Script 時要更新）</p>
     <input id="passcode" type="password" placeholder="通行密碼" autofocus />
     <button onclick="login()">進入</button>
@@ -461,6 +461,33 @@
       </div>
       <div id="expenseList" style="overflow-x:auto"></div>
     </div>
+  </div>
+
+  <!-- ========== 安親核對 模式 ========== -->
+  <div id="modeAnqin" style="display:none">
+    <div id="anqinSchoolTabs" style="display:flex; gap:6px; margin-bottom:12px"></div>
+
+    <div style="background: var(--card); border-radius: 10px; padding: 16px; margin-bottom: 14px;">
+      <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px;">
+        <div style="display:flex; align-items:center; gap:8px;">
+          <button class="secondary" onclick="anqinShiftMonth(-1)" style="padding:8px 12px;font-size:16px;line-height:1">◀</button>
+          <select id="anqin_month" onchange="renderAnqinBilling()"
+            style="padding:10px 14px;background:var(--bg);border:1px solid var(--line);border-radius:6px;color:var(--text);font-size:16px;font-weight:600;min-width:130px;text-align:center"></select>
+          <button class="secondary" onclick="anqinShiftMonth(1)" style="padding:8px 12px;font-size:16px;line-height:1">▶</button>
+        </div>
+        <div style="display:flex; align-items:center; gap:10px; flex-wrap:wrap;">
+          <label style="font-size:13px;color:var(--muted);display:flex;align-items:center;gap:5px;cursor:pointer">
+            <input type="checkbox" id="anqin_unpaid_only" onchange="renderAnqinBilling()" style="width:16px;height:16px" />只看未繳
+          </label>
+          <button class="secondary" onclick="exportAnqinCsv()" style="padding:8px 14px;font-size:13px">⬇️ 匯出 CSV</button>
+        </div>
+      </div>
+      <input id="anqin_search" placeholder="🔍 搜尋學生姓名 / 班級..." oninput="renderAnqinBilling()"
+        style="width:100%; margin-top:12px; padding:10px 12px; background:var(--bg); border:1px solid var(--line); border-radius:6px; color:var(--text); font-size:14px;" />
+    </div>
+
+    <div id="anqinSummary" class="stats" style="margin-bottom:14px"></div>
+    <div id="anqinList"></div>
   </div>
 
 </div>
@@ -711,9 +738,11 @@ function render() {
   const md = document.getElementById('modeDashboard');
   const me = document.getElementById('modeExpenses');
   const mc = document.getElementById('modeCash');
+  const ma = document.getElementById('modeAnqin');
   if (md) md.style.display = 'none';
   if (me) me.style.display = 'none';
   if (mc) mc.style.display = 'none';
+  if (ma) ma.style.display = 'none';
 
   if (CACHE.mode === 'expenses') {
     if (me) me.style.display = '';
@@ -723,6 +752,11 @@ function render() {
   if (CACHE.mode === 'cash') {
     if (mc) mc.style.display = '';
     loadCashFlow();
+    return;
+  }
+  if (CACHE.mode === 'anqin') {
+    if (ma) ma.style.display = '';
+    loadAnqinBilling();
     return;
   }
   if (md) md.style.display = '';
@@ -751,6 +785,7 @@ function renderModeTabs() {
     </button>`;
   el.innerHTML = `
     ${tab('dashboard', '🪐 接管系統', 'var(--primary)')}
+    ${tab('anqin', '🎒 安親核對', 'var(--purple)')}
     ${tab('expenses', '💰 支出記帳', 'var(--green)')}
     ${tab('cash', '💵 現金流', 'var(--yellow)')}
   `;
@@ -910,6 +945,189 @@ async function addExpense() {
   } catch (e) {
     toast('錯誤：' + e.message, 'error');
   }
+}
+
+// ---- 安親核對 ----
+let ANQIN_DATA = { students: [], orders: [] };
+let ANQIN_SCHOOL = '永康分校';
+
+function anqinOrderYm(o) {
+  const d = o.receive_date || o.due_date || '';
+  return String(d).slice(0, 7);
+}
+
+async function loadAnqinBilling() {
+  document.getElementById('anqinList').innerHTML = '<div class="empty">載入中…</div>';
+  try {
+    const res = await api('anqin_billing');
+    if (!res.success) { toast('讀取安親資料失敗：' + res.message, 'error'); return; }
+    ANQIN_DATA = res.data || { students: [], orders: [] };
+    CACHE.lastSync = res.last_sync || CACHE.lastSync;
+
+    // 月份下拉：訂單出現過的月份 + 必含本月
+    const sel = document.getElementById('anqin_month');
+    const ymSet = new Set();
+    const curYm = new Date().toISOString().slice(0, 7);
+    ymSet.add(curYm);
+    (ANQIN_DATA.orders || []).forEach(o => { const ym = anqinOrderYm(o); if (ym) ymSet.add(ym); });
+    const months = [...ymSet].sort().reverse();
+    const prev = sel.value;
+    sel.innerHTML = months.map(m => `<option value="${m}" ${m === (prev || curYm) ? 'selected' : ''}>${m}</option>`).join('');
+    if (prev && months.indexOf(prev) >= 0) sel.value = prev;
+
+    renderAnqinSchoolTabs();
+    renderAnqinBilling();
+  } catch (e) {
+    toast('網路錯誤：' + e.message, 'error');
+  }
+}
+
+function renderAnqinSchoolTabs() {
+  const el = document.getElementById('anqinSchoolTabs');
+  if (!el) return;
+  const schools = [...new Set((ANQIN_DATA.students || []).map(s => s.school_branch_name).filter(Boolean))];
+  if (schools.length <= 1) { el.innerHTML = ''; ANQIN_SCHOOL = schools[0] || 'ALL'; return; }
+  if (ANQIN_SCHOOL !== 'ALL' && schools.indexOf(ANQIN_SCHOOL) < 0) ANQIN_SCHOOL = schools[0];
+  el.innerHTML = ['ALL', ...schools].map(s => {
+    const active = (ANQIN_SCHOOL === s);
+    const label = s === 'ALL' ? '全部' : s;
+    return `<button onclick="setAnqinSchool('${s}')" class="secondary" style="padding:8px 14px;font-size:13px;${active ? 'background:var(--purple);color:#0f172a;font-weight:700' : ''}">${label}</button>`;
+  }).join('');
+}
+function setAnqinSchool(s) { ANQIN_SCHOOL = s; renderAnqinSchoolTabs(); renderAnqinBilling(); }
+
+function anqinShiftMonth(delta) {
+  const sel = document.getElementById('anqin_month');
+  if (!sel.value) return;
+  const [y, m] = sel.value.split('-').map(Number);
+  const d = new Date(y, m - 1 + delta, 1);
+  const next = d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0');
+  const opts = [...sel.options].map(o => o.value);
+  if (opts.indexOf(next) < 0) {
+    const sorted = [...new Set([...opts, next])].sort().reverse();
+    sel.innerHTML = sorted.map(mm => `<option value="${mm}">${mm}</option>`).join('');
+  }
+  sel.value = next;
+  renderAnqinBilling();
+}
+
+function anqinStatusFor(student, ym) {
+  const today = new Date().toISOString().slice(0, 10);
+  const orders = (ANQIN_DATA.orders || []).filter(o =>
+    o.name === student.name && o.class_name === student.class_name &&
+    !o.refunded && anqinOrderYm(o) === ym
+  );
+  const paid = orders.filter(o => (o.status === 'PAID' || o.status === 'FINISHED') && o.pay_date);
+  const pending = orders.filter(o => o.status === 'PENDING');
+  let code, label, tone;
+  if (paid.length) { code = 'PAID'; label = '✅ 已繳'; tone = 'ok'; }
+  else if (pending.some(o => fmt(o.due_date) && fmt(o.due_date) < today)) { code = 'OVERDUE'; label = '❌ 逾期未繳'; tone = 'urgent'; }
+  else if (pending.length) { code = 'PENDING'; label = '⏳ 待繳'; tone = 'warn'; }
+  else if (orders.length) { code = 'OTHER'; label = '⚠️ 其他狀態'; tone = 'muted'; }
+  else { code = 'NONE'; label = '⬜ 未開單'; tone = 'muted'; }
+  return { code, label, tone, orders, paid, pending };
+}
+
+function renderAnqinBilling() {
+  const ymEl = document.getElementById('anqin_month');
+  if (!ymEl || !ymEl.value) return;
+  const ym = ymEl.value;
+  const unpaidOnly = document.getElementById('anqin_unpaid_only').checked;
+  const q = (document.getElementById('anqin_search').value || '').trim().toLowerCase();
+
+  let students = (ANQIN_DATA.students || []).slice();
+  if (ANQIN_SCHOOL && ANQIN_SCHOOL !== 'ALL') students = students.filter(s => s.school_branch_name === ANQIN_SCHOOL);
+  if (q) students = students.filter(s => (s.name || '').toLowerCase().indexOf(q) >= 0 || (s.class_name || '').toLowerCase().indexOf(q) >= 0);
+
+  const rows = students.map(s => ({ s, st: anqinStatusFor(s, ym) }));
+  const orderRank = { OVERDUE: 0, PENDING: 1, NONE: 2, PAID: 3, OTHER: 4 };
+  rows.sort((a, b) => {
+    const d = (orderRank[a.st.code] ?? 9) - (orderRank[b.st.code] ?? 9);
+    return d || (a.s.name || '').localeCompare(b.s.name || '', 'zh-Hant');
+  });
+
+  // 統計
+  const cnt = { PAID: 0, PENDING: 0, OVERDUE: 0, NONE: 0, OTHER: 0 };
+  let dueTotal = 0, paidTotal = 0;
+  rows.forEach(({ st }) => {
+    cnt[st.code] = (cnt[st.code] || 0) + 1;
+    st.paid.forEach(o => paidTotal += Number(o.actual_amount || o.receive_amount || 0));
+    st.pending.forEach(o => dueTotal += Number(o.receive_amount || 0));
+  });
+  document.getElementById('anqinSummary').innerHTML = `
+    <div class="stat ok"><div class="num">${cnt.PAID}</div><div class="label">✅ 已繳</div></div>
+    <div class="stat warn"><div class="num">${cnt.PENDING}</div><div class="label">⏳ 待繳</div></div>
+    <div class="stat urgent"><div class="num">${cnt.OVERDUE}</div><div class="label">❌ 逾期未繳</div></div>
+    <div class="stat"><div class="num">${cnt.NONE}</div><div class="label">⬜ 未開單</div></div>
+    <div class="stat yellow"><div class="num">$${dueTotal.toLocaleString('zh-TW')}</div><div class="label">未收（應收）</div></div>
+    <div class="stat ok"><div class="num">$${paidTotal.toLocaleString('zh-TW')}</div><div class="label">本月已收</div></div>
+  `;
+
+  let shown = rows;
+  if (unpaidOnly) shown = rows.filter(r => ['OVERDUE', 'PENDING', 'NONE'].indexOf(r.st.code) >= 0);
+  if (!shown.length) { document.getElementById('anqinList').innerHTML = '<div class="empty">沒有符合條件的學生</div>'; return; }
+  document.getElementById('anqinList').innerHTML = shown.map(({ s, st }) => anqinCard(s, st, ym)).join('');
+}
+
+function anqinCard(s, st, ym) {
+  const detail = st.orders.length
+    ? st.orders.map(o => anqinOrderLine(o)).join('')
+    : `<div style="color:var(--muted);font-size:13px;padding:8px 0">本月（${ym}）尚無任何訂單</div>`;
+  return `
+  <div class="section" style="margin-bottom:10px">
+    <div style="display:flex;justify-content:space-between;align-items:center;padding:12px 14px;flex-wrap:wrap;gap:6px">
+      <div>
+        <strong style="font-size:15px">${s.name}</strong>
+        <span style="font-size:12px;color:var(--muted);margin-left:8px">${s.class_name}</span>
+        ${s.school_branch_name ? `<span class="badge outline" style="margin-left:6px">${s.school_branch_name}</span>` : ''}
+      </div>
+      <span class="badge ${st.tone}">${st.label}</span>
+    </div>
+    <div style="padding:0 14px 12px">${detail}</div>
+  </div>`;
+}
+
+function anqinOrderLine(o) {
+  const statusMap = { PAID: ['已收款', 'ok'], FINISHED: ['已收款', 'ok'], PENDING: ['待繳', 'warn'], CANCEL: ['已取消', 'muted'], REFUND: ['已退費', 'muted'] };
+  const sm = statusMap[o.status] || [o.status, 'muted'];
+  const hasRecv = o.receive_amount !== '' && o.receive_amount != null;
+  const hasActual = o.actual_amount !== '' && o.actual_amount != null;
+  const isPaid = (o.status === 'PAID' || o.status === 'FINISHED');
+  return `
+    <div style="border-top:1px solid var(--line);padding:8px 0;font-size:13px;display:flex;flex-wrap:wrap;gap:10px;align-items:center">
+      <span class="badge ${sm[1]}">${sm[0]}</span>
+      <span>應收 <b>${hasRecv ? '$' + Number(o.receive_amount).toLocaleString('zh-TW') : '—'}</b></span>
+      ${isPaid && hasActual ? `<span>實收 <b style="color:var(--green)">$${Number(o.actual_amount).toLocaleString('zh-TW')}</b></span>` : ''}
+      ${o.pay_date ? `<span style="color:var(--muted)">繳費 ${fmt(o.pay_date)}</span>` : ''}
+      ${o.payment_type ? `<span class="badge ${o.payment_type === '現金' ? 'yellow' : 'outline'}">${o.payment_type}</span>` : ''}
+      <span style="color:var(--muted)">送單 ${fmt(o.receive_date) || '—'} · 截止 ${fmt(o.due_date) || '—'}</span>
+      ${o.order_memo ? `<span style="color:var(--muted)">📝 ${o.order_memo}</span>` : ''}
+    </div>`;
+}
+
+function exportAnqinCsv() {
+  const ym = document.getElementById('anqin_month').value;
+  let students = (ANQIN_DATA.students || []).slice();
+  if (ANQIN_SCHOOL && ANQIN_SCHOOL !== 'ALL') students = students.filter(s => s.school_branch_name === ANQIN_SCHOOL);
+  const lines = [['月份', '姓名', '班級', '分校', '繳費狀態', '訂單狀態', '應收', '實收', '繳費日', '付款方式', '送單日', '截止日', '備註']];
+  students.forEach(s => {
+    const st = anqinStatusFor(s, ym);
+    const tag = st.label.replace(/[^一-龥]/g, '');
+    if (!st.orders.length) {
+      lines.push([ym, s.name, s.class_name, s.school_branch_name, tag, '無訂單', '', '', '', '', '', '', '']);
+    } else {
+      st.orders.forEach(o => lines.push([ym, s.name, s.class_name, s.school_branch_name, tag, o.status,
+        o.receive_amount, o.actual_amount, fmt(o.pay_date), o.payment_type, fmt(o.receive_date), fmt(o.due_date),
+        String(o.order_memo || '').replace(/[\r\n]/g, ' ')]));
+    }
+  });
+  const csv = '﻿' + lines.map(r => r.map(c => `"${String(c == null ? '' : c).replace(/"/g, '""')}"`).join(',')).join('\n');
+  const blob = new Blob([csv], { type: 'text/csv;charset=utf-8' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = `安親核對-${ym}-${ANQIN_SCHOOL}.csv`;
+  a.click();
+  toast('✅ 已匯出 CSV', 'success');
 }
 
 // ---- 現金流 ----
