@@ -286,9 +286,53 @@
     .stat { padding: 10px; }
     .stat .num { font-size: 20px; }
   }
+
+  /* === BLOCK 整頁密碼鎖 === */
+  #siteLock {
+    position: fixed; inset: 0;
+    background: linear-gradient(180deg, #0f172a 0%, #1e293b 100%);
+    display: flex; align-items: center; justify-content: center;
+    z-index: 99999; padding: 20px;
+  }
+  #siteLock .lock-card {
+    background: #1e293b; border-radius: 20px; padding: 36px 28px;
+    max-width: 380px; width: 100%; text-align: center;
+    box-shadow: 0 20px 60px rgba(0,0,0,0.4);
+    border: 1px solid #334155;
+  }
+  #siteLock .lock-icon { font-size: 3rem; margin-bottom: 12px; }
+  #siteLock h2 { font-size: 1.25rem; font-weight: 900; color: #f1f5f9; margin-bottom: 6px; }
+  #siteLock .lock-sub { font-size: 0.85rem; color: #94a3b8; margin-bottom: 24px; }
+  #siteLock input {
+    width: 100%; padding: 14px 18px; border-radius: 12px;
+    border: 2px solid #334155; background: #0f172a; color: #f1f5f9;
+    font-size: 1rem; font-weight: 700; outline: none;
+    text-align: center; letter-spacing: 4px;
+  }
+  #siteLock input:focus { border-color: #38bdf8; }
+  #siteLock .lock-err { color: #ef4444; font-size: 0.85rem; font-weight: 700; margin-top: 10px; min-height: 1.2em; }
+  #siteLock button {
+    width: 100%; padding: 14px; margin-top: 14px; border-radius: 50px;
+    background: linear-gradient(135deg, #38bdf8, #0ea5e9); color: white;
+    font-weight: 900; font-size: 1rem; border: none; cursor: pointer;
+    box-shadow: 0 4px 16px rgba(56,189,248,0.3);
+  }
+  #siteLock button:hover { transform: translateY(-1px); }
 </style>
 </head>
 <body>
+
+<!-- 🔐 BLOCK 整頁密碼鎖 -->
+<div id="siteLock">
+  <div class="lock-card">
+    <div class="lock-icon">🔐</div>
+    <h2>WeClass 接管系統</h2>
+    <div class="lock-sub">內部工具<br>需輸入密碼才能進入</div>
+    <input type="password" id="siteLockPass" placeholder="請輸入密碼" />
+    <div id="siteLockErr" class="lock-err"></div>
+    <button id="siteLockBtn">🔓 進入</button>
+  </div>
+</div>
 
 <!-- 通行密碼 -->
 <div class="gate" id="gate">
@@ -428,6 +472,31 @@
 const LS_URL = 'weclass_api_url';
 const LS_TK = 'weclass_passcode';
 const LS_FILTER = 'weclass_filter';
+
+// === BLOCK 整頁密碼鎖 ===
+const SITE_PASS = 'BLOCK';
+const SITE_UNLOCK_KEY = 'bp_weclass_unlocked_v1';
+
+function unlockSite() {
+  const input = document.getElementById('siteLockPass');
+  const err = document.getElementById('siteLockErr');
+  const val = (input.value || '').trim().toUpperCase();
+  if (val === SITE_PASS) {
+    sessionStorage.setItem(SITE_UNLOCK_KEY, '1');
+    document.getElementById('siteLock').style.display = 'none';
+  } else {
+    err.textContent = '❌ 密碼錯誤，請再試一次';
+    input.value = '';
+    input.focus();
+  }
+}
+if (sessionStorage.getItem(SITE_UNLOCK_KEY) === '1') {
+  document.getElementById('siteLock').style.display = 'none';
+} else {
+  setTimeout(() => document.getElementById('siteLockPass').focus(), 100);
+}
+document.getElementById('siteLockBtn').addEventListener('click', unlockSite);
+document.getElementById('siteLockPass').addEventListener('keydown', e => { if (e.key === 'Enter') unlockSite(); });
 
 let CACHE = { rows: [], lastSync: null, filter: { school: '永康分校', class: 'ALL', kind: 'hobby' }, search: '' };
 const SELECTED = new Set();  // key = student_number||class_id
