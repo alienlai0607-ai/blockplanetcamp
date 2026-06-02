@@ -1103,23 +1103,25 @@ function renderAnqinBilling() {
   // 依費用類別統計（以「訂單筆數+金額」為單位，一人多筆會各自歸類）
   const today2 = new Date().toISOString().slice(0, 10);
   const cat = {};
-  ANQIN_CATS.forEach(c => cat[c.key] = { paidN: 0, paidAmt: 0, pendN: 0, pendAmt: 0, overN: 0, overAmt: 0 });
+  ANQIN_CATS.forEach(c => cat[c.key] = { paidN: 0, paidAmt: 0, pendN: 0, pendAmt: 0, overN: 0, overAmt: 0, pendNames: [], overNames: [] });
   rows.forEach(({ st }) => st.orders.forEach(o => {
     const k = anqinFeeCat(o).key, c = cat[k];
     if (o.status === 'PAID' || o.status === 'FINISHED') { c.paidN++; c.paidAmt += Number(o.actual_amount || o.receive_amount || 0); }
     else if (o.status === 'PENDING') {
       const over = fmt(o.due_date) && fmt(o.due_date) < today2;
-      if (over) { c.overN++; c.overAmt += Number(o.receive_amount || 0); }
-      else { c.pendN++; c.pendAmt += Number(o.receive_amount || 0); }
+      if (over) { c.overN++; c.overAmt += Number(o.receive_amount || 0); if (c.overNames.indexOf(o.name) < 0) c.overNames.push(o.name); }
+      else { c.pendN++; c.pendAmt += Number(o.receive_amount || 0); if (c.pendNames.indexOf(o.name) < 0) c.pendNames.push(o.name); }
     }
   }));
+  const nameList = (names, color) => names.length
+    ? `<div style="margin-top:4px;font-size:11px;line-height:1.5;color:${color};font-weight:400;text-align:right">${names.join('、')}</div>` : '';
   const catRows = ANQIN_CATS.filter(c => { const v = cat[c.key]; return v.paidN + v.pendN + v.overN > 0; }).map(c => {
     const v = cat[c.key];
     return `<tr style="border-top:1px solid var(--line)">
-      <td style="padding:8px 10px;font-weight:600">${c.emoji} ${c.label}</td>
-      <td style="padding:8px 10px;text-align:right;color:var(--green)">${v.paidN} 筆 / $${v.paidAmt.toLocaleString('zh-TW')}</td>
-      <td style="padding:8px 10px;text-align:right;color:var(--yellow,#eab308)">${v.pendN} 筆 / $${v.pendAmt.toLocaleString('zh-TW')}</td>
-      <td style="padding:8px 10px;text-align:right;color:${v.overN ? 'var(--red,#ef4444)' : 'var(--muted)'};font-weight:${v.overN ? 700 : 400}">${v.overN} 筆 / $${v.overAmt.toLocaleString('zh-TW')}</td>
+      <td style="padding:8px 10px;font-weight:600;vertical-align:top">${c.emoji} ${c.label}</td>
+      <td style="padding:8px 10px;text-align:right;color:var(--green);vertical-align:top">${v.paidN} 筆 / $${v.paidAmt.toLocaleString('zh-TW')}</td>
+      <td style="padding:8px 10px;text-align:right;color:var(--yellow,#eab308);vertical-align:top">${v.pendN} 筆 / $${v.pendAmt.toLocaleString('zh-TW')}${nameList(v.pendNames, 'var(--muted)')}</td>
+      <td style="padding:8px 10px;text-align:right;color:${v.overN ? 'var(--red,#ef4444)' : 'var(--muted)'};font-weight:${v.overN ? 700 : 400};vertical-align:top">${v.overN} 筆 / $${v.overAmt.toLocaleString('zh-TW')}${nameList(v.overNames, 'var(--red,#ef4444)')}</td>
     </tr>`;
   }).join('');
   document.getElementById('anqinCatSummary').innerHTML = catRows ? `
