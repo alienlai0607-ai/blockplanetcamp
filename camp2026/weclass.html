@@ -973,6 +973,17 @@ async function loadAnqinBilling() {
     const res = await api('anqin_billing');
     if (!res.success) { toast('讀取安親資料失敗：' + res.message, 'error'); return; }
     ANQIN_DATA = res.data || { students: [], orders: [] };
+    // 防呆：若後端仍回傳重複訂單（同 order_id 被分頁重複抓），前端再去重一次，避免畫面與金額重複
+    if (Array.isArray(ANQIN_DATA.orders)) {
+      const seenOid = {};
+      ANQIN_DATA.orders = ANQIN_DATA.orders.filter(o => {
+        const id = o.order_id;
+        if (id == null) return true;
+        if (seenOid[id]) return false;
+        seenOid[id] = true;
+        return true;
+      });
+    }
     CACHE.lastSync = res.last_sync || CACHE.lastSync;
 
     // 月份下拉：訂單出現過的月份 + 必含本月
