@@ -355,6 +355,7 @@
       <button onclick="runSync()" id="btnSync">⚡ 立即同步</button>
       <button class="secondary" onclick="showHealth()">🩺 健康檢查</button>
       <button class="secondary" onclick="openClosureModal()">🚫 停課管理</button>
+      <button class="secondary" onclick="openMakeupModal()">🔁 補課管理</button>
       <button class="secondary" onclick="exportCsv()">📥 匯出 CSV</button>
       <button class="secondary" onclick="logout()">登出</button>
     </div>
@@ -1815,6 +1816,104 @@ async function deleteClosure(id) {
   }
 }
 
+// ---- 補課管理 ----
+function openMakeupModal() {
+  const today = new Date(Date.now() + 8 * 3600000).toISOString().slice(0, 10);
+  const seen = {};
+  const classOpts = (CACHE.rows || [])
+    .filter(r => r.kind === 'hobby' && r.class_id && !seen[r.class_id] && (seen[r.class_id] = 1))
+    .sort((a, b) => String(a.class_name).localeCompare(String(b.class_name)))
+    .map(r => `<option value="${r.class_id}">${r.class_name}</option>`).join('');
+  const inputStyle = 'padding:6px;background:var(--bg);border:1px solid var(--line);border-radius:4px;color:var(--text)';
+  document.getElementById('overlayHost').innerHTML = `
+    <div class="overlay" onclick="if(event.target===this)hideOverlay()">
+      <div style="background:var(--card);border-radius:10px;max-width:560px;width:92vw;padding:20px;max-height:88vh;overflow:auto">
+        <h3 style="margin-bottom:6px">🔁 補課管理</h3>
+        <p class="meta" style="margin-bottom:14px;line-height:1.5">
+          填入補課日 → 該日（即使不是正常上課的星期幾/時段）的點名會<strong>算成一堂</strong>。<br>
+          建議用「指定班」，補課只算給該班；「全校」會讓多班學生重複計，請斟酌。
+        </p>
+        <div style="display:grid;grid-template-columns:auto 1fr;gap:8px;align-items:center;margin-bottom:14px">
+          <label>補課日期</label>
+          <input id="mku_date" type="date" value="${today}" style="${inputStyle}" />
+          <label>範圍</label>
+          <select id="mku_scope" style="${inputStyle}">
+            <option value="ALL">全校（該日所有班都算）</option>
+            ${classOpts}
+          </select>
+          <label>備註</label>
+          <input id="mku_memo" type="text" placeholder="例：颱風停課補課 / 端午補上" style="${inputStyle}" />
+        </div>
+        <div style="display:flex;gap:8px;justify-content:flex-end;margin-bottom:16px">
+          <button class="secondary" onclick="hideOverlay()">關閉</button>
+          <button onclick="addMakeup()" style="background:var(--purple);color:#0f172a;font-weight:700">➕ 新增補課</button>
+        </div>
+        <h4 style="margin:8px 0;color:var(--muted);font-size:13px;font-weight:normal">已登記的補課</h4>
+        <div id="makeupListBox"><div class="empty">載入中…</div></div>
+      </div>
+    </div>
+  `;
+  loadMakeupList();
+}
+
+async function loadMakeupList() {
+  const box = document.getElementById('makeupListBox');
+  if (!box) return;
+  try {
+    const res = await api('list_makeups');
+    const rows = res.data || [];
+    if (!rows.length) { box.innerHTML = '<div class="empty">目前沒有補課紀錄</div>'; return; }
+    box.innerHTML = rows.map(c => `
+      <div style="display:flex;align-items:center;gap:10px;padding:8px 10px;border:1px solid var(--line);border-radius:6px;margin-bottom:6px">
+        <strong style="min-width:96px">${c.makeup_date}</strong>
+        <span class="badge ${c.scope === 'ALL' ? 'purple' : 'yellow'}">${c.scope_label || (c.scope === 'ALL' ? '全校' : c.scope)}</span>
+        <span class="meta" style="flex:1">${c.memo || ''}</span>
+        <button class="secondary" onclick="deleteMakeup('${c.id}')" style="padding:4px 8px;font-size:11px">🗑️</button>
+      </div>`).join('');
+  } catch (e) {
+    box.innerHTML = `<div class="empty">讀取失敗：${e.message}</div>`;
+  }
+}
+
+async function addMakeup() {
+  const makeup_date = document.getElementById('mku_date').value;
+  const scopeSel = document.getElementById('mku_scope');
+  const scope = scopeSel.value;
+  const scope_label = scopeSel.options[scopeSel.selectedIndex].text;
+  const memo = document.getElementById('mku_memo').value.trim();
+  if (!makeup_date) { toast('請選補課日期', 'error'); return; }
+  try {
+    const url = localStorage.getItem(LS_URL);
+    const tk = localStorage.getItem(LS_TK);
+    const resp = await fetch(`${url}?action=add_makeup&tk=${encodeURIComponent(tk)}`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+      body: JSON.stringify({ makeup_date, scope, scope_label, memo }),
+    });
+    const j = await resp.json();
+    if (!j.success) { toast('新增失敗：' + j.message, 'error'); return; }
+    toast('✅ 已新增補課，已重算堂數', 'success');
+    document.getElementById('mku_memo').value = '';
+    loadMakeupList();
+    refresh();
+  } catch (e) {
+    toast('錯誤：' + e.message, 'error');
+  }
+}
+
+async function deleteMakeup(id) {
+  if (!confirm('刪除這筆補課紀錄？刪除後該日點名將不再計入堂數。')) return;
+  try {
+    const res = await api('delete_makeup&id=' + encodeURIComponent(id));
+    if (!res.success) { toast('刪除失敗：' + res.message, 'error'); return; }
+    toast('✅ 已刪除', 'success');
+    loadMakeupList();
+    refresh();
+  } catch (e) {
+    toast('錯誤：' + e.message, 'error');
+  }
+}
+
 function openCreateOrderModal(safeRow) {
   const r = JSON.parse(decodeURIComponent(safeRow));
   _orderRowCache = r;
@@ -2118,13 +2217,17 @@ function rowHtml(r, withCheckbox) {
   let lessonDatesHtml = '';
   if (!isAnqin) {
     const dates = (r.lesson_dates || '').split(',').map(s => s.trim()).filter(Boolean);
+    const makeupSet = new Set((r.makeup_dates || '').split(',').map(s => s.trim()).filter(Boolean));
     const baseN = Number(r.base_count) || 0;
     const parts = [];
     if (baseN > 0) parts.push(`<div class="num" style="color:var(--muted)">接管前：${baseN} 堂（Excel，無逐筆日期）</div>`);
     if (dates.length) {
       parts.push(`<div class="num" style="margin-top:3px">點名日期（${dates.length}）：</div>
         <div style="display:flex;flex-wrap:wrap;gap:2px 5px;margin-top:2px;max-width:240px">
-          ${dates.map((d, i) => `<span style="font-size:11px;color:var(--text);background:var(--card2);padding:0 5px;border-radius:3px;white-space:nowrap">${i + 1}. ${d}</span>`).join('')}
+          ${dates.map((d, i) => {
+            const mk = makeupSet.has(d);
+            return `<span style="font-size:11px;color:${mk ? '#0f172a' : 'var(--text)'};background:${mk ? '#38bdf8' : 'var(--card2)'};padding:0 5px;border-radius:3px;white-space:nowrap">${i + 1}. ${d}${mk ? ' 補' : ''}</span>`;
+          }).join('')}
         </div>`);
     } else if (baseN === 0) {
       parts.push(`<div class="num" style="color:var(--muted)">尚無點名紀錄</div>`);
