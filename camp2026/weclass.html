@@ -1969,7 +1969,13 @@ function rowHtml(r, withCheckbox) {
 
 // 開機自動帶入
 window.addEventListener('DOMContentLoaded', () => {
-  const url = localStorage.getItem(LS_URL);
+  // 頁面內建的最新部署 URL 優先：每次部署自動修正瀏覽器快取的舊 /exec URL
+  const deployUrl = (document.getElementById('apiUrl').value || '').trim();
+  let url = localStorage.getItem(LS_URL);
+  if (deployUrl && url && url !== deployUrl) {
+    localStorage.setItem(LS_URL, deployUrl);
+    url = deployUrl;
+  }
   const tk = localStorage.getItem(LS_TK);
   if (url && tk) {
     document.getElementById('apiUrl').value = url;
