@@ -1622,6 +1622,7 @@ const PAY_METHODS = [
 
 function _paymentModalShell(title, bodyHtml, total) {
   const lastTeacher = localStorage.getItem('weclass_pay_teacher') || '';
+  const today = new Date(Date.now() + 8 * 3600000).toISOString().slice(0, 10);
   const inputStyle = 'padding:6px;background:var(--bg);border:1px solid var(--line);border-radius:4px;color:var(--text)';
   const methodOpts = PAY_METHODS.map((m, i) => `<option value="${i}">${m.label}</option>`).join('');
   document.getElementById('overlayHost').innerHTML = `
@@ -1636,12 +1637,18 @@ function _paymentModalShell(title, bodyHtml, total) {
         <div style="background:rgba(0,0,0,0.2);padding:10px 12px;border-radius:6px;margin:12px 0;font-size:15px">
           合計應收：<strong>${money(total)}</strong>
         </div>
-        <div style="display:grid;grid-template-columns:auto 1fr;gap:8px;align-items:center;margin-bottom:14px">
+        <div style="display:grid;grid-template-columns:auto 1fr;gap:8px;align-items:center;margin-bottom:6px">
+          <label>繳費日期</label>
+          <input id="pay_date" type="date" value="${today}" style="${inputStyle}" />
           <label>繳費方式</label>
           <select id="pay_method" style="${inputStyle}">${methodOpts}</select>
           <label>確認老師</label>
           <input id="pay_teacher" type="text" value="${lastTeacher}" placeholder="（選填）記錄是誰確認的" style="${inputStyle}" />
         </div>
+        <p class="meta" style="margin-bottom:14px;line-height:1.4;color:#38bdf8">
+          📌 才藝班：繳費日 = <strong>新一期起算日</strong>，堂數歸 0、10 週期限從這天重算。<br>
+          家長提早繳的話請改成實際繳費/新一期開始日。
+        </p>
         <div style="display:flex;gap:8px;justify-content:flex-end">
           <button class="secondary" onclick="hideOverlay()">取消</button>
           <button id="payConfirmBtn" onclick="confirmPayment()" style="background:var(--ok,#16a34a);color:#fff;font-weight:700">✅ 確認繳費並同步</button>
@@ -1653,7 +1660,7 @@ function _paymentModalShell(title, bodyHtml, total) {
 
 function openPaymentModal(payRow) {
   const r = JSON.parse(decodeURIComponent(payRow));
-  _payItems = [{ order_id: r.order_id, amount: r.amount, student_name: r.student_name, student_number: r.student_number, class_name: r.class_name }];
+  _payItems = [{ order_id: r.order_id, amount: r.amount, student_name: r.student_name, student_number: r.student_number, class_name: r.class_name, class_id: r.class_id, max_lessons: r.max_lessons, kind: r.kind }];
   _paymentModalShell('💰 確認繳費',
     `<div style="background:rgba(0,0,0,0.2);padding:12px;border-radius:6px">
        <div><strong>${r.student_name}</strong> <span class="meta">(${r.student_number || ''})</span></div>
@@ -1665,7 +1672,7 @@ function openPaymentModal(payRow) {
 function openBatchPaymentModal() {
   const sel = CACHE.rows.filter(r => SELECTED.has(rowKey(r)) && isPayable(r));
   if (!sel.length) { toast('沒有可確認繳費的選取', 'error'); return; }
-  _payItems = sel.map(r => ({ order_id: r.pending_order_id, amount: r.pending_amount, student_name: r.student_name, student_number: r.student_number, class_name: r.class_name }));
+  _payItems = sel.map(r => ({ order_id: r.pending_order_id, amount: r.pending_amount, student_name: r.student_name, student_number: r.student_number, class_name: r.class_name, class_id: r.class_id, max_lessons: r.max_lessons, kind: r.kind }));
   const total = _payItems.reduce((s, x) => s + Number(x.amount || 0), 0);
   const list = `<div style="max-height:240px;overflow:auto;border:1px solid var(--line);border-radius:6px">
     ${_payItems.map(x => `<div style="display:flex;justify-content:space-between;gap:8px;padding:7px 10px;border-bottom:1px solid var(--line)">
@@ -1681,6 +1688,8 @@ async function confirmPayment() {
   const mi = Number(document.getElementById('pay_method').value) || 0;
   const m = PAY_METHODS[mi] || PAY_METHODS[0];
   const teacher = document.getElementById('pay_teacher').value.trim();
+  const payDate = document.getElementById('pay_date').value;
+  if (!payDate) { toast('請選繳費日期', 'error'); return; }
   localStorage.setItem('weclass_pay_teacher', teacher);
   const btn = document.getElementById('payConfirmBtn');
   if (btn) { btn.disabled = true; btn.textContent = '處理中…'; }
@@ -1691,8 +1700,8 @@ async function confirmPayment() {
       method: 'POST',
       headers: { 'Content-Type': 'text/plain;charset=utf-8' },
       body: JSON.stringify({
-        items: _payItems.map(x => ({ order_id: x.order_id, actual_amount: String(x.amount), student_number: x.student_number, student_name: x.student_name, class_name: x.class_name })),
-        payment_type: m.type, method_label: m.label, teacher,
+        items: _payItems.map(x => ({ order_id: x.order_id, actual_amount: String(x.amount), student_number: x.student_number, student_name: x.student_name, class_name: x.class_name, class_id: x.class_id, max_lessons: x.max_lessons, kind: x.kind })),
+        pay_date: payDate, payment_type: m.type, method_label: m.label, teacher,
       }),
     });
     const j = await resp.json();
@@ -2152,7 +2161,8 @@ function rowHtml(r, withCheckbox) {
   if (isPayable(r)) {
     const payRow = encodeURIComponent(JSON.stringify({
       student_number: r.student_number, student_name: r.student_name,
-      class_name: r.class_name, order_id: r.pending_order_id, amount: r.pending_amount,
+      class_name: r.class_name, class_id: r.class_id, max_lessons: r.max_lessons, kind: r.kind,
+      order_id: r.pending_order_id, amount: r.pending_amount,
     }));
     actionBtn += `<button class="action-btn" style="background:var(--ok,#16a34a);color:#fff;margin-top:4px" onclick="openPaymentModal('${payRow}')">💰 確認繳費</button>`;
   }
