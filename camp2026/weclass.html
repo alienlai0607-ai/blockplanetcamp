@@ -2363,6 +2363,7 @@ function rowHtml(r, withCheckbox) {
         ${isAnqin
           ? `<div class="num">月結（安親班）</div>`
           : `<div class="num" style="cursor:pointer;text-decoration:underline dotted;text-underline-offset:2px" title="點擊調整新一期第一堂課日" onclick="openPeriodStartModal('${encodeURIComponent(JSON.stringify({student_number:r.student_number,student_name:r.student_name,class_id:r.class_id,class_name:r.class_name,max_lessons:r.max_lessons,base_date:r.base_date}))}')">起算：${fmt(r.base_date) || '—'} ✏️</div>
+             ${r.auto_renewed ? `<div class="num" style="color:#34d399" title="偵測到 WeClass 已繳新一期費用，系統自動以繳費日重算一期">🤖 自動續期（繳費 ${fmt(r.auto_renewed)}）</div>` : ''}
              <div class="num">最近上課：${fmt(r.last_lesson_date) || '—'}</div>
              ${r.weeks_used !== '' ? `<div class="num">${r.weeks_used} 週用 / 剩 ${r.weeks_left} 週</div>` : ''}
              ${Number(r.closure_weeks) > 0 ? `<div class="num" style="color:#38bdf8">🚫 含停課順延 ${r.closure_weeks} 週</div>` : ''}
