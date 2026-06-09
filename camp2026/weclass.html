@@ -1816,33 +1816,42 @@ async function deleteClosure(id) {
   }
 }
 
-// ---- 補課管理 ----
+// ---- 補課管理（指定學生 +1 堂）----
+let _mkuStudents = [];   // [{sn,name,cid,cname,label}]
+let _mkuSelected = null;
+
 function openMakeupModal() {
   const today = new Date(Date.now() + 8 * 3600000).toISOString().slice(0, 10);
+  // 每個「學生×才藝班」一筆，供搜尋
   const seen = {};
-  const classOpts = (CACHE.rows || [])
-    .filter(r => r.kind === 'hobby' && r.class_id && !seen[r.class_id] && (seen[r.class_id] = 1))
-    .sort((a, b) => String(a.class_name).localeCompare(String(b.class_name)))
-    .map(r => `<option value="${r.class_id}">${r.class_name}</option>`).join('');
-  const inputStyle = 'padding:6px;background:var(--bg);border:1px solid var(--line);border-radius:4px;color:var(--text)';
+  _mkuStudents = (CACHE.rows || [])
+    .filter(r => r.kind === 'hobby' && r.student_number && r.class_id)
+    .filter(r => { const k = r.student_number + '|' + r.class_id; if (seen[k]) return false; seen[k] = 1; return true; })
+    .map(r => ({ sn: r.student_number, name: String(r.student_name || ''), cid: r.class_id, cname: String(r.class_name || ''),
+                 label: `${r.student_name}（${r.class_name}）` }))
+    .sort((a, b) => a.name.localeCompare(b.name, 'zh-Hant'));
+  _mkuSelected = null;
+  const inputStyle = 'padding:6px;background:var(--bg);border:1px solid var(--line);border-radius:4px;color:var(--text);width:100%';
   document.getElementById('overlayHost').innerHTML = `
     <div class="overlay" onclick="if(event.target===this)hideOverlay()">
       <div style="background:var(--card);border-radius:10px;max-width:560px;width:92vw;padding:20px;max-height:88vh;overflow:auto">
+        <style>.mku-opt:hover{background:var(--bg)}</style>
         <h3 style="margin-bottom:6px">🔁 補課管理</h3>
         <p class="meta" style="margin-bottom:14px;line-height:1.5">
-          填入補課日 → 該日（即使不是正常上課的星期幾/時段）的點名會<strong>算成一堂</strong>。<br>
-          建議用「指定班」，補課只算給該班；「全校」會讓多班學生重複計，請斟酌。
+          選一位學生 + 補課日 → 該日幫他<strong>直接補一堂</strong>（學生去哪補課不重要，只記次數 +1）。<br>
+          即使我方系統當天沒有打卡紀錄也會計入。
         </p>
-        <div style="display:grid;grid-template-columns:auto 1fr;gap:8px;align-items:center;margin-bottom:14px">
-          <label>補課日期</label>
+        <div style="display:grid;grid-template-columns:auto 1fr;gap:8px;align-items:start;margin-bottom:14px">
+          <label style="padding-top:7px">學生</label>
+          <div style="position:relative">
+            <input id="mku_search" type="text" autocomplete="off" placeholder="輸入姓名搜尋，例：陳　或　陳某"
+                   oninput="mkuFilter(this.value)" onfocus="mkuFilter(this.value)" style="${inputStyle}" />
+            <div id="mku_options" style="display:none;position:absolute;z-index:10;left:0;right:0;top:100%;margin-top:2px;background:var(--card);border:1px solid var(--line);border-radius:6px;max-height:240px;overflow:auto;box-shadow:0 6px 18px rgba(0,0,0,.35)"></div>
+          </div>
+          <label style="padding-top:7px">補課日期</label>
           <input id="mku_date" type="date" value="${today}" style="${inputStyle}" />
-          <label>範圍</label>
-          <select id="mku_scope" style="${inputStyle}">
-            <option value="ALL">全校（該日所有班都算）</option>
-            ${classOpts}
-          </select>
-          <label>備註</label>
-          <input id="mku_memo" type="text" placeholder="例：颱風停課補課 / 端午補上" style="${inputStyle}" />
+          <label style="padding-top:7px">備註</label>
+          <input id="mku_memo" type="text" placeholder="例：颱風請假後補課" style="${inputStyle}" />
         </div>
         <div style="display:flex;gap:8px;justify-content:flex-end;margin-bottom:16px">
           <button class="secondary" onclick="hideOverlay()">關閉</button>
@@ -1856,6 +1865,30 @@ function openMakeupModal() {
   loadMakeupList();
 }
 
+// 子序列比對：輸入「陳某」可命中「陳大某」，更寬鬆
+function _mkuSubseq(text, q) {
+  if (!q) return true;
+  let i = 0;
+  for (const c of text) { if (c === q[i]) i++; if (i >= q.length) return true; }
+  return false;
+}
+function mkuFilter(q) {
+  const box = document.getElementById('mku_options');
+  if (!box) return;
+  q = String(q || '').trim().toLowerCase();
+  let list = _mkuStudents.filter(s => _mkuSubseq(s.name.toLowerCase(), q) || s.label.toLowerCase().includes(q) || s.sn.toLowerCase().includes(q));
+  if (!list.length) { box.innerHTML = '<div style="padding:8px;color:var(--muted)">查無學生</div>'; box.style.display = 'block'; return; }
+  box.innerHTML = list.slice(0, 50).map(s =>
+    `<div class="mku-opt" onclick="mkuPick('${s.sn}','${s.cid}')" style="padding:7px 10px;cursor:pointer;border-bottom:1px solid var(--line)">${s.label}</div>`
+  ).join('') + (list.length > 50 ? `<div style="padding:6px 10px;color:var(--muted);font-size:12px">…還有 ${list.length - 50} 筆，請再多輸入縮小範圍</div>` : '');
+  box.style.display = 'block';
+}
+function mkuPick(sn, cid) {
+  _mkuSelected = _mkuStudents.find(s => s.sn === sn && s.cid === cid) || null;
+  if (_mkuSelected) document.getElementById('mku_search').value = _mkuSelected.label;
+  document.getElementById('mku_options').style.display = 'none';
+}
+
 async function loadMakeupList() {
   const box = document.getElementById('makeupListBox');
   if (!box) return;
@@ -1865,9 +1898,9 @@ async function loadMakeupList() {
     if (!rows.length) { box.innerHTML = '<div class="empty">目前沒有補課紀錄</div>'; return; }
     box.innerHTML = rows.map(c => `
       <div style="display:flex;align-items:center;gap:10px;padding:8px 10px;border:1px solid var(--line);border-radius:6px;margin-bottom:6px">
-        <strong style="min-width:96px">${c.makeup_date}</strong>
-        <span class="badge ${c.scope === 'ALL' ? 'purple' : 'yellow'}">${c.scope_label || (c.scope === 'ALL' ? '全校' : c.scope)}</span>
-        <span class="meta" style="flex:1">${c.memo || ''}</span>
+        <strong style="min-width:90px">${c.makeup_date}</strong>
+        <span class="badge purple">${c.student_name || c.student_number || ''}</span>
+        <span class="meta" style="flex:1">${c.class_name || ''}${c.memo ? '・' + c.memo : ''}</span>
         <button class="secondary" onclick="deleteMakeup('${c.id}')" style="padding:4px 8px;font-size:11px">🗑️</button>
       </div>`).join('');
   } catch (e) {
@@ -1877,10 +1910,8 @@ async function loadMakeupList() {
 
 async function addMakeup() {
   const makeup_date = document.getElementById('mku_date').value;
-  const scopeSel = document.getElementById('mku_scope');
-  const scope = scopeSel.value;
-  const scope_label = scopeSel.options[scopeSel.selectedIndex].text;
   const memo = document.getElementById('mku_memo').value.trim();
+  if (!_mkuSelected) { toast('請先搜尋並選擇學生', 'error'); return; }
   if (!makeup_date) { toast('請選補課日期', 'error'); return; }
   try {
     const url = localStorage.getItem(LS_URL);
@@ -1888,12 +1919,15 @@ async function addMakeup() {
     const resp = await fetch(`${url}?action=add_makeup&tk=${encodeURIComponent(tk)}`, {
       method: 'POST',
       headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-      body: JSON.stringify({ makeup_date, scope, scope_label, memo }),
+      body: JSON.stringify({ makeup_date, student_number: _mkuSelected.sn, student_name: _mkuSelected.name,
+                             class_id: _mkuSelected.cid, class_name: _mkuSelected.cname, memo }),
     });
     const j = await resp.json();
     if (!j.success) { toast('新增失敗：' + j.message, 'error'); return; }
-    toast('✅ 已新增補課，已重算堂數', 'success');
+    toast(`✅ 已幫 ${_mkuSelected.name} 補一堂，已重算`, 'success');
     document.getElementById('mku_memo').value = '';
+    document.getElementById('mku_search').value = '';
+    _mkuSelected = null;
     loadMakeupList();
     refresh();
   } catch (e) {
