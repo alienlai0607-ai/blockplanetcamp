@@ -1414,6 +1414,7 @@ function exportCsv() {
     ['kind', '類型'], ['student_number', '學號'], ['student_name', '學生'],
     ['school_name', '分校'], ['class_name', '班級'],
     ['lessons_count', '已上'], ['max_lessons', '滿堂'],
+    ['base_count', '接管前堂數(Excel)'], ['lesson_dates', '點名日期'],
     ['status_label', '狀態'],
     ['base_date', '起算日'], ['last_lesson_date', '最近上課'],
     ['pending_due_date', '繳費期限'], ['pending_amount', '應收'],
@@ -1424,7 +1425,8 @@ function exportCsv() {
     cols.map(c => {
       let v = r[c[0]] === undefined ? '' : r[c[0]];
       if (c[0] === 'kind') v = v === 'anqin' ? '安親' : '才藝';
-      if (c[0].endsWith('_date') || c[0] === 'base_date' || c[0] === 'last_lesson_date') v = fmt(v);
+      if (c[0] === 'lesson_dates') v = String(v).split(',').filter(Boolean).join(' / ');
+      else if (c[0].endsWith('_date') || c[0] === 'base_date' || c[0] === 'last_lesson_date') v = fmt(v);
       const s = String(v).replace(/"/g, '""');
       return /[,"\n]/.test(s) ? `"${s}"` : s;
     }).join(',')
@@ -1890,6 +1892,24 @@ function rowHtml(r, withCheckbox) {
   const dueStr = fmt(r.pending_due_date);
   const dueOver = dueStr && dueStr < todayStr;
 
+  // 點名日期清單（接管後逐筆，攤開供紙本核對）；接管前 Excel 段只標總數無日期
+  let lessonDatesHtml = '';
+  if (!isAnqin) {
+    const dates = (r.lesson_dates || '').split(',').map(s => s.trim()).filter(Boolean);
+    const baseN = Number(r.base_count) || 0;
+    const parts = [];
+    if (baseN > 0) parts.push(`<div class="num" style="color:var(--muted)">接管前：${baseN} 堂（Excel，無逐筆日期）</div>`);
+    if (dates.length) {
+      parts.push(`<div class="num" style="margin-top:3px">點名日期（${dates.length}）：</div>
+        <div style="display:flex;flex-wrap:wrap;gap:2px 5px;margin-top:2px;max-width:240px">
+          ${dates.map((d, i) => `<span style="font-size:11px;color:var(--text);background:var(--card2);padding:0 5px;border-radius:3px;white-space:nowrap">${i + 1}. ${d}</span>`).join('')}
+        </div>`);
+    } else if (baseN === 0) {
+      parts.push(`<div class="num" style="color:var(--muted)">尚無點名紀錄</div>`);
+    }
+    lessonDatesHtml = parts.join('');
+  }
+
   // 開單按鈕
   const orderUrl = 'https://school-service.weclass.com.tw/blockplanet#/school-affairs/toll-management/order-management';
   let actionBtn = '';
@@ -1938,7 +1958,8 @@ function rowHtml(r, withCheckbox) {
           ? `<div class="num">月結（安親班）</div>`
           : `<div class="num">起算：${fmt(r.base_date) || '—'}</div>
              <div class="num">最近上課：${fmt(r.last_lesson_date) || '—'}</div>
-             ${r.weeks_used !== '' ? `<div class="num">${r.weeks_used} 週用 / 剩 ${r.weeks_left} 週</div>` : ''}`
+             ${r.weeks_used !== '' ? `<div class="num">${r.weeks_used} 週用 / 剩 ${r.weeks_left} 週</div>` : ''}
+             ${lessonDatesHtml}`
         }
       </td>
       <td>${actionBtn}</td>
