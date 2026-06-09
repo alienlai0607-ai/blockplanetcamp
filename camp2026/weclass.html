@@ -356,6 +356,7 @@
       <button class="secondary" onclick="showHealth()">🩺 健康檢查</button>
       <button class="secondary" onclick="openClosureModal()">🚫 停課管理</button>
       <button class="secondary" onclick="openMakeupModal()">🔁 補課管理</button>
+      <button class="secondary" onclick="openExemptModal()">🆓 免費/豁免</button>
       <button class="secondary" onclick="exportCsv()">📥 匯出 CSV</button>
       <button class="secondary" onclick="logout()">登出</button>
     </div>
@@ -1942,6 +1943,124 @@ async function deleteMakeup(id) {
     if (!res.success) { toast('刪除失敗：' + res.message, 'error'); return; }
     toast('✅ 已刪除', 'success');
     loadMakeupList();
+    refresh();
+  } catch (e) {
+    toast('錯誤：' + e.message, 'error');
+  }
+}
+
+// ---- 免費/豁免管理（指定學生某班，截止日前隱藏，不催繳不算堂）----
+let _exmStudents = [];
+let _exmSelected = null;
+
+function openExemptModal() {
+  const seen = {};
+  _exmStudents = (CACHE.rows || [])
+    .filter(r => r.kind === 'hobby' && r.student_number && r.class_id)
+    .filter(r => { const k = r.student_number + '|' + r.class_id; if (seen[k]) return false; seen[k] = 1; return true; })
+    .map(r => ({ sn: r.student_number, name: String(r.student_name || ''), cid: r.class_id, cname: String(r.class_name || ''),
+                 label: `${r.student_name}（${r.class_name}）` }))
+    .sort((a, b) => a.name.localeCompare(b.name, 'zh-Hant'));
+  _exmSelected = null;
+  const inputStyle = 'padding:6px;background:var(--bg);border:1px solid var(--line);border-radius:4px;color:var(--text);width:100%';
+  document.getElementById('overlayHost').innerHTML = `
+    <div class="overlay" onclick="if(event.target===this)hideOverlay()">
+      <div style="background:var(--card);border-radius:10px;max-width:560px;width:92vw;padding:20px;max-height:88vh;overflow:auto">
+        <style>.exm-opt:hover{background:var(--bg)}</style>
+        <h3 style="margin-bottom:6px">🆓 免費／豁免管理</h3>
+        <p class="meta" style="margin-bottom:14px;line-height:1.5">
+          指定學生某班<strong>免費/豁免到某日</strong>（例：報名培訓班送免費課）→ 截止日前該班<strong>不出現在 dashboard、不催繳、不算堂</strong>。<br>
+          過了截止日會<strong>自動恢復</strong>顯示。要提前取消請在下方清單刪除。
+        </p>
+        <div style="display:grid;grid-template-columns:auto 1fr;gap:8px;align-items:start;margin-bottom:14px">
+          <label style="padding-top:7px">學生</label>
+          <div style="position:relative">
+            <input id="exm_search" type="text" autocomplete="off" placeholder="輸入姓名搜尋，例：陳　或　陳某"
+                   oninput="exmFilter(this.value)" onfocus="exmFilter(this.value)" style="${inputStyle}" />
+            <div id="exm_options" style="display:none;position:absolute;z-index:10;left:0;right:0;top:100%;margin-top:2px;background:var(--card);border:1px solid var(--line);border-radius:6px;max-height:240px;overflow:auto;box-shadow:0 6px 18px rgba(0,0,0,.35)"></div>
+          </div>
+          <label style="padding-top:7px">免費到</label>
+          <input id="exm_until" type="date" value="2027-03-31" style="${inputStyle}" />
+          <label style="padding-top:7px">原因</label>
+          <input id="exm_memo" type="text" placeholder="例：報名兩個培訓班送 SPIKE 免費" style="${inputStyle}" />
+        </div>
+        <div style="display:flex;gap:8px;justify-content:flex-end;margin-bottom:16px">
+          <button class="secondary" onclick="hideOverlay()">關閉</button>
+          <button onclick="addExemption()" style="background:var(--purple);color:#0f172a;font-weight:700">➕ 新增豁免</button>
+        </div>
+        <h4 style="margin:8px 0;color:var(--muted);font-size:13px;font-weight:normal">目前豁免中</h4>
+        <div id="exemptListBox"><div class="empty">載入中…</div></div>
+      </div>
+    </div>
+  `;
+  loadExemptList();
+}
+function exmFilter(q) {
+  const box = document.getElementById('exm_options');
+  if (!box) return;
+  q = String(q || '').trim().toLowerCase();
+  let list = _exmStudents.filter(s => _mkuSubseq(s.name.toLowerCase(), q) || s.label.toLowerCase().includes(q) || s.sn.toLowerCase().includes(q));
+  if (!list.length) { box.innerHTML = '<div style="padding:8px;color:var(--muted)">查無學生</div>'; box.style.display = 'block'; return; }
+  box.innerHTML = list.slice(0, 50).map(s =>
+    `<div class="exm-opt" onclick="exmPick('${s.sn}','${s.cid}')" style="padding:7px 10px;cursor:pointer;border-bottom:1px solid var(--line)">${s.label}</div>`
+  ).join('') + (list.length > 50 ? `<div style="padding:6px 10px;color:var(--muted);font-size:12px">…還有 ${list.length - 50} 筆，請再多輸入縮小範圍</div>` : '');
+  box.style.display = 'block';
+}
+function exmPick(sn, cid) {
+  _exmSelected = _exmStudents.find(s => s.sn === sn && s.cid === cid) || null;
+  if (_exmSelected) document.getElementById('exm_search').value = _exmSelected.label;
+  document.getElementById('exm_options').style.display = 'none';
+}
+async function addExemption() {
+  const until_date = document.getElementById('exm_until').value;
+  const memo = document.getElementById('exm_memo').value.trim();
+  if (!_exmSelected) { toast('請先搜尋並選擇學生', 'error'); return; }
+  if (!until_date) { toast('請選免費截止日', 'error'); return; }
+  try {
+    const url = localStorage.getItem(LS_URL);
+    const tk = localStorage.getItem(LS_TK);
+    const resp = await fetch(`${url}?action=add_exemption&tk=${encodeURIComponent(tk)}`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+      body: JSON.stringify({ student_number: _exmSelected.sn, student_name: _exmSelected.name,
+                             class_id: _exmSelected.cid, class_name: _exmSelected.cname, until_date, memo }),
+    });
+    const j = await resp.json();
+    if (!j.success) { toast('新增失敗：' + j.message, 'error'); return; }
+    toast(`✅ ${_exmSelected.name} 已豁免至 ${until_date}`, 'success');
+    document.getElementById('exm_memo').value = '';
+    document.getElementById('exm_search').value = '';
+    _exmSelected = null;
+    loadExemptList();
+    refresh();
+  } catch (e) {
+    toast('錯誤：' + e.message, 'error');
+  }
+}
+async function loadExemptList() {
+  const box = document.getElementById('exemptListBox');
+  if (!box) return;
+  try {
+    const res = await api('list_exemptions');
+    const rows = res.data || [];
+    if (!rows.length) { box.innerHTML = '<div class="empty">目前沒有豁免紀錄</div>'; return; }
+    box.innerHTML = rows.map(c => `
+      <div style="display:flex;align-items:center;gap:10px;padding:8px 10px;border:1px solid var(--line);border-radius:6px;margin-bottom:6px">
+        <span class="badge purple">${c.student_name || c.student_number || ''}</span>
+        <span class="meta" style="flex:1">${c.class_name || ''}　免費至 <strong>${c.until_date}</strong>${c.memo ? '・' + c.memo : ''}</span>
+        <button class="secondary" onclick="deleteExemption('${c.id}')" style="padding:4px 8px;font-size:11px">🗑️</button>
+      </div>`).join('');
+  } catch (e) {
+    box.innerHTML = `<div class="empty">讀取失敗：${e.message}</div>`;
+  }
+}
+async function deleteExemption(id) {
+  if (!confirm('取消這筆豁免？取消後該班會立刻恢復出現在 dashboard。')) return;
+  try {
+    const res = await api('delete_exemption&id=' + encodeURIComponent(id));
+    if (!res.success) { toast('刪除失敗：' + res.message, 'error'); return; }
+    toast('✅ 已取消豁免', 'success');
+    loadExemptList();
     refresh();
   } catch (e) {
     toast('錯誤：' + e.message, 'error');
