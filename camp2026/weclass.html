@@ -2500,7 +2500,7 @@ function rowHtml(r, withCheckbox) {
         ${isAnqin
           ? `<div style="font-size:13px;color:var(--muted)">月結模式</div>`
           : `<div class="count-bar">
-              <span class="num">${r.lessons_count}</span>
+              <span class="num">${r.lessons_count}</span>${(Number(r.lessons_count) > Number(r.max_lessons || 8)) ? `<span style="color:#f87171;font-weight:700" title="未繳費又多上的堂數；繳費後這些會變成新一期的堂數">(多上${Number(r.lessons_count) - Number(r.max_lessons || 8)})</span>` : ''}
               <span class="of">/ ${r.max_lessons}</span>
               <div class="progress"><div class="fill ${fillClass}" style="width:${pct}%"></div></div>
             </div>`
@@ -2520,6 +2520,7 @@ function rowHtml(r, withCheckbox) {
              <div class="num">最近上課：${fmt(r.last_lesson_date) || '—'}</div>
              ${r.weeks_used !== '' ? `<div class="num">${r.weeks_used} 週用 / 剩 ${r.weeks_left} 週</div>` : ''}
              ${Number(r.closure_weeks) > 0 ? `<div class="num" style="color:#38bdf8">🚫 含停課順延 ${r.closure_weeks} 週</div>` : ''}
+             ${r.week_flag === 'EXPIRED' ? `<div class="num" style="color:#f87171;line-height:1.4">⛔ 已超過 ${r.max_weeks} 週期限${Number(r.forfeited_lessons) > 0 ? `：未上完的 <strong>${r.forfeited_lessons} 堂視為放棄</strong>（不順延、不重算），需重新報名一期` : '（已上滿）'}</div>` : ''}
              ${lessonDatesHtml}`
         }
       </td>
