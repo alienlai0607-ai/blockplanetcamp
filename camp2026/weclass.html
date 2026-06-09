@@ -540,9 +540,16 @@ function defaultMemo(maxLessons) {
 
 function setSearch(v) { CACHE.search = String(v || '').trim().toLowerCase(); render(); }
 function rowKey(r) { return r.student_number + '||' + r.class_id; }
-function isSelectable(r) {
-  // 只有「需要開單」的能勾選
+function isCreatable(r) {
+  // 「需要開單」的能勾選
   return r.status_code === 'WAITING_INVOICE' || r.status_code === 'FULL_NO_ORDER' || r.student_name === 'dai測試';
+}
+function isPayable(r) {
+  // 「已開單待繳/逾期」有 PENDING 訂單 → 能確認繳費
+  return !!r.pending_order_id && Number(r.pending_amount) > 0;
+}
+function isSelectable(r) {
+  return isCreatable(r) || isPayable(r);
 }
 function toggleSelect(key, checked) {
   if (checked) SELECTED.add(key); else SELECTED.delete(key);
@@ -561,9 +568,18 @@ function renderBatchBar() {
   if (!el) return;
   if (SELECTED.size === 0) { el.style.display = 'none'; return; }
   el.style.display = '';
+  const sel = CACHE.rows.filter(r => SELECTED.has(rowKey(r)));
+  const creatable = sel.filter(isCreatable);
+  const payable = sel.filter(isPayable);
+  let btns = '';
+  if (creatable.length) btns += `<button onclick="openBatchModal()">🚀 一鍵發佈 ${creatable.length} 筆</button>`;
+  if (payable.length) {
+    const total = payable.reduce((s, r) => s + Number(r.pending_amount || 0), 0);
+    btns += `<button onclick="openBatchPaymentModal()" style="background:var(--ok,#16a34a);color:#fff">💰 確認繳費 ${payable.length} 筆（${money(total)}）</button>`;
+  }
   el.innerHTML = `
     <strong>已選 ${SELECTED.size} 筆</strong>
-    <button onclick="openBatchModal()">🚀 一鍵發佈 ${SELECTED.size} 筆</button>
+    ${btns}
     <button class="secondary" onclick="clearSelection()">取消選擇</button>
   `;
 }
@@ -1595,6 +1611,102 @@ async function executeBatch() {
 
 // ---- 一鍵開單 ----
 let _orderRowCache = null;
+// ---- 確認繳費 ----
+let _payItems = [];
+const PAY_METHODS = [
+  { label: '現金',     type: 'CASH' },
+  { label: '轉帳/匯款', type: 'TRANSFER' },
+  { label: '超商繳費',  type: 'TRANSFER' },
+  { label: '其他',     type: 'TRANSFER' },
+];
+
+function _paymentModalShell(title, bodyHtml, total) {
+  const lastTeacher = localStorage.getItem('weclass_pay_teacher') || '';
+  const inputStyle = 'padding:6px;background:var(--bg);border:1px solid var(--line);border-radius:4px;color:var(--text)';
+  const methodOpts = PAY_METHODS.map((m, i) => `<option value="${i}">${m.label}</option>`).join('');
+  document.getElementById('overlayHost').innerHTML = `
+    <div class="overlay" onclick="if(event.target===this)hideOverlay()">
+      <div style="background:var(--card);border-radius:10px;max-width:520px;width:92vw;padding:20px;max-height:88vh;overflow:auto">
+        <h3 style="margin-bottom:6px">${title}</h3>
+        <p class="meta" style="margin-bottom:12px;line-height:1.5">
+          確認後會在 WeClass 建立收費紀錄、訂單轉為「已繳費完成」，並記錄確認時間。<br>
+          ⚠️ 此動作會直接同步 WeClass，請確認家長已實際付款。
+        </p>
+        ${bodyHtml}
+        <div style="background:rgba(0,0,0,0.2);padding:10px 12px;border-radius:6px;margin:12px 0;font-size:15px">
+          合計應收：<strong>${money(total)}</strong>
+        </div>
+        <div style="display:grid;grid-template-columns:auto 1fr;gap:8px;align-items:center;margin-bottom:14px">
+          <label>繳費方式</label>
+          <select id="pay_method" style="${inputStyle}">${methodOpts}</select>
+          <label>確認老師</label>
+          <input id="pay_teacher" type="text" value="${lastTeacher}" placeholder="（選填）記錄是誰確認的" style="${inputStyle}" />
+        </div>
+        <div style="display:flex;gap:8px;justify-content:flex-end">
+          <button class="secondary" onclick="hideOverlay()">取消</button>
+          <button id="payConfirmBtn" onclick="confirmPayment()" style="background:var(--ok,#16a34a);color:#fff;font-weight:700">✅ 確認繳費並同步</button>
+        </div>
+      </div>
+    </div>
+  `;
+}
+
+function openPaymentModal(payRow) {
+  const r = JSON.parse(decodeURIComponent(payRow));
+  _payItems = [{ order_id: r.order_id, amount: r.amount, student_name: r.student_name, student_number: r.student_number, class_name: r.class_name }];
+  _paymentModalShell('💰 確認繳費',
+    `<div style="background:rgba(0,0,0,0.2);padding:12px;border-radius:6px">
+       <div><strong>${r.student_name}</strong> <span class="meta">(${r.student_number || ''})</span></div>
+       <div class="meta">${r.class_name || ''}</div>
+       <div class="meta">訂單 #${r.order_id} · 應收 ${money(r.amount)}</div>
+     </div>`, Number(r.amount || 0));
+}
+
+function openBatchPaymentModal() {
+  const sel = CACHE.rows.filter(r => SELECTED.has(rowKey(r)) && isPayable(r));
+  if (!sel.length) { toast('沒有可確認繳費的選取', 'error'); return; }
+  _payItems = sel.map(r => ({ order_id: r.pending_order_id, amount: r.pending_amount, student_name: r.student_name, student_number: r.student_number, class_name: r.class_name }));
+  const total = _payItems.reduce((s, x) => s + Number(x.amount || 0), 0);
+  const list = `<div style="max-height:240px;overflow:auto;border:1px solid var(--line);border-radius:6px">
+    ${_payItems.map(x => `<div style="display:flex;justify-content:space-between;gap:8px;padding:7px 10px;border-bottom:1px solid var(--line)">
+      <span><strong>${x.student_name}</strong> <span class="meta">${x.class_name || ''}</span></span>
+      <span>${money(x.amount)}</span>
+    </div>`).join('')}
+  </div>`;
+  _paymentModalShell(`💰 批次確認繳費（${_payItems.length} 筆）`, list, total);
+}
+
+async function confirmPayment() {
+  if (!_payItems.length) { toast('沒有要確認的項目', 'error'); return; }
+  const mi = Number(document.getElementById('pay_method').value) || 0;
+  const m = PAY_METHODS[mi] || PAY_METHODS[0];
+  const teacher = document.getElementById('pay_teacher').value.trim();
+  localStorage.setItem('weclass_pay_teacher', teacher);
+  const btn = document.getElementById('payConfirmBtn');
+  if (btn) { btn.disabled = true; btn.textContent = '處理中…'; }
+  try {
+    const url = localStorage.getItem(LS_URL);
+    const tk = localStorage.getItem(LS_TK);
+    const resp = await fetch(`${url}?action=confirm_payment&tk=${encodeURIComponent(tk)}`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+      body: JSON.stringify({
+        items: _payItems.map(x => ({ order_id: x.order_id, actual_amount: String(x.amount), student_number: x.student_number, student_name: x.student_name, class_name: x.class_name })),
+        payment_type: m.type, method_label: m.label, teacher,
+      }),
+    });
+    const j = await resp.json();
+    if (!j.success) { toast('確認失敗：' + j.message, 'error'); if (btn) { btn.disabled = false; btn.textContent = '✅ 確認繳費並同步'; } return; }
+    toast(`✅ 已確認 ${j.data.confirmed} 筆繳費並同步 WeClass`, 'success');
+    hideOverlay();
+    SELECTED.clear();
+    refresh();
+  } catch (e) {
+    toast('錯誤：' + e.message, 'error');
+    if (btn) { btn.disabled = false; btn.textContent = '✅ 確認繳費並同步'; }
+  }
+}
+
 // ---- 停課管理 ----
 function openClosureModal() {
   const today = new Date(Date.now() + 8 * 3600000).toISOString().slice(0, 10);
@@ -2035,6 +2147,14 @@ function rowHtml(r, withCheckbox) {
                  <a class="action-btn muted" href="${orderUrl}" target="_blank" style="margin-left:4px">手動 ↗</a>`;
   } else if (r.status_code === 'OVERDUE_PAY' || r.status_code === 'FULL_UNPAID') {
     actionBtn = `<a class="action-btn muted" href="${orderUrl}" target="_blank">查單 ↗</a>`;
+  }
+  // 確認繳費按鈕（有 PENDING 訂單者）— 與開單按鈕可並存
+  if (isPayable(r)) {
+    const payRow = encodeURIComponent(JSON.stringify({
+      student_number: r.student_number, student_name: r.student_name,
+      class_name: r.class_name, order_id: r.pending_order_id, amount: r.pending_amount,
+    }));
+    actionBtn += `<button class="action-btn" style="background:var(--ok,#16a34a);color:#fff;margin-top:4px" onclick="openPaymentModal('${payRow}')">💰 確認繳費</button>`;
   }
 
   return `
