@@ -1639,7 +1639,7 @@ function _paymentModalShell(title, bodyHtml, total) {
           合計應收：<strong>${money(total)}</strong>
         </div>
         <div style="display:grid;grid-template-columns:auto 1fr;gap:8px;align-items:center;margin-bottom:6px">
-          <label>繳費日期</label>
+          <label>新一期第一堂課日</label>
           <input id="pay_date" type="date" value="${today}" style="${inputStyle}" />
           <label>繳費方式</label>
           <select id="pay_method" style="${inputStyle}">${methodOpts}</select>
@@ -1647,8 +1647,8 @@ function _paymentModalShell(title, bodyHtml, total) {
           <input id="pay_teacher" type="text" value="${lastTeacher}" placeholder="（選填）記錄是誰確認的" style="${inputStyle}" />
         </div>
         <p class="meta" style="margin-bottom:14px;line-height:1.4;color:#38bdf8">
-          📌 才藝班：繳費日 = <strong>新一期起算日</strong>，堂數歸 0、10 週期限從這天重算。<br>
-          家長提早繳的話請改成實際繳費/新一期開始日。
+          📌 才藝班：這天 = <strong>新一期第一堂課日</strong>（當天就算一堂），堂數歸 0、10 週期限從這天重算。<br>
+          填「實際第一堂上課日」，不是繳費那天（家長常先上課後繳費）。
         </p>
         <div style="display:flex;gap:8px;justify-content:flex-end">
           <button class="secondary" onclick="hideOverlay()">取消</button>
@@ -1911,6 +1911,70 @@ async function deleteMakeup(id) {
     refresh();
   } catch (e) {
     toast('錯誤：' + e.message, 'error');
+  }
+}
+
+// ---- 調整起算日（新一期第一堂課日）----
+let _psRow = null;
+function openPeriodStartModal(psRow) {
+  const r = JSON.parse(decodeURIComponent(psRow));
+  _psRow = r;
+  const inputStyle = 'padding:6px;background:var(--bg);border:1px solid var(--line);border-radius:4px;color:var(--text)';
+  // 預設帶目前起算日的隔天（=目前認定的第一堂），方便微調
+  let def = new Date(Date.now() + 8 * 3600000).toISOString().slice(0, 10);
+  if (r.base_date && /^\d{4}-\d{2}-\d{2}$/.test(String(r.base_date).slice(0,10))) {
+    const d = new Date(String(r.base_date).slice(0,10) + 'T00:00:00+08:00');
+    d.setDate(d.getDate() + 1);
+    def = new Date(d.getTime() + 8*3600000).toISOString().slice(0,10);
+  }
+  document.getElementById('overlayHost').innerHTML = `
+    <div class="overlay" onclick="if(event.target===this)hideOverlay()">
+      <div style="background:var(--card);border-radius:10px;max-width:480px;width:92vw;padding:20px">
+        <h3 style="margin-bottom:6px">✏️ 調整新一期起算日</h3>
+        <div style="background:rgba(0,0,0,0.2);padding:12px;border-radius:6px;margin-bottom:12px">
+          <div><strong>${r.student_name}</strong> <span class="meta">(${r.student_number || ''})</span></div>
+          <div class="meta">${r.class_name || ''}</div>
+        </div>
+        <p class="meta" style="margin-bottom:12px;line-height:1.5;color:#38bdf8">
+          設「新一期第一堂課日」→ 這天起的點名重新算一期（堂數歸 0、當天就算一堂、10 週期限從這天起）。<br>
+          用在「老師有點名但系統沒算到第一堂」時，把起算日對到實際第一堂。
+        </p>
+        <div style="display:grid;grid-template-columns:auto 1fr;gap:8px;align-items:center;margin-bottom:16px">
+          <label>第一堂課日</label>
+          <input id="ps_date" type="date" value="${def}" style="${inputStyle}" />
+        </div>
+        <div style="display:flex;gap:8px;justify-content:flex-end">
+          <button class="secondary" onclick="hideOverlay()">取消</button>
+          <button id="psBtn" onclick="setPeriodStart()" style="background:var(--purple);color:#0f172a;font-weight:700">儲存起算日</button>
+        </div>
+      </div>
+    </div>
+  `;
+}
+
+async function setPeriodStart() {
+  const r = _psRow;
+  if (!r) return;
+  const start_date = document.getElementById('ps_date').value;
+  if (!start_date) { toast('請選第一堂課日', 'error'); return; }
+  const btn = document.getElementById('psBtn');
+  if (btn) { btn.disabled = true; btn.textContent = '處理中…'; }
+  try {
+    const url = localStorage.getItem(LS_URL);
+    const tk = localStorage.getItem(LS_TK);
+    const resp = await fetch(`${url}?action=set_period_start&tk=${encodeURIComponent(tk)}`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+      body: JSON.stringify({ student_number: r.student_number, student_name: r.student_name, class_id: r.class_id, class_name: r.class_name, max_lessons: r.max_lessons, start_date }),
+    });
+    const j = await resp.json();
+    if (!j.success) { toast('設定失敗：' + j.message, 'error'); if (btn) { btn.disabled = false; btn.textContent = '儲存起算日'; } return; }
+    toast('✅ 已設新一期起算日，已重算', 'success');
+    hideOverlay();
+    refresh();
+  } catch (e) {
+    toast('錯誤：' + e.message, 'error');
+    if (btn) { btn.disabled = false; btn.textContent = '儲存起算日'; }
   }
 }
 
@@ -2298,7 +2362,7 @@ function rowHtml(r, withCheckbox) {
       <td class="col-time">
         ${isAnqin
           ? `<div class="num">月結（安親班）</div>`
-          : `<div class="num">起算：${fmt(r.base_date) || '—'}</div>
+          : `<div class="num" style="cursor:pointer;text-decoration:underline dotted;text-underline-offset:2px" title="點擊調整新一期第一堂課日" onclick="openPeriodStartModal('${encodeURIComponent(JSON.stringify({student_number:r.student_number,student_name:r.student_name,class_id:r.class_id,class_name:r.class_name,max_lessons:r.max_lessons,base_date:r.base_date}))}')">起算：${fmt(r.base_date) || '—'} ✏️</div>
              <div class="num">最近上課：${fmt(r.last_lesson_date) || '—'}</div>
              ${r.weeks_used !== '' ? `<div class="num">${r.weeks_used} 週用 / 剩 ${r.weeks_left} 週</div>` : ''}
              ${Number(r.closure_weeks) > 0 ? `<div class="num" style="color:#38bdf8">🚫 含停課順延 ${r.closure_weeks} 週</div>` : ''}
