@@ -354,6 +354,7 @@
       <button class="secondary" onclick="refresh()" id="btnRefresh">🔄 重新載入</button>
       <button onclick="runSync()" id="btnSync">⚡ 立即同步</button>
       <button class="secondary" onclick="showHealth()">🩺 健康檢查</button>
+      <button class="secondary" onclick="openClosureModal()">🚫 停課管理</button>
       <button class="secondary" onclick="exportCsv()">📥 匯出 CSV</button>
       <button class="secondary" onclick="logout()">登出</button>
     </div>
@@ -1415,6 +1416,7 @@ function exportCsv() {
     ['school_name', '分校'], ['class_name', '班級'],
     ['lessons_count', '已上'], ['max_lessons', '滿堂'],
     ['base_count', '接管前堂數(Excel)'], ['lesson_dates', '點名日期'],
+    ['leave_dates', '請假日期'], ['closure_weeks', '停課順延週'],
     ['status_label', '狀態'],
     ['base_date', '起算日'], ['last_lesson_date', '最近上課'],
     ['pending_due_date', '繳費期限'], ['pending_amount', '應收'],
@@ -1425,7 +1427,7 @@ function exportCsv() {
     cols.map(c => {
       let v = r[c[0]] === undefined ? '' : r[c[0]];
       if (c[0] === 'kind') v = v === 'anqin' ? '安親' : '才藝';
-      if (c[0] === 'lesson_dates') v = String(v).split(',').filter(Boolean).join(' / ');
+      if (c[0] === 'lesson_dates' || c[0] === 'leave_dates') v = String(v).split(',').filter(Boolean).join(' / ');
       else if (c[0].endsWith('_date') || c[0] === 'base_date' || c[0] === 'last_lesson_date') v = fmt(v);
       const s = String(v).replace(/"/g, '""');
       return /[,"\n]/.test(s) ? `"${s}"` : s;
@@ -1593,6 +1595,105 @@ async function executeBatch() {
 
 // ---- 一鍵開單 ----
 let _orderRowCache = null;
+// ---- 停課管理 ----
+function openClosureModal() {
+  const today = new Date(Date.now() + 8 * 3600000).toISOString().slice(0, 10);
+  // 從 CACHE 撈才藝班班級（去重）供「指定班」下拉
+  const seen = {};
+  const classOpts = (CACHE.rows || [])
+    .filter(r => r.kind === 'hobby' && r.class_id && !seen[r.class_id] && (seen[r.class_id] = 1))
+    .sort((a, b) => String(a.class_name).localeCompare(String(b.class_name)))
+    .map(r => `<option value="${r.class_id}">${r.class_name}</option>`).join('');
+  const inputStyle = 'padding:6px;background:var(--bg);border:1px solid var(--line);border-radius:4px;color:var(--text)';
+  document.getElementById('overlayHost').innerHTML = `
+    <div class="overlay" onclick="if(event.target===this)hideOverlay()">
+      <div style="background:var(--card);border-radius:10px;max-width:560px;width:92vw;padding:20px;max-height:88vh;overflow:auto">
+        <h3 style="margin-bottom:6px">🚫 停課管理</h3>
+        <p class="meta" style="margin-bottom:14px;line-height:1.5">
+          填入停課日 → 落在該班上課日的停課會讓 10 週期限<strong>每次 +1 週</strong>順延，<br>
+          停課不算學生請假，也不扣堂數。
+        </p>
+        <div style="display:grid;grid-template-columns:auto 1fr;gap:8px;align-items:center;margin-bottom:14px">
+          <label>停課日期</label>
+          <input id="clo_date" type="date" value="${today}" style="${inputStyle}" />
+          <label>範圍</label>
+          <select id="clo_scope" style="${inputStyle}">
+            <option value="ALL">全校（該日所有班順延）</option>
+            ${classOpts}
+          </select>
+          <label>備註</label>
+          <input id="clo_memo" type="text" placeholder="例：颱風假 / 國定連假 / 老師請假" style="${inputStyle}" />
+        </div>
+        <div style="display:flex;gap:8px;justify-content:flex-end;margin-bottom:16px">
+          <button class="secondary" onclick="hideOverlay()">關閉</button>
+          <button onclick="addClosure()" style="background:var(--purple);color:#0f172a;font-weight:700">➕ 新增停課</button>
+        </div>
+        <h4 style="margin:8px 0;color:var(--muted);font-size:13px;font-weight:normal">已登記的停課</h4>
+        <div id="closureListBox"><div class="empty">載入中…</div></div>
+      </div>
+    </div>
+  `;
+  loadClosureList();
+}
+
+async function loadClosureList() {
+  const box = document.getElementById('closureListBox');
+  if (!box) return;
+  try {
+    const res = await api('list_closures');
+    const rows = res.data || [];
+    if (!rows.length) { box.innerHTML = '<div class="empty">目前沒有停課紀錄</div>'; return; }
+    box.innerHTML = rows.map(c => `
+      <div style="display:flex;align-items:center;gap:10px;padding:8px 10px;border:1px solid var(--line);border-radius:6px;margin-bottom:6px">
+        <strong style="min-width:96px">${c.closure_date}</strong>
+        <span class="badge ${c.scope === 'ALL' ? 'purple' : 'yellow'}">${c.scope_label || (c.scope === 'ALL' ? '全校' : c.scope)}</span>
+        <span class="meta" style="flex:1">${c.memo || ''}</span>
+        <button class="secondary" onclick="deleteClosure('${c.id}')" style="padding:4px 8px;font-size:11px">🗑️</button>
+      </div>`).join('');
+  } catch (e) {
+    box.innerHTML = `<div class="empty">讀取失敗：${e.message}</div>`;
+  }
+}
+
+async function addClosure() {
+  const closure_date = document.getElementById('clo_date').value;
+  const scopeSel = document.getElementById('clo_scope');
+  const scope = scopeSel.value;
+  const scope_label = scopeSel.options[scopeSel.selectedIndex].text;
+  const memo = document.getElementById('clo_memo').value.trim();
+  if (!closure_date) { toast('請選停課日期', 'error'); return; }
+  try {
+    const url = localStorage.getItem(LS_URL);
+    const tk = localStorage.getItem(LS_TK);
+    const resp = await fetch(`${url}?action=add_closure&tk=${encodeURIComponent(tk)}`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+      body: JSON.stringify({ closure_date, scope, scope_label, memo }),
+    });
+    const j = await resp.json();
+    if (!j.success) { toast('新增失敗：' + j.message, 'error'); return; }
+    toast('✅ 已新增停課，已重算順延', 'success');
+    document.getElementById('clo_memo').value = '';
+    loadClosureList();
+    refresh();
+  } catch (e) {
+    toast('錯誤：' + e.message, 'error');
+  }
+}
+
+async function deleteClosure(id) {
+  if (!confirm('刪除這筆停課紀錄？刪除後期限會收回順延。')) return;
+  try {
+    const res = await api('delete_closure&id=' + encodeURIComponent(id));
+    if (!res.success) { toast('刪除失敗：' + res.message, 'error'); return; }
+    toast('✅ 已刪除', 'success');
+    loadClosureList();
+    refresh();
+  } catch (e) {
+    toast('錯誤：' + e.message, 'error');
+  }
+}
+
 function openCreateOrderModal(safeRow) {
   const r = JSON.parse(decodeURIComponent(safeRow));
   _orderRowCache = r;
@@ -1907,6 +2008,14 @@ function rowHtml(r, withCheckbox) {
     } else if (baseN === 0) {
       parts.push(`<div class="num" style="color:var(--muted)">尚無點名紀錄</div>`);
     }
+    // 請假日期（本班上課日、起算後）— 列在點名日期下方，不計堂、不順延
+    const lvDates = (r.leave_dates || '').split(',').map(s => s.trim()).filter(Boolean);
+    if (lvDates.length) {
+      parts.push(`<div class="num" style="margin-top:4px;color:#fb923c">請假（${lvDates.length}）：</div>
+        <div style="display:flex;flex-wrap:wrap;gap:2px 5px;margin-top:2px;max-width:240px">
+          ${lvDates.map(d => `<span style="font-size:11px;color:#fdba74;background:rgba(251,146,60,0.12);padding:0 5px;border-radius:3px;white-space:nowrap">${d}</span>`).join('')}
+        </div>`);
+    }
     lessonDatesHtml = parts.join('');
   }
 
@@ -1959,6 +2068,7 @@ function rowHtml(r, withCheckbox) {
           : `<div class="num">起算：${fmt(r.base_date) || '—'}</div>
              <div class="num">最近上課：${fmt(r.last_lesson_date) || '—'}</div>
              ${r.weeks_used !== '' ? `<div class="num">${r.weeks_used} 週用 / 剩 ${r.weeks_left} 週</div>` : ''}
+             ${Number(r.closure_weeks) > 0 ? `<div class="num" style="color:#38bdf8">🚫 含停課順延 ${r.closure_weeks} 週</div>` : ''}
              ${lessonDatesHtml}`
         }
       </td>
