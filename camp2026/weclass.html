@@ -1569,6 +1569,8 @@ async function executeBatch() {
         receive_date: it.receive_date,
         due_date: it.due_date,
         memo: it.memo || '',
+        student_name: it.row.student_name,
+        class_name: it.row.class_name,
         label: it.row.student_name + ' / ' + it.row.class_name,
       });
     } catch (e) {
