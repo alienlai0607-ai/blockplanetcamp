@@ -226,6 +226,7 @@
   }
   .toast.success { border-left: 4px solid var(--green); }
   .toast.error { border-left: 4px solid var(--red); }
+  .toast.info { border-left: 4px solid #3b82f6; }
 
   .overlay {
     position: fixed;
@@ -339,7 +340,7 @@
   <div class="gate-box">
     <h2>🪐 WeClass 接管系統</h2>
     <input id="apiUrl" autocomplete="off" placeholder="Apps Script Web App URL（/exec 結尾）"
-      value="https://script.google.com/macros/s/AKfycbzV03ewl5wI6PzFz4h9Lv9bu4k1HH12HlWjxiiG8OtxA4z9zNeftMHEqpSLQmPhZSi5/exec" />
+      value="https://script.google.com/macros/s/AKfycbwvW5nKEyJ-FJPDpI8oZB18Bp8bpxHjOhphZCzqJzlFTEw8QpFkTa82VsaLiI7iotK1/exec" />
     <p class="hint">URL 已預設好（每次重新部署 Apps Script 時要更新）</p>
     <input id="passcode" type="password" placeholder="通行密碼" autofocus />
     <button onclick="login()">進入</button>
@@ -1710,7 +1711,8 @@ async function confirmPayment() {
     });
     const j = await resp.json();
     if (!j.success) { toast('確認失敗：' + j.message, 'error'); if (btn) { btn.disabled = false; btn.textContent = '✅ 確認繳費並同步'; } return; }
-    toast(`✅ 已確認 ${j.data.confirmed} 筆繳費並同步 WeClass`, 'success');
+    if (j.message) toast('ℹ️ ' + j.message, 'info');
+    else toast(`✅ 已確認 ${j.data.confirmed} 筆繳費並同步 WeClass`, 'success');
     hideOverlay();
     SELECTED.clear();
     refresh();
