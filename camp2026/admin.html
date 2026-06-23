@@ -1530,6 +1530,58 @@ function parseDates(session) {
   return dates;
 }
 
+// === 包月專用：整月「週一到週五」每日欄（只顯示日，每週交替淺底色）===
+function normalizeDigits(text) {
+  let t = String(text || '');
+  const boldMap = { '𝟬':'0','𝟭':'1','𝟮':'2','𝟯':'3','𝟰':'4','𝟱':'5','𝟲':'6','𝟳':'7','𝟴':'8','𝟵':'9' };
+  t = t.replace(/[\u{1D7EC}-\u{1D7F5}]/gu, c => boldMap[c] || c);
+  t = t.replace(/[０-９]/g, c => String.fromCharCode(c.charCodeAt(0) - 0xFEE0));
+  return t;
+}
+function isMonthlyCamp(campName, session) {
+  return /包月|月票|整月|全月/.test(String(campName || '') + ' ' + String(session || ''));
+}
+function monthlyWeekdayCols(campName, session) {
+  const t = normalizeDigits(String(campName || '') + ' ' + String(session || ''));
+  let month = 0;
+  let m = t.match(/(\d{1,2})\s*月/);
+  if (m) month = Number(m[1]);
+  else {
+    const cn = { '一':1,'二':2,'三':3,'四':4,'五':5,'六':6,'七':7,'八':8,'九':9,'十':10,'十一':11,'十二':12 };
+    m = t.match(/(十[一二]?|[一二三四五六七八九])\s*月/);
+    if (m) month = cn[m[1]] || 0;
+  }
+  if (!month) month = 7; // 包月預設七月
+  const cols = [];
+  const last = new Date(2026, month, 0).getDate(); // 該月天數
+  let shade = false;
+  for (let day = 1; day <= last; day++) {
+    const dow = new Date(2026, month - 1, day).getDay(); // 0 日 .. 6 六
+    if (dow === 0 || dow === 6) continue;                // 只列週一到週五
+    if (dow === 1) shade = !shade;                       // 每逢週一換底色群組
+    cols.push({ label: String(day), shade });
+  }
+  return cols;
+}
+
+// === 從「年級」欄抽出標準年級（吃乾淨值，也吃「姓名+年級」混填）===
+const _CN_NUM = { '一':1,'二':2,'三':3,'四':4,'五':5,'六':6,'七':7,'八':8,'九':9 };
+function extractGrade(raw) {
+  const t = normalizeDigits(raw);
+  const m = t.match(/(小|國中|國|中)\s*([一二三四五六七八九]|[1-9])/);
+  if (!m) return '未分類';
+  const lvl = (m[1] === '小') ? '小' : '國';
+  const num = _CN_NUM[m[2]] || Number(m[2]) || 0;
+  const cn = ['', '一','二','三','四','五','六','七','八','九'][num] || m[2];
+  return '升' + lvl + cn;
+}
+function gradeSortKey(g) {
+  if (g === '未分類') return 999;
+  const m = g.match(/(小|國)\s*([一二三四五六七八九])/);
+  if (!m) return 998;
+  return (m[1] === '小' ? 0 : 10) + (_CN_NUM[m[2]] || 0);
+}
+
 // 判斷是否為「去年颱風移轉」的孩子（已通知 + 不計費）
 function isTransferredStudent(s) {
   return s && s.note && s.note.includes('去年露營活動移轉');
@@ -1746,39 +1798,86 @@ function renderSession(sessionIdx) {
       <div>${paymentBadge(s)}</div>
     </div>`;
   });
-  html += `<button class="print-btn" onclick="printCurrent(${sessionIdx})">🖨️ 列印此梯次簽到單（${students.length} 人）</button></div>`;
+  const monthly = isMonthlyCamp(_currentCampData.camp.name, session);
+  const btnLabel = monthly
+    ? `🖨️ 依年級列印點名簿（含七月每日簽到格，${students.length} 人）`
+    : `🖨️ 列印此梯次簽到單（${students.length} 人）`;
+  html += `<button class="print-btn" onclick="printCurrent(${sessionIdx})">${btnLabel}</button></div>`;
   document.getElementById('sessionContent').innerHTML = html;
 }
 
 function printCurrent(sessionIdx) {
   const { camp, sessionMap, sessionKeys } = _currentCampData;
   const session = sessionKeys[sessionIdx];
-  const students = sessionMap[session].map(s => ({ n: s.name, g: s.gender, a: s.allergy, note: s.note || '' }));
-  printRollCall(camp.name, session, students);
+  const students = sessionMap[session].map(s => ({ n: s.name, g: s.gender, a: s.allergy, note: s.note || '', gr: s.grade || '' }));
+  if (isMonthlyCamp(camp.name, session)) printRollCallByGrade(camp.name, session, students);
+  else printRollCall(camp.name, session, students);
 }
 function closeModal(e) { if (!e || e.target.id === 'modal') document.getElementById('modal').classList.remove('show'); }
 function printFromBtn(btn) {
   const camp = decodeURIComponent(btn.dataset.camp);
   const session = decodeURIComponent(btn.dataset.session);
-  const students = JSON.parse(decodeURIComponent(btn.dataset.students));
-  printRollCall(camp, session, students);
+  const students = JSON.parse(decodeURIComponent(btn.dataset.students)).map(s => ({ ...s, gr: s.gr || s.grade || '' }));
+  if (isMonthlyCamp(camp, session)) printRollCallByGrade(camp, session, students);
+  else printRollCall(camp, session, students);
 }
 
+// 依梯次／日期決定簽到欄位：包月 → 整月平日每日格；一般營隊 → 梯次日期；都沒有 → 單一簽到格
+function rosterCols(campName, session) {
+  if (isMonthlyCamp(campName, session)) return monthlyWeekdayCols(campName, session);
+  return parseDates(session).map(d => ({ label: d, shade: false }));
+}
+
+// 一般點名單（單一群組）
 function printRollCall(campName, session, students) {
-  const dates = parseDates(session);
-  const n = students.length;
-  const rowHeight = n <= 12 ? 42 : n <= 20 ? 32 : n <= 28 ? 24 : n <= 35 ? 20 : 16;
-  const fontSize = n <= 15 ? 14 : n <= 25 ? 13 : n <= 35 ? 12 : 11;
-  const dateCount = dates.length > 0 ? dates.length : 1;
-  const nameWidth = 22, noteWidth = 16, numWidth = 5;
+  rosterPrint(campName, session, [{ label: '', students }]);
+}
+
+// 依年級分頁的點名簿（升小一→升國一，每年級一頁；包月用）
+function printRollCallByGrade(campName, session, students) {
+  const groups = {};
+  students.forEach(s => { const g = extractGrade(s.gr); (groups[g] = groups[g] || []).push(s); });
+  const sections = Object.keys(groups)
+    .sort((a, b) => gradeSortKey(a) - gradeSortKey(b))
+    .map(g => ({ label: g, students: groups[g] }));
+  rosterPrint(campName, session, sections);
+}
+
+// 共用：產生列印文件。sections = [{ label, students }]，每個 section 一頁。
+function rosterPrint(campName, session, sections) {
+  const cols = rosterCols(campName, session);
+  const hasCols = cols.length > 0;
+  const headCols = hasCols ? cols : [{ label: '簽到', shade: false }];
+  const dateCount = headCols.length;
+  const many = dateCount > 14;                 // 欄位多（如包月整月）→ 縮窄姓名/備註欄、留白方便打勾
+  const nameWidth = many ? 14 : 22, noteWidth = many ? 13 : 16, numWidth = many ? 4 : 5;
   const dateWidth = ((100 - nameWidth - noteWidth - numWidth) / dateCount).toFixed(2);
-  let rows = '';
-  students.forEach((s, i) => {
-    const noteItems = [];
-    if (s.a && s.a !== '無') noteItems.push('⚠️ ' + s.a);
-    if (s.note) noteItems.push('📝 ' + s.note);
-    rows += `<tr><td class="num">${i + 1}</td><td class="name">${s.n}${s.g ? ' ('+s.g+')' : ''}</td>${(dates.length > 0 ? dates : ['']).map(() => '<td class="check">☐</td>').join('')}<td class="note">${noteItems.join('<br>')}</td></tr>`;
-  });
+  const cellMark = dateCount <= 12 ? '☐' : ''; // 欄位多時不放 ☐，保持清楚
+
+  const sectionsHTML = sections.map((sec, si) => {
+    const st = sec.students, n = st.length;
+    const rowHeight = n <= 12 ? 42 : n <= 20 ? 32 : n <= 28 ? 24 : n <= 35 ? 20 : 16;
+    const fontSize = n <= 15 ? 14 : n <= 25 ? 13 : n <= 35 ? 12 : 11;
+    let rows = '';
+    st.forEach((s, i) => {
+      const noteItems = [];
+      if (s.a && s.a !== '無') noteItems.push('⚠️ ' + s.a);
+      if (s.note) noteItems.push('📝 ' + s.note);
+      rows += `<tr><td class="num">${i + 1}</td><td class="name">${s.n}${s.g ? ' (' + s.g + ')' : ''}</td>${headCols.map(c => `<td class="check${c.shade ? ' wk' : ''}">${cellMark}</td>`).join('')}<td class="note">${noteItems.join('<br>')}</td></tr>`;
+    });
+    const info = sec.label
+      ? `${session}｜<b style="color:#C2410C">${sec.label}</b>｜共 ${n} 位`
+      : `${session}｜共 ${n} 位學員`;
+    return `<section style="font-size:${fontSize}pt;${si > 0 ? 'page-break-before:always;' : ''}">
+      <h1>${campName}${sec.label ? ' — ' + sec.label : ''}</h1>
+      <div class="info">${info}</div>
+      <table style="--rh:${rowHeight}px">
+        <thead><tr><th style="width:${numWidth}%">No.</th><th style="width:${nameWidth}%">姓名</th>${headCols.map(c => `<th class="${c.shade ? 'wk' : ''}" style="width:${dateWidth}%">${c.label}</th>`).join('')}<th style="width:${noteWidth}%">備註</th></tr></thead>
+        <tbody>${rows}</tbody>
+      </table>
+    </section>`;
+  }).join('');
+
   const html = `<!DOCTYPE html><html><head><meta charset="UTF-8"><title>${campName}</title><style>
     @page { size: A4 landscape; margin: 8mm; }
     * { box-sizing: border-box; }
@@ -1787,18 +1886,16 @@ function printRollCall(campName, session, students) {
     .info { text-align: center; color: #333; margin-bottom: 10px; font-size: 12pt; }
     table { width: 100%; border-collapse: collapse; }
     tr { page-break-inside: avoid; }
-    th, td { border: 1.5px solid #000; padding: 4px 6px; text-align: center; font-size: ${fontSize}pt; height: ${rowHeight}px; vertical-align: middle; word-wrap: break-word; }
-    th { background: #FFF3E0; font-weight: 900; }
+    th, td { border: 1.5px solid #000; padding: 3px 5px; text-align: center; height: var(--rh, 24px); vertical-align: middle; word-wrap: break-word; }
+    thead th { background: #FFF3E0; font-weight: 900; }
+    thead th.wk { background: #FFE5C2; }
     td.num { color: #555; }
-    td.name { text-align: left; padding-left: 10px; font-weight: 700; }
-    td.note { text-align: left; padding-left: 8px; font-size: ${fontSize-1}pt; color: #C93A2A; }
-    td.check { color: #aaa; font-size: ${fontSize + 4}pt; }
+    td.name { text-align: left; padding-left: 8px; font-weight: 700; white-space: nowrap; }
+    td.note { text-align: left; padding-left: 6px; font-size: .85em; color: #C93A2A; }
+    td.check { color: #aaa; font-size: 1.25em; }
+    td.wk { background: #FAFAFA; }
     @media print { body { padding: 6px; } * { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; } }
-  </style></head><body>
-  <h1>${campName}</h1>
-  <div class="info">${session}｜共 ${n} 位學員</div>
-  <table><tr><th style="width:${numWidth}%">No.</th><th style="width:${nameWidth}%">姓名</th>${(dates.length > 0 ? dates : ['簽到']).map(d => `<th style="width:${dateWidth}%">${d}</th>`).join('')}<th style="width:${noteWidth}%">備註</th></tr>${rows}</table>
-  </body></html>`;
+  </style></head><body>${sectionsHTML}</body></html>`;
   const blob = new Blob([html], { type: 'text/html;charset=utf-8' });
   const url = URL.createObjectURL(blob);
   const w = window.open(url, '_blank');
