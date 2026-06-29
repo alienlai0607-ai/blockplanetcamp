@@ -1052,10 +1052,11 @@
   <li class="nav-dropdown">
     <a href="#" class="nav-dropdown-toggle" onclick="event.preventDefault(); this.parentElement.classList.toggle('open');">🛠 老師系統 <span class="caret">▾</span></a>
     <ul class="nav-dropdown-menu">
-      <li><a href="https://teacher.blockplanetcamp.com/" target="_blank" rel="noopener">👩‍🏫 老師專區</a></li>
+      <li><a href="https://teacher.blockplanetcamp.com/" target="_blank" rel="noopener" onclick="teacherGate(event)">👩‍🏫 老師專區</a></li>
       <li><a href="weclass.html">🪐 系統</a></li>
       <li><a href="weclass.html?role=admin">📊 行政</a></li>
       <li><a href="admin.html">🔒 後台</a></li>
+      <li><a href="pokemon/index.html">🎴 寶可夢卡牌大賽</a></li>
     </ul>
   </li>
   <li><a href="#footer" class="nav-cta">聯絡我們</a></li>
@@ -1409,6 +1410,17 @@
 
 
 <script>
+  /* 老師專區密碼閘（同內部工具密碼 BLOCK，大小寫不拘；本次瀏覽記住不重問）*/
+  function teacherGate(e){
+    e.preventDefault();
+    var KEY='bp_teacher_unlocked_v1';
+    var url='https://teacher.blockplanetcamp.com/';
+    if(sessionStorage.getItem(KEY)==='1'){ window.open(url,'_blank','noopener'); return; }
+    var v=(prompt('🔒 老師專區需要密碼才能進入')||'').trim().toUpperCase();
+    if(v==='BLOCK'){ sessionStorage.setItem(KEY,'1'); window.open(url,'_blank','noopener'); }
+    else if(v!==''){ alert('❌ 密碼錯誤，請再試一次'); }
+  }
+
   /* 漢堡選單 */
   (function(){
     const hb=document.getElementById('hamburger');
