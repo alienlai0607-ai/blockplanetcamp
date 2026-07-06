@@ -397,7 +397,7 @@
           <button class="secondary" onclick="setCashInit()" style="padding:6px 12px;font-size:12px">⚙️ 設定起始金額</button>
         </div>
       </div>
-      <div id="cashSummary" style="display:grid;grid-template-columns:1fr 1fr 1fr 1.5fr;gap:10px"></div>
+      <div id="cashSummary" style="display:grid;grid-template-columns:1fr 1fr 1.5fr;gap:10px"></div>
       <div id="cashAuditInfo" style="font-size:12px;color:var(--muted);margin-top:8px"></div>
     </div>
 
@@ -1248,9 +1248,8 @@ async function loadCashFlow() {
     const res = await api('cash_flow');
     if (!res.success) { toast('讀取現金流失敗：' + res.message, 'error'); return; }
     CASH_DATA = res.data;
-    // 月份篩選
-    const allRecords = [...(CASH_DATA.incomes||[]), ...(CASH_DATA.expenses||[])];
-    const months = [...new Set(allRecords.map(r => String(r.time).slice(0,7)))].sort().reverse();
+    // 錢箱＝零用金箱：只有支出，WeClass 收費現金不進錢箱
+    const months = [...new Set((CASH_DATA.expenses||[]).map(r => String(r.time).slice(0,7)))].sort().reverse();
     const sel = document.getElementById('cash_filter_month');
     const curM = new Date().toISOString().slice(0,7);
     sel.innerHTML = `<option value="ALL">全部</option>` +
@@ -1282,11 +1281,13 @@ function renderCashFlow() {
   const b = CASH_DATA.balances[CASH_SCHOOL] || { init:0, income:0, expense:0, current:0 };
   const audit = CASH_DATA.audits && CASH_DATA.audits[CASH_SCHOOL];
   const baseLabel = b.base_kind === 'audit' ? '上次盤點金額' : '起始金額';
+  // 錢箱＝零用金箱：餘額 = 基準 − 現金支出（WeClass 收費現金不進錢箱）
+  // 餘額由前端自算，兼容尚未換版的後端回應
+  const current = Number(b.init) - Number(b.expense);
   document.getElementById('cashSummary').innerHTML = `
     <div class="stat"><div class="num">$${Number(b.init).toLocaleString('zh-TW')}</div><div class="label">${baseLabel}</div></div>
-    <div class="stat ok"><div class="num">+$${Number(b.income).toLocaleString('zh-TW')}</div><div class="label">現金收入${audit ? '（盤點後）' : ''}</div></div>
     <div class="stat urgent"><div class="num">-$${Number(b.expense).toLocaleString('zh-TW')}</div><div class="label">現金支出${audit ? '（盤點後）' : ''}</div></div>
-    <div class="stat warn" style="border-left-width:6px"><div class="num">$${Number(b.current).toLocaleString('zh-TW')}</div><div class="label">📦 目前錢箱餘額</div></div>
+    <div class="stat warn" style="border-left-width:6px"><div class="num">$${current.toLocaleString('zh-TW')}</div><div class="label">📦 目前錢箱餘額</div></div>
   `;
   const auditInfo = document.getElementById('cashAuditInfo');
   if (auditInfo) {
@@ -1299,28 +1300,26 @@ function renderCashFlow() {
       auditInfo.innerHTML = '尚未盤點過。建議定期「🧮 盤點錢箱」：數完實際現金輸入系統，餘額會以實點金額為新基準，帳才不會越走越飄。';
     }
   }
-  // 明細：合併 incomes + expenses 依時間排序
+  // 明細：只有現金支出（WeClass 收費現金不進錢箱）
   const filter = document.getElementById('cash_filter_month').value;
-  const items = [];
-  (CASH_DATA.incomes||[]).filter(x => x.school===CASH_SCHOOL).forEach(x => items.push({ ...x, dir:'in' }));
-  (CASH_DATA.expenses||[]).filter(x => x.school===CASH_SCHOOL).forEach(x => items.push({ ...x, dir:'out' }));
-  let filtered = items;
-  if (filter !== 'ALL') filtered = items.filter(x => String(x.time).slice(0,7) === filter);
+  let filtered = (CASH_DATA.expenses||[]).filter(x => x.school===CASH_SCHOOL);
+  if (filter !== 'ALL') filtered = filtered.filter(x => String(x.time).slice(0,7) === filter);
   filtered.sort((a,b) => String(b.time).localeCompare(String(a.time)));
   if (filtered.length === 0) {
-    document.getElementById('cashList').innerHTML = '<div class="empty">沒有現金紀錄</div>';
+    document.getElementById('cashList').innerHTML = '<div class="empty">沒有現金支出紀錄</div>';
     return;
   }
   document.getElementById('cashList').innerHTML = `
     <table>
-      <thead><tr><th>時間</th><th>來源</th><th>說明</th><th style="text-align:right">金額</th></tr></thead>
+      <thead><tr><th>時間</th><th>記錄人</th><th>分類</th><th>備註</th><th style="text-align:right">金額</th></tr></thead>
       <tbody>
         ${filtered.map(x => `
           <tr>
             <td class="meta">${String(x.time).slice(0,16)}</td>
-            <td>${x.source==='weclass' ? '<span class="badge ok">WeClass 收費</span>' : '<span class="badge urgent">支出</span>'}</td>
-            <td>${x.source==='weclass' ? x.name : `${x.submitter||''} · ${x.category||''} · ${x.memo||''}`}</td>
-            <td style="text-align:right;font-weight:700;color:${x.dir==='in'?'var(--green)':'var(--red)'}">${x.dir==='in'?'+':'-'}$${Number(x.amount||0).toLocaleString('zh-TW')}</td>
+            <td>${x.submitter||''}</td>
+            <td><span class="badge muted">${x.category||'其他'}</span></td>
+            <td>${x.memo||''}</td>
+            <td style="text-align:right;font-weight:700;color:var(--red)">-$${Number(x.amount||0).toLocaleString('zh-TW')}</td>
           </tr>
         `).join('')}
       </tbody>
@@ -1330,17 +1329,17 @@ function renderCashFlow() {
 
 // ---- 盤點錢箱 ----
 function openCashAudit() {
-  const b = (CASH_DATA && CASH_DATA.balances[CASH_SCHOOL]) || { current: 0 };
-  const expected = Number(b.current) || 0;
+  const b = (CASH_DATA && CASH_DATA.balances[CASH_SCHOOL]) || { init: 0, expense: 0 };
+  const expected = (Number(b.init) || 0) - (Number(b.expense) || 0);
   const inputStyle = 'padding:8px;background:var(--bg);border:1px solid var(--line);border-radius:4px;color:var(--text);width:100%;font-size:15px';
   document.getElementById('overlayHost').innerHTML = `
     <div class="overlay" onclick="if(event.target===this)hideOverlay()">
       <div style="background:var(--card);border-radius:10px;max-width:440px;width:92vw;padding:20px">
         <h3 style="margin-bottom:6px">🧮 盤點錢箱（${CASH_SCHOOL}）</h3>
         <p class="meta" style="margin-bottom:12px;line-height:1.5">
-          數完錢箱的實際現金後輸入金額，系統會記錄與帳面的差額，<br>
+          數完錢箱（零用金）的實際現金後輸入金額，系統會記錄與帳面的差額，<br>
           之後餘額以<strong>這次實點金額</strong>為新基準重新起算。<br>
-          ⚠️ 建議在<strong>當日收完錢後</strong>盤點（當天現金收入要已放進錢箱）。
+          ⚠️ 盤點前先把當天的支出都記完，才不會重複扣。
         </p>
         <div style="background:rgba(0,0,0,0.2);padding:10px 12px;border-radius:6px;margin-bottom:12px;font-size:14px">
           系統帳面餘額：<strong>$${expected.toLocaleString('zh-TW')}</strong>
