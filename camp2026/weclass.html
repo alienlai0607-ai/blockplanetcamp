@@ -340,7 +340,7 @@
   <div class="gate-box">
     <h2>🪐 WeClass 接管系統</h2>
     <input id="apiUrl" autocomplete="off" placeholder="Apps Script Web App URL（/exec 結尾）"
-      value="https://script.google.com/macros/s/AKfycbwvW5nKEyJ-FJPDpI8oZB18Bp8bpxHjOhphZCzqJzlFTEw8QpFkTa82VsaLiI7iotK1/exec" />
+      value="https://script.google.com/macros/s/AKfycbz4o8DsZECtckNrc-3P3W2bttu8SPYmkqfiujHnw4ctffepm76r4-zACnDJkWN0VhRM/exec" />
     <p class="hint">URL 已預設好（每次重新部署 Apps Script 時要更新）</p>
     <input id="passcode" type="password" placeholder="通行密碼" autofocus />
     <button onclick="login()">進入</button>
@@ -358,6 +358,7 @@
       <button class="secondary" onclick="openClosureModal()">🚫 停課管理</button>
       <button class="secondary" onclick="openMakeupModal()">🔁 補課管理</button>
       <button class="secondary" onclick="openExemptModal()">🆓 免費/豁免</button>
+      <button class="secondary" onclick="openReminderModal()">📢 催繳清單</button>
       <button class="secondary" onclick="exportCsv()">📥 匯出 CSV</button>
       <button class="secondary" onclick="logout()">登出</button>
     </div>
@@ -389,11 +390,15 @@
     <div id="cashSchoolTabs" style="display:flex; gap:6px; margin-bottom:12px"></div>
 
     <div style="background: var(--card); border-radius: 10px; padding: 20px; margin-bottom: 14px;">
-      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px">
+      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px; flex-wrap:wrap; gap:8px">
         <strong style="font-size:15px">💵 錢箱餘額（<span id="cashSchoolName">永康分校</span>）</strong>
-        <button class="secondary" onclick="setCashInit()" style="padding:6px 12px;font-size:12px">⚙️ 設定起始金額</button>
+        <div style="display:flex;gap:8px">
+          <button onclick="openCashAudit()" style="padding:6px 12px;font-size:12px;background:var(--yellow);color:#0f172a">🧮 盤點錢箱</button>
+          <button class="secondary" onclick="setCashInit()" style="padding:6px 12px;font-size:12px">⚙️ 設定起始金額</button>
+        </div>
       </div>
       <div id="cashSummary" style="display:grid;grid-template-columns:1fr 1fr 1fr 1.5fr;gap:10px"></div>
+      <div id="cashAuditInfo" style="font-size:12px;color:var(--muted);margin-top:8px"></div>
     </div>
 
     <div style="background: var(--card); border-radius: 10px; padding: 16px;">
@@ -541,6 +546,16 @@ function defaultMemo(maxLessons) {
   return '一期八堂，請假請在系統上請假，一期課程需10週內需上完';
 }
 
+// 安親月費預設備註：「2026七月月費」格式（25 號起自動帶下個月，配合月底開下月單的慣例；
+// 中文月份會被歸月規則正確認回該月）
+function anqinDefaultMemo() {
+  const d = new Date(Date.now() + 8 * 3600000);
+  let y = d.getUTCFullYear(), m = d.getUTCMonth() + 1;
+  if (d.getUTCDate() >= 25) { m++; if (m > 12) { m = 1; y++; } }
+  const CNM = ['一', '二', '三', '四', '五', '六', '七', '八', '九', '十', '十一', '十二'];
+  return y + CNM[m - 1] + '月月費';
+}
+
 function setSearch(v) { CACHE.search = String(v || '').trim().toLowerCase(); render(); }
 function rowKey(r) { return r.student_number + '||' + r.class_id; }
 function isCreatable(r) {
@@ -549,7 +564,8 @@ function isCreatable(r) {
 }
 function isPayable(r) {
   // 「已開單待繳/逾期」有 PENDING 訂單 → 能確認繳費
-  return !!r.pending_order_id && Number(r.pending_amount) > 0;
+  // NEW- 開頭 = 剛開單就地補的暫時編號，還沒同步到正式 order_id，不能收款
+  return !!r.pending_order_id && !/^NEW-/.test(String(r.pending_order_id)) && Number(r.pending_amount) > 0;
 }
 function isSelectable(r) {
   return isCreatable(r) || isPayable(r);
@@ -604,7 +620,7 @@ const SECTIONS = [
   { key: 'overdue',   title: '逾期未繳',                codes: ['OVERDUE_PAY'],                  tone: 'urgent', defaultOpen: true },
   { key: 'pending',   title: '已開單，等家長繳費',      codes: ['PENDING_PAY'],                  tone: 'yellow', defaultOpen: true },
   { key: 'progress',  title: '課程進行中',                 codes: ['IN_PROGRESS'],                  tone: 'ok',     defaultOpen: false },
-  { key: 'paid',      title: '本月已繳（安親）',        codes: ['PAID_OK'],                      tone: 'ok',     defaultOpen: false },
+  { key: 'paid',      title: '已繳費（安親本月已繳・才藝已預繳）', codes: ['PAID_OK'],             tone: 'ok',     defaultOpen: false },
   { key: 'new',       title: '新生 / 未開始',           codes: ['NEW'],                          tone: 'muted',  defaultOpen: false },
 ];
 const OPEN_STATE = {};
@@ -633,24 +649,14 @@ function enter() {
     const f = JSON.parse(localStorage.getItem(LS_FILTER));
     if (f) CACHE.filter = Object.assign(CACHE.filter, f);
   } catch (e) {}
-  // 行政模式：query string role=admin → 鎖定支出記帳
+  // 行政模式：query string role=admin → 全功能開放（開單/確認繳費/安親核對都是行政工作），
+  // 只改標題+預設進支出分頁。舊版鎖定只看支出的做法已取消。
   const params = new URLSearchParams(location.search);
   CACHE.isAdmin = params.get('role') === 'admin';
   if (CACHE.isAdmin) {
-    CACHE.mode = 'expenses';
-    // 修改標題
     const h1 = document.querySelector('.header h1');
-    if (h1) h1.innerHTML = '💰 支出記帳 · 行政<span class="tag">布拉克星球</span>';
-    // 隱藏接管系統相關按鈕
-    ['btnRefresh','btnSync'].forEach(id => {
-      const b = document.getElementById(id);
-      if (b) b.style.display = 'none';
-    });
-    // 健康檢查/CSV 匯出也隱藏（給行政比較簡潔）
-    document.querySelectorAll('.actions button').forEach(b => {
-      const t = b.textContent;
-      if (t.indexOf('健康') >= 0 || t.indexOf('CSV') >= 0) b.style.display = 'none';
-    });
+    if (h1) h1.innerHTML = '🪐 WeClass 接管系統 · 行政<span class="tag">布拉克星球</span>';
+    CACHE.mode = localStorage.getItem('weclass_mode') || 'expenses';
   } else {
     CACHE.mode = localStorage.getItem('weclass_mode') || 'dashboard';
   }
@@ -670,12 +676,17 @@ async function refresh() {
   setBtn('btnRefresh', true);
   try {
     const res = await api('dashboard');
-    if (!res.success) { toast('讀取失敗：' + res.message, 'error'); return; }
+    if (!res.success) {
+      toast('讀取失敗：' + res.message, 'error');
+      document.getElementById('sections').innerHTML = `<div class="section"><div class="empty">❌ 讀取失敗：${res.message}<br>請按「🔄 重新載入」再試</div></div>`;
+      return;
+    }
     CACHE.rows = res.data || [];
     CACHE.lastSync = res.last_sync;
     render();
   } catch (e) {
     toast('網路錯誤：' + e.message, 'error');
+    document.getElementById('sections').innerHTML = `<div class="section"><div class="empty">❌ 網路錯誤：${e.message}<br>請按「🔄 重新載入」再試</div></div>`;
   } finally {
     setBtn('btnRefresh', false);
   }
@@ -739,8 +750,12 @@ function toast(msg, kind) {
   const t = document.createElement('div');
   t.className = 'toast ' + (kind || '');
   t.textContent = msg;
+  t.style.cursor = 'pointer';
+  t.title = '點擊關閉';
+  t.onclick = () => t.remove();
   document.getElementById('toastHost').appendChild(t);
-  setTimeout(() => t.remove(), 3500);
+  // 錯誤訊息留久一點（10 秒），行政才來得及看清楚
+  setTimeout(() => t.remove(), kind === 'error' ? 10000 : 3500);
 }
 function showOverlay(msg, sub) {
   document.getElementById('overlayHost').innerHTML =
@@ -792,10 +807,6 @@ function render() {
 function renderModeTabs() {
   const el = document.getElementById('modeTabs');
   if (!el) return;
-  if (CACHE.isAdmin) {
-    el.style.display = 'none';
-    return;
-  }
   const cur = CACHE.mode || 'dashboard';
   const tab = (key, label, color) => `
     <button onclick="setMode('${key}')" style="
@@ -977,12 +988,15 @@ function anqinOrderYm(o) {
   // 例：memo「2026六月月費」但 receive_date 是 2026-05-30 → 應歸 2026-06，不能用 receive_date。
   const memo = String(o.order_memo || '');
   const CN = { 一:1, 二:2, 三:3, 四:4, 五:5, 六:6, 七:7, 八:8, 九:9, 十:10, 十一:11, 十二:12 };
-  const mm = memo.match(/([一二三四五六七八九十]+)月/);
-  if (mm && CN[mm[1]]) {
+  const yearOf = () => {
     const y = memo.match(/(20\d{2})/);
-    const year = y ? +y[1] : (+String(o.due_date || o.receive_date || '').slice(0, 4) || new Date().getFullYear());
-    return year + '-' + String(CN[mm[1]]).padStart(2, '0');
-  }
+    return y ? +y[1] : (+String(o.due_date || o.receive_date || '').slice(0, 4) || new Date().getFullYear());
+  };
+  const mm = memo.match(/([一二三四五六七八九十]+)月/);
+  if (mm && CN[mm[1]]) return yearOf() + '-' + String(CN[mm[1]]).padStart(2, '0');
+  // 阿拉伯數字月份（如「11月月費」）— 與後端 _anqinOrderYm 同規則
+  const ar = memo.match(/(\d{1,2})\s*月/);
+  if (ar && +ar[1] >= 1 && +ar[1] <= 12) return yearOf() + '-' + String(+ar[1]).padStart(2, '0');
   // 無「X月」字樣（如餐費儲值等雜費）→ 用 due_date 當所屬月，再退回 receive_date
   const d = o.due_date || o.receive_date || '';
   return String(d).slice(0, 7);
@@ -1266,12 +1280,25 @@ function renderCashFlow() {
   if (!CASH_DATA) return;
   document.getElementById('cashSchoolName').textContent = CASH_SCHOOL;
   const b = CASH_DATA.balances[CASH_SCHOOL] || { init:0, income:0, expense:0, current:0 };
+  const audit = CASH_DATA.audits && CASH_DATA.audits[CASH_SCHOOL];
+  const baseLabel = b.base_kind === 'audit' ? '上次盤點金額' : '起始金額';
   document.getElementById('cashSummary').innerHTML = `
-    <div class="stat"><div class="num">$${Number(b.init).toLocaleString('zh-TW')}</div><div class="label">起始金額</div></div>
-    <div class="stat ok"><div class="num">+$${Number(b.income).toLocaleString('zh-TW')}</div><div class="label">現金收入</div></div>
-    <div class="stat urgent"><div class="num">-$${Number(b.expense).toLocaleString('zh-TW')}</div><div class="label">現金支出</div></div>
+    <div class="stat"><div class="num">$${Number(b.init).toLocaleString('zh-TW')}</div><div class="label">${baseLabel}</div></div>
+    <div class="stat ok"><div class="num">+$${Number(b.income).toLocaleString('zh-TW')}</div><div class="label">現金收入${audit ? '（盤點後）' : ''}</div></div>
+    <div class="stat urgent"><div class="num">-$${Number(b.expense).toLocaleString('zh-TW')}</div><div class="label">現金支出${audit ? '（盤點後）' : ''}</div></div>
     <div class="stat warn" style="border-left-width:6px"><div class="num">$${Number(b.current).toLocaleString('zh-TW')}</div><div class="label">📦 目前錢箱餘額</div></div>
   `;
+  const auditInfo = document.getElementById('cashAuditInfo');
+  if (auditInfo) {
+    if (audit) {
+      const d = Number(audit.diff) || 0;
+      const diffTxt = d === 0 ? '<span style="color:var(--green)">帳實相符 ✓</span>'
+        : `<span style="color:${d > 0 ? 'var(--green)' : 'var(--red)'};font-weight:700">差額 ${d > 0 ? '+' : ''}$${d.toLocaleString('zh-TW')}</span>`;
+      auditInfo.innerHTML = `🧮 上次盤點：${audit.audit_time} · 實點 $${Number(audit.counted_amount).toLocaleString('zh-TW')}（系統預期 $${Number(audit.expected_amount).toLocaleString('zh-TW')}，${diffTxt}）${audit.memo ? ' · ' + audit.memo : ''}`;
+    } else {
+      auditInfo.innerHTML = '尚未盤點過。建議定期「🧮 盤點錢箱」：數完實際現金輸入系統，餘額會以實點金額為新基準，帳才不會越走越飄。';
+    }
+  }
   // 明細：合併 incomes + expenses 依時間排序
   const filter = document.getElementById('cash_filter_month').value;
   const items = [];
@@ -1301,6 +1328,73 @@ function renderCashFlow() {
   `;
 }
 
+// ---- 盤點錢箱 ----
+function openCashAudit() {
+  const b = (CASH_DATA && CASH_DATA.balances[CASH_SCHOOL]) || { current: 0 };
+  const expected = Number(b.current) || 0;
+  const inputStyle = 'padding:8px;background:var(--bg);border:1px solid var(--line);border-radius:4px;color:var(--text);width:100%;font-size:15px';
+  document.getElementById('overlayHost').innerHTML = `
+    <div class="overlay" onclick="if(event.target===this)hideOverlay()">
+      <div style="background:var(--card);border-radius:10px;max-width:440px;width:92vw;padding:20px">
+        <h3 style="margin-bottom:6px">🧮 盤點錢箱（${CASH_SCHOOL}）</h3>
+        <p class="meta" style="margin-bottom:12px;line-height:1.5">
+          數完錢箱的實際現金後輸入金額，系統會記錄與帳面的差額，<br>
+          之後餘額以<strong>這次實點金額</strong>為新基準重新起算。<br>
+          ⚠️ 建議在<strong>當日收完錢後</strong>盤點（當天現金收入要已放進錢箱）。
+        </p>
+        <div style="background:rgba(0,0,0,0.2);padding:10px 12px;border-radius:6px;margin-bottom:12px;font-size:14px">
+          系統帳面餘額：<strong>$${expected.toLocaleString('zh-TW')}</strong>
+        </div>
+        <div style="display:grid;grid-template-columns:auto 1fr;gap:8px;align-items:center;margin-bottom:14px">
+          <label>實點金額</label>
+          <input id="audit_amount" type="number" placeholder="數到多少填多少" style="${inputStyle}" oninput="
+            const d = Number(this.value) - ${expected};
+            const el = document.getElementById('audit_diff');
+            if (this.value === '') { el.textContent = ''; return; }
+            el.textContent = d === 0 ? '✓ 帳實相符' : (d > 0 ? '差額 +$' + d.toLocaleString() : '差額 -$' + Math.abs(d).toLocaleString());
+            el.style.color = d === 0 ? 'var(--green)' : (d > 0 ? 'var(--green)' : 'var(--red)');" />
+          <span></span><div id="audit_diff" style="font-size:13px;font-weight:700;min-height:1.2em"></div>
+          <label>備註</label>
+          <input id="audit_memo" type="text" placeholder="（選填）例：月底結算" style="${inputStyle}" />
+        </div>
+        <div style="display:flex;gap:8px;justify-content:flex-end">
+          <button class="secondary" onclick="hideOverlay()">取消</button>
+          <button id="auditBtn" onclick="saveCashAudit(${expected})" style="background:var(--yellow);color:#0f172a;font-weight:700">💾 儲存盤點</button>
+        </div>
+      </div>
+    </div>
+  `;
+  setTimeout(() => { const i = document.getElementById('audit_amount'); if (i) i.focus(); }, 100);
+}
+
+async function saveCashAudit(expected) {
+  const v = document.getElementById('audit_amount').value.trim();
+  const memo = document.getElementById('audit_memo').value.trim();
+  const counted = Number(v);
+  if (v === '' || isNaN(counted) || counted < 0) { toast('請填實點金額', 'error'); return; }
+  const diff = counted - expected;
+  if (diff !== 0 && !confirm(`實點 $${counted.toLocaleString()} 與帳面 $${expected.toLocaleString()} 差 ${diff > 0 ? '+' : ''}$${diff.toLocaleString()}，確定以實點金額為準？`)) return;
+  const btn = document.getElementById('auditBtn');
+  if (btn) { btn.disabled = true; btn.textContent = '儲存中…'; }
+  try {
+    const url = localStorage.getItem(LS_URL);
+    const tk = localStorage.getItem(LS_TK);
+    const resp = await fetch(`${url}?action=add_cash_audit&tk=${encodeURIComponent(tk)}`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+      body: JSON.stringify({ school: CASH_SCHOOL, counted_amount: counted, expected_amount: expected, memo }),
+    });
+    const j = await resp.json();
+    if (!j.success) { toast('盤點失敗：' + j.message, 'error'); if (btn) { btn.disabled = false; btn.textContent = '💾 儲存盤點'; } return; }
+    toast(`✅ 盤點完成${diff !== 0 ? `（差額 ${diff > 0 ? '+' : ''}$${diff.toLocaleString()} 已記錄）` : '，帳實相符'}`, 'success');
+    hideOverlay();
+    loadCashFlow();
+  } catch (e) {
+    toast('錯誤：' + e.message, 'error');
+    if (btn) { btn.disabled = false; btn.textContent = '💾 儲存盤點'; }
+  }
+}
+
 async function setCashInit() {
   const cur = (CASH_DATA && CASH_DATA.balances[CASH_SCHOOL]) ? CASH_DATA.balances[CASH_SCHOOL].init : 0;
   const v = prompt(`設定「${CASH_SCHOOL}」錢箱起始金額（目前 $${cur}）：`, cur);
@@ -1325,7 +1419,7 @@ async function setCashInit() {
 }
 
 async function deleteExpense(id) {
-  if (!confirm('確認刪除這筆支出？')) return;
+  if (!confirm('確認刪除這筆支出？\n\n⚠️ 這筆支出當初有同步寫到 WeClass，刪除只會刪這邊，\nWeClass 那筆請記得手動刪，兩邊帳才會一致。\n（系統會保留刪除紀錄可追查）')) return;
   try {
     const res = await api('delete_expense&id=' + encodeURIComponent(id));
     if (!res.success) { toast('刪除失敗：' + res.message, 'error'); return; }
@@ -1471,13 +1565,14 @@ async function openBatchModal() {
   const today = new Date(Date.now() + 8*3600000).toISOString().slice(0,10);
   const due = new Date(Date.now() + (8+7*24)*3600000).toISOString().slice(0,10);
 
-  // 為每 row 找預設金額
+  // 為每 row 找預設金額（安親：同班待繳金額，找不到留空給行政填、備註帶「X月月費」；才藝：同班金額 → 套餐價）
   const items = selectedRows.map((r, idx) => {
+    const isAnqin = r.kind === 'anqin';
     let amt = '';
-    const sameClass = CACHE.rows.find(x => x.class_name === r.class_name && x.pending_amount);
+    const sameClass = CACHE.rows.find(x => x.class_name === r.class_name && Number(x.pending_amount) > 0);
     if (sameClass) amt = sameClass.pending_amount;
-    if (!amt) amt = (r.max_lessons == 24) ? 11400 : 4400;
-    const memo = defaultMemo(r.max_lessons);
+    if (!amt && !isAnqin) amt = (r.max_lessons == 24) ? 11400 : 4400;
+    const memo = isAnqin ? anqinDefaultMemo() : defaultMemo(r.max_lessons);
     const sbid = r.school_name === '永康分校' ? 340 : (r.school_name === '北區分校' ? 355 : '');
     return { idx, row: r, amount: amt, memo, receive_date: today, due_date: due, school_branch_id: sbid };
   });
@@ -1643,16 +1738,18 @@ function _paymentModalShell(title, bodyHtml, total) {
           合計應收：<strong>${money(total)}</strong>
         </div>
         <div style="display:grid;grid-template-columns:auto 1fr;gap:8px;align-items:center;margin-bottom:6px">
-          <label>新一期第一堂課日</label>
+          <label>繳費日</label>
           <input id="pay_date" type="date" value="${today}" style="${inputStyle}" />
           <label>繳費方式</label>
           <select id="pay_method" style="${inputStyle}">${methodOpts}</select>
           <label>確認老師</label>
-          <input id="pay_teacher" type="text" value="${lastTeacher}" placeholder="（選填）記錄是誰確認的" style="${inputStyle}" />
+          <select id="pay_teacher" style="${inputStyle}">${lastTeacher ? `<option value="${lastTeacher}" selected>${lastTeacher}</option>` : '<option value="">— 載入老師中… —</option>'}</select>
         </div>
         <p class="meta" style="margin-bottom:14px;line-height:1.4;color:#38bdf8">
-          📌 才藝班：這天 = <strong>新一期第一堂課日</strong>（當天就算一堂），堂數歸 0、10 週期限從這天重算。<br>
-          填「實際第一堂上課日」，不是繳費那天（家長常先上課後繳費）。
+          📌 才藝班規則：確認繳費<strong>不會清掉目前堂數</strong>——<br>
+          ・還沒上滿一期 → 堂數照舊，繼續上（繳的就是這一期）<br>
+          ・已「多上」超過一期 → 多上的堂數自動滾進新一期重新起算<br>
+          繳費日用來判斷新一期起點，照實填即可（可回填過去的日期）。
         </p>
         <div style="display:flex;gap:8px;justify-content:flex-end">
           <button class="secondary" onclick="hideOverlay()">取消</button>
@@ -1661,6 +1758,22 @@ function _paymentModalShell(title, bodyHtml, total) {
       </div>
     </div>
   `;
+  fillTeacherSelect('pay_teacher', lastTeacher);
+}
+
+// 老師下拉（跨 modal 共用，撈一次快取整頁生命週期）
+let TEACHERS = null;
+async function fillTeacherSelect(id, selected) {
+  try {
+    if (!TEACHERS) {
+      const r = await api('list_teachers');
+      if (r.success && Array.isArray(r.data)) TEACHERS = r.data;
+    }
+    const sel = document.getElementById(id);
+    if (!sel || !TEACHERS || !TEACHERS.length) return;
+    sel.innerHTML = '<option value="">— 請選 —</option>' +
+      TEACHERS.map(t => `<option value="${t.name}" ${t.name === selected ? 'selected' : ''}>${t.name}</option>`).join('');
+  } catch (e) { /* 撈不到就維持原欄位 */ }
 }
 
 function openPaymentModal(payRow) {
@@ -2071,6 +2184,90 @@ async function deleteExemption(id) {
   }
 }
 
+// ---- 催繳清單（產生 LINE 可貼的催繳文字）----
+let _remRows = [];
+
+function reminderText(r) {
+  const due = fmt(r.pending_due_date);
+  const over = Number(r.days_overdue) > 0;
+  return `親愛的家長您好 🙏\n${r.student_name} 的「${r.class_name}」課程費用 ${money(r.pending_amount)}，繳費期限 ${due || '—'}${over ? `（已逾期 ${r.days_overdue} 天）` : ''}，再麻煩您透過 WeClass App 完成繳費，感謝您！\n— 布拉克星球`;
+}
+
+async function copyToClipboard(text) {
+  try {
+    await navigator.clipboard.writeText(text);
+    return true;
+  } catch (e) {
+    // 舊瀏覽器 fallback
+    const ta = document.createElement('textarea');
+    ta.value = text;
+    document.body.appendChild(ta);
+    ta.select();
+    const ok = document.execCommand('copy');
+    ta.remove();
+    return ok;
+  }
+}
+
+async function copyReminderOne(idx) {
+  const r = _remRows[idx];
+  if (!r) return;
+  const ok = await copyToClipboard(reminderText(r));
+  toast(ok ? `✅ 已複製 ${r.student_name} 的催繳訊息，貼到 LINE 即可` : '複製失敗', ok ? 'success' : 'error');
+}
+
+async function copyReminderSelected() {
+  const checked = [...document.querySelectorAll('.rem-check:checked')].map(c => Number(c.dataset.idx));
+  if (!checked.length) { toast('請先勾選要催繳的學生', 'error'); return; }
+  const text = checked.map(i => reminderText(_remRows[i])).join('\n\n──────────\n\n');
+  const ok = await copyToClipboard(text);
+  toast(ok ? `✅ 已複製 ${checked.length} 筆催繳訊息` : '複製失敗', ok ? 'success' : 'error');
+}
+
+function openReminderModal() {
+  // 催繳對象：有 PENDING 訂單的（逾期優先，預設勾選逾期）
+  _remRows = (CACHE.rows || [])
+    .filter(r => r.pending_order_id && Number(r.pending_amount) > 0)
+    .sort((a, b) => Number(b.days_overdue || 0) - Number(a.days_overdue || 0));
+  const overdueN = _remRows.filter(r => Number(r.days_overdue) > 0).length;
+  const listHtml = _remRows.length ? _remRows.map((r, i) => {
+    const over = Number(r.days_overdue) > 0;
+    return `
+    <div style="display:flex;align-items:center;gap:10px;padding:8px 12px;border-bottom:1px solid var(--line)">
+      <input type="checkbox" class="rem-check" data-idx="${i}" ${over ? 'checked' : ''} style="width:16px;height:16px;flex-shrink:0" />
+      <div style="flex:1;min-width:0">
+        <strong>${r.student_name}</strong> <span class="meta">${r.class_name || ''}</span>
+        <div class="meta">${money(r.pending_amount)} · 期限 ${fmt(r.pending_due_date) || '—'}
+          ${over ? `<span style="color:var(--red);font-weight:700">逾期 ${r.days_overdue} 天</span>` : '<span style="color:var(--yellow)">未到期</span>'}
+        </div>
+      </div>
+      <button class="secondary" onclick="copyReminderOne(${i})" style="padding:4px 10px;font-size:12px;flex-shrink:0">📋 複製</button>
+    </div>`;
+  }).join('') : '<div class="empty">🙌 目前沒有待繳/逾期的訂單，不用催繳</div>';
+
+  document.getElementById('overlayHost').innerHTML = `
+    <div class="overlay" onclick="if(event.target===this)hideOverlay()">
+      <div style="background:var(--card);border-radius:10px;max-width:620px;width:94vw;max-height:88vh;overflow:hidden;display:flex;flex-direction:column">
+        <div style="padding:14px 18px;border-bottom:1px solid var(--line);display:flex;justify-content:space-between;align-items:center">
+          <strong>📢 催繳清單（${_remRows.length} 筆待繳，${overdueN} 筆逾期）</strong>
+          <button class="secondary" onclick="hideOverlay()" style="padding:4px 10px;font-size:12px">關閉</button>
+        </div>
+        <p class="meta" style="padding:10px 18px;border-bottom:1px solid var(--line);line-height:1.5;margin:0">
+          勾選學生 → 複製催繳訊息 → 貼到 LINE 給家長或班級群。<br>預設已勾「逾期」的；「📋 複製」可單獨複製一位。
+        </p>
+        <div style="overflow-y:auto;flex:1">${listHtml}</div>
+        ${_remRows.length ? `
+        <div style="padding:12px 18px;border-top:1px solid var(--line);display:flex;gap:8px;justify-content:space-between;align-items:center;flex-wrap:wrap">
+          <label style="font-size:13px;color:var(--muted);display:flex;align-items:center;gap:5px;cursor:pointer">
+            <input type="checkbox" onchange="document.querySelectorAll('.rem-check').forEach(c=>c.checked=this.checked)" style="width:15px;height:15px" />全選
+          </label>
+          <button onclick="copyReminderSelected()" style="font-weight:700">📋 複製勾選的催繳訊息</button>
+        </div>` : ''}
+      </div>
+    </div>
+  `;
+}
+
 // ---- 調整起算日（新一期第一堂課日）----
 let _psRow = null;
 function openPeriodStartModal(psRow) {
@@ -2139,12 +2336,13 @@ function openCreateOrderModal(safeRow) {
   const r = JSON.parse(decodeURIComponent(safeRow));
   _orderRowCache = r;
 
-  // 推測金額（從 dashboard 看歷史訂單）
+  // 推測金額：同班其他人的待繳金額 → 才藝沒有就用套餐預設價；安親找不到留空給行政填（與批次開單同一套邏輯）
+  const isAnqinOrder = r.kind === 'anqin';
   let suggestAmount = '';
-  const suggestMemo = defaultMemo(r.max_lessons);
-  // 從 CACHE.rows 找該班的歷史訂單金額
-  const sameClass = CACHE.rows.find(x => x.class_name === r.class_name && x.last_receive_amount);
-  if (sameClass && sameClass.last_receive_amount) suggestAmount = sameClass.last_receive_amount;
+  const suggestMemo = isAnqinOrder ? anqinDefaultMemo() : defaultMemo(r.max_lessons);
+  const sameClass = CACHE.rows.find(x => x.class_name === r.class_name && Number(x.pending_amount) > 0);
+  if (sameClass) suggestAmount = sameClass.pending_amount;
+  if (!suggestAmount && !isAnqinOrder) suggestAmount = (Number(r.max_lessons) === 24) ? 11400 : 4400;
 
   // 預設收費日今天，繳費期限 7 天後
   const today = new Date(Date.now() + 8*3600000).toISOString().slice(0,10);
@@ -2473,7 +2671,7 @@ function rowHtml(r, withCheckbox) {
     const safeRow = encodeURIComponent(JSON.stringify({
       student_number: r.student_number, student_name: r.student_name,
       class_id: r.class_id, class_name: r.class_name,
-      school_name: r.school_name, max_lessons: r.max_lessons,
+      school_name: r.school_name, max_lessons: r.max_lessons, kind: r.kind,
     }));
     const label = isTestStudent && r.status_code !== 'WAITING_INVOICE' ? '🧪 測試開單' : '✅ 一鍵開單通知家長';
     actionBtn = `<button class="action-btn" onclick="openCreateOrderModal('${safeRow}')">${label}</button>
@@ -2489,6 +2687,8 @@ function rowHtml(r, withCheckbox) {
       order_id: r.pending_order_id, amount: r.pending_amount,
     }));
     actionBtn += `<button class="action-btn" style="background:var(--ok,#16a34a);color:#fff;margin-top:4px" onclick="openPaymentModal('${payRow}')">💰 確認繳費</button>`;
+  } else if (/^NEW-/.test(String(r.pending_order_id || ''))) {
+    actionBtn += `<div style="font-size:11px;color:var(--muted);margin-top:4px" title="剛開的單還沒同步到正式訂單編號">⏳ 剛開單，同步後才能確認繳費</div>`;
   }
 
   return `
