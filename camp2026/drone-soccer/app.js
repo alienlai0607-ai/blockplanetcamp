@@ -5,7 +5,7 @@
    ======================================== */
 'use strict';
 
-const API_URL = 'https://script.google.com/macros/s/AKfycbzaEt0Asg5lRiUtRE4ZoceRVoiowSYSV68jMAd87SO3NhtV5fRUjuWmC5w_WTtQxj7T/exec';
+const API_URL = 'https://script.google.com/macros/s/AKfycbyn1_Sb18DUCPILn1W5cFyHk_G6IJ7p68wpATqGWOSbcs20NEcEUsgAGZgQtRLhqfTW/exec';
 const DEMO = new URLSearchParams(location.search).has('demo');
 
 const MASCOT_PORTRAITS = [
