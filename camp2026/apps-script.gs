@@ -1786,7 +1786,7 @@ function dronePilotAdd(p) {
 }
 
 function droneStateGet() {
-  const emptyState = { checkedInIds: [], groups: [], matches: [], activeMatchId: null, championId: null };
+  const emptyState = { tournamentVersion: 2, checkedInIds: [], groups: [], matches: [], activeMatchId: null, championGroupId: null };
   try {
     const sh = getDroneStateSheet();
     const payload = String(sh.getRange(2, 2).getValue() || '');

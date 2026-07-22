@@ -17,11 +17,12 @@ const MASCOT_PORTRAITS = [
 ];
 
 const EMPTY_STATE = () => ({
+  tournamentVersion: 2,
   checkedInIds: [],
   groups: [],
   matches: [],
   activeMatchId: null,
-  championId: null,
+  championGroupId: null,
 });
 
 // ===== 全域狀態 =====
@@ -49,6 +50,8 @@ const esc = (s) => String(s == null ? '' : s)
 
 function pilotMap() { return new Map(pilots.map((p) => [p.id, p])); }
 function getPilot(id) { return pilots.find((p) => p.id === id) || null; }
+function groupMap() { return new Map(eventState.groups.map((group) => [group.id, group])); }
+function getGroup(id) { return eventState.groups.find((group) => group.id === id) || null; }
 function checkedInPilots() {
   const map = pilotMap();
   return eventState.checkedInIds.map((id) => map.get(id)).filter(Boolean);
@@ -76,6 +79,61 @@ function shuffled(items) {
     [copy[i], copy[j]] = [copy[j], copy[i]];
   }
   return copy;
+}
+
+function normalizeEventState(state) {
+  const incoming = state && typeof state === 'object' ? state : {};
+  if (incoming.tournamentVersion !== 2) {
+    return {
+      state: {
+        ...EMPTY_STATE(),
+        checkedInIds: Array.isArray(incoming.checkedInIds) ? incoming.checkedInIds : [],
+      },
+      migrated: true,
+    };
+  }
+  return {
+    state: {
+      tournamentVersion: 2,
+      checkedInIds: Array.isArray(incoming.checkedInIds) ? incoming.checkedInIds : [],
+      groups: Array.isArray(incoming.groups) ? incoming.groups : [],
+      matches: Array.isArray(incoming.matches) ? incoming.matches : [],
+      activeMatchId: typeof incoming.activeMatchId === 'string' ? incoming.activeMatchId : null,
+      championGroupId: typeof incoming.championGroupId === 'string' ? incoming.championGroupId : null,
+    },
+    migrated: false,
+  };
+}
+
+function rankedTeams(groups, matches) {
+  const seedOrder = new Map(groups.map((group, index) => [group.id, index]));
+  const standings = new Map(groups.map((group) => [
+    group.id,
+    { group, wins: 0, scored: 0, allowed: 0 },
+  ]));
+
+  matches
+    .filter((match) => match.type === 'heat' && match.status === 'complete')
+    .forEach((match) => {
+      match.participantGroupIds.forEach((groupId) => {
+        const row = standings.get(groupId);
+        if (!row) return;
+        row.scored += match.scores[groupId] || 0;
+        row.allowed += match.participantGroupIds
+          .filter((opponentId) => opponentId !== groupId)
+          .reduce((total, opponentId) => total + (match.scores[opponentId] || 0), 0);
+        if (match.winnerGroupId === groupId) row.wins += 1;
+      });
+    });
+
+  return [...standings.values()]
+    .sort((a, b) =>
+      b.wins - a.wins ||
+      (b.scored - b.allowed) - (a.scored - a.allowed) ||
+      b.scored - a.scored ||
+      (seedOrder.get(a.group.id) || 0) - (seedOrder.get(b.group.id) || 0),
+    )
+    .map((row) => row.group);
 }
 function uuid() {
   return crypto.randomUUID ? crypto.randomUUID() :
@@ -396,33 +454,58 @@ async function handlePhotoChange(fileInput) {
 function createGroups() {
   const checked = checkedInPilots();
   const count = checked.length;
-  if (count < 3 || count % 3 !== 0) {
-    setNotice('目前 ' + count + ' 人已報到；請湊滿 3 的倍數，才能每組正好 3 人。');
+  if (count < 6 || count % 3 !== 0) {
+    setNotice('目前 ' + count + ' 人已報到；一場是兩支三人隊伍對戰，請至少報到 6 人且人數為 3 的倍數。');
     return;
   }
   const shuffledPilots = shuffled(checked);
   const groups = [];
-  const matches = [];
   for (let index = 0; index < shuffledPilots.length; index += 3) {
     const number = index / 3;
-    const name = String.fromCharCode(65 + number) + ' 組';
+    const name = String.fromCharCode(65 + number) + ' 隊';
     const id = uuid();
-    const participantIds = shuffledPilots.slice(index, index + 3).map((p) => p.id);
-    groups.push({ id, name, pilotIds: participantIds });
+    const pilotIds = shuffledPilots.slice(index, index + 3).map((p) => p.id);
+    groups.push({ id, name, pilotIds });
+  }
+
+  const matches = [];
+  if (groups.length === 2) {
+    const participantGroupIds = groups.map((group) => group.id);
     matches.push({
       id: uuid(),
-      label: name + '晉級賽',
-      type: 'heat',
-      groupId: id,
-      participantIds,
-      scores: Object.fromEntries(participantIds.map((pid) => [pid, 0])),
+      label: groups[0].name + ' VS ' + groups[1].name + '・冠軍戰',
+      type: 'final',
+      participantGroupIds,
+      scores: Object.fromEntries(participantGroupIds.map((groupId) => [groupId, 0])),
       status: 'pending',
-      winnerId: null,
+      winnerGroupId: null,
     });
+  } else {
+    for (let left = 0; left < groups.length - 1; left += 1) {
+      for (let right = left + 1; right < groups.length; right += 1) {
+        const participantGroupIds = [groups[left].id, groups[right].id];
+        matches.push({
+          id: uuid(),
+          label: groups[left].name + ' VS ' + groups[right].name,
+          type: 'heat',
+          participantGroupIds,
+          scores: Object.fromEntries(participantGroupIds.map((groupId) => [groupId, 0])),
+          status: 'pending',
+          winnerGroupId: null,
+        });
+      }
+    }
   }
-  commitState({ ...eventState, groups, matches, activeMatchId: null, championId: null });
+  commitState({
+    ...eventState,
+    tournamentVersion: 2,
+    groups,
+    matches,
+    activeMatchId: null,
+    championGroupId: null,
+  });
   switchSection('groups');
-  setNotice('已完成 ' + groups.length + ' 組隨機抽籤，每組 3 人。');
+  setNotice('已完成 ' + groups.length + ' 支隊伍抽籤，每隊正好 3 人；接下來進行 3 對 3 團隊賽。');
 }
 
 function openMatch(matchId) {
@@ -468,14 +551,14 @@ function startMatch() {
   runStep(3);
 }
 
-function updateScore(pilotId, difference) {
+function updateScore(groupId, difference) {
   const match = activeMatch();
   if (!match || timerStatus === 'countdown') return;
   eventState = {
     ...eventState,
     matches: eventState.matches.map((m) =>
       m.id === match.id
-        ? { ...m, scores: { ...m.scores, [pilotId]: Math.max(0, (m.scores[pilotId] || 0) + difference) } }
+        ? { ...m, scores: { ...m.scores, [groupId]: Math.max(0, (m.scores[groupId] || 0) + difference) } }
         : m,
     ),
   };
@@ -493,7 +576,7 @@ function resetCurrentMatch() {
     ...eventState,
     matches: eventState.matches.map((m) =>
       m.id === match.id
-        ? { ...m, scores: Object.fromEntries(m.participantIds.map((id) => [id, 0])) }
+        ? { ...m, scores: Object.fromEntries(m.participantGroupIds.map((id) => [id, 0])) }
         : m,
     ),
   };
@@ -503,51 +586,51 @@ function resetCurrentMatch() {
 function saveMatchResult() {
   const match = activeMatch();
   if (!match) return;
-  const ranked = [...match.participantIds].sort(
+  const ranked = [...match.participantGroupIds].sort(
     (a, b) => (match.scores[b] || 0) - (match.scores[a] || 0),
   );
   if (ranked.length > 1 && (match.scores[ranked[0]] || 0) === (match.scores[ranked[1]] || 0)) {
     setNotice('最高分同分，請由裁判確認加分後再儲存。');
     return;
   }
-  const winnerId = ranked[0] || null;
+  const winnerGroupId = ranked[0] || null;
   let matches = eventState.matches.map((m) =>
-    m.id === match.id ? { ...m, status: 'complete', winnerId } : m,
+    m.id === match.id ? { ...m, status: 'complete', winnerGroupId } : m,
   );
-  let championId = eventState.championId;
+  let championGroupId = eventState.championGroupId;
 
   if (match.type === 'heat') {
     const heats = matches.filter((m) => m.type === 'heat');
     const allHeatsComplete = heats.every((m) => m.status === 'complete');
     const finalExists = matches.some((m) => m.type === 'final');
     if (allHeatsComplete && !finalExists) {
-      const finalists = heats.map((m) => m.winnerId).filter(Boolean);
+      const finalists = rankedTeams(eventState.groups, matches).slice(0, 2).map((group) => group.id);
       matches = [
         ...matches,
         {
           id: uuid(),
-          label: '布拉克星球總決賽',
+          label: (getGroup(finalists[0]) ? getGroup(finalists[0]).name : '第一名') + ' VS ' +
+            (getGroup(finalists[1]) ? getGroup(finalists[1]).name : '第二名') + '・總決賽',
           type: 'final',
-          groupId: null,
-          participantIds: finalists,
+          participantGroupIds: finalists,
           scores: Object.fromEntries(finalists.map((id) => [id, 0])),
           status: 'pending',
-          winnerId: null,
+          winnerGroupId: null,
         },
       ];
     }
   } else {
-    championId = winnerId;
+    championGroupId = winnerGroupId;
   }
 
-  commitState({ ...eventState, matches, activeMatchId: null, championId });
+  commitState({ ...eventState, matches, activeMatchId: null, championGroupId });
   timerStatus = 'ready';
   secondsLeft = 180;
   syncTimerLoops();
-  const winner = winnerId ? getPilot(winnerId) : null;
+  const winner = winnerGroupId ? getGroup(winnerGroupId) : null;
   setNotice(match.type === 'final'
-    ? '冠軍誕生：' + (winner ? winner.name : '') + '！'
-    : (winner ? winner.name : '') + ' 晉級成功！');
+    ? '冠軍誕生：' + (winner ? winner.name : '') + '，三位隊員共同奪冠！'
+    : (winner ? winner.name : '') + ' 贏得本場 3 對 3 比賽！');
 }
 
 function printLicense() {
@@ -596,7 +679,7 @@ function renderHome() {
 
   $('flowList').innerHTML = [
     { cls: checked.length ? 'done' : 'current', num: '01', title: '駕照報到', sub: checked.length + ' 人完成' },
-    { cls: eventState.groups.length ? 'done' : (checked.length ? 'current' : ''), num: '02', title: '隨機三人分組', sub: (eventState.groups.length || '尚未') + ' 組' },
+    { cls: eventState.groups.length ? 'done' : (checked.length ? 'current' : ''), num: '02', title: '隨機三人組隊', sub: (eventState.groups.length || '尚未') + ' 隊' },
     { cls: done ? 'current' : '', num: '03', title: '晉級賽與總決賽', sub: done + ' 場完成' },
   ].map((step) =>
     '<li class="' + step.cls + '"><span>' + step.num + '</span><div><strong>' + step.title + '</strong><small>' + step.sub + '</small></div><i></i></li>'
@@ -631,46 +714,52 @@ function renderLicenses() {
 
 function renderGroups() {
   const checked = checkedInPilots();
-  const ready = checked.length >= 3 && checked.length % 3 === 0;
-  $('createGroupsBtn').disabled = checked.length < 3;
+  const ready = checked.length >= 6 && checked.length % 3 === 0;
+  $('createGroupsBtn').disabled = checked.length < 6;
   $('drawSummary').innerHTML =
     '<div><strong>' + checked.length + '</strong><span>已報到駕駛員</span></div>' +
-    '<div><strong>' + Math.floor(checked.length / 3) + '</strong><span>可組成完整三人組</span></div>' +
+    '<div><strong>' + Math.floor(checked.length / 3) + '</strong><span>完整三人隊伍</span></div>' +
     '<div class="' + (ready ? 'ready' : 'waiting') + '"><i></i>' +
-      (ready ? '可以開始抽籤' : '還需 ' + (checked.length < 3 ? 3 - checked.length : 3 - (checked.length % 3)) + ' 人') + '</div>';
+      (ready ? '可以開始 3 對 3 抽籤' : '還需 ' + (checked.length < 6 ? 6 - checked.length : 3 - (checked.length % 3)) + ' 人') + '</div>';
 
   const map = pilotMap();
   $('groupsArea').innerHTML = eventState.groups.length
     ? '<div class="groups-board">' + eventState.groups.map((group, gi) =>
         '<article class="group-card group-' + (gi % 4) + '">' +
-          '<header><span>' + esc(group.name) + '</span><small>QUALIFIER ' + String(gi + 1).padStart(2, '0') + '</small></header>' +
+          '<header><span>' + esc(group.name) + '</span><small>3-PILOT TEAM ' + String(gi + 1).padStart(2, '0') + '</small></header>' +
           '<div class="group-pilots">' + group.pilotIds.map((pid, i) => {
             const p = map.get(pid);
             if (!p) return '';
             return '<div><span class="seed">0' + (i + 1) + '</span><img src="' + esc(portraitFor(p, i + gi)) + '" alt="' + esc(p.name) + '">' +
               '<div><strong>' + esc(p.name) + '</strong><small>' + esc(p.nickname || p.licenseNo) + '</small></div><b>' + esc(p.level) + '</b></div>';
           }).join('') + '</div>' +
-          '<button data-open-group="' + esc(group.id) + '">進入本組賽事 →</button>' +
+          '<button data-goto="tournament">查看 3 對 3 隊伍賽程 →</button>' +
         '</article>'
       ).join('') + '</div>'
     : '<div class="waiting-board">' +
         '<div class="draw-orbit"><img src="assets/aqiu.jpg" alt=""><span></span><span></span><span></span></div>' +
-        '<h2>等待抽籤</h2><p>報到人數達到 3 的倍數後，按下「開始隨機分組」。</p>' +
+        '<h2>等待抽籤</h2><p>至少 6 人且人數為 3 的倍數後，按下「開始隨機組隊」。</p>' +
       '</div>';
 }
 
 function matchRowHtml(match, index) {
+  const groups = groupMap();
   const map = pilotMap();
-  const winner = match.winnerId ? map.get(match.winnerId) : null;
+  const winner = match.winnerGroupId ? groups.get(match.winnerGroupId) : null;
   return '<article class="match-row ' + match.status + '">' +
     '<div class="match-index">' + String(index + 1).padStart(2, '0') + '</div>' +
-    '<div class="match-info"><small>' + (match.type === 'final' ? 'FINAL' : 'QUALIFIER') + '</small><strong>' + esc(match.label) + '</strong>' +
-      '<div class="mini-avatars">' + match.participantIds.map((id, i) => {
-        const p = map.get(id);
-        return p ? '<img src="' + esc(portraitFor(p, i)) + '" alt="' + esc(p.name) + '" title="' + esc(p.name) + '">' : '';
+    '<div class="match-info"><small>' + (match.type === 'final' ? '3 VS 3 FINAL' : '3 VS 3 QUALIFIER') + '</small><strong>' + esc(match.label) + '</strong>' +
+      '<div class="match-team-pair">' + match.participantGroupIds.map((groupId, teamIndex) => {
+        const group = groups.get(groupId);
+        if (!group) return '';
+        return '<span class="match-mini-team"><b>' + esc(group.name) + '</b><i class="mini-avatars">' +
+          group.pilotIds.map((pilotId, avatarIndex) => {
+            const pilot = map.get(pilotId);
+            return pilot ? '<img src="' + esc(portraitFor(pilot, avatarIndex + teamIndex)) + '" alt="' + esc(pilot.name) + '" title="' + esc(pilot.name) + '">' : '';
+          }).join('') + '</i>' + (teamIndex === 0 ? '<em>VS</em>' : '') + '</span>';
       }).join('') + '</div></div>' +
     '<div class="match-status">' + (winner
-      ? '<small>WINNER</small><strong>' + esc(winner.name) + '</strong>'
+      ? '<small>WINNING TEAM</small><strong>' + esc(winner.name) + '・三人共同晉級</strong>'
       : '<small>STATUS</small><strong>待比賽</strong>') + '</div>' +
     '<button data-open-match="' + esc(match.id) + '"' + (match.status === 'complete' ? ' disabled' : '') + '>' +
       (match.status === 'complete' ? '已完成' : '開啟賽場 →') + '</button>' +
@@ -679,33 +768,39 @@ function matchRowHtml(match, index) {
 
 function renderTournament() {
   const map = pilotMap();
-  const champion = eventState.championId ? map.get(eventState.championId) : null;
+  const champion = eventState.championGroupId ? getGroup(eventState.championGroupId) : null;
   const heats = eventState.matches.filter((m) => m.type === 'heat');
   const finals = eventState.matches.filter((m) => m.type === 'final');
   let html = '';
 
   if (champion) {
     html += '<div class="champion-banner"><div class="trophy-orbit">★</div>' +
-      '<img src="' + esc(portraitFor(champion)) + '" alt="' + esc(champion.name) + '">' +
-      '<div><span>BLOCK PLANET CHAMPION</span><h2>' + esc(champion.name) + '</h2><p>' + esc(champion.nickname || champion.licenseNo) + '</p></div></div>';
+      '<div class="champion-team-avatars">' + champion.pilotIds.map((pilotId, index) => {
+        const pilot = map.get(pilotId);
+        return pilot ? '<img src="' + esc(portraitFor(pilot, index)) + '" alt="' + esc(pilot.name) + '">' : '';
+      }).join('') + '</div>' +
+      '<div><span>BLOCK PLANET TEAM CHAMPION</span><h2>' + esc(champion.name) + '</h2><p>' +
+        champion.pilotIds.map((pilotId) => map.get(pilotId)).filter(Boolean).map((pilot) => esc(pilot.name)).join('・') + '</p></div></div>';
   }
 
   if (eventState.matches.length) {
     html += '<div class="bracket-layout">' +
-      '<section><div class="bracket-heading"><span>預賽晉級組</span><small>' +
+      '<section><div class="bracket-heading"><span>3 對 3 預賽</span><small>' +
         heats.filter((m) => m.status === 'complete').length + '/' + heats.length + ' COMPLETE</small></div>' +
-        '<div class="match-list">' + heats.map((m, i) => matchRowHtml(m, i)).join('') + '</div></section>' +
+        '<div class="match-list">' + (heats.length
+          ? heats.map((m, i) => matchRowHtml(m, i)).join('')
+          : '<div class="direct-final-note"><span>3 VS 3</span><strong>兩支隊伍直接進入冠軍戰</strong></div>') + '</div></section>' +
       '<div class="bracket-path"><span></span><i></i><span></span></div>' +
       '<section class="final-column"><div class="bracket-heading"><span>總決賽</span><small>FINAL</small></div>' +
         (finals.length
           ? finals.map((m, i) => matchRowHtml(m, i)).join('')
-          : '<div class="locked-final"><span>✦</span><h3>總決賽名單尚未出爐</h3><p>各組晉級賽完成後會自動開啟。</p></div>') +
+          : '<div class="locked-final"><span>✦</span><h3>總決賽隊伍尚未出爐</h3><p>完成所有 3 對 3 預賽後，系統會選出前兩隊。</p></div>') +
       '</section></div>';
   } else {
     html += '<div class="waiting-board">' +
       '<div class="draw-orbit"><img src="assets/keke.jpg" alt=""><span></span><span></span><span></span></div>' +
-      '<h2>先完成隨機分組</h2><p>賽程會根據抽籤結果自動產生。</p>' +
-      '<button class="primary-button compact" data-goto="groups">前往分組</button></div>';
+      '<h2>先完成隨機組隊</h2><p>賽程會根據三人隊伍的抽籤結果自動產生。</p>' +
+      '<button class="primary-button compact" data-goto="groups">前往組隊</button></div>';
   }
   $('tournamentArea').innerHTML = html;
 }
@@ -803,6 +898,7 @@ function renderMatchScreen() {
   const match = activeMatch();
   if (!match) { root.innerHTML = ''; return; }
   const map = pilotMap();
+  const groups = groupMap();
   root.innerHTML =
   '<div class="match-screen' + (crunchTime() ? ' crunch' : '') + '">' +
     '<header class="match-topbar">' +
@@ -819,21 +915,24 @@ function renderMatchScreen() {
       '<div class="timer-number' + (secondsLeft <= 30 ? ' heartbeat-number' : '') + '" id="timerNumber">' + formatClock(secondsLeft) + '</div>' +
       '<div class="timer-caption" id="timerCaption">' + timerCaptionText() + '</div>' +
     '</section>' +
-    '<section class="scoreboard">' + match.participantIds.map((pid, i) => {
-      const p = map.get(pid);
-      if (!p) return '';
-      const score = match.scores[pid] || 0;
-      return '<article class="score-pilot pilot-color-' + i + '">' +
-        '<div class="pilot-identity">' +
-          '<span class="pilot-orb"><img src="' + esc(portraitFor(p, i)) + '" alt="' + esc(p.name) + '"></span>' +
-          '<div><small>PILOT 0' + (i + 1) + '</small><h2>' + esc(p.name) + '</h2><p>' + esc(p.nickname || p.licenseNo) + '</p></div>' +
-        '</div>' +
-        '<div class="score-control">' +
-          '<button data-score="' + esc(pid) + '" data-diff="-1"' + (score === 0 ? ' disabled' : '') + '>−</button>' +
+    '<section class="scoreboard team-scoreboard">' + match.participantGroupIds.map((groupId, i) => {
+      const group = groups.get(groupId);
+      if (!group) return '';
+      const score = match.scores[groupId] || 0;
+      return '<article class="score-pilot score-team pilot-color-' + i + '">' +
+        '<div class="team-score-heading"><div><small>TEAM 0' + (i + 1) + '・3 PILOTS</small><h2>' + esc(group.name) + '</h2></div>' +
+          '<span>' + (i === 0 ? 'ORANGE SIDE' : 'BLUE SIDE') + '</span></div>' +
+        '<div class="team-roster">' + group.pilotIds.map((pilotId, pilotIndex) => {
+          const pilot = map.get(pilotId);
+          if (!pilot) return '';
+          return '<div><span class="pilot-orb"><img src="' + esc(portraitFor(pilot, pilotIndex + i)) + '" alt="' + esc(pilot.name) + '"></span>' +
+            '<strong>' + esc(pilot.name) + '</strong><small>' + esc(pilot.nickname || pilot.level) + '</small></div>';
+        }).join('') + '</div>' +
+        '<div class="team-score-control"><span class="score-label">TEAM SCORE</span><div class="score-control">' +
+          '<button data-score="' + esc(groupId) + '" data-diff="-1"' + (score === 0 ? ' disabled' : '') + '>−</button>' +
           '<strong>' + score + '</strong>' +
-          '<button data-score="' + esc(pid) + '" data-diff="1">+</button>' +
-        '</div>' +
-        '<span class="score-label">SCORE</span>' +
+          '<button data-score="' + esc(groupId) + '" data-diff="1">+</button>' +
+        '</div></div>' +
       '</article>';
     }).join('') + '</section>' +
     '<footer class="match-footer">' +
@@ -842,7 +941,7 @@ function renderMatchScreen() {
       (timerStatus === 'running' ? '<button class="start-match-button pause" id="matchPauseBtn"><span>Ⅱ</span>暫停比賽</button>' : '') +
       (timerStatus === 'paused' ? '<button class="start-match-button" id="matchResumeBtn"><span>▶</span>繼續比賽</button>' : '') +
       (timerStatus === 'finished' ? '<button class="start-match-button finish" id="matchFinishBtn"><span>✓</span>儲存結果與晉級</button>' : '') +
-      '<div class="rule-reminder"><span>◎</span><p><strong>裁判提醒</strong>全球完整穿越懸吊球門後再計分</p></div>' +
+      '<div class="rule-reminder"><span>◎</span><p><strong>裁判提醒</strong>分數記在整支三人隊伍，不是個人分數</p></div>' +
     '</footer>' +
     (timerStatus === 'countdown' && preCount !== null
       ? '<div class="prestart-overlay"><span>GET READY</span><strong>' + preCount + '</strong><p>無人機就位</p></div>' : '') +
@@ -904,12 +1003,6 @@ function bindEvents() {
     if (pilotBtn) { selectedPilotId = pilotBtn.dataset.pilot; renderModal(); return; }
     const checkinBtn = e.target.closest('[data-checkin]');
     if (checkinBtn) { directCheckIn(checkinBtn.dataset.checkin); return; }
-    const groupBtn = e.target.closest('[data-open-group]');
-    if (groupBtn) {
-      const m = eventState.matches.find((x) => x.groupId === groupBtn.dataset.openGroup);
-      if (m) openMatch(m.id);
-      return;
-    }
     const matchBtn = e.target.closest('[data-open-match]');
     if (matchBtn && !matchBtn.disabled) { openMatch(matchBtn.dataset.openMatch); return; }
     const gotoBtn = e.target.closest('[data-goto]');
@@ -924,7 +1017,9 @@ async function init() {
   try {
     const [pilotList, state] = await Promise.all([apiListPilots(), apiGetState()]);
     pilots = pilotList;
-    eventState = { ...EMPTY_STATE(), ...(state || {}) };
+    const normalized = normalizeEventState(state);
+    eventState = normalized.state;
+    if (normalized.migrated) await apiSaveState(eventState);
   } catch (error) {
     setNotice(error && error.message ? error.message : '資料連線失敗');
   }

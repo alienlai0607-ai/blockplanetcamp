@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>無人機足球晉級賽｜布拉克星球</title>
-<meta name="description" content="布拉克星球無人機足球晉級賽系統：駕照建檔、現場報到、隨機分組、三分鐘晉級賽與總決賽。">
+<meta name="description" content="布拉克星球無人機足球晉級賽系統：駕照建檔、現場報到、三人組隊、3 對 3 團隊賽與總決賽。">
 <link rel="icon" href="../favicon-32.png">
 <link rel="apple-touch-icon" href="../apple-touch-icon.png">
 <link rel="stylesheet" href="styles.css">
@@ -22,7 +22,7 @@
     <nav aria-label="主選單" id="mainNav">
       <button data-section="home" class="active">總覽</button>
       <button data-section="licenses">駕照中心</button>
-      <button data-section="groups">隨機分組</button>
+      <button data-section="groups">三人組隊</button>
       <button data-section="tournament">晉級賽程</button>
     </nav>
     <div class="top-actions">
@@ -48,7 +48,7 @@
       <div class="hero-copy">
         <div class="eyebrow"><span></span> 2026 布拉克星球盃</div>
         <h1>三分鐘，<br>飛出你的晉級線。</h1>
-        <p>從駕照建檔、現場報到、隨機分組到決賽倒數，一個畫面完成整場比賽。</p>
+        <p>從駕照建檔、現場報到、三人組隊到 3 對 3 決賽倒數，一個畫面完成整場比賽。</p>
         <div class="hero-actions">
           <button class="primary-button" id="heroTournamentBtn"><span>▶</span> 進入賽事中心</button>
           <button class="text-button" id="heroNewLicenseBtn">新增駕照 <span>↗</span></button>
@@ -141,11 +141,11 @@
     <div class="pilot-grid" id="pilotGrid"></div>
   </div>
 
-  <!-- ===== 隨機分組 ===== -->
+  <!-- ===== 隨機組隊 ===== -->
   <div class="page inner-page" id="page-groups" hidden>
     <div class="page-title-row">
-      <div><span class="kicker">RANDOM DRAW</span><h1>隨機三人分組</h1><p>完成報到後一鍵洗牌，系統會同步產生每組的 3 分鐘晉級賽。</p></div>
-      <button class="primary-button compact" id="createGroupsBtn">✦ 開始隨機分組</button>
+      <div><span class="kicker">TEAM DRAW</span><h1>隨機三人組隊</h1><p>每 3 位駕駛員組成一支隊伍，由兩支三人隊進行 3 對 3、3 分鐘團隊賽。</p></div>
+      <button class="primary-button compact" id="createGroupsBtn">✦ 開始隨機組隊</button>
     </div>
     <div class="draw-summary" id="drawSummary"></div>
     <div id="groupsArea"></div>
@@ -154,7 +154,7 @@
   <!-- ===== 晉級賽程 ===== -->
   <div class="page inner-page tournament-page" id="page-tournament" hidden>
     <div class="page-title-row">
-      <div><span class="kicker">TOURNAMENT CONTROL</span><h1>晉級賽程</h1><p>每組第一名晉級總決賽；按下開始即進入全螢幕 3 分鐘比賽時鐘。</p></div>
+      <div><span class="kicker">3 VS 3 TOURNAMENT</span><h1>隊伍晉級賽程</h1><p>每三人是一隊、整隊共同計分與晉級；預賽依勝場、得失分差與總得分選出前兩隊進入總決賽。</p></div>
       <div class="match-rule"><strong>03:00</strong><span>每場比賽</span></div>
     </div>
     <div id="tournamentArea"></div>
