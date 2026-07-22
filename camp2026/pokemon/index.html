@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>布拉克星球 ‧ 寶可夢卡牌大賽系統</title>
+  <meta name="description" content="布拉克星球寶可夢卡牌營隊系統：先學會玩，再上場比賽。真卡桌遊對戰，系統負責教學與裁判管理。">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;600;700;800;900&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="assets/css/style.css">
+</head>
+<body>
+  <main class="wrap">
+    <section class="hero">
+      <div class="mascot-team" aria-label="布拉克星球吉祥物">
+        <img src="assets/img/brand/mascot-keke.jpg" alt="克克">
+        <img src="assets/img/brand/mascot-xingxing.jpg" alt="星星">
+        <img src="assets/img/brand/mascot-xiaobu.jpeg" alt="小布">
+        <img src="assets/img/brand/blockplanet-logo.png" alt="布拉克星球 Logo" class="team-logo">
+        <img src="assets/img/brand/mascot-aqiu.jpg" alt="阿球">
+        <img src="assets/img/brand/mascot-lala.jpg" alt="拉拉">
+      </div>
+      <div class="guide">
+        <div class="bubble">嗨！我是星球嚮導 <b>球球</b>，先學會怎麼玩，再上場拿冠軍吧！</div>
+      </div>
+      <h1>布拉克星球<br><span class="hl">寶可夢卡牌大賽</span></h1>
+      <p class="lead">先在這裡學會規則，然後用<strong>真實卡牌</strong>上桌對戰。系統幫你管比賽——資格賽、排行榜、八強樹狀圖，一路選出冠軍！</p>
+    </section>
+
+    <section class="pillars">
+      <a class="card pillar learn" href="learn/index.html">
+        <div class="pill-emoji"><span class="bp-icon i-learn"></span></div>
+        <h2>學習區</h2>
+        <p>看不懂卡牌？這裡從零教到會。</p>
+        <ul class="pill-list">
+          <li>11 章互動教材，故事帶你入門</li>
+          <li>屬性相剋表，一眼看懂誰剋誰</li>
+          <li>闖關小測驗，集滿學習徽章</li>
+        </ul>
+        <span class="btn ghost sm">開始學習 →</span>
+      </a>
+
+      <a class="card pillar battle" href="battle/index.html">
+        <div class="pill-emoji"><span class="bp-icon i-battle"></span></div>
+        <h2>賽事區</h2>
+        <p>登記成訓練家，上場真卡對戰！</p>
+        <ul class="pill-list">
+          <li>訓練家檔案：照片＋暱稱＋編號</li>
+          <li>資格賽抽籤、即時排行榜</li>
+          <li>八強樹狀圖，打到冠軍頒獎</li>
+        </ul>
+        <span class="btn gold sm">查看賽況 →</span>
+      </a>
+    </section>
+
+    <section class="card" style="margin-bottom:40px">
+      <h2 class="section-title"><span class="bp-icon i-judge"></span>老師 / 裁判工具</h2>
+      <p class="section-sub">臨場一查就有，公正又快速。</p>
+      <div class="types-grid">
+        <a class="type-chip" href="battle/console.html" style="text-decoration:none;color:inherit">
+          <span class="type-dot" style="background:var(--bp-primary)"><span class="bp-icon i-judge"></span></span>
+          <span><b>裁判控制台</b><small>抽籤、登記比分、推進賽程</small></span>
+        </a>
+        <a class="type-chip" href="learn/index.html#rules" style="text-decoration:none;color:inherit">
+          <span class="type-dot" style="background:var(--bp-blue)"><span class="bp-icon i-rules"></span></span>
+          <span><b>規則速查</b><small>狀態、罰則一查就懂</small></span>
+        </a>
+        <a class="type-chip" href="learn/index.html#calc" style="text-decoration:none;color:inherit">
+          <span class="type-dot" style="background:var(--bp-red)"><span class="bp-icon i-calc"></span></span>
+          <span><b>傷害計算機</b><small>弱點×2、抵抗自動算</small></span>
+        </a>
+        <a class="type-chip" href="learn/index.html#timer" style="text-decoration:none;color:inherit">
+          <span class="type-dot" style="background:var(--bp-gold);color:#2a2000"><span class="bp-icon i-timer"></span></span>
+          <span><b>對戰計時器</b><small>回合 / 總時長</small></span>
+        </a>
+      </div>
+    </section>
+  </main>
+
+  <script src="assets/js/app.js"></script>
+  <script>
+    renderHeader('home');
+    renderFooter();
+  </script>
+</body>
+</html>

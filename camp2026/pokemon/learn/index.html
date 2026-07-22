@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>學習區 ‧ 布拉克星球寶可夢卡牌</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;600;700;800;900&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../assets/css/style.css?v=bp-mascot-cards-20260626-cleanlessons1">
+</head>
+<body>
+  <main class="wrap" style="padding-top:24px;padding-bottom:40px">
+    <h1 class="section-title"><span class="bp-icon i-learn"></span>學習區</h1>
+    <p class="section-sub">先學會怎麼玩，再上場拿冠軍。切換上方<strong>新手 / 進階</strong>可調整內容深淺。</p>
+    <div class="card real-card-note">
+      <b>五色卡牌教材已啟用</b>
+      <span>每章教材會直接用布拉克星球五隻吉祥物卡示範：看階段、HP、屬性、招式、能量需求、弱點與撤退。</span>
+    </div>
+
+    <div class="nav" style="margin-bottom:22px;gap:6px" id="tabbar">
+      <a href="#lessons" class="active"><span class="bp-icon i-learn"></span>教材</a>
+      <a href="#types"><span class="bp-icon i-type"></span>屬性相剋</a>
+      <a href="#quiz"><span class="bp-icon i-quiz"></span>測驗</a>
+      <a href="#rules"><span class="bp-icon i-rules"></span>規則速查</a>
+      <a href="#calc"><span class="bp-icon i-calc"></span>傷害計算</a>
+      <a href="#timer"><span class="bp-icon i-timer"></span>計時器</a>
+    </div>
+
+    <!-- 教材 -->
+    <section data-pane="lessons">
+      <div id="lessonHub"></div>
+      <div id="lessonView" style="display:none"></div>
+    </section>
+
+    <!-- 屬性相剋 -->
+    <section data-pane="types" hidden>
+      <div class="card">
+        <h2 class="section-title"><span class="bp-icon i-type"></span>屬性相剋表</h2>
+        <p class="section-sub">打中對方<strong>弱點</strong>傷害 ×2。下面看誰剋誰。</p>
+        <div class="types-grid" id="typeGrid"></div>
+        <h2 style="margin-top:26px">誰剋誰</h2>
+        <div id="weakList"></div>
+      </div>
+    </section>
+
+    <!-- 測驗 -->
+    <section data-pane="quiz" hidden>
+      <div class="card" id="quizCard"></div>
+      <div class="card" style="margin-top:18px">
+        <h2 class="section-title"><span class="bp-icon i-badge"></span>我的徽章</h2>
+        <div class="badge-grid" id="badgeGrid"></div>
+      </div>
+    </section>
+
+    <!-- 規則速查 -->
+    <section data-pane="rules" hidden>
+      <div class="card">
+        <h2 class="section-title"><span class="bp-icon i-rules"></span>規則速查</h2>
+        <p class="section-sub">比賽臨場有疑問？查這裡。</p>
+        <div id="quickRules"></div>
+      </div>
+      <div class="card" style="margin-top:18px">
+        <h2 class="section-title"><span class="bp-icon i-status"></span>特殊狀態</h2>
+        <div id="statusList"></div>
+      </div>
+    </section>
+
+    <!-- 傷害計算機 -->
+    <section data-pane="calc" hidden>
+      <div class="card">
+        <h2 class="section-title"><span class="bp-icon i-calc"></span>傷害計算機</h2>
+        <p class="section-sub">輸入招式傷害，選對手是否有弱點 / 抵抗，自動算出最終傷害。</p>
+        <div class="field">
+          <label>招式基礎傷害</label>
+          <input type="number" id="baseDmg" value="50" min="0" step="10">
+        </div>
+        <div class="field">
+          <label>對手對你的屬性</label>
+          <select id="weakSel">
+            <option value="normal">普通（無弱點抵抗）</option>
+            <option value="weak">弱點（傷害 ×2）</option>
+            <option value="resist">抵抗力（傷害 −30）</option>
+          </select>
+        </div>
+        <div class="field">
+          <label>額外加 / 減（道具、效果）</label>
+          <input type="number" id="extraDmg" value="0" step="10">
+        </div>
+        <div class="calc-result" id="dmgOut">50</div>
+        <p style="text-align:center;color:var(--bp-muted)" id="dmgFormula"></p>
+      </div>
+    </section>
+
+    <!-- 計時器 -->
+    <section data-pane="timer" hidden>
+      <div class="card">
+        <h2 class="section-title"><span class="bp-icon i-timer"></span>對戰計時器</h2>
+        <p class="section-sub">設定每場時間，時間到提醒裁判。</p>
+        <div class="timer-display" id="timerDisp">10:00</div>
+        <div class="toolbar" style="justify-content:center">
+          <button class="btn sm ghost" data-min="5">5 分</button>
+          <button class="btn sm ghost" data-min="10">10 分</button>
+          <button class="btn sm ghost" data-min="15">15 分</button>
+          <button class="btn sm ghost" data-min="20">20 分</button>
+        </div>
+        <div class="toolbar" style="justify-content:center">
+          <button class="btn gold" id="timerStart">開始</button>
+          <button class="btn ghost" id="timerPause">暫停</button>
+          <button class="btn danger" id="timerReset">重設</button>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <script src="../assets/js/app.js?v=bp-mascot-cards-20260626-cleanlessons1"></script>
+  <script src="../assets/js/data/lessons.js?v=bp-mascot-cards-20260626-cleanlessons1"></script>
+  <script src="../assets/js/data/quiz.js?v=bp-mascot-cards-20260626-cleanlessons1"></script>
+  <script src="../assets/js/data/rules.js?v=bp-mascot-cards-20260626-cleanlessons1"></script>
+  <script src="../assets/js/learn.js?v=bp-mascot-cards-20260626-cleanlessons1"></script>
+  <script>
+    renderHeader('learn');
+    renderFooter();
+    Learn.init();
+  </script>
+</body>
+</html>

@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>裁判控制台 ‧ 布拉克星球寶可夢卡牌大賽</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;600;700;800;900&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../assets/css/style.css">
+</head>
+<body>
+  <main class="wrap" style="padding-top:24px;padding-bottom:40px">
+    <!-- 密碼鎖 -->
+    <div id="lock" class="card" style="max-width:380px;margin:40px auto;text-align:center">
+      <div class="lock-mark"><span class="bp-icon i-lock"></span></div>
+      <h2>裁判控制台</h2>
+      <p class="section-sub">請輸入通行密碼</p>
+      <div class="field"><input type="password" id="pwd" placeholder="密碼"></div>
+      <button class="btn gold" id="unlock" style="width:100%">進入</button>
+      <p id="pwdErr" style="color:var(--bp-red);min-height:20px"></p>
+    </div>
+
+    <div id="panel" style="display:none">
+      <div class="toolbar">
+        <h1 class="section-title"><span class="bp-icon i-judge"></span>裁判控制台</h1>
+        <span class="spacer"></span>
+        <a class="btn ghost sm" href="index.html"><span class="bp-icon i-screen"></span>公開看板</a>
+        <button class="btn ghost sm" id="exportBtn"><span class="bp-icon i-export"></span>匯出備份</button>
+        <button class="btn ghost sm" id="importBtn"><span class="bp-icon i-import"></span>匯入</button>
+        <button class="btn danger sm" id="resetBtn"><span class="bp-icon i-trash"></span>全部重來</button>
+        <input type="file" id="importFile" accept=".json" hidden>
+      </div>
+
+      <div class="flow-steps" id="flowSteps"></div>
+
+      <div class="nav" style="margin-bottom:20px;gap:6px" id="ctabs">
+        <a href="#manage" class="active"><span class="bp-icon i-battle"></span>賽事管理</a>
+        <a href="#penalty"><span class="bp-icon i-penalty"></span>罰則助手</a>
+        <a href="#dispute"><span class="bp-icon i-dispute"></span>爭議流程</a>
+      </div>
+
+      <section data-cpane="manage"><div id="manageBox"></div></section>
+      <section data-cpane="penalty" hidden><div id="penaltyBox"></div></section>
+      <section data-cpane="dispute" hidden><div id="disputeBox"></div></section>
+    </div>
+  </main>
+
+  <!-- 新增訓練家 modal -->
+  <div class="modal-backdrop" id="trainerModal">
+    <div class="card modal">
+      <h3><span class="bp-icon i-plus"></span>新增訓練家</h3>
+      <div class="photo-pick" id="photoPick">點我上傳<br>照片</div>
+      <input type="file" id="photoFile" accept="image/*" hidden>
+      <div class="field" style="margin-top:14px">
+        <label>訓練家暱稱</label>
+        <input type="text" id="trainerName" placeholder="例：小智、球球" maxlength="12">
+      </div>
+      <div class="toolbar">
+        <button class="btn ghost" id="trainerCancel">取消</button>
+        <span class="spacer"></span>
+        <button class="btn gold" id="trainerSave">加入比賽</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="../assets/js/app.js"></script>
+  <script src="../assets/js/tournament.js"></script>
+  <script src="../assets/js/data/rules.js"></script>
+  <script src="../assets/js/battle-view.js"></script>
+  <script src="../assets/js/console.js"></script>
+  <script>
+    renderHeader('console');
+    renderFooter();
+    Console.init();
+  </script>
+</body>
+</html>
