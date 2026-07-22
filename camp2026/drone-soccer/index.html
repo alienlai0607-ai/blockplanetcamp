@@ -1,0 +1,169 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>無人機足球晉級賽｜布拉克星球</title>
+<meta name="description" content="布拉克星球無人機足球晉級賽系統：駕照建檔、現場報到、隨機分組、三分鐘晉級賽與總決賽。">
+<link rel="icon" href="../favicon-32.png">
+<link rel="apple-touch-icon" href="../apple-touch-icon.png">
+<link rel="stylesheet" href="styles.css">
+</head>
+<body>
+<main class="app-shell">
+  <header class="topbar">
+    <button class="brand" id="brandBtn" aria-label="回到總覽">
+      <img src="assets/block-planet-logo.png" alt="布拉克星球">
+      <span>
+        <strong>BLOCK PLANET</strong>
+        <small>無人機足球晉級賽</small>
+      </span>
+    </button>
+    <nav aria-label="主選單" id="mainNav">
+      <button data-section="home" class="active">總覽</button>
+      <button data-section="licenses">駕照中心</button>
+      <button data-section="groups">隨機分組</button>
+      <button data-section="tournament">晉級賽程</button>
+    </nav>
+    <div class="top-actions">
+      <a class="tiny-link" href="../index.html">← 營隊首頁</a>
+      <span class="save-state" id="saveState"><i></i> <b id="saveStateText">已連線</b></span>
+      <button class="round-button" id="audioToggle" aria-label="關閉音效">♫</button>
+    </div>
+  </header>
+
+  <div class="notice" id="notice" role="status" hidden>
+    <span id="noticeText"></span>
+    <button id="noticeClose" aria-label="關閉通知">×</button>
+  </div>
+
+  <div class="loading-stage" id="loadingStage">
+    <div class="drone-loader"><span></span></div>
+    <p>正在開啟賽事指揮台…</p>
+  </div>
+
+  <!-- ===== 總覽 ===== -->
+  <div class="page home-page" id="page-home" hidden>
+    <section class="hero">
+      <div class="hero-copy">
+        <div class="eyebrow"><span></span> 2026 布拉克星球盃</div>
+        <h1>三分鐘，<br>飛出你的晉級線。</h1>
+        <p>從駕照建檔、現場報到、隨機分組到決賽倒數，一個畫面完成整場比賽。</p>
+        <div class="hero-actions">
+          <button class="primary-button" id="heroTournamentBtn"><span>▶</span> 進入賽事中心</button>
+          <button class="text-button" id="heroNewLicenseBtn">新增駕照 <span>↗</span></button>
+        </div>
+        <div class="hero-stats">
+          <div><strong id="statPilots">0</strong><span>駕駛員建檔</span></div>
+          <div><strong id="statCheckedIn">0</strong><span>今日報到</span></div>
+          <div><strong id="statMatches">0</strong><span>完成賽事</span></div>
+        </div>
+      </div>
+      <div class="hero-art" role="img" aria-label="布拉克星球吉祥物參加無人機足球比賽">
+        <img src="assets/drone-soccer-hero.png" alt="">
+        <div class="live-chip"><span></span> DRONE SOCCER LIVE</div>
+        <div class="match-chip">
+          <small>NEXT MATCH</small>
+          <strong id="nextMatchLabel">等待分組</strong>
+          <span>3:00</span>
+        </div>
+      </div>
+    </section>
+
+    <section class="command-grid">
+      <div class="checkin-panel">
+        <div class="section-heading">
+          <div>
+            <span class="kicker">QUICK CHECK-IN</span>
+            <h2>駕照快速報到</h2>
+          </div>
+          <button class="tiny-link" id="viewAllPilotsBtn">查看全部 →</button>
+        </div>
+        <form class="lookup-form" id="checkinForm">
+          <label for="license-lookup">輸入駕照編號</label>
+          <div>
+            <span>BP</span>
+            <input id="license-lookup" placeholder="BP-2026-000001" autocomplete="off">
+            <button type="submit">確認報到</button>
+          </div>
+        </form>
+        <div class="recent-pilots">
+          <p>最近駕照</p>
+          <div class="avatar-row" id="recentPilots"></div>
+        </div>
+      </div>
+
+      <div class="flow-panel">
+        <span class="kicker">TODAY'S FLOW</span>
+        <h2>賽事進度</h2>
+        <ol class="flow-list" id="flowList"></ol>
+      </div>
+    </section>
+  </div>
+
+  <!-- ===== 駕照中心 ===== -->
+  <div class="page inner-page" id="page-licenses" hidden>
+    <div class="page-title-row">
+      <div>
+        <span class="kicker">PILOT LICENSE</span>
+        <h1>駕照中心</h1>
+        <p>拍照建檔後自動產生唯一駕照編號，可直接列印與報到。</p>
+      </div>
+      <button class="primary-button compact" id="toggleLicenseFormBtn">＋ 新增駕照</button>
+    </div>
+
+    <form class="license-form" id="licenseForm" hidden>
+      <label class="photo-drop">
+        <input name="photo" id="photoInput" type="file" accept="image/*" capture="user">
+        <img id="photoPreviewImg" alt="駕駛員照片預覽" hidden>
+        <div id="photoPlaceholder"><strong>拍攝或上傳照片</strong><span>點一下開啟相機</span></div>
+      </label>
+      <div class="form-fields">
+        <label><span>駕駛員姓名 *</span><input name="name" required placeholder="例：陳宇翔"></label>
+        <label><span>飛行暗號</span><input name="nickname" placeholder="例：閃電小隊長"></label>
+        <label><span>聯絡電話</span><input name="phone" inputmode="tel" placeholder="0912 345 678"></label>
+        <label><span>駕照等級</span><select name="level"><option selected>新星級</option><option>行星級</option><option>銀河級</option></select></label>
+        <p class="form-hint">駕照編號將於送出後自動產生，不會重複。</p>
+        <button class="primary-button" id="createPilotBtn" type="submit">建立駕照</button>
+      </div>
+      <div class="mini-license preview-placeholder">
+        <img class="mini-logo" src="assets/block-planet-logo.png" alt="">
+        <div class="mini-photo" id="miniPhoto"><span>照片</span></div>
+        <div><small>BLOCK PLANET PILOT</small><strong>駕照預覽</strong><span>BP-2026-●●●●●●</span></div>
+      </div>
+    </form>
+
+    <div class="list-toolbar">
+      <div class="search-field"><span>⌕</span><input id="pilotSearch" placeholder="搜尋姓名、暗號或駕照編號"></div>
+      <span id="pilotCount">共 0 張駕照</span>
+    </div>
+
+    <div class="pilot-grid" id="pilotGrid"></div>
+  </div>
+
+  <!-- ===== 隨機分組 ===== -->
+  <div class="page inner-page" id="page-groups" hidden>
+    <div class="page-title-row">
+      <div><span class="kicker">RANDOM DRAW</span><h1>隨機三人分組</h1><p>完成報到後一鍵洗牌，系統會同步產生每組的 3 分鐘晉級賽。</p></div>
+      <button class="primary-button compact" id="createGroupsBtn">✦ 開始隨機分組</button>
+    </div>
+    <div class="draw-summary" id="drawSummary"></div>
+    <div id="groupsArea"></div>
+  </div>
+
+  <!-- ===== 晉級賽程 ===== -->
+  <div class="page inner-page tournament-page" id="page-tournament" hidden>
+    <div class="page-title-row">
+      <div><span class="kicker">TOURNAMENT CONTROL</span><h1>晉級賽程</h1><p>每組第一名晉級總決賽；按下開始即進入全螢幕 3 分鐘比賽時鐘。</p></div>
+      <div class="match-rule"><strong>03:00</strong><span>每場比賽</span></div>
+    </div>
+    <div id="tournamentArea"></div>
+  </div>
+</main>
+
+<div id="modalRoot"></div>
+<div id="matchScreenRoot"></div>
+
+<script src="app.js"></script>
+</body>
+</html>

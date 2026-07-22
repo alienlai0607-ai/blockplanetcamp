@@ -90,7 +90,36 @@ function doGet(e) {
       case 'expense-delete':
         return respond(expenseDelete(e.parameter));
 
+      // ===== 🚁 無人機足球晉級賽 =====
+      case 'drone-pilots': return respond(dronePilotList());
+      case 'drone-state':  return respond(droneStateGet());
+
       default:       return respond({ success: false, error: '無效的操作' });
+    }
+  } finally {
+    lock.releaseLock();
+  }
+}
+
+// POST 入口（無人機足球用：照片 base64 與賽事 JSON 太大，塞不進 GET 網址）
+// 前端用 Content-Type: text/plain 送 JSON，避免 CORS preflight
+function doPost(e) {
+  const lock = LockService.getScriptLock();
+  try {
+    lock.waitLock(15000);
+  } catch(err) {
+    return respond({ success: false, error: '系統忙碌中，請稍後再試' });
+  }
+
+  try {
+    let p = {};
+    try { p = JSON.parse((e.postData && e.postData.contents) || '{}'); } catch (err) { p = {}; }
+    const action = String(p.action || '').toLowerCase();
+
+    switch(action) {
+      case 'drone-pilot-add': return respond(dronePilotAdd(p));
+      case 'drone-state-set': return respond(droneStateSet(p.state));
+      default: return respond({ success: false, error: '無效的操作' });
     }
   } finally {
     lock.releaseLock();
@@ -1633,6 +1662,150 @@ function expenseDelete(p) {
     if (row > sh.getLastRow()) return { success: false, error: '列號超出範圍' };
     sh.deleteRow(row);
     return { success: true };
+  } catch (err) {
+    return { success: false, error: String(err && err.message || err) };
+  }
+}
+
+// ============================================================
+//  🚁 無人機足球晉級賽系統（camp2026/drone-soccer/）
+//  分頁：無人機駕照（駕駛員名冊）＋ 無人機賽事（報到/分組/賽程 JSON）
+//  照片為前端壓縮後的 base64 data URL，存在儲存格（上限 4.8 萬字元）
+// ============================================================
+
+const DRONE_PILOT_SHEET = '無人機駕照';
+const DRONE_STATE_SHEET = '無人機賽事';
+const DRONE_PILOT_HEADERS = ['ID', '駕照編號', '姓名', '暱稱', '電話', '等級', '勝場', '出賽', '建檔時間', '照片'];
+
+function getDronePilotSheet() {
+  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  let sh = ss.getSheetByName(DRONE_PILOT_SHEET);
+  if (!sh) sh = ss.insertSheet(DRONE_PILOT_SHEET);
+  if (sh.getLastRow() === 0) {
+    sh.getRange(1, 1, 1, DRONE_PILOT_HEADERS.length)
+      .setValues([DRONE_PILOT_HEADERS])
+      .setFontWeight('bold')
+      .setBackground('#E1F5FE');
+    sh.setFrozenRows(1);
+    sh.setColumnWidth(1, 130);
+    sh.setColumnWidth(2, 140);
+    sh.getRange('E:E').setNumberFormat('@');  // 電話：防前導 0 被吃（同 MATRIX 歷史 bug）
+    sh.getRange('I:I').setNumberFormat('@');  // 建檔時間存 ISO 字串
+    sh.getRange('J:J').setNumberFormat('@');  // 照片 base64
+    sh.setColumnWidth(10, 80);
+  }
+  return sh;
+}
+
+function getDroneStateSheet() {
+  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  let sh = ss.getSheetByName(DRONE_STATE_SHEET);
+  if (!sh) sh = ss.insertSheet(DRONE_STATE_SHEET);
+  if (sh.getLastRow() === 0) {
+    sh.getRange(1, 1, 1, 3)
+      .setValues([['Key', 'Payload', '更新時間']])
+      .setFontWeight('bold')
+      .setBackground('#E1F5FE');
+    sh.setFrozenRows(1);
+    sh.getRange('B:B').setNumberFormat('@');
+    sh.appendRow(['main', '', '']);
+  }
+  return sh;
+}
+
+function droneMakeLicenseNo(existing) {
+  const year = new Date().getFullYear();
+  for (let attempt = 0; attempt < 20; attempt++) {
+    const no = 'BP-' + year + '-' + String(Math.floor(Math.random() * 1000000)).padStart(6, '0');
+    if (!existing[no]) return no;
+  }
+  return 'BP-' + year + '-' + String(Date.now()).slice(-6);
+}
+
+function dronePilotList() {
+  const sh = getDronePilotSheet();
+  const lastRow = sh.getLastRow();
+  if (lastRow < 2) return { success: true, pilots: [] };
+  const values = sh.getRange(2, 1, lastRow - 1, DRONE_PILOT_HEADERS.length).getValues();
+  const pilots = values.map(r => ({
+    id: String(r[0] || ''),
+    licenseNo: String(r[1] || ''),
+    name: String(r[2] || ''),
+    nickname: String(r[3] || ''),
+    phone: String(r[4] || ''),
+    level: String(r[5] || '新星級'),
+    wins: Number(r[6]) || 0,
+    matches: Number(r[7]) || 0,
+    createdAt: r[8] instanceof Date ? r[8].toISOString() : String(r[8] || ''),
+    photoUrl: String(r[9] || '') || null
+  })).filter(p => p.id).reverse();  // 最新在前
+  return { success: true, pilots: pilots };
+}
+
+function dronePilotAdd(p) {
+  try {
+    const name = String(p.name || '').trim();
+    if (!name) return { success: false, error: '請輸入駕駛員姓名' };
+    const photo = String(p.photo || '');
+    if (photo && photo.indexOf('data:image/') !== 0) return { success: false, error: '照片格式不正確' };
+    if (photo.length > 48000) return { success: false, error: '照片檔案過大，請重新拍攝' };
+
+    const sh = getDronePilotSheet();
+    const lastRow = sh.getLastRow();
+    const existing = {};
+    if (lastRow >= 2) {
+      sh.getRange(2, 2, lastRow - 1, 1).getValues().forEach(r => { existing[String(r[0])] = true; });
+    }
+
+    const pilot = {
+      id: Utilities.getUuid(),
+      licenseNo: droneMakeLicenseNo(existing),
+      name: name,
+      nickname: String(p.nickname || '').trim(),
+      phone: String(p.phone || '').trim(),
+      level: String(p.level || '新星級').trim(),
+      wins: 0,
+      matches: 0,
+      createdAt: new Date().toISOString(),
+      photoUrl: photo || null
+    };
+
+    sh.appendRow([
+      pilot.id, pilot.licenseNo, pilot.name, pilot.nickname, pilot.phone,
+      pilot.level, 0, 0, pilot.createdAt, photo
+    ]);
+    // 電話與照片強制文字格式（防 Sheet 自動轉型）
+    const newRow = sh.getLastRow();
+    sh.getRange(newRow, 5).setNumberFormat('@').setValue(pilot.phone);
+    sh.getRange(newRow, 9).setNumberFormat('@').setValue(pilot.createdAt);
+
+    return { success: true, pilot: pilot };
+  } catch (err) {
+    return { success: false, error: String(err && err.message || err) };
+  }
+}
+
+function droneStateGet() {
+  const emptyState = { checkedInIds: [], groups: [], matches: [], activeMatchId: null, championId: null };
+  try {
+    const sh = getDroneStateSheet();
+    const payload = String(sh.getRange(2, 2).getValue() || '');
+    if (!payload) return { success: true, state: emptyState };
+    return { success: true, state: JSON.parse(payload) };
+  } catch (err) {
+    return { success: true, state: emptyState };
+  }
+}
+
+function droneStateSet(state) {
+  try {
+    if (!state || typeof state !== 'object') return { success: false, error: '賽事資料格式不正確' };
+    const payload = JSON.stringify(state);
+    if (payload.length > 48000) return { success: false, error: '賽事資料過大' };
+    const sh = getDroneStateSheet();
+    const now = Utilities.formatDate(new Date(), 'Asia/Taipei', 'yyyy-MM-dd HH:mm:ss');
+    sh.getRange(2, 1, 1, 3).setValues([['main', payload, now]]);
+    return { success: true, ok: true, updatedAt: now };
   } catch (err) {
     return { success: false, error: String(err && err.message || err) };
   }
