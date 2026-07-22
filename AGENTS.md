@@ -27,7 +27,7 @@
 ### 目前 Apps Script 部署 URL（2026-07-22）
 
 ```
-https://script.google.com/macros/s/AKfycbyn1_Sb18DUCPILn1W5cFyHk_G6IJ7p68wpATqGWOSbcs20NEcEUsgAGZgQtRLhqfTW/exec
+https://script.google.com/macros/s/AKfycbyn7Rpmmfk0zAgME4TDEy0FYA3cckQZTfQD_6peGTv6HH5TmPc2mOXfNc-Dj9S2HNI/exec
 ```
 
 Apps Script 專案名稱「優惠券系統」，綁定營隊報名試算表（試算表 → 擴充功能 → Apps Script 可開啟）。
