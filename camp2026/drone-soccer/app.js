@@ -33,15 +33,34 @@ let saving = false;
 let pilotSearch = '';
 let showLicenseForm = false;
 let selectedPilotId = null;
+let deleteConfirmPilotId = null;
 let photoDataUrl = null;
 let timerStatus = 'ready'; // ready | countdown | running | paused | finished
 let secondsLeft = 180;
 let preCount = null;
 let audioEnabled = true;
 let audioContext = null;
+let masterGainNode = null;
+let limiterNode = null;
+let battleMusicSource = null;
+let climaxMusicSource = null;
+let battleMusicGain = null;
+let climaxMusicGain = null;
+let battleMusicStarted = false;
+let battleMusicMode = 'normal';
+let musicPlayErrorShown = false;
 let musicStep = 0;
 let timerInterval = null;
 let crunchInterval = null;
+
+const battleMusic = new Audio('assets/audio/battle-bpm145.mp3');
+const climaxMusic = new Audio('assets/audio/battle-climax-bpm185.mp3');
+[battleMusic, climaxMusic].forEach((track) => {
+  track.loop = true;
+  track.preload = 'auto';
+  track.playsInline = true;
+  track.volume = 1;
+});
 
 const $ = (id) => document.getElementById(id);
 const esc = (s) => String(s == null ? '' : s)
@@ -103,6 +122,14 @@ function normalizeEventState(state) {
     },
     migrated: false,
   };
+}
+
+function eventStateAfterPilotDeletion(state, pilotId) {
+  const checkedInIds = state.checkedInIds.filter((id) => id !== pilotId);
+  const affectsTournament = state.groups.some((group) => group.pilotIds.includes(pilotId));
+  return affectsTournament
+    ? { ...EMPTY_STATE(), checkedInIds }
+    : { ...state, checkedInIds };
 }
 
 function rankedTeams(groups, matches) {
@@ -197,6 +224,18 @@ async function apiCreatePilot(fields) {
   const data = await apiPost({ action: 'drone-pilot-add', ...fields });
   return data.pilot;
 }
+async function apiDeletePilot(pilotId) {
+  if (DEMO) {
+    const list = demoStore.read('pilots', []).filter((pilot) => pilot.id !== pilotId);
+    const storedState = normalizeEventState(demoStore.read('state', EMPTY_STATE())).state;
+    const nextState = eventStateAfterPilotDeletion(storedState, pilotId);
+    demoStore.write('pilots', list);
+    demoStore.write('state', nextState);
+    return { state: nextState };
+  }
+  const data = await apiPost({ action: 'drone-pilot-delete', pilotId });
+  return { state: data.state || eventStateAfterPilotDeletion(eventState, pilotId) };
+}
 async function apiGetState() {
   if (DEMO) return demoStore.read('state', EMPTY_STATE());
   const data = await apiGet('drone-state');
@@ -239,12 +278,109 @@ async function commitState(next) {
   }
 }
 
-// ===== 音效（Web Audio API 合成，無外部音樂檔） =====
+// ===== 音效與 CC0 戰鬥音樂 =====
 function ensureAudio() {
   if (!audioEnabled) return null;
   if (!audioContext) audioContext = new (window.AudioContext || window.webkitAudioContext)();
   if (audioContext.state === 'suspended') audioContext.resume();
+  if (!masterGainNode) {
+    masterGainNode = audioContext.createGain();
+    limiterNode = audioContext.createDynamicsCompressor();
+    masterGainNode.gain.value = 2.35;
+    limiterNode.threshold.value = -12;
+    limiterNode.knee.value = 8;
+    limiterNode.ratio.value = 14;
+    limiterNode.attack.value = 0.003;
+    limiterNode.release.value = 0.24;
+    masterGainNode.connect(limiterNode).connect(audioContext.destination);
+
+    battleMusicGain = audioContext.createGain();
+    climaxMusicGain = audioContext.createGain();
+    battleMusicGain.gain.value = 0.78;
+    climaxMusicGain.gain.value = 0.0001;
+    battleMusicSource = audioContext.createMediaElementSource(battleMusic);
+    climaxMusicSource = audioContext.createMediaElementSource(climaxMusic);
+    battleMusicSource.connect(battleMusicGain).connect(masterGainNode);
+    climaxMusicSource.connect(climaxMusicGain).connect(masterGainNode);
+  }
   return audioContext;
+}
+function warmBattleMusic() {
+  [battleMusic, climaxMusic].forEach((track) => {
+    if (track.readyState === 0) track.load();
+  });
+}
+function safePlayMusic(track) {
+  const promise = track.play();
+  if (promise && typeof promise.catch === 'function') {
+    promise.catch(() => {
+      if (musicPlayErrorShown) return;
+      musicPlayErrorShown = true;
+      setNotice('戰鬥音樂未能自動播放，請用音效按鈕關閉後再重新開啟。');
+    });
+  }
+}
+function rampMusicGain(node, target, duration = 0.32) {
+  if (!audioContext || !node) return;
+  const now = audioContext.currentTime;
+  const current = Math.max(0.0001, node.gain.value || 0.0001);
+  node.gain.cancelScheduledValues(now);
+  node.gain.setValueAtTime(current, now);
+  node.gain.exponentialRampToValueAtTime(Math.max(0.0001, target), now + duration);
+}
+function setBattleMusicMode(next, immediate = false) {
+  if (!battleMusicGain || !climaxMusicGain) return;
+  const changed = battleMusicMode !== next;
+  battleMusicMode = next;
+  if (changed && next === 'climax') climaxMusic.currentTime = 0;
+  if (immediate) {
+    battleMusicGain.gain.value = next === 'normal' ? 0.78 : 0.0001;
+    climaxMusicGain.gain.value = next === 'climax' ? 1 : 0.0001;
+    return;
+  }
+  rampMusicGain(battleMusicGain, next === 'normal' ? 0.78 : 0.0001);
+  rampMusicGain(climaxMusicGain, next === 'climax' ? 1 : 0.0001);
+}
+function startBattleMusic() {
+  if (!audioEnabled || !ensureAudio()) return;
+  battleMusic.currentTime = 0;
+  climaxMusic.currentTime = 0;
+  musicStep = 0;
+  battleMusicStarted = true;
+  battleMusicMode = 'normal';
+  setBattleMusicMode('normal', true);
+  safePlayMusic(battleMusic);
+  safePlayMusic(climaxMusic);
+}
+function pauseBattleMusic() {
+  battleMusic.pause();
+  climaxMusic.pause();
+}
+function stopBattleMusic() {
+  pauseBattleMusic();
+  battleMusic.currentTime = 0;
+  climaxMusic.currentTime = 0;
+  battleMusicStarted = false;
+  battleMusicMode = 'normal';
+  if (battleMusicGain && climaxMusicGain) setBattleMusicMode('normal', true);
+}
+function syncBattleMusic() {
+  if (!audioEnabled) {
+    pauseBattleMusic();
+    return;
+  }
+  if (timerStatus === 'paused') {
+    pauseBattleMusic();
+    return;
+  }
+  if (timerStatus !== 'running' && timerStatus !== 'countdown') {
+    stopBattleMusic();
+    return;
+  }
+  if (!battleMusicStarted) startBattleMusic();
+  setBattleMusicMode(crunchTime() ? 'climax' : 'normal');
+  if (battleMusic.paused) safePlayMusic(battleMusic);
+  if (climaxMusic.paused) safePlayMusic(climaxMusic);
 }
 function playTone(frequency, duration, type = 'sine', gainValue = 0.07, delay = 0) {
   const context = ensureAudio();
@@ -257,23 +393,23 @@ function playTone(frequency, duration, type = 'sine', gainValue = 0.07, delay = 
   gain.gain.setValueAtTime(0.0001, start);
   gain.gain.exponentialRampToValueAtTime(gainValue, start + 0.015);
   gain.gain.exponentialRampToValueAtTime(0.0001, start + duration);
-  oscillator.connect(gain).connect(context.destination);
+  oscillator.connect(gain).connect(masterGainNode || context.destination);
   oscillator.start(start);
   oscillator.stop(start + duration + 0.02);
 }
 function playStartHorn() {
-  playTone(196, 0.65, 'sawtooth', 0.09);
-  playTone(294, 0.65, 'square', 0.045, 0.04);
-  playTone(392, 0.65, 'triangle', 0.05, 0.08);
+  playTone(196, 0.65, 'sawtooth', 0.16);
+  playTone(294, 0.65, 'square', 0.085, 0.04);
+  playTone(392, 0.65, 'triangle', 0.1, 0.08);
 }
 function playFinishHorn() {
-  playTone(392, 0.22, 'square', 0.06);
-  playTone(294, 0.22, 'square', 0.06, 0.23);
-  playTone(196, 0.7, 'sawtooth', 0.08, 0.46);
+  playTone(392, 0.22, 'square', 0.12);
+  playTone(294, 0.22, 'square', 0.12, 0.23);
+  playTone(196, 0.7, 'sawtooth', 0.15, 0.46);
 }
 function playHeartbeat() {
-  playTone(72, 0.13, 'sine', 0.13);
-  playTone(58, 0.16, 'sine', 0.1, 0.18);
+  playTone(72, 0.13, 'sine', 0.22);
+  playTone(58, 0.16, 'sine', 0.18, 0.18);
 }
 
 // ===== 計時器 =====
@@ -296,14 +432,15 @@ function syncTimerLoops() {
     const notes = [196, 233, 293, 349, 293, 392, 349, 466];
     crunchInterval = setInterval(() => {
       const note = notes[musicStep % notes.length];
-      playTone(note, 0.15, 'triangle', 0.035);
-      if (musicStep % 4 === 0) playTone(note / 2, 0.22, 'sawtooth', 0.025);
+      playTone(note, 0.15, 'triangle', 0.06);
+      if (musicStep % 4 === 0) playTone(note / 2, 0.22, 'sawtooth', 0.045);
       musicStep += 1;
     }, 250);
   } else if ((!crunchTime() || !audioEnabled) && crunchInterval) {
     clearInterval(crunchInterval);
     crunchInterval = null;
   }
+  syncBattleMusic();
 }
 function onTick() {
   secondsLeft = Math.max(0, secondsLeft - 1);
@@ -316,7 +453,7 @@ function onTick() {
   }
   if (secondsLeft <= 30) {
     playHeartbeat();
-    if (secondsLeft <= 10) playTone(680 + (10 - secondsLeft) * 22, 0.08, 'square', 0.055);
+    if (secondsLeft <= 10) playTone(680 + (10 - secondsLeft) * 22, 0.08, 'square', 0.09);
   }
   syncTimerLoops();
   updateTimerDisplay();
@@ -334,7 +471,7 @@ function updateTimerDisplay() {
 function timerCaptionText() {
   if (timerStatus === 'ready') return 'READY TO FLY';
   if (timerStatus === 'countdown') return 'GET READY';
-  if (timerStatus === 'running') return secondsLeft <= 30 ? 'FINAL 30 • HOLD YOUR LINE' : 'MATCH IN PROGRESS';
+  if (timerStatus === 'running') return secondsLeft <= 30 ? 'FINAL 30 • CLIMAX MODE' : 'BATTLE MUSIC • MATCH IN PROGRESS';
   if (timerStatus === 'paused') return 'MATCH PAUSED';
   return "TIME'S UP";
 }
@@ -389,6 +526,30 @@ async function handleCreatePilot(event) {
     render();
   } catch (error) {
     setNotice(error && error.message ? error.message : '駕照建立失敗');
+  } finally {
+    setSaving(false);
+  }
+}
+
+async function handleDeletePilot(pilot) {
+  const button = $('confirmDeletePilotBtn');
+  if (button) {
+    button.disabled = true;
+    button.textContent = '刪除中…';
+  }
+  setSaving(true);
+  try {
+    const result = await apiDeletePilot(pilot.id);
+    pilots = pilots.filter((item) => item.id !== pilot.id);
+    eventState = normalizeEventState(result.state).state;
+    selectedPilotId = null;
+    deleteConfirmPilotId = null;
+    render();
+    setNotice('駕照 ' + pilot.licenseNo + ' 已永久刪除。');
+  } catch (error) {
+    setNotice(error && error.message ? error.message : '駕照刪除失敗');
+    deleteConfirmPilotId = null;
+    renderModal();
   } finally {
     setSaving(false);
   }
@@ -513,6 +674,7 @@ function openMatch(matchId) {
   preCount = null;
   timerStatus = 'ready';
   syncTimerLoops();
+  warmBattleMusic();
   commitState({ ...eventState, activeMatchId: matchId });
 }
 
@@ -528,15 +690,15 @@ function closeMatch() {
 }
 
 function startMatch() {
-  ensureAudio();
   timerStatus = 'countdown';
+  startBattleMusic();
   preCount = 3;
   renderMatchScreen();
   const runStep = (value) => {
     if (timerStatus !== 'countdown') return; // 已離開或重置
     if (value > 0) {
       preCount = value;
-      playTone(value === 1 ? 660 : 440, 0.16, 'square', 0.06);
+      playTone(value === 1 ? 660 : 440, 0.18, 'square', 0.14);
       renderMatchScreen();
       setTimeout(() => runStep(value - 1), 1000);
       return;
@@ -808,8 +970,9 @@ function renderTournament() {
 function renderModal() {
   const root = $('modalRoot');
   const pilot = selectedPilotId ? getPilot(selectedPilotId) : null;
-  if (!pilot) { root.innerHTML = ''; return; }
+  if (!pilot) { deleteConfirmPilotId = null; root.innerHTML = ''; return; }
   const checked = eventState.checkedInIds.includes(pilot.id);
+  const confirmingDelete = deleteConfirmPilotId === pilot.id;
   const issued = new Date(pilot.createdAt);
   const issuedText = isNaN(issued.getTime()) ? '—' : issued.toLocaleDateString('zh-TW');
   root.innerHTML =
@@ -877,20 +1040,31 @@ function renderModal() {
           '</div>' +
         '</div>' +
       '</div>' +
-      '<div class="license-modal-actions">' +
-        '<p>列印時請選擇「實際大小 / 100%」，即為標準卡尺寸。</p>' +
-        '<button class="outline-button" id="modalCheckinBtn"' + (checked ? ' disabled' : '') + '>' + (checked ? '✓ 今日已報到' : '今日報到') + '</button>' +
-        '<button class="primary-button compact" id="printLicenseBtn">列印公版駕照</button>' +
+      '<div class="license-modal-actions' + (confirmingDelete ? ' confirming-delete' : '') + '">' +
+        (confirmingDelete
+          ? '<p class="delete-warning"><strong>確定永久刪除「' + esc(pilot.name) + '」？</strong><span>這個動作無法復原；若已加入隊伍，分組與賽程會一併重置。</span></p>' +
+            '<button class="outline-button" id="cancelDeletePilotBtn">取消</button>' +
+            '<button class="danger-button" id="confirmDeletePilotBtn">確定永久刪除</button>'
+          : '<p>列印時請選擇「實際大小 / 100%」，即為標準卡尺寸。</p>' +
+            '<button class="danger-button" id="requestDeletePilotBtn">刪除駕照</button>' +
+            '<button class="outline-button" id="modalCheckinBtn"' + (checked ? ' disabled' : '') + '>' + (checked ? '✓ 今日已報到' : '今日報到') + '</button>' +
+            '<button class="primary-button compact" id="printLicenseBtn">列印公版駕照</button>') +
       '</div>' +
     '</div>' +
   '</div>';
 
   $('modalBackdrop').addEventListener('mousedown', (e) => {
-    if (e.target === e.currentTarget) { selectedPilotId = null; renderModal(); }
+    if (e.target === e.currentTarget) { selectedPilotId = null; deleteConfirmPilotId = null; renderModal(); }
   });
-  $('modalCloseBtn').addEventListener('click', () => { selectedPilotId = null; renderModal(); });
-  $('modalCheckinBtn').addEventListener('click', () => { directCheckIn(pilot.id); });
-  $('printLicenseBtn').addEventListener('click', printLicense);
+  $('modalCloseBtn').addEventListener('click', () => { selectedPilotId = null; deleteConfirmPilotId = null; renderModal(); });
+  if (confirmingDelete) {
+    $('cancelDeletePilotBtn').addEventListener('click', () => { deleteConfirmPilotId = null; renderModal(); });
+    $('confirmDeletePilotBtn').addEventListener('click', () => handleDeletePilot(pilot));
+  } else {
+    $('requestDeletePilotBtn').addEventListener('click', () => { deleteConfirmPilotId = pilot.id; renderModal(); });
+    $('modalCheckinBtn').addEventListener('click', () => { directCheckIn(pilot.id); });
+    $('printLicenseBtn').addEventListener('click', printLicense);
+  }
 }
 
 function renderMatchScreen() {
@@ -905,7 +1079,7 @@ function renderMatchScreen() {
       '<div class="match-brand"><img src="assets/block-planet-logo.png" alt=""><span>BLOCK PLANET <b>ARENA</b></span></div>' +
       '<div class="match-title"><small>' + (match.type === 'final' ? 'CHAMPIONSHIP FINAL' : 'QUALIFIER') + '</small><strong>' + esc(match.label) + '</strong></div>' +
       '<div class="match-controls">' +
-        '<button id="matchAudioBtn">' + (audioEnabled ? '♫ 音效開啟' : '音效關閉') + '</button>' +
+        '<button id="matchAudioBtn">' + (audioEnabled ? '♫ 戰鬥音樂・MAX' : '音效關閉') + '</button>' +
         '<button id="matchCloseBtn">離開賽場 ×</button>' +
       '</div>' +
     '</header>' +
@@ -1000,7 +1174,7 @@ function bindEvents() {
   // 動態內容用事件委派
   document.addEventListener('click', (e) => {
     const pilotBtn = e.target.closest('[data-pilot]');
-    if (pilotBtn) { selectedPilotId = pilotBtn.dataset.pilot; renderModal(); return; }
+    if (pilotBtn) { selectedPilotId = pilotBtn.dataset.pilot; deleteConfirmPilotId = null; renderModal(); return; }
     const checkinBtn = e.target.closest('[data-checkin]');
     if (checkinBtn) { directCheckIn(checkinBtn.dataset.checkin); return; }
     const matchBtn = e.target.closest('[data-open-match]');

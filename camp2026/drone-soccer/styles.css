@@ -329,6 +329,9 @@ button:focus-visible, input:focus-visible, select:focus-visible {
 .outline-button, .checked-button { border-radius: 11px; padding: 10px 12px; font-weight: 800; font-size: 12px; cursor: pointer; }
 .outline-button { border: 1px solid #c9d5d0; background: white; }
 .outline-button:hover { border-color: var(--orange); color: var(--orange); }
+.danger-button { border: 1px solid rgba(201,55,42,0.3); border-radius: 11px; padding: 10px 12px; background: rgba(201,55,42,0.08); color: #b73228; font-size: 12px; font-weight: 900; cursor: pointer; }
+.danger-button:hover { border-color: #c9372a; background: #c9372a; color: white; }
+.danger-button:disabled { opacity: 0.55; cursor: wait; }
 .checked-button { border: 1px solid rgba(84,200,79,0.25); background: rgba(84,200,79,0.1); color: #32933a; }
 .empty-state { grid-column: 1 / -1; min-height: 330px; display: grid; place-items: center; align-content: center; text-align: center; }
 .empty-state img { width: 94px; height: 94px; border-radius: 50%; object-fit: cover; margin-bottom: 14px; }
@@ -511,6 +514,9 @@ button:focus-visible, input:focus-visible, select:focus-visible {
 .license-back-footer b { color: var(--yellow); font-size: 9px; letter-spacing: 0.055em; }
 .license-modal-actions { display: flex; justify-content: flex-end; align-items: center; gap: 11px; margin-top: 22px; }
 .license-modal-actions > p { margin: 0 auto 0 0; color: #536d67; font-size: 15px; font-weight: 750; }
+.license-modal-actions .delete-warning { display: grid; gap: 3px; color: #7d3029; }
+.delete-warning strong { font-size: 15px; }
+.delete-warning span { color: #8d6d68; font-size: 11px; font-weight: 700; }
 
 .match-screen { position: fixed; inset: 0; z-index: 100; background: #0d2928; color: white; overflow: auto; display: grid; grid-template-rows: 74px auto 1fr auto; isolation: isolate; }
 .match-screen::before { content: ""; position: fixed; inset: 0; z-index: -2; background: radial-gradient(circle at 50% 24%, rgba(72,171,150,0.26), transparent 34%), radial-gradient(circle at 10% 80%, rgba(88,191,240,0.11), transparent 25%), linear-gradient(160deg, #0e322f, #071e1d 75%); }
@@ -682,7 +688,8 @@ button:focus-visible, input:focus-visible, select:focus-visible {
   .license-modal-actions > button { width: 100%; }
   .match-topbar { height: auto; padding: 10px 13px; }
   .match-brand span { display: none; }
-  .match-controls button:first-child { display: none; }
+  .match-controls { gap: 5px; }
+  .match-controls button { padding: 7px 8px; font-size: 8px; }
   .timer-zone { padding-top: 28px; }
   .timer-number { font-size: 29vw; }
   .scoreboard { grid-template-columns: 1fr; overflow: visible; width: calc(100% - 28px); }

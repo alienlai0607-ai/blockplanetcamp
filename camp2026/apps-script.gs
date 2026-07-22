@@ -118,6 +118,7 @@ function doPost(e) {
 
     switch(action) {
       case 'drone-pilot-add': return respond(dronePilotAdd(p));
+      case 'drone-pilot-delete': return respond(dronePilotDelete(p));
       case 'drone-state-set': return respond(droneStateSet(p.state));
       default: return respond({ success: false, error: '無效的操作' });
     }
@@ -1780,6 +1781,45 @@ function dronePilotAdd(p) {
     sh.getRange(newRow, 9).setNumberFormat('@').setValue(pilot.createdAt);
 
     return { success: true, pilot: pilot };
+  } catch (err) {
+    return { success: false, error: String(err && err.message || err) };
+  }
+}
+
+function dronePilotDelete(p) {
+  try {
+    const pilotId = String(p.pilotId || '').trim();
+    if (!pilotId) return { success: false, error: '缺少駕駛員 ID' };
+
+    const sh = getDronePilotSheet();
+    const lastRow = sh.getLastRow();
+    if (lastRow < 2) return { success: false, error: '找不到這張駕照' };
+    const ids = sh.getRange(2, 1, lastRow - 1, 1).getValues();
+    let rowToDelete = 0;
+    for (let index = 0; index < ids.length; index++) {
+      if (String(ids[index][0] || '') === pilotId) {
+        rowToDelete = index + 2;
+        break;
+      }
+    }
+    if (!rowToDelete) return { success: false, error: '找不到這張駕照' };
+
+    sh.deleteRow(rowToDelete);
+
+    const current = droneStateGet().state || {};
+    const checkedInIds = Array.isArray(current.checkedInIds)
+      ? current.checkedInIds.filter(id => String(id) !== pilotId)
+      : [];
+    const groups = Array.isArray(current.groups) ? current.groups : [];
+    const affectsTournament = groups.some(group =>
+      Array.isArray(group.pilotIds) && group.pilotIds.some(id => String(id) === pilotId)
+    );
+    const nextState = affectsTournament
+      ? { tournamentVersion: 2, checkedInIds: checkedInIds, groups: [], matches: [], activeMatchId: null, championGroupId: null }
+      : Object.assign({}, current, { tournamentVersion: 2, checkedInIds: checkedInIds });
+    droneStateSet(nextState);
+
+    return { success: true, deletedId: pilotId, state: nextState };
   } catch (err) {
     return { success: false, error: String(err && err.message || err) };
   }

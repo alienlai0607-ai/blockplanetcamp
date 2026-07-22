@@ -191,9 +191,10 @@ curl -sL "$API?action=matrix-list&key=bp2026admin"   # 撈回驗證，看 phone 
 - 賽事資料版本 `tournamentVersion: 2`；舊版個人賽資料會清除賽程但保留報到名單，重新組隊即可
 - 檔案：`index.html`（靜態骨架）+ `app.js`（全部邏輯，vanilla JS）+ `styles.css` + `assets/`（品牌素材）
 - 照片：前端 canvas 壓縮（420→180px 梯度，目標 ≤45000 字元 base64）存 Sheet 儲存格
-- 音效：全部 Web Audio API 合成（開賽號角/最後 30 秒心跳/10 秒提示/結束音），無外部音樂檔
+- 音效：Web Audio API 合成開賽號角、最後 30 秒心跳、10 秒提示與結束音；賽事音樂使用 MintoDog 的 CC0《8bit Action Boss Battle》145 BPM，一般賽事循環播放，最後 30 秒切換 185 BPM Climax 版本；來源與授權記錄在 `drone-soccer/AUDIO-CREDITS.md`
 - 同分保護：最高分同分不能存檔，裁判調分後才能晉級
 - 駕照列印：85.6×54mm 公版正反面，`@media print` 只印卡片，列印選「實際大小/100%」
+- 駕照刪除：使用 `drone-pilot-delete` POST；前端二次確認後永久刪除。若駕駛員已加入隊伍，後端保留其他人報到資料並清除分組與賽程
 - `?demo=1` = 示範模式（localStorage，不動正式資料）
 - Sheet 分頁：`無人機駕照`（10 欄：ID/駕照編號/姓名/暱稱/電話/等級/勝場/出賽/建檔時間/照片）、
   `無人機賽事`（single row：Key=main / Payload JSON / 更新時間）
