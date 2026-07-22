@@ -16,6 +16,27 @@ const MASCOT_PORTRAITS = [
   'assets/xingxing.jpg',
 ];
 
+const PRACTICE_TEAMS = [
+  {
+    id: 'practice-orange',
+    name: '火箭橘隊',
+    members: [
+      { name: '小布', nickname: '練習席 1', photoUrl: 'assets/xiaobu.jpeg' },
+      { name: '克克', nickname: '練習席 2', photoUrl: 'assets/keke.jpg' },
+      { name: '星星', nickname: '練習席 3', photoUrl: 'assets/xingxing.jpg' },
+    ],
+  },
+  {
+    id: 'practice-blue',
+    name: '閃電藍隊',
+    members: [
+      { name: '拉拉', nickname: '練習席 1', photoUrl: 'assets/lala.jpg' },
+      { name: '阿球', nickname: '練習席 2', photoUrl: 'assets/aqiu.jpg' },
+      { name: '小布', nickname: '練習席 3', photoUrl: 'assets/xiaobu.jpeg' },
+    ],
+  },
+];
+
 const EMPTY_STATE = () => ({
   tournamentVersion: 2,
   checkedInIds: [],
@@ -38,6 +59,8 @@ let photoDataUrl = null;
 let timerStatus = 'ready'; // ready | countdown | running | paused | finished
 let secondsLeft = 180;
 let preCount = null;
+let practiceMode = false;
+let practiceScores = { 'practice-orange': 0, 'practice-blue': 0 };
 let audioEnabled = true;
 let audioContext = null;
 let masterGainNode = null;
@@ -76,7 +99,26 @@ function checkedInPilots() {
   return eventState.checkedInIds.map((id) => map.get(id)).filter(Boolean);
 }
 function activeMatch() {
+  if (practiceMode) {
+    return {
+      id: 'practice-match',
+      label: '火箭橘隊 VS 閃電藍隊・練習賽',
+      type: 'practice',
+      participantGroupIds: PRACTICE_TEAMS.map((team) => team.id),
+      scores: practiceScores,
+      status: 'practice',
+      winnerGroupId: null,
+    };
+  }
   return eventState.matches.find((m) => m.id === eventState.activeMatchId) || null;
+}
+function arenaGroupMap() {
+  return new Map((practiceMode ? PRACTICE_TEAMS : eventState.groups).map((group) => [group.id, group]));
+}
+function arenaMembers(group) {
+  if (practiceMode) return group.members || [];
+  const map = pilotMap();
+  return (group.pilotIds || []).map((pilotId) => map.get(pilotId)).filter(Boolean);
 }
 function completedMatches() {
   return eventState.matches.filter((m) => m.status === 'complete').length;
@@ -670,12 +712,24 @@ function createGroups() {
 }
 
 function openMatch(matchId) {
+  practiceMode = false;
   secondsLeft = 180;
   preCount = null;
   timerStatus = 'ready';
   syncTimerLoops();
   warmBattleMusic();
   commitState({ ...eventState, activeMatchId: matchId });
+}
+
+function openPracticeMatch() {
+  practiceMode = true;
+  practiceScores = { 'practice-orange': 0, 'practice-blue': 0 };
+  secondsLeft = 180;
+  preCount = null;
+  timerStatus = 'ready';
+  syncTimerLoops();
+  warmBattleMusic();
+  renderMatchScreen();
 }
 
 function closeMatch() {
@@ -685,7 +739,15 @@ function closeMatch() {
   }
   timerStatus = 'ready';
   secondsLeft = 180;
+  preCount = null;
   syncTimerLoops();
+  if (practiceMode) {
+    practiceMode = false;
+    practiceScores = { 'practice-orange': 0, 'practice-blue': 0 };
+    renderMatchScreen();
+    setNotice('練習賽已結束，成績沒有寫入正式賽程。');
+    return;
+  }
   commitState({ ...eventState, activeMatchId: null });
 }
 
@@ -716,6 +778,14 @@ function startMatch() {
 function updateScore(groupId, difference) {
   const match = activeMatch();
   if (!match || timerStatus === 'countdown') return;
+  if (practiceMode) {
+    practiceScores = {
+      ...practiceScores,
+      [groupId]: Math.max(0, (practiceScores[groupId] || 0) + difference),
+    };
+    renderMatchScreen();
+    return;
+  }
   eventState = {
     ...eventState,
     matches: eventState.matches.map((m) =>
@@ -734,6 +804,11 @@ function resetCurrentMatch() {
   secondsLeft = 180;
   preCount = null;
   syncTimerLoops();
+  if (practiceMode) {
+    practiceScores = { 'practice-orange': 0, 'practice-blue': 0 };
+    renderMatchScreen();
+    return;
+  }
   eventState = {
     ...eventState,
     matches: eventState.matches.map((m) =>
@@ -748,6 +823,10 @@ function resetCurrentMatch() {
 function saveMatchResult() {
   const match = activeMatch();
   if (!match) return;
+  if (practiceMode) {
+    closeMatch();
+    return;
+  }
   const ranked = [...match.participantGroupIds].sort(
     (a, b) => (match.scores[b] || 0) - (match.scores[a] || 0),
   );
@@ -1071,13 +1150,12 @@ function renderMatchScreen() {
   const root = $('matchScreenRoot');
   const match = activeMatch();
   if (!match) { root.innerHTML = ''; return; }
-  const map = pilotMap();
-  const groups = groupMap();
+  const groups = arenaGroupMap();
   root.innerHTML =
   '<div class="match-screen' + (crunchTime() ? ' crunch' : '') + '">' +
     '<header class="match-topbar">' +
       '<div class="match-brand"><img src="assets/block-planet-logo.png" alt=""><span>BLOCK PLANET <b>ARENA</b></span></div>' +
-      '<div class="match-title"><small>' + (match.type === 'final' ? 'CHAMPIONSHIP FINAL' : 'QUALIFIER') + '</small><strong>' + esc(match.label) + '</strong></div>' +
+      '<div class="match-title"><small>' + (match.type === 'practice' ? 'PRACTICE MATCH・NO LICENSE' : (match.type === 'final' ? 'CHAMPIONSHIP FINAL' : 'QUALIFIER')) + '</small><strong>' + esc(match.label) + '</strong></div>' +
       '<div class="match-controls">' +
         '<button id="matchAudioBtn">' + (audioEnabled ? '♫ 戰鬥音樂・MAX' : '音效關閉') + '</button>' +
         '<button id="matchCloseBtn">離開賽場 ×</button>' +
@@ -1094,11 +1172,9 @@ function renderMatchScreen() {
       if (!group) return '';
       const score = match.scores[groupId] || 0;
       return '<article class="score-pilot score-team pilot-color-' + i + '">' +
-        '<div class="team-score-heading"><div><small>TEAM 0' + (i + 1) + '・3 PILOTS</small><h2>' + esc(group.name) + '</h2></div>' +
+        '<div class="team-score-heading"><div><small>' + (practiceMode ? 'PRACTICE TEAM 0' + (i + 1) + '・免駕照' : 'TEAM 0' + (i + 1) + '・3 PILOTS') + '</small><h2>' + esc(group.name) + '</h2></div>' +
           '<span>' + (i === 0 ? 'ORANGE SIDE' : 'BLUE SIDE') + '</span></div>' +
-        '<div class="team-roster">' + group.pilotIds.map((pilotId, pilotIndex) => {
-          const pilot = map.get(pilotId);
-          if (!pilot) return '';
+        '<div class="team-roster">' + arenaMembers(group).map((pilot, pilotIndex) => {
           return '<div><span class="pilot-orb"><img src="' + esc(portraitFor(pilot, pilotIndex + i)) + '" alt="' + esc(pilot.name) + '"></span>' +
             '<strong>' + esc(pilot.name) + '</strong><small>' + esc(pilot.nickname || pilot.level) + '</small></div>';
         }).join('') + '</div>' +
@@ -1114,11 +1190,11 @@ function renderMatchScreen() {
       (timerStatus === 'ready' ? '<button class="start-match-button" id="matchStartBtn"><span>▶</span>開始比賽</button>' : '') +
       (timerStatus === 'running' ? '<button class="start-match-button pause" id="matchPauseBtn"><span>Ⅱ</span>暫停比賽</button>' : '') +
       (timerStatus === 'paused' ? '<button class="start-match-button" id="matchResumeBtn"><span>▶</span>繼續比賽</button>' : '') +
-      (timerStatus === 'finished' ? '<button class="start-match-button finish" id="matchFinishBtn"><span>✓</span>儲存結果與晉級</button>' : '') +
-      '<div class="rule-reminder"><span>◎</span><p><strong>裁判提醒</strong>分數記在整支三人隊伍，不是個人分數</p></div>' +
+      (timerStatus === 'finished' ? '<button class="start-match-button finish" id="matchFinishBtn"><span>✓</span>' + (practiceMode ? '結束練習賽' : '儲存結果與晉級') + '</button>' : '') +
+      '<div class="rule-reminder"><span>◎</span><p><strong>' + (practiceMode ? '練習模式' : '裁判提醒') + '</strong>' + (practiceMode ? '免登入駕照，分數不會寫入正式賽程' : '分數記在整支三人隊伍，不是個人分數') + '</p></div>' +
     '</footer>' +
     (timerStatus === 'countdown' && preCount !== null
-      ? '<div class="prestart-overlay"><span>GET READY</span><strong>' + preCount + '</strong><p>無人機就位</p></div>' : '') +
+      ? '<div class="prestart-overlay"><span>GET READY</span><strong>' + preCount + '</strong><p>' + (practiceMode ? '練習機就位' : '無人機就位') + '</p></div>' : '') +
     (timerStatus === 'finished' ? '<div class="finish-flash">TIME!</div>' : '') +
   '</div>';
 
@@ -1153,6 +1229,7 @@ function bindEvents() {
   $('audioToggle').addEventListener('click', toggleAudio);
   $('noticeClose').addEventListener('click', () => setNotice(''));
   $('heroTournamentBtn').addEventListener('click', () => switchSection('tournament'));
+  $('heroPracticeBtn').addEventListener('click', openPracticeMatch);
   $('heroNewLicenseBtn').addEventListener('click', () => {
     showLicenseForm = true;
     switchSection('licenses');

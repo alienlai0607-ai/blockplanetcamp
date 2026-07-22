@@ -195,6 +195,7 @@ curl -sL "$API?action=matrix-list&key=bp2026admin"   # 撈回驗證，看 phone 
 - 同分保護：最高分同分不能存檔，裁判調分後才能晉級
 - 駕照列印：85.6×54mm 公版正反面，`@media print` 只印卡片，列印選「實際大小/100%」
 - 駕照刪除：使用 `drone-pilot-delete` POST；前端二次確認後永久刪除。若駕駛員已加入隊伍，後端保留其他人報到資料並清除分組與賽程
+- 練習賽：首頁可直接開啟免駕照練習模式，使用完整 3 分鐘、MAX 戰鬥音樂、最後 30 秒 Climax、雙隊計分／暫停／重設；練習成績不會寫入正式賽程或 Sheet
 - `?demo=1` = 示範模式（localStorage，不動正式資料）
 - Sheet 分頁：`無人機駕照`（10 欄：ID/駕照編號/姓名/暱稱/電話/等級/勝場/出賽/建檔時間/照片）、
   `無人機賽事`（single row：Key=main / Payload JSON / 更新時間）

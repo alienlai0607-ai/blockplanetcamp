@@ -199,6 +199,19 @@ button:focus-visible, input:focus-visible, select:focus-visible {
 .primary-button:disabled { opacity: 0.45; cursor: not-allowed; transform: none; }
 .primary-button span { margin-right: 7px; }
 .primary-button.compact { padding: 13px 18px; }
+.practice-button {
+  border: 1px solid rgba(11, 52, 49, 0.14);
+  background: var(--ink);
+  color: white;
+  padding: 15px 19px;
+  border-radius: 14px;
+  font-weight: 850;
+  cursor: pointer;
+  box-shadow: 0 12px 24px rgba(9, 43, 41, 0.2);
+  transition: transform 160ms ease, background 160ms ease, box-shadow 160ms ease;
+}
+.practice-button:hover { transform: translateY(-2px); background: #174d48; box-shadow: 0 16px 28px rgba(9, 43, 41, 0.26); }
+.practice-button span { color: var(--yellow); margin-right: 7px; }
 .text-button, .tiny-link { border: 0; background: transparent; font-weight: 820; cursor: pointer; color: var(--ink); }
 .text-button { padding: 12px 0; }
 .text-button span { color: var(--orange); margin-left: 4px; }
@@ -652,7 +665,8 @@ button:focus-visible, input:focus-visible, select:focus-visible {
   .hero-copy { padding: 36px 23px; }
   .hero-copy > p { width: 100%; font-size: 14px; }
   .hero h1 { font-size: 49px; }
-  .hero-actions { align-items: stretch; flex-direction: column; gap: 4px; width: max-content; }
+  .hero-actions { align-items: stretch; flex-direction: column; gap: 8px; width: min(100%, 260px); }
+  .hero-actions .text-button { text-align: left; padding-left: 3px; }
   .hero-stats { gap: 21px; }
   .hero-stats strong { font-size: 21px; }
   .hero-art img { object-position: 69% center; }
