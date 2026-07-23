@@ -33,4 +33,4 @@
   - `assets/audio/climax-final-stand-max.ogg`
   - `assets/audio/climax-final-stand-heavy.ogg`
 
-All tracks above use CC0. The in-app selector defaults to Boss Fight Bounce for the first 150 seconds and Final Stand Max for the final 30 seconds. Climax mode also runs at 1.08× playback speed and adds synthesized drums, heartbeat, arpeggio, and final-10-second alert tones.
+All tracks above use CC0. The in-app selector defaults to Boss Fight Bounce for the first 150 seconds and Final Stand Max for the final 30 seconds. At 0:30 the first track stops immediately and the selected climax track starts from its first beat. Climax mode also adds a transition alarm, synthesized drums, heartbeat, arpeggio, and final-10-second alert tones.

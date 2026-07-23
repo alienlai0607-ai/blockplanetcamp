@@ -430,11 +430,12 @@ function selectAndPreviewMusic(kind, id) {
 
   if (timerStatus === 'running' || timerStatus === 'countdown') {
     startBattleMusic();
-    setBattleMusicMode(crunchTime() ? 'climax' : 'normal', true);
+    setBattleMusicMode(crunchTime() ? 'climax' : 'normal');
+    syncBattleMusic();
   } else if (audioEnabled && ensureAudio()) {
     battleMusic.currentTime = 0;
     climaxMusic.currentTime = 0;
-    setBattleMusicMode(kind === 'climax' ? 'climax' : 'normal', true);
+    setBattleMusicMode(kind === 'climax' ? 'climax' : 'normal');
     safePlayMusic(target);
     musicPreviewTimer = setTimeout(() => {
       if (timerStatus !== 'running' && timerStatus !== 'countdown') pauseBattleMusic();
@@ -454,26 +455,21 @@ function safePlayMusic(track) {
     });
   }
 }
-function rampMusicGain(node, target, duration = 0.32) {
-  if (!audioContext || !node) return;
-  const now = audioContext.currentTime;
-  const current = Math.max(0.0001, node.gain.value || 0.0001);
-  node.gain.cancelScheduledValues(now);
-  node.gain.setValueAtTime(current, now);
-  node.gain.exponentialRampToValueAtTime(Math.max(0.0001, target), now + duration);
-}
-function setBattleMusicMode(next, immediate = false) {
+function setBattleMusicMode(next) {
   if (!battleMusicGain || !climaxMusicGain) return;
   const changed = battleMusicMode !== next;
   battleMusicMode = next;
-  if (changed && next === 'climax') climaxMusic.currentTime = 0;
-  if (immediate) {
-    battleMusicGain.gain.value = next === 'normal' ? 0.78 : 0.0001;
-    climaxMusicGain.gain.value = next === 'climax' ? 1 : 0.0001;
-    return;
+  if (next === 'climax') {
+    if (changed) {
+      battleMusic.pause();
+      climaxMusic.currentTime = 0;
+    }
+    battleMusicGain.gain.value = 0.0001;
+    climaxMusicGain.gain.value = 1;
+  } else {
+    battleMusicGain.gain.value = 0.78;
+    climaxMusicGain.gain.value = 0.0001;
   }
-  rampMusicGain(battleMusicGain, next === 'normal' ? 0.78 : 0.0001);
-  rampMusicGain(climaxMusicGain, next === 'climax' ? 1 : 0.0001);
 }
 function startBattleMusic() {
   if (!audioEnabled || !ensureAudio()) return;
@@ -482,11 +478,11 @@ function startBattleMusic() {
   battleMusic.currentTime = 0;
   climaxMusic.currentTime = 0;
   battleMusic.playbackRate = 1;
-  climaxMusic.playbackRate = 1.08;
+  climaxMusic.playbackRate = 1;
   musicStep = 0;
   battleMusicStarted = true;
   battleMusicMode = 'normal';
-  setBattleMusicMode('normal', true);
+  setBattleMusicMode('normal');
   safePlayMusic(battleMusic);
   safePlayMusic(climaxMusic);
 }
@@ -502,7 +498,7 @@ function stopBattleMusic() {
   climaxMusic.currentTime = 0;
   battleMusicStarted = false;
   battleMusicMode = 'normal';
-  if (battleMusicGain && climaxMusicGain) setBattleMusicMode('normal', true);
+  if (battleMusicGain && climaxMusicGain) setBattleMusicMode('normal');
 }
 function syncBattleMusic() {
   if (!audioEnabled) {
@@ -519,8 +515,13 @@ function syncBattleMusic() {
   }
   if (!battleMusicStarted) startBattleMusic();
   setBattleMusicMode(crunchTime() ? 'climax' : 'normal');
-  if (battleMusic.paused) safePlayMusic(battleMusic);
-  if (climaxMusic.paused) safePlayMusic(climaxMusic);
+  if (battleMusicMode === 'climax') {
+    battleMusic.pause();
+    if (climaxMusic.paused) safePlayMusic(climaxMusic);
+  } else {
+    if (battleMusic.paused) safePlayMusic(battleMusic);
+    if (climaxMusic.paused) safePlayMusic(climaxMusic);
+  }
 }
 function playTone(frequency, duration, type = 'sine', gainValue = 0.07, delay = 0) {
   const context = ensureAudio();
@@ -552,10 +553,31 @@ function playHeartbeat() {
   playTone(54, 0.18, 'square', 0.2, 0.14);
   playTone(108, 0.11, 'triangle', 0.14, 0.34);
 }
+function playFinalThirtyStinger() {
+  playTone(110, 0.5, 'sawtooth', 0.24);
+  playTone(330, 0.16, 'square', 0.18, 0.05);
+  playTone(495, 0.16, 'square', 0.2, 0.25);
+  playTone(880, 0.42, 'square', 0.19, 0.45);
+}
 
 // ===== 計時器 =====
 function crunchTime() {
   return timerStatus === 'running' && secondsLeft <= 30 && secondsLeft > 0;
+}
+function finalThirtyVisual() {
+  return (timerStatus === 'running' || timerStatus === 'paused') && secondsLeft <= 30 && secondsLeft > 0;
+}
+function matchDurationSeconds() {
+  if (!DEMO) return 180;
+  const requested = Number(new URLSearchParams(location.search).get('seconds'));
+  return Number.isFinite(requested) && requested >= 1 && requested <= 180 ? Math.floor(requested) : 180;
+}
+function triggerFinalThirtyVisual() {
+  const entry = $('finalThirtyEntry');
+  if (!entry) return;
+  entry.classList.remove('active');
+  void entry.offsetWidth;
+  entry.classList.add('active');
 }
 function setTimerStatus(next) {
   timerStatus = next;
@@ -595,6 +617,10 @@ function onTick() {
     return;
   }
   if (secondsLeft <= 30) {
+    if (secondsLeft === 30) {
+      playFinalThirtyStinger();
+      triggerFinalThirtyVisual();
+    }
     playHeartbeat();
     if (secondsLeft <= 10) playTone(720 + (10 - secondsLeft) * 28, 0.1, 'square', 0.14);
   }
@@ -604,17 +630,24 @@ function onTick() {
 function updateTimerDisplay() {
   const numberEl = $('timerNumber');
   if (!numberEl) return;
-  numberEl.textContent = formatClock(secondsLeft);
-  numberEl.classList.toggle('heartbeat-number', secondsLeft <= 30);
+  const finalVisual = finalThirtyVisual();
+  numberEl.textContent = finalVisual ? String(secondsLeft) : formatClock(secondsLeft);
+  numberEl.classList.toggle('heartbeat-number', finalVisual);
   const caption = $('timerCaption');
   if (caption) caption.textContent = timerCaptionText();
   const screen = document.querySelector('.match-screen');
-  if (screen) screen.classList.toggle('crunch', crunchTime());
+  if (screen) screen.classList.toggle('crunch', finalVisual);
+  const hud = $('finalThirtyHud');
+  if (hud) hud.setAttribute('aria-hidden', finalVisual ? 'false' : 'true');
+  const meter = $('finalThirtyMeter');
+  if (meter) meter.style.width = Math.max(0, Math.min(100, (secondsLeft / 30) * 100)) + '%';
+  const seconds = $('finalThirtySeconds');
+  if (seconds) seconds.textContent = secondsLeft + ' 秒';
 }
 function timerCaptionText() {
   if (timerStatus === 'ready') return 'READY TO FLY';
   if (timerStatus === 'countdown') return 'GET READY';
-  if (timerStatus === 'running') return secondsLeft <= 30 ? 'FINAL 30 • TURBO CLIMAX' : 'BATTLE MUSIC • MATCH IN PROGRESS';
+  if (timerStatus === 'running') return secondsLeft <= 30 ? 'NEW MUSIC • FINAL COUNTDOWN' : 'BATTLE MUSIC • MATCH IN PROGRESS';
   if (timerStatus === 'paused') return 'MATCH PAUSED';
   return "TIME'S UP";
 }
@@ -871,7 +904,7 @@ function startMatch() {
       return;
     }
     preCount = null;
-    secondsLeft = 180;
+    secondsLeft = matchDurationSeconds();
     timerStatus = 'running';
     playStartHorn();
     syncTimerLoops();
@@ -1272,7 +1305,7 @@ function renderMusicPicker() {
         '<div class="music-picker-scroll">' +
           '<div class="music-picker-section"><div class="music-section-title"><span>01</span><div><strong>一般比賽音樂</strong><small>0:00–2:30・童趣電玩戰鬥感</small></div></div>' +
             '<div class="music-choice-grid">' + renderChoices(BATTLE_MUSIC_CHOICES, 'battle', selectedBattleMusicId) + '</div></div>' +
-          '<div class="music-picker-section climax-section"><div class="music-section-title"><span>30</span><div><strong>最後 30 秒音樂</strong><small>自動切換・加速 8%＋重鼓＋急促警示</small></div></div>' +
+          '<div class="music-picker-section climax-section"><div class="music-section-title"><span>30</span><div><strong>最後 30 秒全新音樂</strong><small>原音樂立即停止・整首換曲＋重鼓＋急促警示</small></div></div>' +
             '<div class="music-choice-grid climax-grid">' + renderChoices(CLIMAX_MUSIC_CHOICES, 'climax', selectedClimaxMusicId) + '</div></div>' +
         '</div>' +
         '<footer><span>所有曲目皆為 CC0 免費授權</span><strong>建議：星球彈跳 ＋ 最終決戰 MAX</strong><button class="primary-button compact" id="musicPickerDoneBtn">使用這組音樂</button></footer>' +
@@ -1296,8 +1329,10 @@ function renderMatchScreen() {
   if (!match) { root.innerHTML = ''; return; }
   const groups = arenaGroupMap();
   const selectedBattleMusic = musicChoice(BATTLE_MUSIC_CHOICES, selectedBattleMusicId);
+  const selectedClimaxMusic = musicChoice(CLIMAX_MUSIC_CHOICES, selectedClimaxMusicId);
+  const finalVisual = finalThirtyVisual();
   root.innerHTML =
-  '<div class="match-screen' + (crunchTime() ? ' crunch' : '') + '">' +
+  '<div class="match-screen' + (finalVisual ? ' crunch' : '') + '">' +
     '<header class="match-topbar">' +
       '<div class="match-brand"><img src="assets/block-planet-logo.png" alt=""><span>BLOCK PLANET <b>ARENA</b></span></div>' +
       '<div class="match-title"><small>' + (match.type === 'practice' ? 'PRACTICE MATCH・NO LICENSE' : (match.type === 'final' ? 'CHAMPIONSHIP FINAL' : 'QUALIFIER')) + '</small><strong>' + esc(match.label) + '</strong></div>' +
@@ -1309,7 +1344,8 @@ function renderMatchScreen() {
     '<div class="arena-net"></div>' +
     '<section class="timer-zone">' +
       '<div class="round-label"><span></span> ROUND TIMER <span></span></div>' +
-      '<div class="timer-number' + (secondsLeft <= 30 ? ' heartbeat-number' : '') + '" id="timerNumber">' + formatClock(secondsLeft) + '</div>' +
+      '<div class="final-thirty-hud" id="finalThirtyHud" aria-hidden="' + (finalVisual ? 'false' : 'true') + '"><div><strong>⚠ FINAL 30</strong><span id="finalThirtySeconds">' + secondsLeft + ' 秒</span></div><div class="final-thirty-track"><i id="finalThirtyMeter" style="width:' + Math.max(0, Math.min(100, (secondsLeft / 30) * 100)) + '%"></i></div><small>全新終局音樂：' + esc(selectedClimaxMusic.label) + '</small></div>' +
+      '<div class="timer-number' + (finalVisual ? ' heartbeat-number' : '') + '" id="timerNumber">' + (finalVisual ? secondsLeft : formatClock(secondsLeft)) + '</div>' +
       '<div class="timer-caption" id="timerCaption">' + timerCaptionText() + '</div>' +
     '</section>' +
     '<section class="scoreboard team-scoreboard">' + match.participantGroupIds.map((groupId, i) => {
@@ -1340,6 +1376,7 @@ function renderMatchScreen() {
     '</footer>' +
     (timerStatus === 'countdown' && preCount !== null
       ? '<div class="prestart-overlay"><span>GET READY</span><strong>' + preCount + '</strong><p>' + (practiceMode ? '練習機就位' : '無人機就位') + '</p></div>' : '') +
+    '<div class="final-thirty-entry" id="finalThirtyEntry"><span>⚠ MUSIC SWITCH</span><strong>FINAL 30</strong><p>終局音樂啟動・全力得分！</p></div>' +
     (timerStatus === 'finished' ? '<div class="finish-flash">TIME!</div>' : '') +
   '</div>';
 
