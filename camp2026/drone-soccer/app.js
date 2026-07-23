@@ -272,6 +272,48 @@ function rankedTeams(groups, matches) {
     )
     .map((row) => row.group);
 }
+function buildPreliminaryMatches(groups) {
+  const poolDefinitions = groups.length === 3
+    ? [{ id: 'league', label: '循環組', groups }]
+    : [
+        { id: 'orange', label: '橘組', groups: groups.slice(0, Math.ceil(groups.length / 2)) },
+        { id: 'blue', label: '藍組', groups: groups.slice(Math.ceil(groups.length / 2)) },
+      ];
+
+  return poolDefinitions.flatMap((pool) => {
+    const matches = [];
+    for (let left = 0; left < pool.groups.length - 1; left += 1) {
+      for (let right = left + 1; right < pool.groups.length; right += 1) {
+        const participantGroupIds = [pool.groups[left].id, pool.groups[right].id];
+        matches.push({
+          id: uuid(),
+          label: pool.label + '・' + pool.groups[left].name + ' VS ' + pool.groups[right].name,
+          type: 'heat',
+          poolId: pool.id,
+          poolLabel: pool.label,
+          participantGroupIds,
+          scores: Object.fromEntries(participantGroupIds.map((groupId) => [groupId, 0])),
+          status: 'pending',
+          winnerGroupId: null,
+        });
+      }
+    }
+    return matches;
+  });
+}
+function finalistsFromHeats(groups, matches) {
+  const heats = matches.filter((match) => match.type === 'heat');
+  const poolIds = [...new Set(heats.map((match) => match.poolId).filter(Boolean))];
+  if (poolIds.length !== 2) return rankedTeams(groups, heats).slice(0, 2).map((group) => group.id);
+
+  return poolIds.map((poolId) => {
+    const poolMatches = heats.filter((match) => match.poolId === poolId);
+    const poolGroupIds = new Set(poolMatches.flatMap((match) => match.participantGroupIds));
+    const poolGroups = groups.filter((group) => poolGroupIds.has(group.id));
+    const leader = rankedTeams(poolGroups, poolMatches)[0];
+    return leader ? leader.id : null;
+  }).filter(Boolean);
+}
 function uuid() {
   return crypto.randomUUID ? crypto.randomUUID() :
     'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, (c) => {
@@ -918,22 +960,7 @@ function createGroups() {
       status: 'pending',
       winnerGroupId: null,
     });
-  } else {
-    for (let left = 0; left < groups.length - 1; left += 1) {
-      for (let right = left + 1; right < groups.length; right += 1) {
-        const participantGroupIds = [groups[left].id, groups[right].id];
-        matches.push({
-          id: uuid(),
-          label: groups[left].name + ' VS ' + groups[right].name,
-          type: 'heat',
-          participantGroupIds,
-          scores: Object.fromEntries(participantGroupIds.map((groupId) => [groupId, 0])),
-          status: 'pending',
-          winnerGroupId: null,
-        });
-      }
-    }
-  }
+  } else matches.push(...buildPreliminaryMatches(groups));
   commitState({
     ...eventState,
     tournamentVersion: 2,
@@ -943,7 +970,12 @@ function createGroups() {
     championGroupId: null,
   });
   switchSection('groups');
-  setNotice('已完成 ' + groups.length + ' 支隊伍抽籤，每隊正好 3 人；接下來進行 3 對 3 團隊賽。');
+  const scheduleSummary = groups.length === 2
+    ? '兩隊直接進行冠軍戰。'
+    : (groups.length === 3
+        ? '三隊單組循環，每隊預賽 2 場，前兩名進總決賽。'
+        : '已分成橘組與藍組，每組循環後由兩組第一名進總決賽。');
+  setNotice('已完成 ' + groups.length + ' 支三人隊抽籤；' + scheduleSummary);
 }
 
 function openMatch(matchId) {
@@ -1092,7 +1124,7 @@ function saveMatchResult() {
     const allHeatsComplete = heats.every((m) => m.status === 'complete');
     const finalExists = matches.some((m) => m.type === 'final');
     if (allHeatsComplete && !finalExists) {
-      const finalists = rankedTeams(eventState.groups, matches).slice(0, 2).map((group) => group.id);
+      const finalists = finalistsFromHeats(eventState.groups, matches);
       matches = [
         ...matches,
         {
@@ -1283,7 +1315,7 @@ function renderTournament() {
       '<section class="final-column"><div class="bracket-heading"><span>總決賽</span><small>FINAL</small></div>' +
         (finals.length
           ? finals.map((m, i) => matchRowHtml(m, i)).join('')
-          : '<div class="locked-final"><span>✦</span><h3>總決賽隊伍尚未出爐</h3><p>完成所有 3 對 3 預賽後，系統會選出前兩隊。</p></div>') +
+          : '<div class="locked-final"><span>✦</span><h3>總決賽隊伍尚未出爐</h3><p>完成所有 3 對 3 預賽後，由橘組與藍組第一名進入總決賽。</p></div>') +
       '</section></div>';
   } else {
     html += '<div class="waiting-board">' +
