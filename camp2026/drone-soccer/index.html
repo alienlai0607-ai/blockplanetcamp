@@ -7,10 +7,33 @@
 <meta name="description" content="布拉克星球無人機足球晉級賽系統：駕照建檔、現場報到、三人組隊、3 對 3 團隊賽與總決賽。">
 <link rel="icon" href="../favicon-32.png">
 <link rel="apple-touch-icon" href="../apple-touch-icon.png">
-<link rel="stylesheet" href="styles.css?v=20260723-two-pools">
+<link rel="stylesheet" href="styles.css?v=20260723-swiss-audience">
 </head>
 <body>
-<main class="app-shell">
+<section class="access-gate" id="accessGate">
+  <div class="access-gate-art"><img src="assets/drone-soccer-hero.png" alt="布拉克星球無人機足球"></div>
+  <div class="access-gate-panel">
+    <img class="access-logo" src="assets/block-planet-logo.png" alt="">
+    <span>BLOCK PLANET DRONE SOCCER</span>
+    <h1>你要進入哪一個畫面？</h1>
+    <p>觀眾可以即時看比分與時間；比賽單位可控制整場賽事。</p>
+    <div class="access-choices">
+      <button id="chooseSpectatorBtn">
+        <i>👀</i><strong>我是觀眾</strong><small>免密碼・只看今日即時戰況</small><b>進入觀眾席 →</b>
+      </button>
+      <button id="chooseControlBtn">
+        <i>🎛️</i><strong>比賽單位控制</strong><small>駕照、分組、時間、音樂與計分</small><b>輸入密碼 →</b>
+      </button>
+    </div>
+    <form class="control-login" id="controlLoginForm" hidden>
+      <label><span>比賽單位密碼</span><input id="controlPassword" type="password" autocomplete="current-password" placeholder="請輸入密碼"></label>
+      <button type="submit">開啟賽事指揮台</button>
+      <p id="controlLoginError" hidden>密碼不正確，請再試一次。</p>
+    </form>
+  </div>
+</section>
+
+<main class="app-shell" id="controlApp" hidden>
   <header class="topbar">
     <button class="brand" id="brandBtn" aria-label="回到總覽">
       <img src="assets/block-planet-logo.png" alt="布拉克星球">
@@ -27,6 +50,7 @@
     </nav>
     <div class="top-actions">
       <a class="tiny-link" href="../index.html">← 營隊首頁</a>
+      <button class="tiny-link access-switch" id="controlSwitchAccessBtn">切換身份</button>
       <span class="save-state" id="saveState"><i></i> <b id="saveStateText">已連線</b></span>
       <button class="round-button" id="audioToggle" aria-label="關閉音效">♫</button>
     </div>
@@ -155,17 +179,18 @@
   <!-- ===== 晉級賽程 ===== -->
   <div class="page inner-page tournament-page" id="page-tournament" hidden>
     <div class="page-title-row">
-      <div><span class="kicker">3 VS 3 TOURNAMENT</span><h1>隊伍晉級賽程</h1><p>每三人是一隊、整隊共同計分與晉級；多隊賽事分為橘組、藍組，各組第一名進入總決賽。</p></div>
+      <div><span class="kicker">3 VS 3 TOURNAMENT</span><h1>隊伍晉級賽程</h1><p id="tournamentDescription">三輪爬升積分：每隊固定出賽 3 場，每輪依最新戰績重新配對且盡量不重複對手；積分前兩名進入總決賽。</p></div>
       <div class="match-rule"><strong>03:00</strong><span>每場比賽</span></div>
     </div>
     <div id="tournamentArea"></div>
   </div>
 </main>
 
+<div class="spectator-root" id="spectatorRoot" hidden></div>
 <div id="modalRoot"></div>
 <div id="matchScreenRoot"></div>
 <div id="musicSelectorRoot"></div>
 
-<script src="app.js?v=20260723-two-pools"></script>
+<script src="app.js?v=20260723-swiss-audience"></script>
 </body>
 </html>

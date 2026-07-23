@@ -73,6 +73,8 @@ const CLIMAX_MUSIC_CHOICES = [
 
 const EMPTY_STATE = () => ({
   tournamentVersion: 2,
+  format: null,
+  live: null,
   checkedInIds: [],
   groups: [],
   matches: [],
@@ -114,6 +116,14 @@ let musicPlayErrorShown = false;
 let musicStep = 0;
 let timerInterval = null;
 let crunchInterval = null;
+let accessMode = null; // null | spectator | control
+let spectatorRefreshInterval = null;
+let spectatorClockInterval = null;
+let spectatorSyncing = false;
+let lastSpectatorSyncAt = null;
+let lastSpectatorPilotSyncAt = 0;
+let lastLivePublishAt = 0;
+let stateSaveQueue = Promise.resolve();
 
 function musicChoice(choices, id) {
   return choices.find((choice) => choice.id === id) || choices[0];
@@ -221,14 +231,26 @@ function normalizeEventState(state) {
       migrated: true,
     };
   }
+  const matches = Array.isArray(incoming.matches) ? incoming.matches : [];
+  const inferredFormat = typeof incoming.format === 'string'
+    ? incoming.format
+    : (matches.some((match) => Number(match.roundNo) > 0)
+        ? 'swiss3'
+        : (matches.some((match) => match.poolId)
+            ? 'two-pools'
+            : (matches.some((match) => match.type === 'heat')
+                ? 'roundrobin'
+                : (matches.some((match) => match.type === 'final') ? 'direct' : null))));
   return {
     state: {
       tournamentVersion: 2,
+      format: inferredFormat,
       checkedInIds: Array.isArray(incoming.checkedInIds) ? incoming.checkedInIds : [],
       groups: Array.isArray(incoming.groups) ? incoming.groups : [],
-      matches: Array.isArray(incoming.matches) ? incoming.matches : [],
+      matches,
       activeMatchId: typeof incoming.activeMatchId === 'string' ? incoming.activeMatchId : null,
       championGroupId: typeof incoming.championGroupId === 'string' ? incoming.championGroupId : null,
+      live: incoming.live && typeof incoming.live === 'object' ? incoming.live : null,
     },
     migrated: false,
   };
@@ -242,11 +264,11 @@ function eventStateAfterPilotDeletion(state, pilotId) {
     : { ...state, checkedInIds };
 }
 
-function rankedTeams(groups, matches) {
+function teamStandings(groups, matches) {
   const seedOrder = new Map(groups.map((group, index) => [group.id, index]));
   const standings = new Map(groups.map((group) => [
     group.id,
-    { group, wins: 0, scored: 0, allowed: 0 },
+    { group, played: 0, wins: 0, scored: 0, allowed: 0, opponentIds: [], opponentStrength: 0 },
   ]));
 
   matches
@@ -255,51 +277,110 @@ function rankedTeams(groups, matches) {
       match.participantGroupIds.forEach((groupId) => {
         const row = standings.get(groupId);
         if (!row) return;
+        const opponentIds = match.participantGroupIds.filter((opponentId) => opponentId !== groupId);
+        row.played += 1;
         row.scored += match.scores[groupId] || 0;
-        row.allowed += match.participantGroupIds
-          .filter((opponentId) => opponentId !== groupId)
+        row.allowed += opponentIds
           .reduce((total, opponentId) => total + (match.scores[opponentId] || 0), 0);
+        row.opponentIds.push(...opponentIds);
         if (match.winnerGroupId === groupId) row.wins += 1;
       });
     });
 
-  return [...standings.values()]
-    .sort((a, b) =>
+  standings.forEach((row) => {
+    row.opponentStrength = row.opponentIds.reduce(
+      (total, opponentId) => total + (standings.get(opponentId) ? standings.get(opponentId).wins : 0),
+      0,
+    );
+  });
+
+  return [...standings.values()].sort((a, b) =>
       b.wins - a.wins ||
+      b.opponentStrength - a.opponentStrength ||
       (b.scored - b.allowed) - (a.scored - a.allowed) ||
       b.scored - a.scored ||
       (seedOrder.get(a.group.id) || 0) - (seedOrder.get(b.group.id) || 0),
-    )
-    .map((row) => row.group);
+    );
 }
-function buildPreliminaryMatches(groups) {
-  const poolDefinitions = groups.length === 3
-    ? [{ id: 'league', label: '循環組', groups }]
-    : [
-        { id: 'orange', label: '橘組', groups: groups.slice(0, Math.ceil(groups.length / 2)) },
-        { id: 'blue', label: '藍組', groups: groups.slice(Math.ceil(groups.length / 2)) },
-      ];
+function rankedTeams(groups, matches) {
+  return teamStandings(groups, matches).map((row) => row.group);
+}
 
-  return poolDefinitions.flatMap((pool) => {
-    const matches = [];
-    for (let left = 0; left < pool.groups.length - 1; left += 1) {
-      for (let right = left + 1; right < pool.groups.length; right += 1) {
-        const participantGroupIds = [pool.groups[left].id, pool.groups[right].id];
-        matches.push({
-          id: uuid(),
-          label: pool.label + '・' + pool.groups[left].name + ' VS ' + pool.groups[right].name,
-          type: 'heat',
-          poolId: pool.id,
-          poolLabel: pool.label,
-          participantGroupIds,
-          scores: Object.fromEntries(participantGroupIds.map((groupId) => [groupId, 0])),
-          status: 'pending',
-          winnerGroupId: null,
-        });
+function matchPairKey(leftId, rightId) {
+  return [leftId, rightId].sort().join('::');
+}
+function pairSwissRows(rows, matches) {
+  const playedPairs = new Set(
+    matches
+      .filter((match) => match.type === 'heat')
+      .map((match) => matchPairKey(match.participantGroupIds[0], match.participantGroupIds[1])),
+  );
+  let bestPairs = [];
+  let bestPenalty = Infinity;
+
+  function search(remaining, pairs, penalty) {
+    if (!remaining.length) {
+      if (penalty < bestPenalty) {
+        bestPenalty = penalty;
+        bestPairs = pairs;
       }
+      return;
     }
-    return matches;
+    if (penalty >= bestPenalty) return;
+    const left = remaining[0];
+    for (let index = 1; index < remaining.length; index += 1) {
+      const right = remaining[index];
+      const repeated = playedPairs.has(matchPairKey(left.row.group.id, right.row.group.id));
+      const pairPenalty =
+        (repeated ? 100000 : 0) +
+        Math.abs(left.row.wins - right.row.wins) * 1000 +
+        Math.abs(left.row.opponentStrength - right.row.opponentStrength) * 20 +
+        Math.abs(left.rank - right.rank);
+      search(
+        remaining.slice(1, index).concat(remaining.slice(index + 1)),
+        pairs.concat([[left.row, right.row]]),
+        penalty + pairPenalty,
+      );
+    }
+  }
+
+  search(rows.map((row, rank) => ({ row, rank })), [], 0);
+  return bestPairs;
+}
+function buildSwissRound(groups, matches, roundNo) {
+  const standings = teamStandings(groups, matches);
+  return pairSwissRows(standings, matches).map(([left, right]) => {
+    const participantGroupIds = [left.group.id, right.group.id];
+    return {
+      id: uuid(),
+      label: '第 ' + roundNo + ' 輪・' + left.group.name + ' VS ' + right.group.name,
+      type: 'heat',
+      format: 'swiss3',
+      roundNo,
+      participantGroupIds,
+      scores: Object.fromEntries(participantGroupIds.map((groupId) => [groupId, 0])),
+      status: 'pending',
+      winnerGroupId: null,
+    };
   });
+}
+function buildRoundRobinMatches(groups) {
+  const matches = [];
+  for (let left = 0; left < groups.length - 1; left += 1) {
+    for (let right = left + 1; right < groups.length; right += 1) {
+      const participantGroupIds = [groups[left].id, groups[right].id];
+      matches.push({
+        id: uuid(),
+        label: '循環賽・' + groups[left].name + ' VS ' + groups[right].name,
+        type: 'heat',
+        participantGroupIds,
+        scores: Object.fromEntries(participantGroupIds.map((groupId) => [groupId, 0])),
+        status: 'pending',
+        winnerGroupId: null,
+      });
+    }
+  }
+  return matches;
 }
 function finalistsFromHeats(groups, matches) {
   const heats = matches.filter((match) => match.type === 'heat');
@@ -422,12 +503,36 @@ async function commitState(next) {
   render();
   setSaving(true);
   try {
-    await apiSaveState(next);
+    stateSaveQueue = stateSaveQueue.catch(() => {}).then(() => apiSaveState(next));
+    await stateSaveQueue;
   } catch (error) {
     setNotice(error && error.message ? error.message : '賽事狀態尚未儲存');
   } finally {
     setSaving(false);
   }
+}
+
+function liveSnapshot(match, status = timerStatus) {
+  if (!match || practiceMode) return null;
+  return {
+    matchId: match.id,
+    status,
+    secondsLeft,
+    updatedAt: Date.now(),
+    scores: { ...match.scores },
+  };
+}
+function publishLiveState(force = false) {
+  if (accessMode !== 'control' || practiceMode) return;
+  const match = activeMatch();
+  if (!match) return;
+  const now = Date.now();
+  if (!force && now - lastLivePublishAt < 4200) return;
+  lastLivePublishAt = now;
+  const next = { ...eventState, live: liveSnapshot(match) };
+  eventState = next;
+  stateSaveQueue = stateSaveQueue.catch(() => {}).then(() => apiSaveState(next));
+  stateSaveQueue.catch(() => setNotice('觀眾即時戰況同步暫時中斷，系統會繼續重試。'));
 }
 
 // ===== 音效與 CC0 戰鬥音樂 =====
@@ -706,6 +811,7 @@ function setTimerStatus(next) {
   timerStatus = next;
   syncTimerLoops();
   renderMatchScreen();
+  publishLiveState(true);
 }
 function syncTimerLoops() {
   if (timerStatus === 'running' && !timerInterval) {
@@ -738,6 +844,7 @@ function onTick() {
     playFinishHorn();
     syncTimerLoops();
     renderMatchScreen();
+    publishLiveState(true);
     return;
   }
   if (secondsLeft <= 30) {
@@ -757,6 +864,7 @@ function onTick() {
   }
   syncTimerLoops();
   updateTimerDisplay();
+  publishLiveState(false);
 }
 function updateTimerDisplay() {
   const numberEl = $('timerNumber');
@@ -949,7 +1057,9 @@ function createGroups() {
   }
 
   const matches = [];
+  let format = 'roundrobin';
   if (groups.length === 2) {
+    format = 'direct';
     const participantGroupIds = groups.map((group) => group.id);
     matches.push({
       id: uuid(),
@@ -960,21 +1070,28 @@ function createGroups() {
       status: 'pending',
       winnerGroupId: null,
     });
-  } else matches.push(...buildPreliminaryMatches(groups));
+  } else if (groups.length >= 4 && groups.length % 2 === 0) {
+    format = 'swiss3';
+    matches.push(...buildSwissRound(groups, [], 1));
+  } else {
+    matches.push(...buildRoundRobinMatches(groups));
+  }
   commitState({
     ...eventState,
     tournamentVersion: 2,
+    format,
     groups,
     matches,
     activeMatchId: null,
     championGroupId: null,
+    live: null,
   });
   switchSection('groups');
   const scheduleSummary = groups.length === 2
     ? '兩隊直接進行冠軍戰。'
-    : (groups.length === 3
-        ? '三隊單組循環，每隊預賽 2 場，前兩名進總決賽。'
-        : '已分成橘組與藍組，每組循環後由兩組第一名進總決賽。');
+    : (format === 'swiss3'
+        ? '採三輪爬升積分賽，每隊固定 3 場；完成本輪後會自動產生下一輪，積分前兩名進總決賽。'
+        : '採單組循環賽，依排名前兩名進總決賽。');
   setNotice('已完成 ' + groups.length + ' 支三人隊抽籤；' + scheduleSummary);
 }
 
@@ -987,7 +1104,12 @@ function openMatch(matchId) {
   timerStatus = 'ready';
   syncTimerLoops();
   warmBattleMusic();
-  commitState({ ...eventState, activeMatchId: matchId });
+  const match = eventState.matches.find((item) => item.id === matchId);
+  commitState({
+    ...eventState,
+    activeMatchId: matchId,
+    live: match ? liveSnapshot(match, 'ready') : null,
+  });
 }
 
 function openPracticeMatch() {
@@ -1022,7 +1144,7 @@ function closeMatch() {
     setNotice('練習賽已結束，成績沒有寫入正式賽程。');
     return;
   }
-  commitState({ ...eventState, activeMatchId: null });
+  commitState({ ...eventState, activeMatchId: null, live: null });
 }
 
 function startMatch() {
@@ -1032,6 +1154,7 @@ function startMatch() {
   preCount = 'READY';
   playReadyCue();
   renderMatchScreen();
+  publishLiveState(true);
   const runStep = (value) => {
     if (timerStatus !== 'countdown') return; // 已離開或重置
     if (value > 0) {
@@ -1048,6 +1171,7 @@ function startMatch() {
     playStartHorn();
     syncTimerLoops();
     renderMatchScreen();
+    publishLiveState(true);
   };
   setTimeout(() => runStep(3), 900);
 }
@@ -1073,6 +1197,7 @@ function updateScore(groupId, difference) {
     ),
   };
   renderMatchScreen();
+  publishLiveState(true);
 }
 
 function resetCurrentMatch() {
@@ -1097,6 +1222,7 @@ function resetCurrentMatch() {
     ),
   };
   renderMatchScreen();
+  publishLiveState(true);
 }
 
 function saveMatchResult() {
@@ -1118,39 +1244,70 @@ function saveMatchResult() {
     m.id === match.id ? { ...m, status: 'complete', winnerGroupId } : m,
   );
   let championGroupId = eventState.championGroupId;
+  let progressionNotice = '';
 
   if (match.type === 'heat') {
     const heats = matches.filter((m) => m.type === 'heat');
-    const allHeatsComplete = heats.every((m) => m.status === 'complete');
     const finalExists = matches.some((m) => m.type === 'final');
-    if (allHeatsComplete && !finalExists) {
-      const finalists = finalistsFromHeats(eventState.groups, matches);
-      matches = [
-        ...matches,
-        {
-          id: uuid(),
-          label: (getGroup(finalists[0]) ? getGroup(finalists[0]).name : '第一名') + ' VS ' +
-            (getGroup(finalists[1]) ? getGroup(finalists[1]).name : '第二名') + '・總決賽',
-          type: 'final',
-          participantGroupIds: finalists,
-          scores: Object.fromEntries(finalists.map((id) => [id, 0])),
-          status: 'pending',
-          winnerGroupId: null,
-        },
-      ];
+    if (eventState.format === 'swiss3') {
+      const currentRound = Math.max(...heats.map((heat) => Number(heat.roundNo) || 1));
+      const roundMatches = heats.filter((heat) => (Number(heat.roundNo) || 1) === currentRound);
+      const roundComplete = roundMatches.length && roundMatches.every((heat) => heat.status === 'complete');
+      const nextRoundExists = heats.some((heat) => Number(heat.roundNo) === currentRound + 1);
+      if (roundComplete && currentRound < 3 && !nextRoundExists) {
+        matches = [...matches, ...buildSwissRound(eventState.groups, matches, currentRound + 1)];
+        progressionNotice = '第 ' + (currentRound + 1) + ' 輪配對已依最新積分自動產生。';
+      } else if (roundComplete && currentRound === 3 && !finalExists) {
+        const finalists = teamStandings(eventState.groups, matches)
+          .slice(0, 2)
+          .map((row) => row.group.id);
+        matches = [
+          ...matches,
+          {
+            id: uuid(),
+            label: (getGroup(finalists[0]) ? getGroup(finalists[0]).name : '第一名') + ' VS ' +
+              (getGroup(finalists[1]) ? getGroup(finalists[1]).name : '第二名') + '・總決賽',
+            type: 'final',
+            participantGroupIds: finalists,
+            scores: Object.fromEntries(finalists.map((id) => [id, 0])),
+            status: 'pending',
+            winnerGroupId: null,
+          },
+        ];
+        progressionNotice = '三輪爬升賽完成，積分前兩名已進入總決賽。';
+      }
+    } else {
+      const allHeatsComplete = heats.every((m) => m.status === 'complete');
+      if (allHeatsComplete && !finalExists) {
+        const finalists = finalistsFromHeats(eventState.groups, matches);
+        matches = [
+          ...matches,
+          {
+            id: uuid(),
+            label: (getGroup(finalists[0]) ? getGroup(finalists[0]).name : '第一名') + ' VS ' +
+              (getGroup(finalists[1]) ? getGroup(finalists[1]).name : '第二名') + '・總決賽',
+            type: 'final',
+            participantGroupIds: finalists,
+            scores: Object.fromEntries(finalists.map((id) => [id, 0])),
+            status: 'pending',
+            winnerGroupId: null,
+          },
+        ];
+      }
     }
   } else {
     championGroupId = winnerGroupId;
   }
 
-  commitState({ ...eventState, matches, activeMatchId: null, championGroupId });
+  commitState({ ...eventState, matches, activeMatchId: null, championGroupId, live: null });
   timerStatus = 'ready';
   secondsLeft = 180;
   syncTimerLoops();
   const winner = winnerGroupId ? getGroup(winnerGroupId) : null;
   setNotice(match.type === 'final'
     ? '冠軍誕生：' + (winner ? winner.name : '') + '，三位隊員共同奪冠！'
-    : (winner ? winner.name : '') + ' 贏得本場 3 對 3 比賽！');
+    : (winner ? winner.name : '') + ' 贏得本場 3 對 3 比賽！' +
+      (progressionNotice ? ' ' + progressionNotice : ''));
 }
 
 function printLicense() {
@@ -1267,9 +1424,15 @@ function matchRowHtml(match, index) {
   const groups = groupMap();
   const map = pilotMap();
   const winner = match.winnerGroupId ? groups.get(match.winnerGroupId) : null;
+  const matchTag = match.type === 'final'
+    ? '3 VS 3 FINAL'
+    : (match.roundNo ? 'ROUND ' + match.roundNo + ' · 3 VS 3' : '3 VS 3 QUALIFIER');
+  const winnerLabel = match.type === 'final'
+    ? '・冠軍隊伍'
+    : (match.roundNo ? '・本輪獲勝' : '・三人共同晉級');
   return '<article class="match-row ' + match.status + '">' +
     '<div class="match-index">' + String(index + 1).padStart(2, '0') + '</div>' +
-    '<div class="match-info"><small>' + (match.type === 'final' ? '3 VS 3 FINAL' : '3 VS 3 QUALIFIER') + '</small><strong>' + esc(match.label) + '</strong>' +
+    '<div class="match-info"><small>' + matchTag + '</small><strong>' + esc(match.label) + '</strong>' +
       '<div class="match-team-pair">' + match.participantGroupIds.map((groupId, teamIndex) => {
         const group = groups.get(groupId);
         if (!group) return '';
@@ -1280,7 +1443,7 @@ function matchRowHtml(match, index) {
           }).join('') + '</i>' + (teamIndex === 0 ? '<em>VS</em>' : '') + '</span>';
       }).join('') + '</div></div>' +
     '<div class="match-status">' + (winner
-      ? '<small>WINNING TEAM</small><strong>' + esc(winner.name) + '・三人共同晉級</strong>'
+      ? '<small>WINNING TEAM</small><strong>' + esc(winner.name) + winnerLabel + '</strong>'
       : '<small>STATUS</small><strong>待比賽</strong>') + '</div>' +
     '<button data-open-match="' + esc(match.id) + '"' + (match.status === 'complete' ? ' disabled' : '') + '>' +
       (match.status === 'complete' ? '已完成' : '開啟賽場 →') + '</button>' +
@@ -1292,6 +1455,15 @@ function renderTournament() {
   const champion = eventState.championGroupId ? getGroup(eventState.championGroupId) : null;
   const heats = eventState.matches.filter((m) => m.type === 'heat');
   const finals = eventState.matches.filter((m) => m.type === 'final');
+  const isSwiss = eventState.format === 'swiss3';
+  const tournamentDescription = $('tournamentDescription');
+  if (tournamentDescription) {
+    tournamentDescription.textContent = isSwiss
+      ? '三輪爬升積分：每隊固定出賽 3 場，每輪依最新戰績重新配對且盡量不重複對手；積分前兩名進入總決賽。'
+      : (eventState.format === 'two-pools'
+          ? '每三人是一隊、整隊共同計分與晉級；橘組、藍組各組第一名進入總決賽。'
+          : '每三人是一隊、整隊共同計分與晉級；預賽排名前兩名進入總決賽。');
+  }
   let html = '';
 
   if (champion) {
@@ -1305,8 +1477,32 @@ function renderTournament() {
   }
 
   if (eventState.matches.length) {
+    if (isSwiss) {
+      const standings = teamStandings(eventState.groups, heats);
+      const currentRound = heats.length
+        ? Math.max(...heats.map((match) => Number(match.roundNo) || 1))
+        : 1;
+      html += '<section class="swiss-standings">' +
+        '<header><div><span>SWISS CLIMB RANKING</span><h2>三輪爬升積分榜</h2></div>' +
+          '<strong>ROUND ' + currentRound + ' / 3</strong></header>' +
+        '<div class="standings-head"><span>排名／隊伍</span><span>場次</span><span>勝場</span><span>對手分</span><span>得失分</span></div>' +
+        '<div class="standings-list">' + standings.map((row, index) => {
+          const difference = row.scored - row.allowed;
+          return '<div class="standings-row ' + (index < 2 ? 'final-zone' : '') + '">' +
+            '<div><b>' + String(index + 1).padStart(2, '0') + '</b><strong>' + esc(row.group.name) + '</strong>' +
+              (index < 2 ? '<em>決賽線</em>' : '') + '</div>' +
+            '<span>' + row.played + ' / 3</span>' +
+            '<span class="wins">' + row.wins + '</span>' +
+            '<span>' + row.opponentStrength + '</span>' +
+            '<span class="' + (difference > 0 ? 'positive' : (difference < 0 ? 'negative' : '')) + '">' +
+              (difference > 0 ? '+' : '') + difference + '</span>' +
+          '</div>';
+        }).join('') + '</div>' +
+        '<footer>排名順序：勝場 → 對手強度 → 得失分差 → 總得分</footer>' +
+      '</section>';
+    }
     html += '<div class="bracket-layout">' +
-      '<section><div class="bracket-heading"><span>3 對 3 預賽</span><small>' +
+      '<section><div class="bracket-heading"><span>' + (isSwiss ? '三輪爬升對戰' : '3 對 3 預賽') + '</span><small>' +
         heats.filter((m) => m.status === 'complete').length + '/' + heats.length + ' COMPLETE</small></div>' +
         '<div class="match-list">' + (heats.length
           ? heats.map((m, i) => matchRowHtml(m, i)).join('')
@@ -1315,7 +1511,13 @@ function renderTournament() {
       '<section class="final-column"><div class="bracket-heading"><span>總決賽</span><small>FINAL</small></div>' +
         (finals.length
           ? finals.map((m, i) => matchRowHtml(m, i)).join('')
-          : '<div class="locked-final"><span>✦</span><h3>總決賽隊伍尚未出爐</h3><p>完成所有 3 對 3 預賽後，由橘組與藍組第一名進入總決賽。</p></div>') +
+          : '<div class="locked-final"><span>✦</span><h3>總決賽隊伍尚未出爐</h3><p>' +
+              (isSwiss
+                ? '完成三輪爬升賽後，積分榜前兩名進入總決賽。'
+                : (eventState.format === 'two-pools'
+                    ? '完成所有 3 對 3 預賽後，由橘組與藍組第一名進入總決賽。'
+                    : '完成所有 3 對 3 預賽後，由排名前兩名進入總決賽。')) +
+            '</p></div>') +
       '</section></div>';
   } else {
     html += '<div class="waiting-board">' +
@@ -1326,8 +1528,110 @@ function renderTournament() {
   $('tournamentArea').innerHTML = html;
 }
 
+function spectatorSecondsLeft(live) {
+  if (!live) return 180;
+  const stored = Math.max(0, Number(live.secondsLeft) || 0);
+  if (live.status !== 'running' || !live.updatedAt) return stored;
+  return Math.max(0, stored - Math.floor((Date.now() - Number(live.updatedAt)) / 1000));
+}
+function spectatorStatus(live, seconds) {
+  if (!live) return { label: '等待開賽', detail: '賽事單位正在準備下一場比賽' };
+  if (live.status === 'running' && seconds === 0) return { label: '時間到', detail: '正在確認本場結果' };
+  if (live.status === 'countdown') return { label: '選手就位', detail: 'READY・3・2・1' };
+  if (live.status === 'running') return { label: '比賽進行中', detail: 'LIVE NOW' };
+  if (live.status === 'paused') return { label: '比賽暫停', detail: '等待裁判繼續比賽' };
+  if (live.status === 'finished') return { label: '時間到', detail: '正在確認本場結果' };
+  return { label: '準備開賽', detail: '兩隊無人機即將進場' };
+}
+function spectatorTeamHtml(groupId, score, sideIndex) {
+  const group = getGroup(groupId);
+  const map = pilotMap();
+  if (!group) return '';
+  return '<article class="audience-team side-' + sideIndex + '">' +
+    '<div class="audience-team-name"><small>' + (sideIndex === 0 ? 'ORANGE SIDE' : 'BLUE SIDE') + '</small><h2>' + esc(group.name) + '</h2></div>' +
+    '<div class="audience-roster">' + group.pilotIds.map((pilotId, index) => {
+      const pilot = map.get(pilotId);
+      return pilot
+        ? '<div><img src="' + esc(portraitFor(pilot, index + sideIndex)) + '" alt="' + esc(pilot.name) + '"><strong>' + esc(pilot.name) + '</strong></div>'
+        : '';
+    }).join('') + '</div>' +
+    '<div class="audience-score"><span>TEAM SCORE</span><strong>' + score + '</strong></div>' +
+  '</article>';
+}
+function renderSpectator() {
+  const root = $('spectatorRoot');
+  if (!root || accessMode !== 'spectator') return;
+  const live = eventState.live;
+  const liveMatch = live
+    ? eventState.matches.find((match) => match.id === live.matchId)
+    : eventState.matches.find((match) => match.id === eventState.activeMatchId);
+  const seconds = spectatorSecondsLeft(live);
+  const status = spectatorStatus(live, seconds);
+  const liveScores = live && live.scores ? live.scores : (liveMatch ? liveMatch.scores : {});
+  const isUrgent = live && (live.status === 'running' || live.status === 'paused') && seconds <= 30 && seconds > 0;
+  const isLastTen = isUrgent && seconds <= 10;
+  const champion = eventState.championGroupId ? getGroup(eventState.championGroupId) : null;
+  const pendingMatches = eventState.matches.filter(
+    (match) => match.status !== 'complete' && (!liveMatch || match.id !== liveMatch.id),
+  ).slice(0, 3);
+  const completed = eventState.matches.filter((match) => match.status === 'complete');
+  const heats = eventState.matches.filter((match) => match.type === 'heat');
+  const standings = eventState.format === 'swiss3' ? teamStandings(eventState.groups, heats) : [];
+
+  let hero = '';
+  if (liveMatch) {
+    hero = '<section class="audience-live-stage' + (isUrgent ? ' urgent' : '') + (isLastTen ? ' last-ten' : '') + '">' +
+      '<div class="audience-live-meta"><span><i></i>' + status.label + '</span><strong>' + esc(liveMatch.label) + '</strong><small>' + status.detail + '</small></div>' +
+      '<div class="audience-clock"><small>ROUND TIMER</small><strong>' + (isUrgent ? seconds : formatClock(seconds)) + '</strong>' +
+        '<span>' + (isLastTen ? '最後 10 秒・全力得分！' : (isUrgent ? '最後 30 秒・終局對決！' : status.label)) + '</span></div>' +
+      '<div class="audience-versus">' +
+        spectatorTeamHtml(liveMatch.participantGroupIds[0], liveScores[liveMatch.participantGroupIds[0]] || 0, 0) +
+        '<div class="audience-vs-mark"><span>VS</span><i></i></div>' +
+        spectatorTeamHtml(liveMatch.participantGroupIds[1], liveScores[liveMatch.participantGroupIds[1]] || 0, 1) +
+      '</div>' +
+    '</section>';
+  } else if (champion) {
+    hero = '<section class="audience-champion"><div class="audience-confetti" aria-hidden="true">' + confettiMarkup(42) + '</div>' +
+      '<span>🏆 TODAY\'S CHAMPION</span><h1>' + esc(champion.name) + ' 奪冠！</h1><div>' +
+      champion.pilotIds.map((pilotId, index) => {
+        const pilot = getPilot(pilotId);
+        return pilot ? '<figure><img src="' + esc(portraitFor(pilot, index)) + '" alt="' + esc(pilot.name) + '"><figcaption>' + esc(pilot.name) + '</figcaption></figure>' : '';
+      }).join('') + '</div><p>恭喜三位駕駛員完成今天的無人機足球挑戰！</p></section>';
+  } else {
+    hero = '<section class="audience-waiting"><img src="assets/drone-soccer-hero.png" alt=""><div><span>NEXT FLIGHT</span><h1>今日賽事準備中</h1><p>比賽單位開啟賽場後，這裡會立即顯示大型倒數、雙方隊伍與即時比分。</p></div></section>';
+  }
+
+  const standingsHtml = standings.length
+    ? '<section class="audience-panel audience-ranking"><header><div><span>LIVE RANKING</span><h2>三輪爬升積分榜</h2></div><small>前兩名進總決賽</small></header>' +
+      '<div class="audience-ranking-list">' + standings.map((row, index) => {
+        const difference = row.scored - row.allowed;
+        return '<div class="' + (index < 2 ? 'final-zone' : '') + '"><b>' + (index + 1) + '</b><strong>' + esc(row.group.name) + '</strong>' +
+          '<span>' + row.played + '/3 場</span><span>' + row.wins + ' 勝</span><span>對手分 ' + row.opponentStrength + '</span>' +
+          '<em>' + (difference > 0 ? '+' : '') + difference + '</em></div>';
+      }).join('') + '</div></section>'
+    : '';
+
+  root.innerHTML =
+    '<header class="audience-topbar"><div><img src="assets/block-planet-logo.png" alt=""><span><strong>BLOCK PLANET LIVE</strong><small>無人機足球・今日戰況</small></span></div>' +
+      '<div class="audience-sync"><i></i><span>' + (lastSpectatorSyncAt ? '即時連線中' : '正在連線') + '</span></div>' +
+      '<button id="spectatorSwitchAccessBtn">切換身份</button></header>' +
+    '<main class="audience-page">' + hero +
+      '<div class="audience-dashboard">' + standingsHtml +
+        '<section class="audience-panel audience-schedule"><header><div><span>MATCH CENTER</span><h2>接下來的賽程</h2></div><small>' + completed.length + ' 場已完成</small></header>' +
+          '<div>' + (pendingMatches.length ? pendingMatches.map((match, index) =>
+            '<article><b>' + String(index + 1).padStart(2, '0') + '</b><div><small>' +
+              (match.type === 'final' ? '總決賽' : (match.roundNo ? '第 ' + match.roundNo + ' 輪' : '預賽')) +
+              '</small><strong>' + esc(match.label) + '</strong></div><span>等待開賽</span></article>'
+          ).join('') : '<p class="audience-empty">目前沒有等待中的比賽。</p>') + '</div></section>' +
+      '</div>' +
+      '<footer class="audience-footer"><span>觀眾模式・畫面每幾秒自動更新</span><strong>FLY・SCORE・SHINE</strong></footer>' +
+    '</main>';
+  $('spectatorSwitchAccessBtn').addEventListener('click', showAccessGate);
+}
+
 function renderModal() {
   const root = $('modalRoot');
+  if (accessMode !== 'control') { root.innerHTML = ''; return; }
   const pilot = selectedPilotId ? getPilot(selectedPilotId) : null;
   if (!pilot) { deleteConfirmPilotId = null; root.innerHTML = ''; return; }
   const checked = eventState.checkedInIds.includes(pilot.id);
@@ -1429,6 +1733,7 @@ function renderModal() {
 function renderMusicPicker() {
   const root = $('musicSelectorRoot');
   if (!root) return;
+  if (accessMode !== 'control') { root.innerHTML = ''; return; }
   if (!musicPickerOpen) { root.innerHTML = ''; return; }
   const renderChoices = (choices, kind, selectedId) => choices.map((choice) =>
     '<button class="music-choice' + (choice.id === selectedId ? ' selected' : '') + '" data-music-kind="' + kind + '" data-music-id="' + esc(choice.id) + '">' +
@@ -1497,6 +1802,7 @@ function victoryCelebrationMarkup(match, groups) {
 
 function renderMatchScreen() {
   const root = $('matchScreenRoot');
+  if (accessMode !== 'control') { root.innerHTML = ''; return; }
   const match = activeMatch();
   if (!match) { root.innerHTML = ''; return; }
   const groups = arenaGroupMap();
@@ -1580,8 +1886,102 @@ function toggleAudio() {
   renderMusicPicker();
 }
 
+function stopSpectatorPolling() {
+  if (spectatorRefreshInterval) clearInterval(spectatorRefreshInterval);
+  if (spectatorClockInterval) clearInterval(spectatorClockInterval);
+  spectatorRefreshInterval = null;
+  spectatorClockInterval = null;
+}
+async function refreshSpectatorData() {
+  if (accessMode !== 'spectator' || spectatorSyncing) return;
+  spectatorSyncing = true;
+  try {
+    const shouldRefreshPilots = Date.now() - lastSpectatorPilotSyncAt > 30000;
+    const [pilotList, state] = await Promise.all([
+      shouldRefreshPilots ? apiListPilots() : Promise.resolve(pilots),
+      apiGetState(),
+    ]);
+    if (shouldRefreshPilots) {
+      pilots = pilotList;
+      lastSpectatorPilotSyncAt = Date.now();
+    }
+    eventState = normalizeEventState(state).state;
+    lastSpectatorSyncAt = new Date();
+    renderSpectator();
+  } catch (error) {
+    const sync = document.querySelector('.audience-sync span');
+    if (sync) sync.textContent = '連線重試中';
+  } finally {
+    spectatorSyncing = false;
+  }
+}
+function startSpectatorPolling() {
+  stopSpectatorPolling();
+  refreshSpectatorData();
+  spectatorRefreshInterval = setInterval(refreshSpectatorData, 4000 + Math.floor(Math.random() * 900));
+  spectatorClockInterval = setInterval(renderSpectator, 1000);
+}
+function enterAccessMode(mode) {
+  accessMode = mode;
+  sessionStorage.setItem('bp-drone-access-mode', mode);
+  $('accessGate').hidden = true;
+  $('controlApp').hidden = mode !== 'control';
+  $('spectatorRoot').hidden = mode !== 'spectator';
+  $('modalRoot').innerHTML = '';
+  $('matchScreenRoot').innerHTML = '';
+  $('musicSelectorRoot').innerHTML = '';
+  if (mode === 'spectator') {
+    pauseBattleMusic();
+    startSpectatorPolling();
+    renderSpectator();
+  } else {
+    stopSpectatorPolling();
+    if (eventState.live && eventState.activeMatchId === eventState.live.matchId) {
+      secondsLeft = spectatorSecondsLeft(eventState.live);
+      timerStatus = eventState.live.status === 'countdown' ? 'paused' : eventState.live.status;
+      syncTimerLoops();
+    }
+    render();
+  }
+}
+function showAccessGate() {
+  if (accessMode === 'control' && (timerStatus === 'running' || timerStatus === 'countdown')) {
+    timerStatus = 'paused';
+    syncTimerLoops();
+    publishLiveState(true);
+  }
+  stopSpectatorPolling();
+  accessMode = null;
+  sessionStorage.removeItem('bp-drone-access-mode');
+  $('accessGate').hidden = false;
+  $('controlApp').hidden = true;
+  $('spectatorRoot').hidden = true;
+  $('controlLoginForm').hidden = true;
+  $('controlPassword').value = '';
+  $('controlLoginError').hidden = true;
+}
+function bindAccessEvents() {
+  $('chooseSpectatorBtn').addEventListener('click', () => enterAccessMode('spectator'));
+  $('chooseControlBtn').addEventListener('click', () => {
+    $('controlLoginForm').hidden = false;
+    $('controlLoginError').hidden = true;
+    $('controlPassword').focus();
+  });
+  $('controlLoginForm').addEventListener('submit', (event) => {
+    event.preventDefault();
+    if ($('controlPassword').value === 'block') {
+      enterAccessMode('control');
+      return;
+    }
+    $('controlLoginError').hidden = false;
+    $('controlPassword').select();
+  });
+  $('controlSwitchAccessBtn').addEventListener('click', showAccessGate);
+}
+
 // ===== 事件繫結 =====
 function bindEvents() {
+  bindAccessEvents();
   $('brandBtn').addEventListener('click', () => switchSection('home'));
   document.querySelectorAll('#mainNav button').forEach((btn) => {
     btn.addEventListener('click', () => switchSection(btn.dataset.section));
@@ -1637,6 +2037,9 @@ async function init() {
   $('loadingStage').hidden = true;
   $('page-' + section).hidden = false;
   render();
+  const savedMode = sessionStorage.getItem('bp-drone-access-mode');
+  if (savedMode === 'spectator' || savedMode === 'control') enterAccessMode(savedMode);
+  else showAccessGate();
 }
 
 init();
