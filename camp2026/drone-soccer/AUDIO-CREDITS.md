@@ -1,6 +1,19 @@
 # Audio credits
 
-## Battle music
+## Selectable battle music
+
+- **Boss Fight Bounce** — Locomule
+  - Source: https://opengameart.org/content/boss-fight-bounce
+  - License: CC0 1.0 Universal / Public Domain
+  - Local file: `assets/audio/battle-boss-fight-bounce.mp3`
+- **Zelda Style 8-bit Boss Theme** — HydroGene
+  - Source: https://opengameart.org/content/zelda-style-8-bit-boss-theme
+  - License: CC0 1.0 Universal / Public Domain
+  - Local file: `assets/audio/battle-hero-boss.mp3`
+- **8-bit Danger!! Strong Boss** — HydroGene
+  - Source: https://opengameart.org/content/8-bit-danger-strong-boss
+  - License: CC0 1.0 Universal / Public Domain
+  - Local file: `assets/audio/battle-danger-boss.mp3`
 
 - **8bit Action Boss Battle (145 BPM)** — MintoDog
 - **8bit Action Boss Battle Climax (185 BPM)** — MintoDog
@@ -10,4 +23,14 @@
   - `assets/audio/battle-bpm145.mp3`
   - `assets/audio/battle-climax-bpm185.mp3`
 
-The source page describes both tracks as loopable. The Climax version is used for the final 30 seconds of a match.
+## Selectable final-30-second music
+
+- **Final Stand Phase 4.1 Final Max** — Centurion_of_war
+- **Final Stand Phase 2.2 Heavy Drums** — Centurion_of_war
+- Source: https://opengameart.org/content/final-stand-0
+- License: CC0 1.0 Universal / Public Domain
+- Local files:
+  - `assets/audio/climax-final-stand-max.ogg`
+  - `assets/audio/climax-final-stand-heavy.ogg`
+
+All tracks above use CC0. The in-app selector defaults to Boss Fight Bounce for the first 150 seconds and Final Stand Max for the final 30 seconds. Climax mode also runs at 1.08× playback speed and adds synthesized drums, heartbeat, arpeggio, and final-10-second alert tones.

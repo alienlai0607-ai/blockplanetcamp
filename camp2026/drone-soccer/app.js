@@ -37,6 +37,40 @@ const PRACTICE_TEAMS = [
   },
 ];
 
+const BATTLE_MUSIC_CHOICES = [
+  {
+    id: 'bounce', label: '星球彈跳', icon: '🪐', mood: '童趣最強・彈跳緊張', artist: 'Locomule',
+    file: 'assets/audio/battle-boss-fight-bounce.mp3', source: 'https://opengameart.org/content/boss-fight-bounce', recommended: true,
+  },
+  {
+    id: 'hero', label: '勇者對決', icon: '⚔️', mood: '經典電玩・熱血冒險', artist: 'HydroGene',
+    file: 'assets/audio/battle-hero-boss.mp3', source: 'https://opengameart.org/content/zelda-style-8-bit-boss-theme',
+  },
+  {
+    id: 'danger', label: '危機追擊', icon: '🚀', mood: '高速追逐・戰鬥感強', artist: 'HydroGene',
+    file: 'assets/audio/battle-danger-boss.mp3', source: 'https://opengameart.org/content/8-bit-danger-strong-boss',
+  },
+  {
+    id: 'original', label: '原版頭目戰', icon: '🎮', mood: '145 BPM・俐落節奏', artist: 'MintoDog',
+    file: 'assets/audio/battle-bpm145.mp3', source: 'https://opengameart.org/content/8bit-action-boss-battle',
+  },
+];
+
+const CLIMAX_MUSIC_CHOICES = [
+  {
+    id: 'finalmax', label: '最終決戰 MAX', icon: '🔥', mood: '最刺激・爆發式最後衝刺', artist: 'Centurion_of_war',
+    file: 'assets/audio/climax-final-stand-max.ogg', source: 'https://opengameart.org/content/final-stand-0', recommended: true,
+  },
+  {
+    id: 'heavy', label: '重鼓危機', icon: '🥁', mood: '重鼓壓迫・緊張升級', artist: 'Centurion_of_war',
+    file: 'assets/audio/climax-final-stand-heavy.ogg', source: 'https://opengameart.org/content/final-stand-0',
+  },
+  {
+    id: 'original', label: '原版高速戰', icon: '⚡', mood: '185 BPM・高速晶片音', artist: 'MintoDog',
+    file: 'assets/audio/battle-climax-bpm185.mp3', source: 'https://opengameart.org/content/8bit-action-boss-battle',
+  },
+];
+
 const EMPTY_STATE = () => ({
   tournamentVersion: 2,
   checkedInIds: [],
@@ -61,6 +95,10 @@ let secondsLeft = 180;
 let preCount = null;
 let practiceMode = false;
 let practiceScores = { 'practice-orange': 0, 'practice-blue': 0 };
+let selectedBattleMusicId = musicChoice(BATTLE_MUSIC_CHOICES, localStorage.getItem('bp-drone-battle-music') || 'bounce').id;
+let selectedClimaxMusicId = musicChoice(CLIMAX_MUSIC_CHOICES, localStorage.getItem('bp-drone-climax-music') || 'finalmax').id;
+let musicPickerOpen = false;
+let musicPreviewTimer = null;
 let audioEnabled = true;
 let audioContext = null;
 let masterGainNode = null;
@@ -76,11 +114,15 @@ let musicStep = 0;
 let timerInterval = null;
 let crunchInterval = null;
 
-const battleMusic = new Audio('assets/audio/battle-bpm145.mp3');
-const climaxMusic = new Audio('assets/audio/battle-climax-bpm185.mp3');
+function musicChoice(choices, id) {
+  return choices.find((choice) => choice.id === id) || choices[0];
+}
+
+const battleMusic = new Audio(musicChoice(BATTLE_MUSIC_CHOICES, selectedBattleMusicId).file);
+const climaxMusic = new Audio(musicChoice(CLIMAX_MUSIC_CHOICES, selectedClimaxMusicId).file);
 [battleMusic, climaxMusic].forEach((track) => {
   track.loop = true;
-  track.preload = 'auto';
+  track.preload = 'metadata';
   track.playsInline = true;
   track.volume = 1;
 });
@@ -352,6 +394,56 @@ function warmBattleMusic() {
     if (track.readyState === 0) track.load();
   });
 }
+function showMusicPicker() {
+  musicPickerOpen = true;
+  renderMusicPicker();
+}
+function closeMusicPicker() {
+  musicPickerOpen = false;
+  if (timerStatus !== 'running' && timerStatus !== 'countdown') {
+    clearTimeout(musicPreviewTimer);
+    musicPreviewTimer = null;
+    pauseBattleMusic();
+    battleMusicStarted = false;
+  }
+  renderMusicPicker();
+}
+function selectAndPreviewMusic(kind, id) {
+  const choices = kind === 'climax' ? CLIMAX_MUSIC_CHOICES : BATTLE_MUSIC_CHOICES;
+  const choice = musicChoice(choices, id);
+  const target = kind === 'climax' ? climaxMusic : battleMusic;
+  if (kind === 'climax') {
+    selectedClimaxMusicId = choice.id;
+    localStorage.setItem('bp-drone-climax-music', choice.id);
+  } else {
+    selectedBattleMusicId = choice.id;
+    localStorage.setItem('bp-drone-battle-music', choice.id);
+  }
+
+  clearTimeout(musicPreviewTimer);
+  musicPreviewTimer = null;
+  pauseBattleMusic();
+  target.src = choice.file;
+  target.load();
+  battleMusicStarted = false;
+  musicPlayErrorShown = false;
+
+  if (timerStatus === 'running' || timerStatus === 'countdown') {
+    startBattleMusic();
+    setBattleMusicMode(crunchTime() ? 'climax' : 'normal', true);
+  } else if (audioEnabled && ensureAudio()) {
+    battleMusic.currentTime = 0;
+    climaxMusic.currentTime = 0;
+    setBattleMusicMode(kind === 'climax' ? 'climax' : 'normal', true);
+    safePlayMusic(target);
+    musicPreviewTimer = setTimeout(() => {
+      if (timerStatus !== 'running' && timerStatus !== 'countdown') pauseBattleMusic();
+      musicPreviewTimer = null;
+    }, 9000);
+  }
+  renderMatchScreen();
+  renderMusicPicker();
+}
 function safePlayMusic(track) {
   const promise = track.play();
   if (promise && typeof promise.catch === 'function') {
@@ -385,8 +477,12 @@ function setBattleMusicMode(next, immediate = false) {
 }
 function startBattleMusic() {
   if (!audioEnabled || !ensureAudio()) return;
+  clearTimeout(musicPreviewTimer);
+  musicPreviewTimer = null;
   battleMusic.currentTime = 0;
   climaxMusic.currentTime = 0;
+  battleMusic.playbackRate = 1;
+  climaxMusic.playbackRate = 1.08;
   musicStep = 0;
   battleMusicStarted = true;
   battleMusicMode = 'normal';
@@ -399,6 +495,8 @@ function pauseBattleMusic() {
   climaxMusic.pause();
 }
 function stopBattleMusic() {
+  clearTimeout(musicPreviewTimer);
+  musicPreviewTimer = null;
   pauseBattleMusic();
   battleMusic.currentTime = 0;
   climaxMusic.currentTime = 0;
@@ -450,8 +548,9 @@ function playFinishHorn() {
   playTone(196, 0.7, 'sawtooth', 0.15, 0.46);
 }
 function playHeartbeat() {
-  playTone(72, 0.13, 'sine', 0.22);
-  playTone(58, 0.16, 'sine', 0.18, 0.18);
+  playTone(82, 0.12, 'sawtooth', 0.29);
+  playTone(54, 0.18, 'square', 0.2, 0.14);
+  playTone(108, 0.11, 'triangle', 0.14, 0.34);
 }
 
 // ===== 計時器 =====
@@ -471,13 +570,15 @@ function syncTimerLoops() {
     timerInterval = null;
   }
   if (crunchTime() && audioEnabled && !crunchInterval) {
-    const notes = [196, 233, 293, 349, 293, 392, 349, 466];
+    const notes = [293, 349, 392, 466, 523, 466, 587, 698];
     crunchInterval = setInterval(() => {
       const note = notes[musicStep % notes.length];
-      playTone(note, 0.15, 'triangle', 0.06);
-      if (musicStep % 4 === 0) playTone(note / 2, 0.22, 'sawtooth', 0.045);
+      playTone(note, 0.13, 'triangle', 0.09);
+      if (musicStep % 2 === 0) playTone(62, 0.13, 'sawtooth', 0.12);
+      if (musicStep % 4 === 0) playTone(note / 2, 0.2, 'square', 0.075);
+      if (musicStep % 8 === 7) playTone(920, 0.07, 'square', 0.1);
       musicStep += 1;
-    }, 250);
+    }, 180);
   } else if ((!crunchTime() || !audioEnabled) && crunchInterval) {
     clearInterval(crunchInterval);
     crunchInterval = null;
@@ -495,7 +596,7 @@ function onTick() {
   }
   if (secondsLeft <= 30) {
     playHeartbeat();
-    if (secondsLeft <= 10) playTone(680 + (10 - secondsLeft) * 22, 0.08, 'square', 0.09);
+    if (secondsLeft <= 10) playTone(720 + (10 - secondsLeft) * 28, 0.1, 'square', 0.14);
   }
   syncTimerLoops();
   updateTimerDisplay();
@@ -513,7 +614,7 @@ function updateTimerDisplay() {
 function timerCaptionText() {
   if (timerStatus === 'ready') return 'READY TO FLY';
   if (timerStatus === 'countdown') return 'GET READY';
-  if (timerStatus === 'running') return secondsLeft <= 30 ? 'FINAL 30 • CLIMAX MODE' : 'BATTLE MUSIC • MATCH IN PROGRESS';
+  if (timerStatus === 'running') return secondsLeft <= 30 ? 'FINAL 30 • TURBO CLIMAX' : 'BATTLE MUSIC • MATCH IN PROGRESS';
   if (timerStatus === 'paused') return 'MATCH PAUSED';
   return "TIME'S UP";
 }
@@ -713,6 +814,7 @@ function createGroups() {
 
 function openMatch(matchId) {
   practiceMode = false;
+  musicPickerOpen = false;
   secondsLeft = 180;
   preCount = null;
   timerStatus = 'ready';
@@ -723,6 +825,7 @@ function openMatch(matchId) {
 
 function openPracticeMatch() {
   practiceMode = true;
+  musicPickerOpen = false;
   practiceScores = { 'practice-orange': 0, 'practice-blue': 0 };
   secondsLeft = 180;
   preCount = null;
@@ -740,7 +843,9 @@ function closeMatch() {
   timerStatus = 'ready';
   secondsLeft = 180;
   preCount = null;
+  musicPickerOpen = false;
   syncTimerLoops();
+  renderMusicPicker();
   if (practiceMode) {
     practiceMode = false;
     practiceScores = { 'practice-orange': 0, 'practice-blue': 0 };
@@ -901,6 +1006,7 @@ function render() {
   renderTournament();
   renderModal();
   renderMatchScreen();
+  renderMusicPicker();
 }
 
 function renderHome() {
@@ -1146,18 +1252,57 @@ function renderModal() {
   }
 }
 
+function renderMusicPicker() {
+  const root = $('musicSelectorRoot');
+  if (!root) return;
+  if (!musicPickerOpen) { root.innerHTML = ''; return; }
+  const renderChoices = (choices, kind, selectedId) => choices.map((choice) =>
+    '<button class="music-choice' + (choice.id === selectedId ? ' selected' : '') + '" data-music-kind="' + kind + '" data-music-id="' + esc(choice.id) + '">' +
+      '<span class="music-choice-icon">' + choice.icon + '</span>' +
+      '<span class="music-choice-copy"><strong>' + esc(choice.label) + '</strong><small>' + esc(choice.mood) + '</small><em>' + esc(choice.artist) + '・CC0</em></span>' +
+      (choice.recommended ? '<b>推薦</b>' : '') +
+      '<i>' + (choice.id === selectedId ? '✓ 已選' : '▶ 試聽') + '</i>' +
+    '</button>',
+  ).join('');
+  root.innerHTML =
+    '<div class="music-picker-backdrop" id="musicPickerBackdrop">' +
+      '<section class="music-picker" role="dialog" aria-modal="true" aria-labelledby="musicPickerTitle">' +
+        '<header><div><span>BLOCK PLANET BATTLE SOUND</span><h2 id="musicPickerTitle">挑選你的戰鬥音樂</h2><p>點一下立即試聽 9 秒，正式賽與練習賽都會使用你的選擇。</p></div>' +
+          '<div><button class="music-sound-toggle" id="musicPickerAudioBtn">' + (audioEnabled ? '🔊 音樂開啟・MAX' : '🔇 音樂已關閉') + '</button><button class="music-picker-close" id="musicPickerCloseBtn" aria-label="關閉音樂選擇">×</button></div></header>' +
+        '<div class="music-picker-scroll">' +
+          '<div class="music-picker-section"><div class="music-section-title"><span>01</span><div><strong>一般比賽音樂</strong><small>0:00–2:30・童趣電玩戰鬥感</small></div></div>' +
+            '<div class="music-choice-grid">' + renderChoices(BATTLE_MUSIC_CHOICES, 'battle', selectedBattleMusicId) + '</div></div>' +
+          '<div class="music-picker-section climax-section"><div class="music-section-title"><span>30</span><div><strong>最後 30 秒音樂</strong><small>自動切換・加速 8%＋重鼓＋急促警示</small></div></div>' +
+            '<div class="music-choice-grid climax-grid">' + renderChoices(CLIMAX_MUSIC_CHOICES, 'climax', selectedClimaxMusicId) + '</div></div>' +
+        '</div>' +
+        '<footer><span>所有曲目皆為 CC0 免費授權</span><strong>建議：星球彈跳 ＋ 最終決戰 MAX</strong><button class="primary-button compact" id="musicPickerDoneBtn">使用這組音樂</button></footer>' +
+      '</section>' +
+    '</div>';
+
+  $('musicPickerBackdrop').addEventListener('mousedown', (event) => {
+    if (event.target === event.currentTarget) closeMusicPicker();
+  });
+  $('musicPickerCloseBtn').addEventListener('click', closeMusicPicker);
+  $('musicPickerDoneBtn').addEventListener('click', closeMusicPicker);
+  $('musicPickerAudioBtn').addEventListener('click', toggleAudio);
+  root.querySelectorAll('[data-music-kind]').forEach((button) => {
+    button.addEventListener('click', () => selectAndPreviewMusic(button.dataset.musicKind, button.dataset.musicId));
+  });
+}
+
 function renderMatchScreen() {
   const root = $('matchScreenRoot');
   const match = activeMatch();
   if (!match) { root.innerHTML = ''; return; }
   const groups = arenaGroupMap();
+  const selectedBattleMusic = musicChoice(BATTLE_MUSIC_CHOICES, selectedBattleMusicId);
   root.innerHTML =
   '<div class="match-screen' + (crunchTime() ? ' crunch' : '') + '">' +
     '<header class="match-topbar">' +
       '<div class="match-brand"><img src="assets/block-planet-logo.png" alt=""><span>BLOCK PLANET <b>ARENA</b></span></div>' +
       '<div class="match-title"><small>' + (match.type === 'practice' ? 'PRACTICE MATCH・NO LICENSE' : (match.type === 'final' ? 'CHAMPIONSHIP FINAL' : 'QUALIFIER')) + '</small><strong>' + esc(match.label) + '</strong></div>' +
       '<div class="match-controls">' +
-        '<button id="matchAudioBtn">' + (audioEnabled ? '♫ 戰鬥音樂・MAX' : '音效關閉') + '</button>' +
+        '<button id="matchMusicBtn">' + (audioEnabled ? '♫ ' + esc(selectedBattleMusic.label) + '・選音樂' : '♫ 選音樂・目前關閉') + '</button>' +
         '<button id="matchCloseBtn">離開賽場 ×</button>' +
       '</div>' +
     '</header>' +
@@ -1199,7 +1344,7 @@ function renderMatchScreen() {
   '</div>';
 
   const on = (id, fn) => { const el = $(id); if (el) el.addEventListener('click', fn); };
-  on('matchAudioBtn', toggleAudio);
+  on('matchMusicBtn', showMusicPicker);
   on('matchCloseBtn', closeMatch);
   on('matchResetBtn', resetCurrentMatch);
   on('matchStartBtn', startMatch);
@@ -1218,6 +1363,7 @@ function toggleAudio() {
   btn.setAttribute('aria-label', audioEnabled ? '關閉音效' : '開啟音效');
   syncTimerLoops();
   renderMatchScreen();
+  renderMusicPicker();
 }
 
 // ===== 事件繫結 =====
