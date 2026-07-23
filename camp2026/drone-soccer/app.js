@@ -455,8 +455,8 @@ function selectAndPreviewMusic(kind, id) {
   musicPlayErrorShown = false;
 
   if (timerStatus === 'running' || timerStatus === 'countdown') {
-    startBattleMusic();
-    setBattleMusicMode(crunchTime() ? 'climax' : 'normal');
+    startBattleMusic(timerStatus === 'countdown');
+    if (timerStatus === 'running') setBattleMusicMode(crunchTime() ? 'climax' : 'normal');
     syncBattleMusic();
   } else if (audioEnabled && ensureAudio()) {
     battleMusic.currentTime = 0;
@@ -498,7 +498,7 @@ function setBattleMusicMode(next) {
     climaxMusicGain.gain.value = 0.0001;
   }
 }
-function startBattleMusic() {
+function startBattleMusic(muted = false) {
   if (!audioEnabled || !ensureAudio()) return;
   clearTimeout(musicPreviewTimer);
   musicPreviewTimer = null;
@@ -510,8 +510,24 @@ function startBattleMusic() {
   battleMusicStarted = true;
   battleMusicMode = 'normal';
   setBattleMusicMode('normal');
-  safePlayMusic(battleMusic);
+  if (muted && battleMusicGain && climaxMusicGain) {
+    battleMusicGain.gain.value = 0.0001;
+    climaxMusicGain.gain.value = 0.0001;
+  }
+  safePlayMusic(battleMusic, !muted);
   safePlayMusic(climaxMusic, false);
+}
+function releaseBattleMusic() {
+  if (!audioEnabled || !ensureAudio()) return;
+  if (!battleMusicStarted) {
+    startBattleMusic();
+    return;
+  }
+  battleMusic.currentTime = 0;
+  climaxMusic.currentTime = 0;
+  setBattleMusicMode('normal');
+  if (battleMusic.paused) safePlayMusic(battleMusic);
+  if (climaxMusic.paused) safePlayMusic(climaxMusic, false);
 }
 function pauseBattleMusic() {
   battleMusic.pause();
@@ -534,6 +550,14 @@ function syncBattleMusic() {
   }
   if (timerStatus === 'paused') {
     pauseBattleMusic();
+    return;
+  }
+  if (timerStatus === 'countdown') {
+    if (!battleMusicStarted) startBattleMusic(true);
+    if (battleMusicGain && climaxMusicGain) {
+      battleMusicGain.gain.value = 0.0001;
+      climaxMusicGain.gain.value = 0.0001;
+    }
     return;
   }
   if (timerStatus !== 'running' && timerStatus !== 'countdown') {
@@ -566,9 +590,23 @@ function playTone(frequency, duration, type = 'sine', gainValue = 0.07, delay = 
   oscillator.stop(start + duration + 0.02);
 }
 function playStartHorn() {
-  playTone(196, 0.65, 'sawtooth', 0.16);
-  playTone(294, 0.65, 'square', 0.085, 0.04);
-  playTone(392, 0.65, 'triangle', 0.1, 0.08);
+  playTone(98, 0.5, 'sawtooth', 0.24);
+  playTone(392, 0.24, 'square', 0.18, 0.02);
+  playTone(523, 0.3, 'square', 0.17, 0.1);
+  playTone(784, 0.58, 'triangle', 0.2, 0.2);
+}
+function playReadyCue() {
+  playTone(62, 0.48, 'sine', 0.2);
+  playTone(196, 0.18, 'triangle', 0.13, 0.02);
+  playTone(294, 0.18, 'triangle', 0.15, 0.18);
+  playTone(440, 0.34, 'square', 0.17, 0.34);
+}
+function playCountdownCue(value) {
+  const pitch = value === 3 ? 392 : (value === 2 ? 494 : 659);
+  playTone(52, 0.25, 'sine', 0.23);
+  playTone(pitch, 0.2, 'square', 0.2, 0.025);
+  playTone(pitch * 2, 0.12, 'triangle', 0.12, 0.05);
+  if (value === 1) playTone(988, 0.3, 'square', 0.16, 0.18);
 }
 function playFinishHorn() {
   playTone(392, 0.22, 'square', 0.12);
@@ -958,14 +996,15 @@ function closeMatch() {
 function startMatch() {
   victoryDismissed = false;
   timerStatus = 'countdown';
-  startBattleMusic();
-  preCount = 3;
+  startBattleMusic(true);
+  preCount = 'READY';
+  playReadyCue();
   renderMatchScreen();
   const runStep = (value) => {
     if (timerStatus !== 'countdown') return; // 已離開或重置
     if (value > 0) {
       preCount = value;
-      playTone(value === 1 ? 660 : 440, 0.18, 'square', 0.14);
+      playCountdownCue(value);
       renderMatchScreen();
       setTimeout(() => runStep(value - 1), 1000);
       return;
@@ -973,11 +1012,12 @@ function startMatch() {
     preCount = null;
     secondsLeft = matchDurationSeconds();
     timerStatus = 'running';
+    releaseBattleMusic();
     playStartHorn();
     syncTimerLoops();
     renderMatchScreen();
   };
-  runStep(3);
+  setTimeout(() => runStep(3), 900);
 }
 
 function updateScore(groupId, difference) {
@@ -1476,7 +1516,7 @@ function renderMatchScreen() {
       '<div class="rule-reminder"><span>◎</span><p><strong>' + (practiceMode ? '練習模式' : '裁判提醒') + '</strong>' + (practiceMode ? '免登入駕照，分數不會寫入正式賽程' : '分數記在整支三人隊伍，不是個人分數') + '</p></div>' +
     '</footer>' +
     (timerStatus === 'countdown' && preCount !== null
-      ? '<div class="prestart-overlay"><span>GET READY</span><strong>' + preCount + '</strong><p>' + (practiceMode ? '練習機就位' : '無人機就位') + '</p></div>' : '') +
+      ? '<div class="prestart-overlay' + (preCount === 'READY' ? ' ready-phase' : '') + '"><span>' + (preCount === 'READY' ? 'PILOTS STANDBY' : 'GET READY') + '</span><strong>' + preCount + '</strong><p>' + (preCount === 'READY' ? '戰鬥音樂將在比賽開始後播放' : (practiceMode ? '練習機就位' : '無人機就位')) + '</p></div>' : '') +
     '<div class="final-thirty-entry" id="finalThirtyEntry"><span>⚠ MUSIC SWITCH</span><strong>FINAL 30</strong><p>終局音樂啟動・全力得分！</p></div>' +
     '<div class="final-ten-entry" id="finalTenEntry"><span>⚠ LAST CHANCE</span><strong>LAST 10</strong><p>最後衝刺・現在就得分！</p></div>' +
     (timerStatus === 'finished' ? '<div class="finish-flash">TIME!</div>' : '') +
