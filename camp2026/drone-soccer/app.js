@@ -93,6 +93,7 @@ let photoDataUrl = null;
 let timerStatus = 'ready'; // ready | countdown | running | paused | finished
 let secondsLeft = 180;
 let preCount = null;
+let victoryDismissed = false;
 let practiceMode = false;
 let practiceScores = { 'practice-orange': 0, 'practice-blue': 0 };
 let selectedBattleMusicId = musicChoice(BATTLE_MUSIC_CHOICES, localStorage.getItem('bp-drone-battle-music') || 'bounce').id;
@@ -153,6 +154,31 @@ function activeMatch() {
     };
   }
   return eventState.matches.find((m) => m.id === eventState.activeMatchId) || null;
+}
+function matchOutcome(match) {
+  if (!match || !match.participantGroupIds.length) return null;
+  const ranked = [...match.participantGroupIds].sort(
+    (a, b) => (match.scores[b] || 0) - (match.scores[a] || 0),
+  );
+  const bestScore = match.scores[ranked[0]] || 0;
+  const leaders = ranked.filter((id) => (match.scores[id] || 0) === bestScore);
+  return {
+    ranked,
+    tied: leaders.length > 1,
+    winnerGroupId: leaders.length === 1 ? leaders[0] : null,
+    bestScore,
+  };
+}
+function confettiMarkup(count = 72) {
+  const colors = ['#ffca3a', '#ff5d42', '#58bff0', '#59c951', '#ffffff', '#ff8db3'];
+  return Array.from({ length: count }, (_, index) => {
+    const left = (index * 37 + 11) % 101;
+    const delay = -((index % 17) * 0.11);
+    const duration = 2.4 + (index % 9) * 0.18;
+    const drift = ((index * 29) % 180) - 90;
+    const color = colors[index % colors.length];
+    return '<i style="--x:' + left + '%;--delay:' + delay + 's;--duration:' + duration + 's;--drift:' + drift + 'px;--confetti:' + color + '"></i>';
+  }).join('');
 }
 function arenaGroupMap() {
   return new Map((practiceMode ? PRACTICE_TEAMS : eventState.groups).map((group) => [group.id, group]));
@@ -445,10 +471,11 @@ function selectAndPreviewMusic(kind, id) {
   renderMatchScreen();
   renderMusicPicker();
 }
-function safePlayMusic(track) {
+function safePlayMusic(track, showError = true) {
   const promise = track.play();
   if (promise && typeof promise.catch === 'function') {
     promise.catch(() => {
+      if (!showError) return;
       if (musicPlayErrorShown) return;
       musicPlayErrorShown = true;
       setNotice('戰鬥音樂未能自動播放，請用音效按鈕關閉後再重新開啟。');
@@ -484,7 +511,7 @@ function startBattleMusic() {
   battleMusicMode = 'normal';
   setBattleMusicMode('normal');
   safePlayMusic(battleMusic);
-  safePlayMusic(climaxMusic);
+  safePlayMusic(climaxMusic, false);
 }
 function pauseBattleMusic() {
   battleMusic.pause();
@@ -520,7 +547,7 @@ function syncBattleMusic() {
     if (climaxMusic.paused) safePlayMusic(climaxMusic);
   } else {
     if (battleMusic.paused) safePlayMusic(battleMusic);
-    if (climaxMusic.paused) safePlayMusic(climaxMusic);
+    if (climaxMusic.paused) safePlayMusic(climaxMusic, false);
   }
 }
 function playTone(frequency, duration, type = 'sine', gainValue = 0.07, delay = 0) {
@@ -559,6 +586,12 @@ function playFinalThirtyStinger() {
   playTone(495, 0.16, 'square', 0.2, 0.25);
   playTone(880, 0.42, 'square', 0.19, 0.45);
 }
+function playFinalTenStinger() {
+  playTone(52, 0.7, 'sawtooth', 0.3);
+  playTone(620, 0.13, 'square', 0.2, 0.02);
+  playTone(760, 0.13, 'square', 0.2, 0.18);
+  playTone(980, 0.35, 'square', 0.22, 0.34);
+}
 
 // ===== 計時器 =====
 function crunchTime() {
@@ -567,6 +600,9 @@ function crunchTime() {
 function finalThirtyVisual() {
   return (timerStatus === 'running' || timerStatus === 'paused') && secondsLeft <= 30 && secondsLeft > 0;
 }
+function finalTenVisual() {
+  return finalThirtyVisual() && secondsLeft <= 10;
+}
 function matchDurationSeconds() {
   if (!DEMO) return 180;
   const requested = Number(new URLSearchParams(location.search).get('seconds'));
@@ -574,6 +610,13 @@ function matchDurationSeconds() {
 }
 function triggerFinalThirtyVisual() {
   const entry = $('finalThirtyEntry');
+  if (!entry) return;
+  entry.classList.remove('active');
+  void entry.offsetWidth;
+  entry.classList.add('active');
+}
+function triggerFinalTenVisual() {
+  const entry = $('finalTenEntry');
   if (!entry) return;
   entry.classList.remove('active');
   void entry.offsetWidth;
@@ -611,6 +654,7 @@ function onTick() {
   secondsLeft = Math.max(0, secondsLeft - 1);
   if (secondsLeft === 0) {
     timerStatus = 'finished';
+    victoryDismissed = false;
     playFinishHorn();
     syncTimerLoops();
     renderMatchScreen();
@@ -622,7 +666,14 @@ function onTick() {
       triggerFinalThirtyVisual();
     }
     playHeartbeat();
-    if (secondsLeft <= 10) playTone(720 + (10 - secondsLeft) * 28, 0.1, 'square', 0.14);
+    if (secondsLeft <= 10) {
+      if (secondsLeft === 10) {
+        playFinalTenStinger();
+        triggerFinalTenVisual();
+      }
+      playTone(720 + (10 - secondsLeft) * 28, 0.1, 'square', 0.16);
+      playTone(46 + secondsLeft, 0.19, 'sawtooth', 0.17, 0.04);
+    }
   }
   syncTimerLoops();
   updateTimerDisplay();
@@ -631,23 +682,35 @@ function updateTimerDisplay() {
   const numberEl = $('timerNumber');
   if (!numberEl) return;
   const finalVisual = finalThirtyVisual();
+  const finalTen = finalTenVisual();
   numberEl.textContent = finalVisual ? String(secondsLeft) : formatClock(secondsLeft);
   numberEl.classList.toggle('heartbeat-number', finalVisual);
+  numberEl.classList.toggle('final-ten-number', finalTen);
+  if (finalTen) {
+    numberEl.classList.remove('final-second-slam');
+    void numberEl.offsetWidth;
+    numberEl.classList.add('final-second-slam');
+  }
   const caption = $('timerCaption');
   if (caption) caption.textContent = timerCaptionText();
   const screen = document.querySelector('.match-screen');
-  if (screen) screen.classList.toggle('crunch', finalVisual);
+  if (screen) {
+    screen.classList.toggle('crunch', finalVisual);
+    screen.classList.toggle('final-ten', finalTen);
+  }
   const hud = $('finalThirtyHud');
   if (hud) hud.setAttribute('aria-hidden', finalVisual ? 'false' : 'true');
   const meter = $('finalThirtyMeter');
   if (meter) meter.style.width = Math.max(0, Math.min(100, (secondsLeft / 30) * 100)) + '%';
   const seconds = $('finalThirtySeconds');
   if (seconds) seconds.textContent = secondsLeft + ' 秒';
+  const phase = $('finalPhaseLabel');
+  if (phase) phase.textContent = finalTen ? '⚠ LAST 10' : '⚠ FINAL 30';
 }
 function timerCaptionText() {
   if (timerStatus === 'ready') return 'READY TO FLY';
   if (timerStatus === 'countdown') return 'GET READY';
-  if (timerStatus === 'running') return secondsLeft <= 30 ? 'NEW MUSIC • FINAL COUNTDOWN' : 'BATTLE MUSIC • MATCH IN PROGRESS';
+  if (timerStatus === 'running') return secondsLeft <= 10 ? 'LAST 10 • SCORE NOW!' : (secondsLeft <= 30 ? 'NEW MUSIC • FINAL COUNTDOWN' : 'BATTLE MUSIC • MATCH IN PROGRESS');
   if (timerStatus === 'paused') return 'MATCH PAUSED';
   return "TIME'S UP";
 }
@@ -848,6 +911,7 @@ function createGroups() {
 function openMatch(matchId) {
   practiceMode = false;
   musicPickerOpen = false;
+  victoryDismissed = false;
   secondsLeft = 180;
   preCount = null;
   timerStatus = 'ready';
@@ -859,6 +923,7 @@ function openMatch(matchId) {
 function openPracticeMatch() {
   practiceMode = true;
   musicPickerOpen = false;
+  victoryDismissed = false;
   practiceScores = { 'practice-orange': 0, 'practice-blue': 0 };
   secondsLeft = 180;
   preCount = null;
@@ -877,6 +942,7 @@ function closeMatch() {
   secondsLeft = 180;
   preCount = null;
   musicPickerOpen = false;
+  victoryDismissed = false;
   syncTimerLoops();
   renderMusicPicker();
   if (practiceMode) {
@@ -890,6 +956,7 @@ function closeMatch() {
 }
 
 function startMatch() {
+  victoryDismissed = false;
   timerStatus = 'countdown';
   startBattleMusic();
   preCount = 3;
@@ -916,6 +983,7 @@ function startMatch() {
 function updateScore(groupId, difference) {
   const match = activeMatch();
   if (!match || timerStatus === 'countdown') return;
+  if (timerStatus === 'finished') victoryDismissed = false;
   if (practiceMode) {
     practiceScores = {
       ...practiceScores,
@@ -941,6 +1009,7 @@ function resetCurrentMatch() {
   timerStatus = 'ready';
   secondsLeft = 180;
   preCount = null;
+  victoryDismissed = false;
   syncTimerLoops();
   if (practiceMode) {
     practiceScores = { 'practice-orange': 0, 'practice-blue': 0 };
@@ -1323,6 +1392,37 @@ function renderMusicPicker() {
   });
 }
 
+function victoryCelebrationMarkup(match, groups) {
+  if (timerStatus !== 'finished' || victoryDismissed) return '';
+  const outcome = matchOutcome(match);
+  if (!outcome) return '';
+  const firstId = match.participantGroupIds[0];
+  const secondId = match.participantGroupIds[1];
+  const first = groups.get(firstId);
+  const second = groups.get(secondId);
+  const scoreLine = '<div class="victory-score"><span>' + esc(first ? first.name : '第一隊') + '</span><strong>' + (match.scores[firstId] || 0) + '<i>:</i>' + (match.scores[secondId] || 0) + '</strong><span>' + esc(second ? second.name : '第二隊') + '</span></div>';
+
+  if (outcome.tied) {
+    return '<div class="victory-celebration tie-result">' +
+      '<div class="victory-card"><span class="victory-kicker">OVERTIME REQUIRED</span><div class="victory-trophy">⚡</div><h2>平手！進入決勝加分</h2>' + scoreLine +
+      '<p>系統判定目前同分；返回計分畫面，先加一分的隊伍立即獲勝。</p>' +
+      '<div class="victory-actions"><button class="start-match-button" id="victoryAdjustBtn">返回計分・決勝加分</button></div></div>' +
+    '</div>';
+  }
+
+  const winner = groups.get(outcome.winnerGroupId);
+  const winnerMembers = winner ? arenaMembers(winner) : [];
+  return '<div class="victory-celebration">' +
+    '<div class="confetti-field" aria-hidden="true">' + confettiMarkup() + '</div>' +
+    '<div class="victory-card"><span class="victory-kicker">WINNER CONFIRMED</span><div class="victory-trophy">🏆</div>' +
+      '<h2>' + esc(winner ? winner.name : '勝隊') + '獲勝！</h2>' + scoreLine +
+      '<div class="victory-team">' + winnerMembers.map((member, index) => '<div><img src="' + esc(portraitFor(member, index)) + '" alt="' + esc(member.name) + '"><strong>' + esc(member.name) + '</strong></div>').join('') + '</div>' +
+      '<p>系統已依最終比分自動判定勝隊，恭喜全隊完成這場精彩比賽！</p>' +
+      '<div class="victory-actions"><button class="secondary-match-button" id="victoryAdjustBtn">返回修正分數</button><button class="start-match-button finish" id="victoryConfirmBtn">' + (practiceMode ? '完成練習賽' : (match.type === 'final' ? '確認冠軍並完成' : '確認勝隊並晉級')) + '</button></div>' +
+    '</div>' +
+  '</div>';
+}
+
 function renderMatchScreen() {
   const root = $('matchScreenRoot');
   const match = activeMatch();
@@ -1331,8 +1431,9 @@ function renderMatchScreen() {
   const selectedBattleMusic = musicChoice(BATTLE_MUSIC_CHOICES, selectedBattleMusicId);
   const selectedClimaxMusic = musicChoice(CLIMAX_MUSIC_CHOICES, selectedClimaxMusicId);
   const finalVisual = finalThirtyVisual();
+  const finalTen = finalTenVisual();
   root.innerHTML =
-  '<div class="match-screen' + (finalVisual ? ' crunch' : '') + '">' +
+  '<div class="match-screen' + (finalVisual ? ' crunch' : '') + (finalTen ? ' final-ten' : '') + '">' +
     '<header class="match-topbar">' +
       '<div class="match-brand"><img src="assets/block-planet-logo.png" alt=""><span>BLOCK PLANET <b>ARENA</b></span></div>' +
       '<div class="match-title"><small>' + (match.type === 'practice' ? 'PRACTICE MATCH・NO LICENSE' : (match.type === 'final' ? 'CHAMPIONSHIP FINAL' : 'QUALIFIER')) + '</small><strong>' + esc(match.label) + '</strong></div>' +
@@ -1344,8 +1445,8 @@ function renderMatchScreen() {
     '<div class="arena-net"></div>' +
     '<section class="timer-zone">' +
       '<div class="round-label"><span></span> ROUND TIMER <span></span></div>' +
-      '<div class="final-thirty-hud" id="finalThirtyHud" aria-hidden="' + (finalVisual ? 'false' : 'true') + '"><div><strong>⚠ FINAL 30</strong><span id="finalThirtySeconds">' + secondsLeft + ' 秒</span></div><div class="final-thirty-track"><i id="finalThirtyMeter" style="width:' + Math.max(0, Math.min(100, (secondsLeft / 30) * 100)) + '%"></i></div><small>全新終局音樂：' + esc(selectedClimaxMusic.label) + '</small></div>' +
-      '<div class="timer-number' + (finalVisual ? ' heartbeat-number' : '') + '" id="timerNumber">' + (finalVisual ? secondsLeft : formatClock(secondsLeft)) + '</div>' +
+      '<div class="final-thirty-hud" id="finalThirtyHud" aria-hidden="' + (finalVisual ? 'false' : 'true') + '"><div><strong id="finalPhaseLabel">' + (finalTen ? '⚠ LAST 10' : '⚠ FINAL 30') + '</strong><span id="finalThirtySeconds">' + secondsLeft + ' 秒</span></div><div class="final-thirty-track"><i id="finalThirtyMeter" style="width:' + Math.max(0, Math.min(100, (secondsLeft / 30) * 100)) + '%"></i></div><small>全新終局音樂：' + esc(selectedClimaxMusic.label) + '</small></div>' +
+      '<div class="timer-number' + (finalVisual ? ' heartbeat-number' : '') + (finalTen ? ' final-ten-number' : '') + '" id="timerNumber">' + (finalVisual ? secondsLeft : formatClock(secondsLeft)) + '</div>' +
       '<div class="timer-caption" id="timerCaption">' + timerCaptionText() + '</div>' +
     '</section>' +
     '<section class="scoreboard team-scoreboard">' + match.participantGroupIds.map((groupId, i) => {
@@ -1371,13 +1472,15 @@ function renderMatchScreen() {
       (timerStatus === 'ready' ? '<button class="start-match-button" id="matchStartBtn"><span>▶</span>開始比賽</button>' : '') +
       (timerStatus === 'running' ? '<button class="start-match-button pause" id="matchPauseBtn"><span>Ⅱ</span>暫停比賽</button>' : '') +
       (timerStatus === 'paused' ? '<button class="start-match-button" id="matchResumeBtn"><span>▶</span>繼續比賽</button>' : '') +
-      (timerStatus === 'finished' ? '<button class="start-match-button finish" id="matchFinishBtn"><span>✓</span>' + (practiceMode ? '結束練習賽' : '儲存結果與晉級') + '</button>' : '') +
+      (timerStatus === 'finished' ? '<button class="start-match-button finish" id="matchFinishBtn"><span>🏆</span>查看比賽結果</button>' : '') +
       '<div class="rule-reminder"><span>◎</span><p><strong>' + (practiceMode ? '練習模式' : '裁判提醒') + '</strong>' + (practiceMode ? '免登入駕照，分數不會寫入正式賽程' : '分數記在整支三人隊伍，不是個人分數') + '</p></div>' +
     '</footer>' +
     (timerStatus === 'countdown' && preCount !== null
       ? '<div class="prestart-overlay"><span>GET READY</span><strong>' + preCount + '</strong><p>' + (practiceMode ? '練習機就位' : '無人機就位') + '</p></div>' : '') +
     '<div class="final-thirty-entry" id="finalThirtyEntry"><span>⚠ MUSIC SWITCH</span><strong>FINAL 30</strong><p>終局音樂啟動・全力得分！</p></div>' +
+    '<div class="final-ten-entry" id="finalTenEntry"><span>⚠ LAST CHANCE</span><strong>LAST 10</strong><p>最後衝刺・現在就得分！</p></div>' +
     (timerStatus === 'finished' ? '<div class="finish-flash">TIME!</div>' : '') +
+    victoryCelebrationMarkup(match, groups) +
   '</div>';
 
   const on = (id, fn) => { const el = $(id); if (el) el.addEventListener('click', fn); };
@@ -1387,7 +1490,9 @@ function renderMatchScreen() {
   on('matchStartBtn', startMatch);
   on('matchPauseBtn', () => setTimerStatus('paused'));
   on('matchResumeBtn', () => setTimerStatus('running'));
-  on('matchFinishBtn', saveMatchResult);
+  on('matchFinishBtn', () => { victoryDismissed = false; renderMatchScreen(); });
+  on('victoryAdjustBtn', () => { victoryDismissed = true; renderMatchScreen(); });
+  on('victoryConfirmBtn', saveMatchResult);
   root.querySelectorAll('[data-score]').forEach((btn) => {
     btn.addEventListener('click', () => updateScore(btn.dataset.score, parseInt(btn.dataset.diff, 10)));
   });
