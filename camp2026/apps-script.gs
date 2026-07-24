@@ -131,6 +131,7 @@ function doPost(e) {
       case 'drone-pilot-delete': return respond(dronePilotDelete(p));
       case 'drone-state-set': return respond(droneStateSet(p.state));
       case 'junkbot-state-set': return respond(junkbotStateSet(p));
+      case 'junkbot-match-patch': return respond(junkbotMatchPatch(p));
       default: return respond({ success: false, error: '無效的操作' });
     }
   } finally {
@@ -1971,6 +1972,22 @@ function junkbotStateSet(p) {
     if (state.draw && state.draw.method === 'random-draw') {
       return { success: false, error: '這是重排前的舊版賽程，請重新整理頁面後再操作' };
     }
+    const currentResult = junkbotStateGet(campus);
+    const currentState = currentResult && currentResult.state;
+    const completedMatches = currentState && Array.isArray(currentState.matches)
+      ? currentState.matches.filter(function(item) {
+          return item && item.status === 'completed' && item.resultType !== 'bye';
+        })
+      : [];
+    for (let completedIndex = 0; completedIndex < completedMatches.length; completedIndex++) {
+      const completed = completedMatches[completedIndex];
+      const incoming = Array.isArray(state.matches)
+        ? state.matches.find(function(item) { return item && item.id === completed.id; })
+        : null;
+      if (!incoming || incoming.status !== 'completed' || incoming.winnerId !== completed.winnerId) {
+        return { success: false, error: '已有完成賽事，禁止重設、改判或以舊資料覆寫' };
+      }
+    }
     state.campus = campus;
     const payload = JSON.stringify(state);
     if (payload.length > 800000) return { success: false, error: '賽事資料超過 80 萬字元，請聯絡系統管理員' };
@@ -1995,6 +2012,195 @@ function junkbotStateSet(p) {
       sh.getRange(row, 1, 1, 6).setValues([[campus, campusName, '', now, '', '']]);
     });
     return { success: true, ok: true, campus: campus, updatedAt: now, chunks: chunks.length };
+  } catch (err) {
+    return { success: false, error: String(err && err.message || err) };
+  }
+}
+
+function junkbotEnsureArenaState(state) {
+  if (!state || typeof state !== 'object') return;
+  if (!Array.isArray(state.activeMatchIds)) state.activeMatchIds = [];
+  if (!state.lives || typeof state.lives !== 'object' || Array.isArray(state.lives)) state.lives = {};
+  if (state.activeMatchId && state.activeMatchIds.indexOf(state.activeMatchId) < 0) {
+    state.activeMatchIds.push(state.activeMatchId);
+  }
+  if (state.live && state.live.matchId && !state.lives[state.live.matchId]) {
+    state.lives[state.live.matchId] = state.live;
+  }
+}
+
+function junkbotSyncLegacyArenaState(state) {
+  junkbotEnsureArenaState(state);
+  state.activeMatchIds = state.activeMatchIds.filter(function(matchId) {
+    const item = (state.matches || []).find(function(candidate) { return candidate && candidate.id === matchId; });
+    return item && item.status !== 'completed';
+  });
+  state.activeMatchId = state.activeMatchIds[0] || null;
+  state.live = state.activeMatchId ? (state.lives[state.activeMatchId] || null) : null;
+}
+
+function junkbotPropagateMatch(state, item) {
+  const matches = state.matches || [];
+  if (item.stage === 'final') {
+    state.championId = item.winnerId;
+    state.runnerUpId = item.loserId;
+    return;
+  }
+  if (item.stage === 'bronze') {
+    state.thirdPlaceId = item.winnerId;
+    return;
+  }
+  if (item.roundSize === 3 && item.loserId) state.thirdPlaceId = item.loserId;
+  const linkedTarget = item.nextMatchId
+    ? matches.find(function(candidate) { return candidate && candidate.id === item.nextMatchId; })
+    : null;
+  if (linkedTarget) {
+    linkedTarget.participantIds[Number(item.nextSlot) || 0] = item.winnerId || null;
+  } else {
+    const nextStage = item.stage === 'r16' ? 'quarter' : item.stage === 'quarter' ? 'semi' : 'final';
+    const targetOrder = Math.floor(Number(item.order || 0) / 2);
+    const legacyTarget = matches.find(function(candidate) {
+      return candidate && candidate.stage === nextStage && Number(candidate.order) === targetOrder;
+    });
+    if (legacyTarget) legacyTarget.participantIds[Number(item.order || 0) % 2] = item.winnerId || null;
+  }
+  if (item.stage === 'semi' || Number(item.roundSize) === 4) {
+    const bronze = matches.find(function(candidate) { return candidate && candidate.stage === 'bronze'; });
+    if (bronze) bronze.participantIds[Number(item.order) || 0] = item.loserId || null;
+  }
+}
+
+function junkbotResolveAutomaticMatches(state) {
+  let changed = true;
+  while (changed) {
+    changed = false;
+    (state.matches || []).forEach(function(item) {
+      if (!item || item.status !== 'pending') return;
+      const sourcesReady = !item.sourceMatchIds || !item.sourceMatchIds.length || item.sourceMatchIds.every(function(id) {
+        const source = state.matches.find(function(candidate) { return candidate && candidate.id === id; });
+        return source && source.status === 'completed';
+      });
+      if (!sourcesReady) return;
+      if (item.stage === 'bronze') {
+        item.participantIds = item.sourceMatchIds.map(function(id) {
+          const source = state.matches.find(function(candidate) { return candidate && candidate.id === id; });
+          return source ? source.loserId || null : null;
+        });
+      }
+      const participants = (item.participantIds || []).filter(Boolean);
+      if (participants.length < 2) {
+        item.status = 'completed';
+        item.resultType = 'bye';
+        item.winnerId = participants[0] || null;
+        item.loserId = null;
+        junkbotPropagateMatch(state, item);
+        changed = true;
+      }
+    });
+  }
+}
+
+function junkbotMatchPatch(p) {
+  try {
+    if (String(p.password || '') !== JUNKBOT_CONTROL_PASSWORD) {
+      return { success: false, error: '比賽單位密碼不正確' };
+    }
+    const campus = junkbotNormalizeCampus(p.campus);
+    const op = String(p.op || '').toLowerCase();
+    const matchId = String(p.matchId || '');
+    const current = junkbotStateGet(campus);
+    const state = current && current.state;
+    if (!state || !Array.isArray(state.matches)) return { success: false, error: '找不到賽程資料' };
+    junkbotEnsureArenaState(state);
+    const item = state.matches.find(function(candidate) { return candidate && candidate.id === matchId; });
+    if (!item) return { success: false, error: '找不到這一場比賽，請重新整理' };
+
+    if (item.status === 'completed') {
+      if (op === 'complete' && String(p.winnerId || '') === String(item.winnerId || '')) {
+        return { success: true, ok: true, campus: campus, state: state, unchanged: true };
+      }
+      return { success: false, error: '本場已完成並鎖定，不能重開、重賽或改判' };
+    }
+    if ((item.participantIds || []).filter(Boolean).length !== 2) {
+      return { success: false, error: '本場選手尚未確定，不能開賽' };
+    }
+
+    const now = new Date();
+    const nowIso = now.toISOString();
+    const activate = function() {
+      if (state.activeMatchIds.indexOf(matchId) < 0) state.activeMatchIds.push(matchId);
+    };
+    if (op === 'open') {
+      activate();
+      if (!state.lives[matchId] || state.lives[matchId].status === 'completed') {
+        state.lives[matchId] = { matchId: matchId, status: 'ready', secondsLeft: 60, updatedAt: nowIso };
+      }
+    } else if (op === 'countdown') {
+      activate();
+      state.lives[matchId] = {
+        matchId: matchId,
+        status: 'countdown',
+        preCount: Math.max(1, Math.min(3, Number(p.preCount) || 3)),
+        secondsLeft: 60,
+        updatedAt: nowIso
+      };
+    } else if (op === 'start') {
+      activate();
+      state.lives[matchId] = {
+        matchId: matchId,
+        status: 'running',
+        startedAt: nowIso,
+        endsAt: new Date(now.getTime() + 60000).toISOString(),
+        secondsLeft: 60,
+        preCount: null,
+        updatedAt: nowIso
+      };
+    } else if (op === 'timeup') {
+      activate();
+      state.lives[matchId] = {
+        matchId: matchId,
+        status: 'awaiting-decision',
+        secondsLeft: 0,
+        updatedAt: nowIso
+      };
+    } else if (op === 'replay') {
+      if (Number(item.replays || 0) >= 1) return { success: false, error: '本場已使用過一次重賽' };
+      item.replays = Number(item.replays || 0) + 1;
+      activate();
+      state.lives[matchId] = { matchId: matchId, status: 'ready', secondsLeft: 60, updatedAt: nowIso };
+    } else if (op === 'complete') {
+      const winnerId = String(p.winnerId || '');
+      if (item.participantIds.indexOf(winnerId) < 0) return { success: false, error: '晉級隊伍不在本場名單中' };
+      item.status = 'completed';
+      item.winnerId = winnerId;
+      item.loserId = item.participantIds.find(function(id) { return id && id !== winnerId; }) || null;
+      item.reason = String(p.reason || '評審依現場狀況判定');
+      item.resultType = 'judge';
+      item.completedAt = nowIso;
+      junkbotPropagateMatch(state, item);
+      junkbotResolveAutomaticMatches(state);
+      state.activeMatchIds = state.activeMatchIds.filter(function(id) { return id !== matchId; });
+      state.lives[matchId] = {
+        matchId: matchId,
+        status: 'completed',
+        secondsLeft: Math.max(0, Number(p.secondsLeft) || 0),
+        winnerId: winnerId,
+        updatedAt: nowIso
+      };
+    } else {
+      return { success: false, error: '不支援的賽場操作' };
+    }
+
+    state.version = Math.max(4, Number(state.version) || 0);
+    state.updatedAt = nowIso;
+    junkbotSyncLegacyArenaState(state);
+    const saved = junkbotStateSet({
+      password: JUNKBOT_CONTROL_PASSWORD,
+      campus: campus,
+      state: state
+    });
+    if (!saved || !saved.success) return saved || { success: false, error: '儲存失敗' };
+    return { success: true, ok: true, campus: campus, state: state, updatedAt: saved.updatedAt };
   } catch (err) {
     return { success: false, error: String(err && err.message || err) };
   }

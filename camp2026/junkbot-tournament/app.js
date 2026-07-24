@@ -339,6 +339,36 @@ function saveState(message) {
   return syncQueue;
 }
 
+function patchMatch(matchId, op, payload = {}, message = '') {
+  if (!matchId) return Promise.reject(new Error('找不到要操作的場次'));
+  setSync('saving', '同步賽場');
+  syncQueue = syncQueue
+    .catch(() => null)
+    .then(async () => {
+      const result = await apiPost({
+        action: 'junkbot-match-patch',
+        password: CONTROL_PASSWORD,
+        campus,
+        matchId,
+        op,
+        ...payload,
+      });
+      if (!result.success) throw new Error(result.error || '賽場同步失敗');
+      state = normalizeState(result.state, campus);
+      localStorage.setItem(`bp-junkbot-spectator-cache-${campus}`, JSON.stringify(state));
+      connectionOk = true;
+      setSync('', '已同步');
+      if (message) showToast(message);
+      return result;
+    })
+    .catch((error) => {
+      setSync('error', '同步失敗');
+      showToast(`賽場同步失敗：${error.message}`, true);
+      throw error;
+    });
+  return syncQueue;
+}
+
 function setSync(className, text) {
   const node = $('syncStatus');
   if (!node) return;
@@ -377,6 +407,11 @@ async function enterApp(campusId) {
   if (role === 'audience') {
     clearInterval(audienceRefresh);
     audienceRefresh = setInterval(() => loadCampusState(true), 6500 + Math.floor(Math.random() * 1800));
+  } else {
+    clearInterval(audienceRefresh);
+    audienceRefresh = setInterval(() => {
+      if (!arenaOpen && !$('modalRoot')?.innerHTML) loadCampusState(true);
+    }, 5000 + Math.floor(Math.random() * 1200));
   }
   await loadCampusState();
 }
@@ -542,15 +577,15 @@ function arenasView() {
   ].join('');
   return `
     <div class="page-heading arena-page-heading">
-      <div><span class="kicker">MULTI-ARENA CONTROL · ${esc(CAMPUS[campus].short)}</span><h1>多賽場控制台</h1><p>每一場都有獨立 60 秒計時與評審判定；先開始的場次不會被後開場次中斷。</p></div>
+      <div><span class="kicker">MULTI-DEVICE ARENA · ${esc(CAMPUS[campus].short)}</span><h1>多電腦賽場控制</h1><p>每個場地使用自己的電腦，選擇現場這一場後就只控制該場；所有場次會安全同步，不會互相覆蓋。</p></div>
       <div class="arena-live-count"><strong>${active.length}</strong><span>場同時進行</span></div>
     </div>
     <section class="multi-arena-guide">
       <b>操作方式</b>
-      <span>① 對可比賽場次按「準備賽場」</span>
+      <span>① 每台電腦只選自己場地正在比的場次</span>
       <span>② 在全螢幕畫面開始 READY 3・2・1</span>
-      <span>③ 關閉畫面後計時仍會繼續，可再開下一場</span>
-      <span>④ 隨時回到任何場次判定勝負</span>
+      <span>③ 其他電腦可同時開不同場，互不干擾</span>
+      <span>④ 判定後勝負立即鎖定，不能改判</span>
     </section>
     <div class="arena-control-grid">
       ${cards || `<div class="empty-card"><img src="assets/mascot-tiaotiao.png" alt=""><h2>目前沒有可開啟的比賽</h2><p>${state.matches.length ? '請先完成前一輪，下一輪對戰就會自動出現。' : '請先建立淘汰賽程。'}</p></div>`}
@@ -738,7 +773,7 @@ function bracketView(control) {
       ${control ? `
         <div class="page-heading-actions">
           <button class="outline" data-action="redraw-bracket" ${hasPlayedMatch ? 'disabled title="已有正式比賽結果，不能重新抽籤"' : ''}>🎲 重新抽籤</button>
-          <button class="outline" data-action="reset-bracket">重設賽程</button>
+          <button class="outline" data-action="reset-bracket" ${hasPlayedMatch ? 'disabled title="已有完成賽事，勝負已鎖定"' : ''}>重設賽程</button>
         </div>` : ''}
     </div>
     ${podium}
@@ -1292,26 +1327,12 @@ function propagateMatch(item) {
   }
 }
 
-function completeMatch(matchId, winnerId, reason) {
+async function completeMatch(matchId, winnerId, reason) {
   const item = match(matchId);
-  if (!item || !item.participantIds.includes(winnerId)) return;
-  const loserId = item.participantIds.find((id) => id && id !== winnerId) || null;
-  item.status = 'completed';
-  item.winnerId = winnerId;
-  item.loserId = loserId;
-  item.reason = reason;
-  item.resultType = 'judge';
-  propagateMatch(item);
-  resolveAutomaticMatches();
-  deactivateMatch(item.id);
-  setMatchLive(item.id, {
-    matchId: item.id,
-    status: 'completed',
-    secondsLeft: arenaSecondsLeft(item.id),
-    winnerId,
-    updatedAt: new Date().toISOString(),
-  });
-  syncLegacyArenaState();
+  if (!item || item.status === 'completed' || !item.participantIds.includes(winnerId)) return;
+  const winnerName = teamName(winnerId);
+  const secondsLeft = arenaSecondsLeft(item.id);
+  await patchMatch(item.id, 'complete', { winnerId, reason, secondsLeft });
   if (focusedArenaMatchId === item.id) {
     focusedArenaMatchId = null;
     arenaOpen = false;
@@ -1320,11 +1341,14 @@ function completeMatch(matchId, winnerId, reason) {
   closeModal();
   stopArenaMusic();
   victorySound();
-  saveState(`${teamName(winnerId)} 晉級成功`);
+  showToast(`${winnerName} 晉級成功，結果已鎖定`);
   renderControl();
 }
 
 function resetBracket() {
+  if (state.matches.some((item) => item.status === 'completed' && item.resultType !== 'bye')) {
+    return showToast('已有完成賽事，勝負已鎖定，不能重設賽程。', true);
+  }
   if (!confirm('確定重設整份賽程？隊伍與選廢秀影片會保留，但所有比賽結果會清除。')) return;
   state.matches = [];
   state.activeMatchIds = [];
@@ -1339,7 +1363,7 @@ function resetBracket() {
   renderControl();
 }
 
-function openArena(matchId) {
+async function openArena(matchId) {
   if (state.matches.length && state.draw?.method !== 'single-draw-full-route') {
     showToast('這是重排前的舊賽程，已禁止開場；請更新到最新賽程。', true);
     controlView = 'bracket';
@@ -1348,12 +1372,7 @@ function openArena(matchId) {
   }
   const item = match(matchId);
   if (!item || item.status === 'completed' || item.participantIds.filter(Boolean).length !== 2) return;
-  activateMatch(item.id);
-  if (!matchLive(item.id) || matchLive(item.id).status === 'completed') {
-    setMatchLive(item.id, { matchId: item.id, status: 'ready', secondsLeft: 60, updatedAt: new Date().toISOString() });
-    syncLegacyArenaState();
-    saveState();
-  }
+  await patchMatch(item.id, 'open');
   stopArenaMusic();
   focusedArenaMatchId = item.id;
   arenaOpen = true;
@@ -1439,37 +1458,25 @@ async function startCountdown() {
   ensureAudio();
   warmArenaMusic();
   startArenaMusic(true);
-  live.status = 'countdown';
-  live.preCount = 3;
-  live.secondsLeft = 60;
-  live.updatedAt = new Date().toISOString();
-  syncLegacyArenaState();
-  await saveState();
+  await patchMatch(matchId, 'countdown', { preCount: 3 });
   readySound();
   renderArena();
   for (let number = 3; number >= 1; number -= 1) {
-    live.preCount = number;
+    const countdownLive = matchLive(matchId);
+    if (countdownLive) countdownLive.preCount = number;
     countSound(number);
     renderArena();
     await new Promise((resolve) => setTimeout(resolve, 900));
   }
   startSound();
-  const now = Date.now();
-  live.status = 'running';
-  live.startedAt = new Date(now).toISOString();
-  live.endsAt = new Date(now + 60000).toISOString();
-  live.secondsLeft = 60;
-  live.preCount = null;
-  live.updatedAt = new Date().toISOString();
+  await patchMatch(matchId, 'start');
   timeUpHandledIds.delete(matchId);
-  syncLegacyArenaState();
   lastArenaAudioSecond = 60;
   releaseArenaMusic();
-  saveState();
   renderArena();
 }
 
-function handleTimeUp(matchId) {
+async function handleTimeUp(matchId) {
   const live = matchLive(matchId);
   if (!matchId || timeUpHandledIds.has(matchId) || !live || live.status !== 'running') return;
   timeUpHandledIds.add(matchId);
@@ -1481,7 +1488,11 @@ function handleTimeUp(matchId) {
     stopArenaMusic();
     finishSound();
   }
-  saveState();
+  try {
+    await patchMatch(matchId, 'timeup');
+  } catch (error) {
+    timeUpHandledIds.delete(matchId);
+  }
   if (arenaOpen && focusedArenaMatchId === matchId) renderArena();
   if (role === 'control') {
     showToast('時間到，請評審確認勝負。');
@@ -1489,17 +1500,14 @@ function handleTimeUp(matchId) {
   }
 }
 
-function replayMatch() {
+async function replayMatch() {
   const item = focusedArenaMatchId ? match(focusedArenaMatchId) : null;
   if (!item || item.replays >= 1) return showToast('本場已使用過一次重賽。', true);
   if (!confirm('簡章規定每場最多重賽一次。確定啟動重賽？')) return;
-  item.replays += 1;
   stopArenaMusic();
-  setMatchLive(item.id, { matchId: item.id, status: 'ready', secondsLeft: 60, updatedAt: new Date().toISOString() });
+  await patchMatch(item.id, 'replay', {}, '重賽已登記，請重新開始一分鐘倒數');
   timeUpHandledIds.delete(item.id);
-  syncLegacyArenaState();
   lastArenaAudioSecond = null;
-  saveState('重賽已登記，請重新開始一分鐘倒數');
   renderArena();
 }
 
@@ -1913,12 +1921,20 @@ function bindControlEvents() {
         showToast('這場已因重新抽籤而失效，已切換到最新賽程。', true);
         return;
       }
-      openArena(requestedMatchId);
+      try {
+        await openArena(requestedMatchId);
+      } catch (error) {
+        renderControl();
+      }
     }
     const judge = event.target.closest('[data-judge-match]');
     if (judge) {
-      openArena(judge.dataset.judgeMatch);
-      openDecisionModal();
+      try {
+        await openArena(judge.dataset.judgeMatch);
+        openDecisionModal();
+      } catch (error) {
+        renderControl();
+      }
     }
     const edit = event.target.closest('[data-edit-team]');
     if (edit) openTeamEditor(edit.dataset.editTeam);
@@ -1991,16 +2007,23 @@ function bindDynamicEvents() {
       }
       renderArena();
     }
-    if (action === 'start-countdown') startCountdown();
+    if (action === 'start-countdown') startCountdown().catch(() => renderArena());
     if (action === 'judge-decision') openDecisionModal();
-    if (action === 'request-replay') replayMatch();
+    if (action === 'request-replay') replayMatch().catch(() => renderArena());
   });
-  $('modalRoot').addEventListener('click', (event) => {
+  $('modalRoot').addEventListener('click', async (event) => {
     if (event.target.matches('.modal-backdrop') || event.target.closest('[data-close-modal]')) return closeModal();
     const winner = event.target.closest('[data-winner-id]');
     if (winner) {
       const reason = $('decisionReason')?.value || DECISION_REASONS.at(-1);
-      if (confirm(`確定由「${teamName(winner.dataset.winnerId)}」晉級？`)) completeMatch(focusedArenaMatchId, winner.dataset.winnerId, reason);
+      if (confirm(`確定由「${teamName(winner.dataset.winnerId)}」晉級？完成後結果會鎖定，不能改判。`)) {
+        try {
+          await completeMatch(focusedArenaMatchId, winner.dataset.winnerId, reason);
+        } catch (error) {
+          closeModal();
+          renderControl();
+        }
+      }
     }
     const watch = event.target.closest('[data-watch-team]');
     if (watch) watchTeam(watch.dataset.watchTeam);
