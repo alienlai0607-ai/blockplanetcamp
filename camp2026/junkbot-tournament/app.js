@@ -546,6 +546,7 @@ function bracketView(control) {
   const drawTime = state.draw?.createdAt
     ? new Date(state.draw.createdAt).toLocaleString('zh-TW', { hour12: false })
     : '';
+  const hasPlayedMatch = state.matches.some((item) => item.status === 'completed' && item.resultType !== 'bye');
   const drawSummary = `
     <section class="draw-summary">
       <div class="draw-dice" aria-hidden="true">⚄</div>
@@ -566,7 +567,11 @@ function bracketView(control) {
   return `
     <div class="page-heading">
       <div><span class="kicker">DOUBLE-SIDED BRACKET · ${esc(CAMPUS[campus].short)}</span><h1>${control ? '雙側爬升晉級圖' : '今日雙側晉級圖'}</h1><p>${state.entries.length} 支隊伍從左右外側出發，勝者逐輪往中央冠軍爬升；共 ${rounds.length} 輪，所有對戰與輪空路線均已在開賽前鎖定。</p></div>
-      ${control ? `<button class="outline" data-action="reset-bracket">重設賽程</button>` : ''}
+      ${control ? `
+        <div class="page-heading-actions">
+          <button class="outline" data-action="redraw-bracket" ${hasPlayedMatch ? 'disabled title="已有正式比賽結果，不能重新抽籤"' : ''}>🎲 重新抽籤</button>
+          <button class="outline" data-action="reset-bracket">重設賽程</button>
+        </div>` : ''}
     </div>
     ${podium}
     ${drawSummary}
@@ -907,6 +912,13 @@ function createBracket() {
     resultType: '',
   });
 
+  const shuffledTeams = shuffledCopy(state.entries.map((item) => item.id));
+  const byeTeams = plan.byeCount ? [shuffledTeams.shift()] : [];
+  const competingTeams = shuffledTeams;
+  const firstRoundPairs = [
+    ...byeTeams.map((teamId) => [teamId, null]),
+    ...Array.from({ length: competingTeams.length / 2 }, (_, index) => [competingTeams[index * 2], competingTeams[index * 2 + 1]]),
+  ];
   const roundByeSourceMatchIds = [];
   for (let roundIndex = 0; roundIndex < plan.roundCount; roundIndex += 1) {
     const roundSize = plan.roundSizes[roundIndex];
@@ -914,12 +926,23 @@ function createBracket() {
     const roundMatches = Array.from({ length: Math.ceil(roundSize / 2) }, (_, order) => createMatch(stage, roundIndex, roundSize, order));
     rounds.push(roundMatches);
     matches.push(...roundMatches);
-    if (roundIndex > 0) {
+    if (roundIndex === 0) {
+      shuffledCopy(firstRoundPairs).forEach((pair, index) => {
+        roundMatches[index].participantIds = fairRandom() > .5 ? pair : [...pair].reverse();
+      });
+    } else {
       const previous = rounds[roundIndex - 1];
       const availableSources = [...previous];
       const sourcePairs = [];
       if (availableSources.length % 2 === 1) {
-        const byeIndex = Math.floor(fairRandom() * availableSources.length);
+        const eligibleByeIndexes = availableSources
+          .map((source, index) => ({ source, index }))
+          .filter(({ source }) => source.sourceMatchIds.length !== 1 && source.participantIds.filter(Boolean).length !== 1)
+          .map(({ index }) => index);
+        const candidateIndexes = eligibleByeIndexes.length
+          ? eligibleByeIndexes
+          : availableSources.map((source, index) => index);
+        const byeIndex = candidateIndexes[Math.floor(fairRandom() * candidateIndexes.length)];
         const byeSource = availableSources.splice(byeIndex, 1)[0];
         sourcePairs.push([byeSource]);
         roundByeSourceMatchIds.push(byeSource.id);
@@ -935,17 +958,6 @@ function createBracket() {
       });
     }
   }
-
-  const shuffledTeams = shuffledCopy(state.entries.map((item) => item.id));
-  const byeTeams = plan.byeCount ? [shuffledTeams.shift()] : [];
-  const competingTeams = shuffledTeams;
-  const firstRoundPairs = [
-    ...byeTeams.map((teamId) => [teamId, null]),
-    ...Array.from({ length: competingTeams.length / 2 }, (_, index) => [competingTeams[index * 2], competingTeams[index * 2 + 1]]),
-  ];
-  shuffledCopy(firstRoundPairs).forEach((pair, index) => {
-    rounds[0][index].participantIds = fairRandom() > .5 ? pair : [...pair].reverse();
-  });
 
   const semifinalRound = rounds.find((round) => round[0]?.roundSize === 4);
   if (semifinalRound) {
@@ -1393,6 +1405,16 @@ function bindControlEvents() {
       const plan = tournamentPlan();
       const warning = `目前 ${plan.teamCount} 隊，將建立 ${plan.firstStage}、共 ${plan.roundCount} 輪。${plan.byeCount ? '首輪只會公平抽 1 隊輪空' : '首輪全員出賽'}；全賽程所有對戰與單數輪空位置會在這一次抽籤中排定並鎖住，中途不再抽籤。確定建立？`;
       if (confirm(warning)) createBracket();
+    }
+    if (action === 'redraw-bracket') {
+      const hasPlayedMatch = state.matches.some((item) => item.status === 'completed' && item.resultType !== 'bye');
+      if (hasPlayedMatch) return showToast('已有正式比賽結果，為維持公平不能重新抽籤。', true);
+      if (state.activeMatchId || (state.live && state.live.status !== 'completed')) {
+        return showToast('目前有比賽正在準備或進行，請先結束賽場。', true);
+      }
+      if (confirm('確定重新抽籤？系統會重新排定全部對戰與預排輪空路線；隊伍、選手與影片都會完整保留。')) {
+        createBracket();
+      }
     }
     if (action === 'reset-bracket') resetBracket();
     const start = event.target.closest('[data-start-match]');
