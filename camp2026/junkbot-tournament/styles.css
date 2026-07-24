@@ -1030,7 +1030,9 @@ button { color: inherit; cursor: pointer; }
 .arena-header small, .arena-header strong { display:block; }
 .arena-header small { color:var(--red-dark); font-weight:1000; letter-spacing:.13em; }
 .arena-header strong { font-size:clamp(17px,1.4vw,22px); overflow-wrap:anywhere; }
-.arena-header > button { justify-self:end; }
+.arena-header-actions { justify-self:end; display:flex; justify-content:flex-end; gap:8px; }
+.arena-header-actions button { white-space:nowrap; }
+.arena-header-actions .audio { color:var(--red-dark); background:#fff5c7; }
 .arena-main {
   flex:1;
   display:grid;
@@ -1073,13 +1075,35 @@ button { color: inherit; cursor: pointer; }
 .arena-clock small { font-weight:1000; color:var(--red-dark); letter-spacing:.16em; }
 .arena-clock .timer { max-width:100%; font-size:clamp(105px,10vw,185px); font-weight:1000; line-height:.92; letter-spacing:-.075em; font-variant-numeric:tabular-nums; margin:22px 0 18px; white-space:nowrap; }
 .arena-clock .state-label { font-size:22px; font-weight:1000; }
+.arena-music-status { display:inline-flex; align-items:center; justify-content:center; min-height:32px; margin-top:10px; padding:7px 13px; color:var(--red-dark); background:rgba(255,255,255,.7); border:2px solid rgba(75,33,10,.16); border-radius:999px; font-size:12px; font-weight:1000; letter-spacing:.08em; }
 .arena-controls { display:flex; flex-wrap:wrap; justify-content:center; gap:12px; margin-top:28px; }
 .arena-controls button { min-width:145px; padding:15px 18px; border:3px solid var(--ink); border-radius:13px; box-shadow:5px 6px 0 var(--ink); background:#fff; font-weight:1000; }
 .arena-controls .start { color:#fff; background:var(--red); }
 .arena-footer { padding:17px 40px; text-align:center; border-top:2px solid var(--line); background:rgba(255,250,235,.72); color:var(--muted); font-weight:800; }
 .arena-overlay.counting .arena-clock .timer { color:var(--red-dark); animation:countPop .8s both; }
-.arena-overlay.final-ten { background:#ffd346; animation:stageShake .3s infinite; }
-.arena-overlay.final-ten .timer { color:var(--red-dark); transform:scale(1.08); animation:timerBeat 1s infinite; }
+.arena-overlay.final-thirty { background:linear-gradient(150deg,#ffcf43,#fff0a8 48%,#ff9d68); }
+.arena-overlay.final-thirty .arena-clock { border-color:var(--red-dark); box-shadow:8px 9px 0 var(--red-dark),0 0 45px rgba(255,75,35,.42); }
+.arena-overlay.final-thirty .arena-music-status { color:#fff; background:var(--red-dark); border-color:#fff; animation:captionFlash .6s steps(2,end) infinite; }
+.arena-overlay.final-ten {
+  background:
+    repeating-linear-gradient(135deg,rgba(255,255,255,.12) 0 20px,transparent 20px 40px),
+    radial-gradient(circle at 50% 45%,#ffcc45,#ee442d 55%,#7a160d);
+  animation:stageShake .14s steps(2,end) infinite;
+}
+.arena-overlay.final-ten::after { content:""; position:fixed; z-index:210; inset:8px; pointer-events:none; border:10px solid rgba(255,255,255,.92); box-shadow:inset 0 0 95px rgba(255,20,0,.68); animation:dangerFrame .18s steps(2,end) infinite; }
+.arena-overlay.final-ten .arena-clock { z-index:212; background:rgba(88,9,4,.92); border-color:#fff; box-shadow:9px 10px 0 #3c0905,0 0 70px rgba(255,255,255,.56); }
+.arena-overlay.final-ten .arena-clock small,
+.arena-overlay.final-ten .arena-clock .state-label { color:#fff; }
+.arena-overlay.final-ten .timer.last-ten-number { color:#fff; font-size:clamp(190px,22vw,355px); line-height:.72; letter-spacing:-.08em; text-shadow:0 0 22px #fff,0 0 75px #ff321d; animation:timerBeat .45s steps(2,end) infinite; }
+.arena-overlay.final-ten .timer.second-slam { animation:secondSlam .38s cubic-bezier(.2,.9,.25,1),timerBeat .45s .38s steps(2,end) infinite; }
+.final-thirty-entry,.final-ten-entry { position:fixed; z-index:220; inset:88px 0 65px; visibility:hidden; opacity:0; pointer-events:none; display:grid; place-items:center; align-content:center; text-align:center; }
+.final-thirty-entry { background:radial-gradient(circle,rgba(255,99,42,.52),rgba(47,7,3,.96) 65%); }
+.final-ten-entry { background:repeating-linear-gradient(135deg,rgba(255,229,62,.12) 0 24px,transparent 24px 48px),radial-gradient(circle,rgba(255,205,55,.48),rgba(74,5,0,.98) 66%); }
+.final-thirty-entry span,.final-ten-entry span { color:#fff; padding:9px 15px; border:3px solid #fff; font-size:20px; font-weight:1000; letter-spacing:.22em; }
+.final-thirty-entry strong,.final-ten-entry strong { margin-top:14px; color:#fff; font-family:"SF Mono",ui-monospace,monospace; font-size:min(20vw,300px); line-height:.86; letter-spacing:-.1em; text-shadow:0 0 30px #fff,0 0 100px #ff321d; }
+.final-thirty-entry p,.final-ten-entry p { margin:20px 0 0; color:#ffe267; font-size:19px; font-weight:1000; letter-spacing:.16em; }
+.final-thirty-entry.active { visibility:visible; animation:phaseEntry 2s ease-out forwards; }
+.final-ten-entry.active { visibility:visible; animation:phaseEntry 1.4s ease-out forwards; }
 
 .modal-backdrop { position:fixed; inset:0; z-index:300; display:grid; place-items:center; padding:20px; background:rgba(45,22,7,.72); backdrop-filter:blur(8px); }
 .modal { width:min(650px,100%); max-height:90vh; overflow:auto; padding:27px; background:var(--paper); border:4px solid var(--ink); border-radius:25px 15px 27px 17px; box-shadow:9px 10px 0 var(--ink); }
@@ -1101,6 +1125,10 @@ button { color: inherit; cursor: pointer; }
 @keyframes stageShake { 25%{transform:translate(2px,-1px)} 50%{transform:translate(-2px,1px)} 75%{transform:translate(1px,2px)} }
 @keyframes timerBeat { 0%,78%,100%{transform:scale(1.1)} 84%{transform:scale(1.18)} 91%{transform:scale(1.1)} }
 @keyframes countPop { from{transform:scale(.4);opacity:.1} 70%{transform:scale(1.18)} to{transform:scale(1);opacity:1} }
+@keyframes captionFlash { 50%{opacity:.35} }
+@keyframes dangerFrame { 50%{border-color:#ffe26e;box-shadow:inset 0 0 135px rgba(255,10,0,.82)} }
+@keyframes secondSlam { 0%{transform:scale(1.8);filter:blur(4px)} 55%{transform:scale(.9);filter:none} 100%{transform:scale(1.12)} }
+@keyframes phaseEntry { 0%{opacity:0;transform:scale(1.45)} 14%{opacity:1;transform:scale(.94)} 28%,72%{opacity:1;transform:scale(1)} 100%{opacity:0;transform:scale(1.1);visibility:hidden} }
 @keyframes mascotBounce {
   0%,100% { transform: rotate(-5deg) translateY(0); }
   50% { transform: rotate(-3deg) translateY(-10px); }
@@ -1130,7 +1158,7 @@ button { color: inherit; cursor: pointer; }
   .dashboard-grid, .audience-grid, .spreadsheet-grid { grid-template-columns:1fr; }
   .draw-summary { grid-template-columns:64px 1fr; }
   .bye-team-list { grid-column:1/-1; padding:15px 0 0; border-left:0; border-top:2px dashed rgba(75,33,10,.24); }
-  .arena-header { grid-template-columns:130px minmax(0,1fr) 140px; }
+  .arena-header { grid-template-columns:130px minmax(0,1fr) minmax(210px,auto); }
   .arena-main { grid-template-columns:1fr 1fr; }
   .arena-clock { grid-column:1/-1; grid-row:1; }
   .arena-team { grid-row:2; }
@@ -1198,11 +1226,16 @@ button { color: inherit; cursor: pointer; }
   .audience-timer { font-size:84px; }
   .stage-rule { display:none; }
   .arena-main { gap:12px; padding:22px 12px; }
-  .arena-header { grid-template-columns:90px minmax(0,1fr) 96px; gap:7px; padding:10px 13px; }
+  .arena-header { grid-template-columns:90px minmax(0,1fr); gap:7px; padding:10px 13px; }
   .arena-header img { width:120px; }
   .arena-header strong { font-size:14px; }
   .arena-header small { font-size:9px; letter-spacing:.04em; }
-  .arena-header > button { padding:8px 7px; font-size:11px; }
+  .arena-header-actions { grid-column:1/-1; width:100%; justify-content:center; }
+  .arena-header-actions button { padding:8px 7px; font-size:11px; }
+  .final-thirty-entry,.final-ten-entry { inset:108px 0 55px; }
+  .final-thirty-entry span,.final-ten-entry span { font-size:12px; }
+  .final-thirty-entry strong,.final-ten-entry strong { font-size:27vw; }
+  .final-thirty-entry p,.final-ten-entry p { padding:0 18px; font-size:11px; }
   .arena-team { min-height:250px; padding:18px 10px; border-width:3px; box-shadow:4px 5px 0 var(--ink); }
   .arena-team.red,.arena-team.blue { border-top-width:8px; }
   .arena-team .team-badge { width:72px; height:72px; font-size:28px; }

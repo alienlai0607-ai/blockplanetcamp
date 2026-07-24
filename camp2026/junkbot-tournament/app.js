@@ -6,6 +6,8 @@
 const API_URL = 'https://script.google.com/macros/s/AKfycbyn7Rpmmfk0zAgME4TDEy0FYA3cckQZTfQD_6peGTv6HH5TmPc2mOXfNc-Dj9S2HNI/exec';
 const CONTROL_PASSWORD = 'block';
 const DEMO = new URLSearchParams(location.search).has('demo');
+const ARENA_BATTLE_TRACK = 'assets/audio/battle-boss-fight-bounce.mp3';
+const ARENA_CLIMAX_TRACK = 'assets/audio/climax-final-stand-max.ogg';
 const CAMPUS = {
   dongqiao: { name: '東橋教室', short: '東橋', mark: '東' },
   north: { name: '北區教室', short: '北區', mark: '北' },
@@ -42,10 +44,29 @@ let audienceRefresh = null;
 let clockTicker = null;
 let timeUpHandled = false;
 let audioContext = null;
+let masterGainNode = null;
+let limiterNode = null;
+let battleMusicSource = null;
+let climaxMusicSource = null;
+let battleMusicGain = null;
+let climaxMusicGain = null;
+let battleMusicStarted = false;
+let arenaMusicMode = 'normal';
+let arenaAudioEnabled = localStorage.getItem('bp-junkbot-audio') !== 'off';
+let lastArenaAudioSecond = null;
 let arenaOpen = false;
 let connectionOk = true;
 let pendingRosterRows = [];
 let pendingRosterFileName = '';
+
+const battleMusic = new Audio(ARENA_BATTLE_TRACK);
+const climaxMusic = new Audio(ARENA_CLIMAX_TRACK);
+[battleMusic, climaxMusic].forEach((track) => {
+  track.loop = true;
+  track.preload = 'metadata';
+  track.playsInline = true;
+  track.volume = 1;
+});
 
 function emptyState(campusId) {
   return {
@@ -1161,6 +1182,7 @@ function completeMatch(matchId, winnerId, reason) {
   arenaOpen = false;
   $('arenaRoot').innerHTML = '';
   closeModal();
+  stopArenaMusic();
   victorySound();
   saveState(`${teamName(winnerId)} 晉級成功`);
   renderControl();
@@ -1195,6 +1217,12 @@ function openArena(matchId) {
   }
   arenaOpen = true;
   timeUpHandled = false;
+  lastArenaAudioSecond = arenaSecondsLeft();
+  warmArenaMusic();
+  if (state.live?.status === 'running' && arenaAudioEnabled) {
+    startArenaMusic();
+    syncArenaMusic(arenaSecondsLeft());
+  }
   renderArena();
 }
 
@@ -1219,13 +1247,21 @@ function renderArena() {
       : status === 'awaiting-decision' ? '時間到・請評審判定'
         : '等待開始';
   const display = status === 'countdown' ? String(state.live.preCount || 3) : formatTime(seconds);
+  const musicLabel = status === 'running' && seconds <= 30
+    ? '🔥 最終決戰 MAX · 終局音樂'
+    : status === 'running'
+      ? '🪐 星球彈跳 · 戰鬥音樂'
+      : '無人機足球同款音樂';
   $('arenaRoot').innerHTML = `
-    <section class="arena-overlay ${status === 'countdown' ? 'counting' : ''} ${status === 'running' && seconds <= 10 ? 'final-ten' : ''}" id="arenaOverlay">
+    <section class="arena-overlay ${status === 'countdown' ? 'counting' : ''} ${status === 'running' && seconds <= 30 ? 'final-thirty' : ''} ${status === 'running' && seconds <= 10 ? 'final-ten' : ''}" id="arenaOverlay">
       <div class="arena">
         <header class="arena-header">
           <img src="assets/junkbot-logo.png" alt="">
           <div><small>${esc(matchStageLabel(item))} · ${esc(CAMPUS[campus].name)}</small><strong>${esc(matchDisplayLabel(item))}</strong></div>
-          <button class="outline" data-action="close-arena">離開賽場 ×</button>
+          <div class="arena-header-actions">
+            <button class="outline audio" data-action="toggle-arena-audio">${arenaAudioEnabled ? '🔊 音樂開啟' : '🔇 音樂關閉'}</button>
+            <button class="outline" data-action="close-arena">離開賽場 ×</button>
+          </div>
         </header>
         <div class="arena-main">
           <div class="arena-team red">
@@ -1235,6 +1271,7 @@ function renderArena() {
             <small>ONE MINUTE · NO PAUSE</small>
             <div class="timer" id="arenaTimer">${display}</div>
             <div class="state-label" id="arenaStateLabel">${esc(label)}</div>
+            <div class="arena-music-status" id="arenaMusicStatus">${esc(musicLabel)}</div>
             <div class="arena-controls">
               ${status === 'ready' ? `<button class="start" data-action="start-countdown">READY・3・2・1</button>` : ''}
               ${status === 'running' || status === 'awaiting-decision' ? `<button data-action="judge-decision">評審判定勝負</button>` : ''}
@@ -1246,6 +1283,8 @@ function renderArena() {
           </div>
         </div>
         <footer class="arena-footer">掉出場外、停止移動超過 10 秒、未離開起始區、惡意觸碰等，依簡章由評審判定。</footer>
+        <div class="final-thirty-entry" id="junkFinalThirtyEntry"><span>⚠ MUSIC SWITCH</span><strong>FINAL 30</strong><p>終局音樂啟動・把握最後機會！</p></div>
+        <div class="final-ten-entry" id="junkFinalTenEntry"><span>⚠ LAST CHANCE</span><strong>LAST 10</strong><p>最後衝刺・決勝時刻！</p></div>
       </div>
     </section>`;
 }
@@ -1253,6 +1292,8 @@ function renderArena() {
 async function startCountdown() {
   if (!state.live || state.live.status !== 'ready') return;
   ensureAudio();
+  warmArenaMusic();
+  startArenaMusic(true);
   state.live.status = 'countdown';
   state.live.preCount = 3;
   state.live.secondsLeft = 60;
@@ -1275,6 +1316,8 @@ async function startCountdown() {
   state.live.preCount = null;
   state.live.updatedAt = new Date().toISOString();
   timeUpHandled = false;
+  lastArenaAudioSecond = 60;
+  releaseArenaMusic();
   saveState();
   renderArena();
 }
@@ -1285,6 +1328,7 @@ function handleTimeUp() {
   state.live.status = 'awaiting-decision';
   state.live.secondsLeft = 0;
   state.live.updatedAt = new Date().toISOString();
+  stopArenaMusic();
   finishSound();
   saveState();
   if (arenaOpen) renderArena();
@@ -1299,8 +1343,10 @@ function replayMatch() {
   if (!item || item.replays >= 1) return showToast('本場已使用過一次重賽。', true);
   if (!confirm('簡章規定每場最多重賽一次。確定啟動重賽？')) return;
   item.replays += 1;
+  stopArenaMusic();
   state.live = { matchId: item.id, status: 'ready', secondsLeft: 60, updatedAt: new Date().toISOString() };
   timeUpHandled = false;
+  lastArenaAudioSecond = null;
   saveState('重賽已登記，請重新開始一分鐘倒數');
   renderArena();
 }
@@ -1328,13 +1374,36 @@ function startClockTicker() {
       if (seconds <= 0) handleTimeUp();
       if (arenaOpen) {
         const timer = $('arenaTimer');
-        if (timer) timer.textContent = formatTime(seconds);
-        const overlay = $('arenaOverlay');
-        if (overlay) overlay.classList.toggle('final-ten', seconds <= 10);
-        if (seconds <= 10 && seconds > 0 && state.live._lastBeep !== seconds) {
-          state.live._lastBeep = seconds;
-          finalTickSound(seconds);
+        if (timer) {
+          timer.textContent = seconds <= 10 ? String(seconds) : formatTime(seconds);
+          timer.classList.toggle('last-ten-number', seconds <= 10);
+          if (seconds <= 10 && lastArenaAudioSecond !== seconds) {
+            timer.classList.remove('second-slam');
+            void timer.offsetWidth;
+            timer.classList.add('second-slam');
+          }
         }
+        const overlay = $('arenaOverlay');
+        if (overlay) {
+          overlay.classList.toggle('final-thirty', seconds <= 30);
+          overlay.classList.toggle('final-ten', seconds <= 10);
+        }
+        if (seconds > 0 && lastArenaAudioSecond !== seconds) {
+          if (seconds === 30) {
+            playFinalThirtyStinger();
+            triggerArenaPhaseEntry('junkFinalThirtyEntry');
+          }
+          if (seconds <= 30) playHeartbeat();
+          if (seconds === 10) {
+            playFinalTenStinger();
+            triggerArenaPhaseEntry('junkFinalTenEntry');
+          }
+          if (seconds <= 10) finalTickSound(seconds);
+          lastArenaAudioSecond = seconds;
+        }
+        syncArenaMusic(seconds);
+        const musicStatus = $('arenaMusicStatus');
+        if (musicStatus) musicStatus.textContent = seconds <= 30 ? '🔥 最終決戰 MAX · 終局音樂' : '🪐 星球彈跳 · 戰鬥音樂';
       }
       if (role === 'audience') {
         const timer = $('audienceTimer');
@@ -1449,29 +1518,177 @@ function watchTeam(teamId) {
 }
 
 function ensureAudio() {
+  if (!arenaAudioEnabled) return null;
   if (!audioContext) audioContext = new (window.AudioContext || window.webkitAudioContext)();
   if (audioContext.state === 'suspended') audioContext.resume();
+  if (!masterGainNode) {
+    masterGainNode = audioContext.createGain();
+    limiterNode = audioContext.createDynamicsCompressor();
+    masterGainNode.gain.value = 2.35;
+    limiterNode.threshold.value = -12;
+    limiterNode.knee.value = 8;
+    limiterNode.ratio.value = 14;
+    limiterNode.attack.value = .003;
+    limiterNode.release.value = .24;
+    masterGainNode.connect(limiterNode).connect(audioContext.destination);
+
+    battleMusicGain = audioContext.createGain();
+    climaxMusicGain = audioContext.createGain();
+    battleMusicGain.gain.value = .78;
+    climaxMusicGain.gain.value = .0001;
+    battleMusicSource = audioContext.createMediaElementSource(battleMusic);
+    climaxMusicSource = audioContext.createMediaElementSource(climaxMusic);
+    battleMusicSource.connect(battleMusicGain).connect(masterGainNode);
+    climaxMusicSource.connect(climaxMusicGain).connect(masterGainNode);
+  }
+  return audioContext;
+}
+
+function warmArenaMusic() {
+  [battleMusic, climaxMusic].forEach((track) => {
+    if (track.readyState === 0) track.load();
+  });
+}
+
+function safePlayArenaMusic(track) {
+  const result = track.play();
+  if (result && typeof result.catch === 'function') result.catch(() => showToast('音樂未能播放，請按一次「音樂開啟」。', true));
+}
+
+function setArenaMusicMode(next) {
+  if (!battleMusicGain || !climaxMusicGain) return;
+  const changed = arenaMusicMode !== next;
+  arenaMusicMode = next;
+  if (next === 'climax') {
+    if (changed) {
+      battleMusic.pause();
+      climaxMusic.currentTime = 0;
+    }
+    battleMusicGain.gain.value = .0001;
+    climaxMusicGain.gain.value = 1;
+  } else {
+    battleMusicGain.gain.value = .78;
+    climaxMusicGain.gain.value = .0001;
+  }
+}
+
+function startArenaMusic(muted = false) {
+  if (!ensureAudio()) return;
+  battleMusic.currentTime = 0;
+  climaxMusic.currentTime = 0;
+  battleMusic.playbackRate = 1;
+  climaxMusic.playbackRate = 1;
+  battleMusicStarted = true;
+  arenaMusicMode = 'normal';
+  setArenaMusicMode('normal');
+  if (muted) {
+    battleMusicGain.gain.value = .0001;
+    climaxMusicGain.gain.value = .0001;
+  }
+  safePlayArenaMusic(battleMusic);
+  safePlayArenaMusic(climaxMusic);
+}
+
+function releaseArenaMusic() {
+  if (!ensureAudio()) return;
+  if (!battleMusicStarted) return startArenaMusic();
+  battleMusic.currentTime = 0;
+  climaxMusic.currentTime = 0;
+  setArenaMusicMode('normal');
+  if (battleMusic.paused) safePlayArenaMusic(battleMusic);
+}
+
+function syncArenaMusic(seconds) {
+  if (!arenaAudioEnabled || state.live?.status !== 'running') return;
+  if (!battleMusicStarted) startArenaMusic();
+  setArenaMusicMode(seconds <= 30 ? 'climax' : 'normal');
+  if (arenaMusicMode === 'climax') {
+    battleMusic.pause();
+    if (climaxMusic.paused) safePlayArenaMusic(climaxMusic);
+  } else if (battleMusic.paused) {
+    safePlayArenaMusic(battleMusic);
+  }
+}
+
+function stopArenaMusic() {
+  battleMusic.pause();
+  climaxMusic.pause();
+  battleMusic.currentTime = 0;
+  climaxMusic.currentTime = 0;
+  battleMusicStarted = false;
+  arenaMusicMode = 'normal';
+  if (battleMusicGain && climaxMusicGain) setArenaMusicMode('normal');
+}
+
+function triggerArenaPhaseEntry(id) {
+  const node = $(id);
+  if (!node) return;
+  node.classList.remove('active');
+  void node.offsetWidth;
+  node.classList.add('active');
 }
 
 function tone(frequency, duration, type = 'square', gain = .12, delay = 0) {
-  ensureAudio();
-  const oscillator = audioContext.createOscillator();
-  const volume = audioContext.createGain();
+  const context = ensureAudio();
+  if (!context) return;
+  const oscillator = context.createOscillator();
+  const volume = context.createGain();
+  const start = context.currentTime + delay;
   oscillator.type = type;
-  oscillator.frequency.setValueAtTime(frequency, audioContext.currentTime + delay);
-  volume.gain.setValueAtTime(.0001, audioContext.currentTime + delay);
-  volume.gain.exponentialRampToValueAtTime(gain, audioContext.currentTime + delay + .015);
-  volume.gain.exponentialRampToValueAtTime(.0001, audioContext.currentTime + delay + duration);
-  oscillator.connect(volume).connect(audioContext.destination);
-  oscillator.start(audioContext.currentTime + delay);
-  oscillator.stop(audioContext.currentTime + delay + duration + .03);
+  oscillator.frequency.setValueAtTime(frequency, start);
+  volume.gain.setValueAtTime(.0001, start);
+  volume.gain.exponentialRampToValueAtTime(gain, start + .015);
+  volume.gain.exponentialRampToValueAtTime(.0001, start + duration);
+  oscillator.connect(volume).connect(masterGainNode || context.destination);
+  oscillator.start(start);
+  oscillator.stop(start + duration + .03);
 }
 
-function readySound() { [180, 240, 320].forEach((f, i) => tone(f, .25, 'sawtooth', .09, i * .08)); }
-function countSound(number) { tone(number === 1 ? 480 : 300, .28, 'square', .18); tone(90, .2, 'sine', .2); }
-function startSound() { [330, 440, 660, 880].forEach((f, i) => tone(f, .45, 'square', .12, i * .07)); }
-function finalTickSound(seconds) { tone(seconds <= 3 ? 760 : 520, .18, 'square', .17); tone(78, .12, 'sine', .2); }
-function finishSound() { [520, 390, 260, 130].forEach((f, i) => tone(f, .42, 'sawtooth', .14, i * .11)); }
+function readySound() {
+  tone(62, .48, 'sine', .2);
+  tone(196, .18, 'triangle', .13, .02);
+  tone(294, .18, 'triangle', .15, .18);
+  tone(440, .34, 'square', .17, .34);
+}
+function countSound(number) {
+  const pitch = number === 3 ? 392 : number === 2 ? 494 : 659;
+  tone(52, .25, 'sine', .23);
+  tone(pitch, .2, 'square', .2, .025);
+  tone(pitch * 2, .12, 'triangle', .12, .05);
+  if (number === 1) tone(988, .3, 'square', .16, .18);
+}
+function startSound() {
+  tone(98, .5, 'sawtooth', .24);
+  tone(392, .24, 'square', .18, .02);
+  tone(523, .3, 'square', .17, .1);
+  tone(784, .58, 'triangle', .2, .2);
+}
+function playHeartbeat() {
+  tone(82, .12, 'sawtooth', .29);
+  tone(54, .18, 'square', .2, .14);
+  tone(108, .11, 'triangle', .14, .34);
+}
+function playFinalThirtyStinger() {
+  tone(110, .5, 'sawtooth', .24);
+  tone(330, .16, 'square', .18, .05);
+  tone(495, .16, 'square', .2, .25);
+  tone(880, .42, 'square', .19, .45);
+}
+function playFinalTenStinger() {
+  tone(52, .7, 'sawtooth', .3);
+  tone(620, .13, 'square', .2, .02);
+  tone(760, .13, 'square', .2, .18);
+  tone(980, .35, 'square', .22, .34);
+}
+function finalTickSound(seconds) {
+  tone(720 + (10 - seconds) * 28, .1, 'square', .16);
+  tone(46 + seconds, .19, 'sawtooth', .17, .04);
+}
+function finishSound() {
+  tone(392, .22, 'square', .12);
+  tone(294, .22, 'square', .12, .23);
+  tone(196, .7, 'sawtooth', .15, .46);
+}
 function victorySound() { [392, 523, 659, 784].forEach((f, i) => tone(f, .7, 'triangle', .12, i * .12)); }
 
 function bindControlEvents() {
@@ -1591,9 +1808,23 @@ function bindDynamicEvents() {
   $('arenaRoot').addEventListener('click', (event) => {
     const action = event.target.closest('[data-action]')?.dataset.action;
     if (action === 'close-arena') {
+      stopArenaMusic();
       arenaOpen = false;
       $('arenaRoot').innerHTML = '';
       renderControl();
+    }
+    if (action === 'toggle-arena-audio') {
+      arenaAudioEnabled = !arenaAudioEnabled;
+      localStorage.setItem('bp-junkbot-audio', arenaAudioEnabled ? 'on' : 'off');
+      if (!arenaAudioEnabled) stopArenaMusic();
+      else if (state.live?.status === 'running') {
+        startArenaMusic();
+        syncArenaMusic(arenaSecondsLeft());
+      } else {
+        ensureAudio();
+        warmArenaMusic();
+      }
+      renderArena();
     }
     if (action === 'start-countdown') startCountdown();
     if (action === 'judge-decision') openDecisionModal();
