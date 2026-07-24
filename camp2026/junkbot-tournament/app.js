@@ -108,14 +108,21 @@ function matchStageLabel(item) {
 
 function tournamentPlan(teamCount = state.entries.length) {
   const count = Math.max(0, Number(teamCount) || 0);
-  if (count < 2) return { teamCount: count, bracketSize: 0, roundCount: 0, byeCount: 0, firstStage: '等待隊伍' };
-  const bracketSize = nextPowerOfTwo(count);
+  if (count < 2) return { teamCount: count, bracketSize: 0, roundCount: 0, roundSizes: [], byeCount: 0, byeRoundCount: 0, firstStage: '等待隊伍' };
+  const roundSizes = [];
+  let remaining = count;
+  while (remaining > 1) {
+    roundSizes.push(remaining);
+    remaining = Math.ceil(remaining / 2);
+  }
   return {
     teamCount: count,
-    bracketSize,
-    roundCount: Math.log2(bracketSize),
-    byeCount: bracketSize - count,
-    firstStage: stageLabelForSize(bracketSize),
+    bracketSize: count,
+    roundCount: roundSizes.length,
+    roundSizes,
+    byeCount: count % 2,
+    byeRoundCount: roundSizes.filter((size) => size % 2 === 1).length,
+    firstStage: stageLabelForSize(count),
   };
 }
 
@@ -412,7 +419,7 @@ function dashboardView() {
             <strong>即將進入一分鐘對決</strong>
             <div class="versus"><b>${esc(teamName(next.participantIds[0]))}</b><span>VS</span><b>${esc(teamName(next.participantIds[1]))}</b></div>
           </div>
-        ` : `<div class="hint">${state.matches.length ? '賽程已全部完成。' : plan.teamCount >= 2 ? `${plan.teamCount} 隊將自動建立 ${plan.firstStage}${plan.byeCount ? `，首輪 ${plan.byeCount} 隊輪空` : ''}。` : '完成至少 2 支隊伍後即可建立淘汰賽。'}</div>`}
+        ` : `<div class="hint">${state.matches.length ? '賽程已全部完成。' : plan.teamCount >= 2 ? `${plan.teamCount} 隊將自動建立 ${plan.firstStage}${plan.byeCount ? '，首輪只抽 1 隊輪空' : '，首輪全員出賽'}。` : '完成至少 2 支隊伍後即可建立淘汰賽。'}</div>`}
         <ul class="rule-list">
           <li><b>60 秒不停錶</b>，開始後不中斷計時。</li>
           <li>每場最多 <b>重賽一次</b>，須由評審判定。</li>
@@ -464,7 +471,7 @@ function teamsView() {
       <div class="import-grid">
         <label class="field"><span>批次名單</span><textarea id="bulkRoster" placeholder="紙箱霸王｜王小美&#10;螺絲衝鋒隊｜李大同"></textarea></label>
         <div>
-          <div class="hint">${state.entries.length >= 2 ? `目前 ${state.entries.length} 隊：會建立 ${plan.firstStage}${plan.byeCount ? `，其中 ${plan.byeCount} 隊首輪公平輪空` : '，不需要輪空'}。` : '人數不限制；完成名單後，系統會自動計算最適合的淘汰輪次。'} 建立賽程後，若要改名單請先重設賽程。</div>
+          <div class="hint">${state.entries.length >= 2 ? `目前 ${state.entries.length} 隊：會建立 ${plan.firstStage}${plan.byeCount ? '，首輪公平抽 1 隊輪空' : '，首輪全員出賽'}；整屆所有單數輪空位置會在建立賽程時一次抽定並鎖住。` : '人數不限制；完成名單後，系統會自動計算最適合的淘汰輪次。'} 建立賽程後，若要改名單請先重設賽程。</div>
           <button class="outline" data-action="import-roster" style="margin-top:14px">匯入貼上名單</button>
         </div>
       </div>
@@ -504,7 +511,7 @@ function bracketView(control) {
       <div class="empty-card">
         <img src="assets/mascot-bengbeng.png" alt="">
         <h2>尚未建立賽程</h2>
-        <p>${state.entries.length >= 2 ? `目前 ${state.entries.length} 支隊伍，將建立 ${plan.firstStage}${plan.byeCount ? `，並以公平抽籤選出 ${plan.byeCount} 支輪空種子隊` : '，所有隊伍首輪出賽'}。` : state.entries.length ? '還需要至少 1 支隊伍才能建立賽程。' : '請先建立這個校區的隊伍名單。'}</p>
+        <p>${state.entries.length >= 2 ? `目前 ${state.entries.length} 支隊伍，將建立 ${plan.firstStage}${plan.byeCount ? '，首輪公平抽出 1 支輪空隊' : '，所有隊伍首輪出賽'}；所有對戰與單數輪空路線會在開賽前一次排定。` : state.entries.length ? '還需要至少 1 支隊伍才能建立賽程。' : '請先建立這個校區的隊伍名單。'}</p>
         ${control ? `<button class="primary" data-action="create-bracket" ${state.entries.length < 2 ? 'disabled' : ''}>建立淘汰賽程</button>` : ''}
       </div>
     `;
@@ -531,9 +538,8 @@ function bracketView(control) {
     .join('');
   const bronzeMatch = stageMatches('bronze')[0];
   const firstSideMatchCount = Math.max(1, Math.ceil((rounds[0]?.matches?.length || 1) / 2));
-  const sideWidth = sideRounds.length ? (sideRounds.length * 200) + ((sideRounds.length - 1) * 28) : 0;
-  const bracketWidth = Math.max(636, (sideWidth * 2) + 400);
   const bracketHeight = Math.max(760, firstSideMatchCount * 148);
+  const bracketDensity = sideRounds.length >= 6 ? 'ultra-compact' : sideRounds.length >= 5 ? 'compact' : '';
   const byeTeamIds = Array.isArray(state.draw?.byeTeamIds)
     ? state.draw.byeTeamIds
     : (rounds[0]?.matches || []).filter((item) => item.resultType === 'bye').map((item) => item.winnerId).filter(Boolean);
@@ -547,25 +553,25 @@ function bracketView(control) {
         <span>FAIR RANDOM DRAW${drawTime ? ` · ${esc(drawTime)}` : ''}</span>
         <h3>公平抽籤已完成</h3>
         <p>${byeTeamIds.length
-          ? `${state.entries.length} 支隊伍進入 ${plan.firstStage}，系統亂數抽出 ${byeTeamIds.length} 支輪空種子隊；其餘隊伍由左右外側開始對戰。`
-          : `${state.entries.length} 支隊伍全數由左右外側首輪出賽，沒有輪空種子。`}</p>
+          ? `${state.entries.length} 支隊伍進入 ${plan.firstStage}，首輪只亂數抽出 1 支輪空；全賽程其餘輪空路線也已在這次抽籤中一次排定。`
+          : `${state.entries.length} 支隊伍全數由左右外側首輪出賽。全賽程若有單數輪空路線，也已在建立賽程時一次排定。`}</p>
       </div>
       <div class="bye-team-list">
-        <small>${byeTeamIds.length ? '本屆抽籤輪空種子' : '本屆抽籤結果'}</small>
+        <small>${byeTeamIds.length ? '首輪抽籤輪空隊伍' : '首輪抽籤結果'}</small>
         ${byeTeamIds.length
           ? byeTeamIds.map((id) => `<b>${esc(teamName(id))}</b>`).join('')
-          : '<b>全員首輪出賽</b>'}
+          : `<b>偶數隊伍 · 全員首輪出賽${plan.byeRoundCount ? ` · ${plan.byeRoundCount} 個後續輪空路線已鎖定` : ''}</b>`}
       </div>
     </section>`;
   return `
     <div class="page-heading">
-      <div><span class="kicker">DOUBLE-SIDED BRACKET · ${esc(CAMPUS[campus].short)}</span><h1>${control ? '雙側爬升晉級圖' : '今日雙側晉級圖'}</h1><p>${state.entries.length} 支隊伍從左右外側出發，勝者逐輪往中央冠軍爬升；共 ${rounds.length} 輪${byeTeamIds.length ? `，${byeTeamIds.length} 支抽籤輪空` : ''}。</p></div>
+      <div><span class="kicker">DOUBLE-SIDED BRACKET · ${esc(CAMPUS[campus].short)}</span><h1>${control ? '雙側爬升晉級圖' : '今日雙側晉級圖'}</h1><p>${state.entries.length} 支隊伍從左右外側出發，勝者逐輪往中央冠軍爬升；共 ${rounds.length} 輪，所有對戰與輪空路線均已在開賽前鎖定。</p></div>
       ${control ? `<button class="outline" data-action="reset-bracket">重設賽程</button>` : ''}
     </div>
     ${podium}
     ${drawSummary}
     <div class="bracket-scroll">
-      <div class="symmetric-bracket" style="--board-width:${bracketWidth}px;--board-height:${bracketHeight}px;--side-width:${sideWidth}px;--side-rounds:${Math.max(1, sideRounds.length)}">
+      <div class="symmetric-bracket ${bracketDensity}" style="--board-height:${bracketHeight}px;--side-rounds:${Math.max(1, sideRounds.length)}">
         <div class="bracket-compass" aria-hidden="true"><span>左側起點</span><b>勝者往中央爬升</b><span>右側起點</span></div>
         <div class="duel-bracket-board ${sideRounds.length ? '' : 'solo-final'}">
           <div class="bracket-side bracket-left">${leftColumns}</div>
@@ -620,19 +626,22 @@ function bracketRoundColumn(round, side, level, totalLevels, control) {
 function matchCard(item, control) {
   const playable = item.status === 'pending' && item.participantIds.filter(Boolean).length === 2;
   const active = state.activeMatchId === item.id && item.status !== 'completed';
+  const plannedBye = item.resultType === 'bye' || item.sourceMatchIds?.length === 1;
   const participantIds = item.resultType === 'bye'
     ? [item.winnerId || item.participantIds.find(Boolean)]
+    : plannedBye
+      ? [item.participantIds.find(Boolean) || null]
     : item.participantIds;
   return `
-    <article class="match-card ${item.status === 'completed' ? 'completed' : ''} ${item.resultType === 'bye' ? 'bye' : ''} ${active ? 'live' : ''}">
+    <article class="match-card ${item.status === 'completed' ? 'completed' : ''} ${plannedBye ? 'bye' : ''} ${active ? 'live' : ''}">
       <small>${esc(item.label)}</small>
       ${participantIds.map((id) => `
         <button class="match-team ${item.winnerId === id && id ? 'winner' : ''}" ${id ? `data-watch-team="${esc(id)}"` : 'disabled'}>
           <b>${esc(teamName(id, '等待晉級'))}</b><span>${id ? esc(entry(id)?.playerName || '') : '—'}</span>
         </button>`).join('')}
-      ${item.resultType === 'bye' ? '<div class="bye-stamp">抽籤種子 · 本輪輪空</div>' : ''}
+      ${plannedBye ? `<div class="bye-stamp">${item.resultType === 'bye' ? '開賽前已抽定 · 本輪輪空' : '預排輪空路線 · 勝者直升'}</div>` : ''}
       <footer>
-        <span>${item.status === 'completed' ? (item.resultType === 'bye' ? '直接晉級下一輪' : `勝：${esc(teamName(item.winnerId))}`) : active ? '賽場進行中' : '等待比賽'}</span>
+        <span>${item.status === 'completed' ? (item.resultType === 'bye' ? '直接晉級下一輪' : `勝：${esc(teamName(item.winnerId))}`) : active ? '賽場進行中' : plannedBye ? '開賽前已鎖定' : '等待比賽'}</span>
         ${control && playable ? `<button data-start-match="${esc(item.id)}">${active ? '回到賽場' : '開啟賽場'}</button>` : ''}
       </footer>
     </article>`;
@@ -898,16 +907,26 @@ function createBracket() {
     resultType: '',
   });
 
+  const roundByeSourceMatchIds = [];
   for (let roundIndex = 0; roundIndex < plan.roundCount; roundIndex += 1) {
-    const roundSize = plan.bracketSize / (2 ** roundIndex);
+    const roundSize = plan.roundSizes[roundIndex];
     const stage = stageKeyForSize(roundSize);
-    const roundMatches = Array.from({ length: roundSize / 2 }, (_, order) => createMatch(stage, roundIndex, roundSize, order));
+    const roundMatches = Array.from({ length: Math.ceil(roundSize / 2) }, (_, order) => createMatch(stage, roundIndex, roundSize, order));
     rounds.push(roundMatches);
     matches.push(...roundMatches);
     if (roundIndex > 0) {
       const previous = rounds[roundIndex - 1];
-      roundMatches.forEach((item, order) => {
-        const sources = [previous[order * 2], previous[order * 2 + 1]];
+      const availableSources = [...previous];
+      const sourcePairs = [];
+      if (availableSources.length % 2 === 1) {
+        const byeIndex = Math.floor(fairRandom() * availableSources.length);
+        const byeSource = availableSources.splice(byeIndex, 1)[0];
+        sourcePairs.push([byeSource]);
+        roundByeSourceMatchIds.push(byeSource.id);
+      }
+      while (availableSources.length) sourcePairs.push(availableSources.splice(0, 2));
+      shuffledCopy(sourcePairs).forEach((sources, order) => {
+        const item = roundMatches[order];
         item.sourceMatchIds = sources.map((source) => source.id);
         sources.forEach((source, slot) => {
           source.nextMatchId = item.id;
@@ -918,8 +937,8 @@ function createBracket() {
   }
 
   const shuffledTeams = shuffledCopy(state.entries.map((item) => item.id));
-  const byeTeams = shuffledTeams.slice(0, plan.byeCount);
-  const competingTeams = shuffledTeams.slice(plan.byeCount);
+  const byeTeams = plan.byeCount ? [shuffledTeams.shift()] : [];
+  const competingTeams = shuffledTeams;
   const firstRoundPairs = [
     ...byeTeams.map((teamId) => [teamId, null]),
     ...Array.from({ length: competingTeams.length / 2 }, (_, index) => [competingTeams[index * 2], competingTeams[index * 2 + 1]]),
@@ -947,7 +966,9 @@ function createBracket() {
     teamCount: plan.teamCount,
     bracketSize: plan.bracketSize,
     byeTeamIds: [...byeTeams],
-    method: 'random-draw',
+    roundByeSourceMatchIds,
+    byeRoundCount: plan.byeRoundCount,
+    method: 'single-draw-full-route',
   };
   state.activeMatchId = null;
   state.championId = null;
@@ -993,6 +1014,7 @@ function propagateMatch(item) {
     state.thirdPlaceId = item.winnerId;
     return;
   }
+  if (item.roundSize === 3 && item.loserId) state.thirdPlaceId = item.loserId;
   const linkedTarget = item.nextMatchId ? match(item.nextMatchId) : null;
   if (linkedTarget) {
     linkedTarget.participantIds[Number(item.nextSlot) || 0] = item.winnerId || null;
@@ -1369,7 +1391,7 @@ function bindControlEvents() {
     }
     if (action === 'create-bracket') {
       const plan = tournamentPlan();
-      const warning = `目前 ${plan.teamCount} 隊，將建立 ${plan.firstStage}、共 ${plan.roundCount} 輪${plan.byeCount ? `，首輪會公平隨機安排 ${plan.byeCount} 隊輪空` : '，首輪全數出賽'}。確定建立？`;
+      const warning = `目前 ${plan.teamCount} 隊，將建立 ${plan.firstStage}、共 ${plan.roundCount} 輪。${plan.byeCount ? '首輪只會公平抽 1 隊輪空' : '首輪全員出賽'}；全賽程所有對戰與單數輪空位置會在這一次抽籤中排定並鎖住，中途不再抽籤。確定建立？`;
       if (confirm(warning)) createBracket();
     }
     if (action === 'reset-bracket') resetBracket();
