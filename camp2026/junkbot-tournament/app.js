@@ -42,7 +42,7 @@ let controlView = 'dashboard';
 let syncQueue = Promise.resolve();
 let audienceRefresh = null;
 let clockTicker = null;
-let timeUpHandled = false;
+const timeUpHandledIds = new Set();
 let audioContext = null;
 let masterGainNode = null;
 let limiterNode = null;
@@ -55,6 +55,7 @@ let arenaMusicMode = 'normal';
 let arenaAudioEnabled = localStorage.getItem('bp-junkbot-audio') !== 'off';
 let lastArenaAudioSecond = null;
 let arenaOpen = false;
+let focusedArenaMatchId = null;
 let connectionOk = true;
 let pendingRosterRows = [];
 let pendingRosterFileName = '';
@@ -70,10 +71,12 @@ const climaxMusic = new Audio(ARENA_CLIMAX_TRACK);
 
 function emptyState(campusId) {
   return {
-    version: 2,
+    version: 3,
     campus: campusId,
     entries: [],
     matches: [],
+    activeMatchIds: [],
+    lives: {},
     activeMatchId: null,
     championId: null,
     runnerUpId: null,
@@ -90,7 +93,53 @@ function normalizeState(raw, campusId) {
   next.campus = campusId;
   next.entries = Array.isArray(next.entries) ? next.entries : [];
   next.matches = Array.isArray(next.matches) ? next.matches : [];
+  next.activeMatchIds = Array.isArray(next.activeMatchIds) ? next.activeMatchIds.filter(Boolean) : [];
+  next.lives = next.lives && typeof next.lives === 'object' && !Array.isArray(next.lives) ? next.lives : {};
+  if (next.activeMatchId && !next.activeMatchIds.includes(next.activeMatchId)) next.activeMatchIds.push(next.activeMatchId);
+  if (next.live?.matchId && !next.lives[next.live.matchId]) next.lives[next.live.matchId] = next.live;
+  next.activeMatchIds = next.activeMatchIds.filter((id) => {
+    const item = next.matches.find((candidate) => candidate.id === id);
+    return item && item.status !== 'completed';
+  });
+  syncLegacyArenaState(next);
   return next;
+}
+
+function activeMatchIds(targetState = state) {
+  return Array.isArray(targetState.activeMatchIds) ? targetState.activeMatchIds.filter(Boolean) : [];
+}
+
+function activeMatches() {
+  return activeMatchIds().map((id) => match(id)).filter((item) => item && item.status !== 'completed');
+}
+
+function matchLive(matchId, targetState = state) {
+  if (!matchId) return null;
+  return targetState.lives?.[matchId] || (targetState.live?.matchId === matchId ? targetState.live : null);
+}
+
+function setMatchLive(matchId, value) {
+  if (!state.lives || typeof state.lives !== 'object') state.lives = {};
+  state.lives[matchId] = value;
+}
+
+function activateMatch(matchId) {
+  if (!Array.isArray(state.activeMatchIds)) state.activeMatchIds = [];
+  if (!state.activeMatchIds.includes(matchId)) state.activeMatchIds.push(matchId);
+  syncLegacyArenaState();
+}
+
+function deactivateMatch(matchId) {
+  state.activeMatchIds = activeMatchIds().filter((id) => id !== matchId);
+  syncLegacyArenaState();
+}
+
+function syncLegacyArenaState(targetState = state) {
+  const ids = Array.isArray(targetState.activeMatchIds) ? targetState.activeMatchIds.filter(Boolean) : [];
+  targetState.activeMatchId = ids[0] || null;
+  targetState.live = targetState.activeMatchId
+    ? targetState.lives?.[targetState.activeMatchId] || null
+    : targetState.live?.status === 'completed' ? targetState.live : null;
 }
 
 function entry(id) {
@@ -263,6 +312,7 @@ async function loadCampusState(silent = false) {
 }
 
 function saveState(message) {
+  syncLegacyArenaState();
   state.updatedAt = new Date().toISOString();
   const snapshot = JSON.parse(JSON.stringify(state));
   setSync('saving', '儲存中');
@@ -339,6 +389,8 @@ function leaveApp() {
   role = null;
   campus = null;
   arenaOpen = false;
+  focusedArenaMatchId = null;
+  stopArenaMusic();
   $('controlApp').hidden = true;
   $('audienceApp').hidden = true;
   $('arenaRoot').innerHTML = '';
@@ -359,6 +411,8 @@ function openCampusSwitch() {
   $('audienceApp').hidden = true;
   $('arenaRoot').innerHTML = '';
   arenaOpen = false;
+  focusedArenaMatchId = null;
+  stopArenaMusic();
   $('gate').hidden = false;
   $('roleGrid').hidden = true;
   $('passwordPanel').hidden = true;
@@ -413,15 +467,16 @@ function renderControl() {
   root.classList.toggle('bracket-layout', controlView === 'bracket');
   if (controlView === 'teams') root.innerHTML = teamsView();
   else if (controlView === 'bracket') root.innerHTML = bracketView(true);
+  else if (controlView === 'arenas') root.innerHTML = arenasView();
   else root.innerHTML = dashboardView();
   if (controlView === 'bracket') scheduleBracketConnections();
 }
 
 function dashboardView() {
   const completed = state.matches.filter((item) => item.status === 'completed' && item.resultType !== 'bye').length;
-  const pending = state.matches.find((item) => item.status === 'pending' && item.participantIds.filter(Boolean).length === 2);
-  const current = state.activeMatchId ? match(state.activeMatchId) : null;
-  const next = current && current.status !== 'completed' ? current : pending;
+  const active = activeMatches();
+  const pending = state.matches.find((item) => item.status === 'pending' && item.participantIds.filter(Boolean).length === 2 && !activeMatchIds().includes(item.id));
+  const next = active[0] || pending;
   const plan = tournamentPlan();
   return `
     <div class="page-heading">
@@ -436,21 +491,21 @@ function dashboardView() {
         <div class="stat-row">
           <div class="stat-card"><strong>${state.entries.length}</strong><span>參賽隊伍</span></div>
           <div class="stat-card"><strong>${completed}</strong><span>已完成賽事</span></div>
-          <div class="stat-card"><strong>${state.entries.filter((item) => item.videoUrl).length}</strong><span>選廢秀影片</span></div>
+          <div class="stat-card"><strong>${active.length}</strong><span>同時進行場次</span></div>
         </div>
         <div class="dashboard-actions">
           <button class="primary" data-view-jump="teams">＋ 管理選手名單</button>
           <button class="outline" data-view-jump="bracket">查看完整賽程</button>
-          ${next ? `<button class="danger" data-start-match="${esc(next.id)}">開啟下一場 →</button>` : ''}
+          <button class="danger" data-view-jump="arenas">多賽場控制 →</button>
         </div>
       </section>
       <aside class="dashboard-side">
-        <span class="section-kicker">NEXT IN ARENA</span>
-        <h3>下一場比賽</h3>
+        <span class="section-kicker">${active.length ? 'LIVE ARENAS' : 'NEXT IN ARENA'}</span>
+        <h3>${active.length ? `${active.length} 場同時進行` : '下一場比賽'}</h3>
         ${next ? `
           <div class="next-match">
             <small>${esc(matchStageLabel(next))} · 第 ${next.order + 1} 場</small>
-            <strong>即將進入一分鐘對決</strong>
+            <strong>${active.length ? '多賽場計時進行中' : '即將進入一分鐘對決'}</strong>
             <div class="versus"><b>${esc(teamName(next.participantIds[0]))}</b><span>VS</span><b>${esc(teamName(next.participantIds[1]))}</b></div>
           </div>
         ` : `<div class="hint">${state.matches.length ? '賽程已全部完成。' : plan.teamCount >= 2 ? `${plan.teamCount} 隊將自動建立 ${plan.firstStage}${plan.byeCount ? '，首輪只抽 1 隊輪空' : '，首輪全員出賽'}。` : '完成至少 2 支隊伍後即可建立淘汰賽。'}</div>`}
@@ -463,6 +518,67 @@ function dashboardView() {
       </aside>
     </div>
   `;
+}
+
+function arenaStatusLabel(live) {
+  if (!live) return '等待開場';
+  if (live.status === 'running') return '比賽進行中';
+  if (live.status === 'countdown') return `READY ${live.preCount || 3}`;
+  if (live.status === 'awaiting-decision') return '時間到・等待判定';
+  return '賽場準備中';
+}
+
+function arenasView() {
+  const activeIds = activeMatchIds();
+  const active = activeMatches();
+  const readyMatches = state.matches.filter((item) =>
+    item.stage !== 'bronze'
+    && item.status === 'pending'
+    && item.participantIds.filter(Boolean).length === 2
+    && !activeIds.includes(item.id));
+  const cards = [
+    ...active.map((item) => arenaControlCard(item, true)),
+    ...readyMatches.map((item) => arenaControlCard(item, false)),
+  ].join('');
+  return `
+    <div class="page-heading arena-page-heading">
+      <div><span class="kicker">MULTI-ARENA CONTROL · ${esc(CAMPUS[campus].short)}</span><h1>多賽場控制台</h1><p>每一場都有獨立 60 秒計時與評審判定；先開始的場次不會被後開場次中斷。</p></div>
+      <div class="arena-live-count"><strong>${active.length}</strong><span>場同時進行</span></div>
+    </div>
+    <section class="multi-arena-guide">
+      <b>操作方式</b>
+      <span>① 對可比賽場次按「準備賽場」</span>
+      <span>② 在全螢幕畫面開始 READY 3・2・1</span>
+      <span>③ 關閉畫面後計時仍會繼續，可再開下一場</span>
+      <span>④ 隨時回到任何場次判定勝負</span>
+    </section>
+    <div class="arena-control-grid">
+      ${cards || `<div class="empty-card"><img src="assets/mascot-tiaotiao.png" alt=""><h2>目前沒有可開啟的比賽</h2><p>${state.matches.length ? '請先完成前一輪，下一輪對戰就會自動出現。' : '請先建立淘汰賽程。'}</p></div>`}
+    </div>
+  `;
+}
+
+function arenaControlCard(item, isActive) {
+  const live = matchLive(item.id);
+  const seconds = live ? arenaSecondsLeft(item.id) : 60;
+  const statusClass = live?.status || 'available';
+  return `
+    <article class="arena-control-card ${statusClass}">
+      <header>
+        <div><small>${esc(matchDisplayLabel(item))}</small><strong>${isActive ? arenaStatusLabel(live) : '可以開始比賽'}</strong></div>
+        <span class="arena-state-pill">${isActive ? 'LIVE' : 'READY'}</span>
+      </header>
+      <div class="arena-card-versus">
+        <div><i>A</i><b>${esc(teamName(item.participantIds[0]))}</b><small>${esc(entry(item.participantIds[0])?.playerName || '')}</small></div>
+        <span>VS</span>
+        <div><i>B</i><b>${esc(teamName(item.participantIds[1]))}</b><small>${esc(entry(item.participantIds[1])?.playerName || '')}</small></div>
+      </div>
+      <div class="arena-card-timer" data-control-timer="${esc(item.id)}">${live?.status === 'countdown' ? String(live.preCount || 3) : formatTime(seconds)}</div>
+      <footer>
+        <button class="${isActive ? 'outline' : 'primary'}" data-start-match="${esc(item.id)}">${isActive ? '進入這個賽場' : '準備賽場'}</button>
+        ${live?.status === 'awaiting-decision' ? `<button class="danger" data-judge-match="${esc(item.id)}">評審判定</button>` : ''}
+      </footer>
+    </article>`;
 }
 
 function teamsView() {
@@ -745,7 +861,7 @@ function bracketRoundColumn(round, side, level, totalLevels, control, matchGroup
 
 function matchCard(item, control) {
   const playable = item.status === 'pending' && item.participantIds.filter(Boolean).length === 2;
-  const active = state.activeMatchId === item.id && item.status !== 'completed';
+  const active = activeMatchIds().includes(item.id) && item.status !== 'completed';
   const plannedBye = item.resultType === 'bye' || item.sourceMatchIds?.length === 1;
   const participantIds = item.resultType === 'bye'
     ? [item.winnerId || item.participantIds.find(Boolean)]
@@ -771,6 +887,7 @@ function matchCard(item, control) {
 
 function renderAudience() {
   $('audienceCampusName').textContent = CAMPUS[campus].name;
+  const simultaneousMatches = activeMatches();
   const rawLiveMatch = state.live?.matchId ? match(state.live.matchId) : null;
   const liveMatch = state.live?.status !== 'completed' ? rawLiveMatch : null;
   const nextMatch = state.matches.find((item) => item.status === 'pending' && item.participantIds.filter(Boolean).length === 2);
@@ -787,6 +904,19 @@ function renderAudience() {
         : featured ? '下一場準備中' : '等待比賽單位建立賽程';
   $('audienceView').innerHTML = `
     ${connectionOk ? '' : '<div class="hint" style="margin-bottom:18px"><b>網路連線較慢，先顯示最近一次戰況。</b> 系統正在背景自動重試，不需要重新整理頁面。</div>'}
+    ${simultaneousMatches.length > 1 ? `
+      <section class="audience-multi-live">
+        <header><div><span class="section-kicker">MULTI-ARENA LIVE</span><h2>${simultaneousMatches.length} 場同時進行</h2></div><b>即時戰況</b></header>
+        <div>${simultaneousMatches.map((item) => {
+          const live = matchLive(item.id);
+          return `<article>
+            <small>${esc(matchDisplayLabel(item))}</small>
+            <strong>${esc(teamName(item.participantIds[0]))}<span>VS</span>${esc(teamName(item.participantIds[1]))}</strong>
+            <div data-audience-timer="${esc(item.id)}">${live?.status === 'countdown' ? String(live.preCount || 3) : formatTime(arenaSecondsLeft(item.id))}</div>
+            <em>${esc(arenaStatusLabel(live))}</em>
+          </article>`;
+        }).join('')}</div>
+      </section>` : ''}
     <section class="live-stage ${featured ? '' : 'waiting'} ${seconds <= 10 && liveState === 'running' ? 'final-ten' : ''}" id="audienceStage">
       ${featured ? `
         <div class="stage-team red">
@@ -814,7 +944,7 @@ function renderAudience() {
           <div class="mini-match">
             <span class="number">${String(index + 1).padStart(2, '0')}</span>
             <div><strong>${esc(teamName(item.participantIds[0]))} VS ${esc(teamName(item.participantIds[1]))}</strong><small>${esc(matchStageLabel(item))} · ${esc(item.label)}</small></div>
-            <span class="status ${item.status === 'completed' ? 'done' : ''}">${item.status === 'completed' ? `勝 ${esc(teamName(item.winnerId))}` : state.activeMatchId === item.id ? '進行中' : '未開始'}</span>
+            <span class="status ${item.status === 'completed' ? 'done' : ''}">${item.status === 'completed' ? `勝 ${esc(teamName(item.winnerId))}` : activeMatchIds().includes(item.id) ? '進行中' : '未開始'}</span>
           </div>`).join('') : '<div class="hint">賽程尚未建立，請稍候。</div>'}
       </section>
       <section class="audience-panel">
@@ -1090,7 +1220,7 @@ function createBracket() {
     matches.splice(finalIndex < 0 ? matches.length : finalIndex, 0, bronzeMatch);
   }
   state.matches = matches;
-  state.version = 2;
+  state.version = 3;
   state.draw = {
     createdAt: new Date().toISOString(),
     teamCount: plan.teamCount,
@@ -1100,6 +1230,8 @@ function createBracket() {
     byeRoundCount: plan.byeRoundCount,
     method: 'single-draw-full-route',
   };
+  state.activeMatchIds = [];
+  state.lives = {};
   state.activeMatchId = null;
   state.championId = null;
   state.runnerUpId = null;
@@ -1171,16 +1303,20 @@ function completeMatch(matchId, winnerId, reason) {
   item.resultType = 'judge';
   propagateMatch(item);
   resolveAutomaticMatches();
-  state.activeMatchId = null;
-  state.live = {
+  deactivateMatch(item.id);
+  setMatchLive(item.id, {
     matchId: item.id,
     status: 'completed',
-    secondsLeft: arenaSecondsLeft(),
+    secondsLeft: arenaSecondsLeft(item.id),
     winnerId,
     updatedAt: new Date().toISOString(),
-  };
-  arenaOpen = false;
-  $('arenaRoot').innerHTML = '';
+  });
+  syncLegacyArenaState();
+  if (focusedArenaMatchId === item.id) {
+    focusedArenaMatchId = null;
+    arenaOpen = false;
+    $('arenaRoot').innerHTML = '';
+  }
   closeModal();
   stopArenaMusic();
   victorySound();
@@ -1191,6 +1327,8 @@ function completeMatch(matchId, winnerId, reason) {
 function resetBracket() {
   if (!confirm('確定重設整份賽程？隊伍與選廢秀影片會保留，但所有比賽結果會清除。')) return;
   state.matches = [];
+  state.activeMatchIds = [];
+  state.lives = {};
   state.activeMatchId = null;
   state.championId = null;
   state.runnerUpId = null;
@@ -1210,43 +1348,48 @@ function openArena(matchId) {
   }
   const item = match(matchId);
   if (!item || item.status === 'completed' || item.participantIds.filter(Boolean).length !== 2) return;
-  state.activeMatchId = item.id;
-  if (!state.live || state.live.matchId !== item.id || state.live.status === 'completed') {
-    state.live = { matchId: item.id, status: 'ready', secondsLeft: 60, updatedAt: new Date().toISOString() };
+  activateMatch(item.id);
+  if (!matchLive(item.id) || matchLive(item.id).status === 'completed') {
+    setMatchLive(item.id, { matchId: item.id, status: 'ready', secondsLeft: 60, updatedAt: new Date().toISOString() });
+    syncLegacyArenaState();
     saveState();
   }
+  stopArenaMusic();
+  focusedArenaMatchId = item.id;
   arenaOpen = true;
-  timeUpHandled = false;
-  lastArenaAudioSecond = arenaSecondsLeft();
+  timeUpHandledIds.delete(item.id);
+  lastArenaAudioSecond = arenaSecondsLeft(item.id);
   warmArenaMusic();
-  if (state.live?.status === 'running' && arenaAudioEnabled) {
+  if (matchLive(item.id)?.status === 'running' && arenaAudioEnabled) {
     startArenaMusic();
-    syncArenaMusic(arenaSecondsLeft());
+    syncArenaMusic(arenaSecondsLeft(item.id), item.id);
   }
   renderArena();
 }
 
-function arenaSecondsLeft() {
-  if (!state.live) return 60;
-  if (state.live.status === 'running' && state.live.endsAt) {
-    return Math.max(0, Math.ceil((new Date(state.live.endsAt).getTime() - Date.now()) / 1000));
+function arenaSecondsLeft(matchId = focusedArenaMatchId) {
+  const live = matchLive(matchId);
+  if (!live) return 60;
+  if (live.status === 'running' && live.endsAt) {
+    return Math.max(0, Math.ceil((new Date(live.endsAt).getTime() - Date.now()) / 1000));
   }
-  return Number.isFinite(Number(state.live.secondsLeft)) ? Number(state.live.secondsLeft) : 60;
+  return Number.isFinite(Number(live.secondsLeft)) ? Number(live.secondsLeft) : 60;
 }
 
 function renderArena() {
-  const item = state.activeMatchId ? match(state.activeMatchId) : null;
+  const item = focusedArenaMatchId ? match(focusedArenaMatchId) : null;
   if (!arenaOpen || !item) {
     $('arenaRoot').innerHTML = '';
     return;
   }
-  const status = state.live?.status || 'ready';
-  const seconds = arenaSecondsLeft();
+  const live = matchLive(item.id);
+  const status = live?.status || 'ready';
+  const seconds = arenaSecondsLeft(item.id);
   const label = status === 'running' ? '比賽進行中'
     : status === 'countdown' ? 'READY'
       : status === 'awaiting-decision' ? '時間到・請評審判定'
         : '等待開始';
-  const display = status === 'countdown' ? String(state.live.preCount || 3) : formatTime(seconds);
+  const display = status === 'countdown' ? String(live?.preCount || 3) : seconds <= 10 && status === 'running' ? String(seconds) : formatTime(seconds);
   const musicLabel = status === 'running' && seconds <= 30
     ? '🔥 最終決戰 MAX · 終局音樂'
     : status === 'running'
@@ -1290,69 +1433,78 @@ function renderArena() {
 }
 
 async function startCountdown() {
-  if (!state.live || state.live.status !== 'ready') return;
+  const matchId = focusedArenaMatchId;
+  const live = matchLive(matchId);
+  if (!matchId || !live || live.status !== 'ready') return;
   ensureAudio();
   warmArenaMusic();
   startArenaMusic(true);
-  state.live.status = 'countdown';
-  state.live.preCount = 3;
-  state.live.secondsLeft = 60;
-  state.live.updatedAt = new Date().toISOString();
+  live.status = 'countdown';
+  live.preCount = 3;
+  live.secondsLeft = 60;
+  live.updatedAt = new Date().toISOString();
+  syncLegacyArenaState();
   await saveState();
   readySound();
   renderArena();
   for (let number = 3; number >= 1; number -= 1) {
-    state.live.preCount = number;
+    live.preCount = number;
     countSound(number);
     renderArena();
     await new Promise((resolve) => setTimeout(resolve, 900));
   }
   startSound();
   const now = Date.now();
-  state.live.status = 'running';
-  state.live.startedAt = new Date(now).toISOString();
-  state.live.endsAt = new Date(now + 60000).toISOString();
-  state.live.secondsLeft = 60;
-  state.live.preCount = null;
-  state.live.updatedAt = new Date().toISOString();
-  timeUpHandled = false;
+  live.status = 'running';
+  live.startedAt = new Date(now).toISOString();
+  live.endsAt = new Date(now + 60000).toISOString();
+  live.secondsLeft = 60;
+  live.preCount = null;
+  live.updatedAt = new Date().toISOString();
+  timeUpHandledIds.delete(matchId);
+  syncLegacyArenaState();
   lastArenaAudioSecond = 60;
   releaseArenaMusic();
   saveState();
   renderArena();
 }
 
-function handleTimeUp() {
-  if (timeUpHandled || !state.live || state.live.status !== 'running') return;
-  timeUpHandled = true;
-  state.live.status = 'awaiting-decision';
-  state.live.secondsLeft = 0;
-  state.live.updatedAt = new Date().toISOString();
-  stopArenaMusic();
-  finishSound();
+function handleTimeUp(matchId) {
+  const live = matchLive(matchId);
+  if (!matchId || timeUpHandledIds.has(matchId) || !live || live.status !== 'running') return;
+  timeUpHandledIds.add(matchId);
+  live.status = 'awaiting-decision';
+  live.secondsLeft = 0;
+  live.updatedAt = new Date().toISOString();
+  syncLegacyArenaState();
+  if (focusedArenaMatchId === matchId) {
+    stopArenaMusic();
+    finishSound();
+  }
   saveState();
-  if (arenaOpen) renderArena();
+  if (arenaOpen && focusedArenaMatchId === matchId) renderArena();
   if (role === 'control') {
     showToast('時間到，請評審確認勝負。');
-    if (!arenaOpen) renderControl();
+    renderControl();
   }
 }
 
 function replayMatch() {
-  const item = state.activeMatchId ? match(state.activeMatchId) : null;
+  const item = focusedArenaMatchId ? match(focusedArenaMatchId) : null;
   if (!item || item.replays >= 1) return showToast('本場已使用過一次重賽。', true);
   if (!confirm('簡章規定每場最多重賽一次。確定啟動重賽？')) return;
   item.replays += 1;
   stopArenaMusic();
-  state.live = { matchId: item.id, status: 'ready', secondsLeft: 60, updatedAt: new Date().toISOString() };
-  timeUpHandled = false;
+  setMatchLive(item.id, { matchId: item.id, status: 'ready', secondsLeft: 60, updatedAt: new Date().toISOString() });
+  timeUpHandledIds.delete(item.id);
+  syncLegacyArenaState();
   lastArenaAudioSecond = null;
   saveState('重賽已登記，請重新開始一分鐘倒數');
   renderArena();
 }
 
 function openDecisionModal() {
-  const item = state.activeMatchId ? match(state.activeMatchId) : null;
+  const item = focusedArenaMatchId ? match(focusedArenaMatchId) : null;
   if (!item) return;
   openModal(`
     <div class="modal-head"><div><span class="section-kicker">JUDGE DECISION</span><h2>評審確認哪一隊晉級</h2></div><button data-close-modal>×</button></div>
@@ -1369,10 +1521,17 @@ function openDecisionModal() {
 function startClockTicker() {
   clearInterval(clockTicker);
   clockTicker = setInterval(() => {
-    if (state.live?.status === 'running') {
-      const seconds = arenaSecondsLeft();
-      if (seconds <= 0) handleTimeUp();
-      if (arenaOpen) {
+    activeMatchIds().forEach((matchId) => {
+      const live = matchLive(matchId);
+      const seconds = arenaSecondsLeft(matchId);
+      if (live?.status === 'running' && seconds <= 0) {
+        handleTimeUp(matchId);
+        return;
+      }
+      document.querySelectorAll(`[data-control-timer="${matchId}"],[data-audience-timer="${matchId}"]`).forEach((timer) => {
+        timer.textContent = live?.status === 'countdown' ? String(live.preCount || 3) : seconds <= 10 && live?.status === 'running' ? String(seconds) : formatTime(seconds);
+      });
+      if (live?.status === 'running' && arenaOpen && focusedArenaMatchId === matchId) {
         const timer = $('arenaTimer');
         if (timer) {
           timer.textContent = seconds <= 10 ? String(seconds) : formatTime(seconds);
@@ -1401,17 +1560,17 @@ function startClockTicker() {
           if (seconds <= 10) finalTickSound(seconds);
           lastArenaAudioSecond = seconds;
         }
-        syncArenaMusic(seconds);
+        syncArenaMusic(seconds, matchId);
         const musicStatus = $('arenaMusicStatus');
         if (musicStatus) musicStatus.textContent = seconds <= 30 ? '🔥 最終決戰 MAX · 終局音樂' : '🪐 星球彈跳 · 戰鬥音樂';
       }
-      if (role === 'audience') {
-        const timer = $('audienceTimer');
-        if (timer) timer.textContent = formatTime(seconds);
+      if (live?.status === 'running' && role === 'audience') {
+        const timer = matchId === activeMatchIds()[0] ? $('audienceTimer') : null;
+        if (timer) timer.textContent = seconds <= 10 ? String(seconds) : formatTime(seconds);
         const stage = $('audienceStage');
-        if (stage) stage.classList.toggle('final-ten', seconds <= 10);
+        if (stage && matchId === activeMatchIds()[0]) stage.classList.toggle('final-ten', seconds <= 10);
       }
-    }
+    });
   }, 200);
 }
 
@@ -1598,8 +1757,8 @@ function releaseArenaMusic() {
   if (battleMusic.paused) safePlayArenaMusic(battleMusic);
 }
 
-function syncArenaMusic(seconds) {
-  if (!arenaAudioEnabled || state.live?.status !== 'running') return;
+function syncArenaMusic(seconds, matchId = focusedArenaMatchId) {
+  if (!arenaAudioEnabled || matchLive(matchId)?.status !== 'running' || focusedArenaMatchId !== matchId) return;
   if (!battleMusicStarted) startArenaMusic();
   setArenaMusicMode(seconds <= 30 ? 'climax' : 'normal');
   if (arenaMusicMode === 'climax') {
@@ -1729,7 +1888,7 @@ function bindControlEvents() {
     if (action === 'redraw-bracket') {
       const hasPlayedMatch = state.matches.some((item) => item.status === 'completed' && item.resultType !== 'bye');
       if (hasPlayedMatch) return showToast('已有正式比賽結果，為維持公平不能重新抽籤。', true);
-      if (state.activeMatchId || (state.live && state.live.status !== 'completed')) {
+      if (activeMatchIds().length) {
         return showToast('目前有比賽正在準備或進行，請先結束賽場。', true);
       }
       if (confirm('確定重新抽籤？系統會重新排定全部對戰與預排輪空路線；隊伍、選手與影片都會完整保留。')) {
@@ -1755,6 +1914,11 @@ function bindControlEvents() {
         return;
       }
       openArena(requestedMatchId);
+    }
+    const judge = event.target.closest('[data-judge-match]');
+    if (judge) {
+      openArena(judge.dataset.judgeMatch);
+      openDecisionModal();
     }
     const edit = event.target.closest('[data-edit-team]');
     if (edit) openTeamEditor(edit.dataset.editTeam);
@@ -1810,6 +1974,7 @@ function bindDynamicEvents() {
     if (action === 'close-arena') {
       stopArenaMusic();
       arenaOpen = false;
+      focusedArenaMatchId = null;
       $('arenaRoot').innerHTML = '';
       renderControl();
     }
@@ -1817,9 +1982,9 @@ function bindDynamicEvents() {
       arenaAudioEnabled = !arenaAudioEnabled;
       localStorage.setItem('bp-junkbot-audio', arenaAudioEnabled ? 'on' : 'off');
       if (!arenaAudioEnabled) stopArenaMusic();
-      else if (state.live?.status === 'running') {
+      else if (matchLive(focusedArenaMatchId)?.status === 'running') {
         startArenaMusic();
-        syncArenaMusic(arenaSecondsLeft());
+        syncArenaMusic(arenaSecondsLeft(), focusedArenaMatchId);
       } else {
         ensureAudio();
         warmArenaMusic();
@@ -1835,7 +2000,7 @@ function bindDynamicEvents() {
     const winner = event.target.closest('[data-winner-id]');
     if (winner) {
       const reason = $('decisionReason')?.value || DECISION_REASONS.at(-1);
-      if (confirm(`確定由「${teamName(winner.dataset.winnerId)}」晉級？`)) completeMatch(state.activeMatchId, winner.dataset.winnerId, reason);
+      if (confirm(`確定由「${teamName(winner.dataset.winnerId)}」晉級？`)) completeMatch(focusedArenaMatchId, winner.dataset.winnerId, reason);
     }
     const watch = event.target.closest('[data-watch-team]');
     if (watch) watchTeam(watch.dataset.watchTeam);
