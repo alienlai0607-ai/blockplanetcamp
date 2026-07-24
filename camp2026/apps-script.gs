@@ -1879,7 +1879,7 @@ function junkbotNormalizeCampus(campus) {
 
 function junkbotEmptyState(campus) {
   return {
-    version: 1,
+    version: 2,
     campus: campus,
     entries: [],
     matches: [],
@@ -1897,29 +1897,36 @@ function getJunkbotStateSheet() {
   let sh = ss.getSheetByName(JUNKBOT_STATE_SHEET);
   if (!sh) sh = ss.insertSheet(JUNKBOT_STATE_SHEET);
   if (sh.getLastRow() === 0) {
-    sh.getRange(1, 1, 1, 4)
-      .setValues([['校區 Key', '校區名稱', '賽事 Payload', '更新時間']])
+    sh.getRange(1, 1, 1, 6)
+      .setValues([['校區 Key', '校區名稱', '賽事 Payload', '更新時間', '分段序號', '分段總數']])
       .setFontWeight('bold')
       .setBackground('#FFE1A6');
     sh.setFrozenRows(1);
     sh.getRange('C:C').setNumberFormat('@');
-    sh.appendRow(['dongqiao', '東橋教室', '', '']);
-    sh.appendRow(['north', '北區教室', '', '']);
+    sh.appendRow(['dongqiao', '東橋教室', '', '', 1, 1]);
+    sh.appendRow(['north', '北區教室', '', '', 1, 1]);
+  } else if (String(sh.getRange(1, 5).getValue() || '') !== '分段序號') {
+    sh.getRange(1, 5, 1, 2)
+      .setValues([['分段序號', '分段總數']])
+      .setFontWeight('bold')
+      .setBackground('#FFE1A6');
   }
   return sh;
 }
 
-function junkbotFindCampusRow(sh, campus) {
+function junkbotFindCampusRows(sh, campus) {
   const lastRow = sh.getLastRow();
+  const rows = [];
   if (lastRow >= 2) {
     const values = sh.getRange(2, 1, lastRow - 1, 1).getValues();
     for (let index = 0; index < values.length; index++) {
-      if (String(values[index][0] || '').toLowerCase() === campus) return index + 2;
+      if (String(values[index][0] || '').toLowerCase() === campus) rows.push(index + 2);
     }
   }
+  if (rows.length) return rows;
   const campusName = campus === 'north' ? '北區教室' : '東橋教室';
-  sh.appendRow([campus, campusName, '', '']);
-  return sh.getLastRow();
+  sh.appendRow([campus, campusName, '', '', 1, 1]);
+  return [sh.getLastRow()];
 }
 
 function junkbotStateGet(campusValue) {
@@ -1929,16 +1936,21 @@ function junkbotStateGet(campusValue) {
     // 觀眾 GET 必須保持純讀取；第一次建立分頁與校區列交給管理端 state-set。
     const sh = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(JUNKBOT_STATE_SHEET);
     if (!sh || sh.getLastRow() < 2) return { success: true, campus: campus, state: empty };
-    const values = sh.getRange(2, 1, sh.getLastRow() - 1, 1).getValues();
-    let row = 0;
-    for (let index = 0; index < values.length; index++) {
-      if (String(values[index][0] || '').toLowerCase() === campus) {
-        row = index + 2;
-        break;
-      }
-    }
-    if (!row) return { success: true, campus: campus, state: empty };
-    const payload = String(sh.getRange(row, 3).getValue() || '');
+    const values = sh.getRange(2, 1, sh.getLastRow() - 1, 6).getValues();
+    const chunks = [];
+    values.forEach(function(row) {
+      if (String(row[0] || '').toLowerCase() !== campus || !row[2]) return;
+      chunks.push({
+        index: Math.max(1, Number(row[4]) || 1),
+        total: Math.max(1, Number(row[5]) || 1),
+        payload: String(row[2] || '')
+      });
+    });
+    if (!chunks.length) return { success: true, campus: campus, state: empty };
+    chunks.sort(function(a, b) { return a.index - b.index; });
+    const expectedChunks = chunks[0].total;
+    if (chunks.length < expectedChunks) return { success: true, campus: campus, state: empty };
+    const payload = chunks.slice(0, expectedChunks).map(function(chunk) { return chunk.payload; }).join('');
     if (!payload) return { success: true, campus: campus, state: empty };
     const state = JSON.parse(payload);
     state.campus = campus;
@@ -1958,14 +1970,28 @@ function junkbotStateSet(p) {
     if (!state || typeof state !== 'object') return { success: false, error: '賽事資料格式不正確' };
     state.campus = campus;
     const payload = JSON.stringify(state);
-    if (payload.length > 48000) return { success: false, error: '賽事資料過大，請刪除不需要的舊資料' };
+    if (payload.length > 800000) return { success: false, error: '賽事資料超過 80 萬字元，請聯絡系統管理員' };
+    const chunkSize = 40000;
+    const chunks = [];
+    for (let offset = 0; offset < payload.length; offset += chunkSize) {
+      chunks.push(payload.slice(offset, offset + chunkSize));
+    }
 
     const sh = getJunkbotStateSheet();
-    const row = junkbotFindCampusRow(sh, campus);
+    const rows = junkbotFindCampusRows(sh, campus);
+    while (rows.length < chunks.length) {
+      sh.appendRow([campus, campus === 'north' ? '北區教室' : '東橋教室', '', '', rows.length + 1, chunks.length]);
+      rows.push(sh.getLastRow());
+    }
     const campusName = campus === 'north' ? '北區教室' : '東橋教室';
     const now = Utilities.formatDate(new Date(), 'Asia/Taipei', 'yyyy-MM-dd HH:mm:ss');
-    sh.getRange(row, 1, 1, 4).setValues([[campus, campusName, payload, now]]);
-    return { success: true, ok: true, campus: campus, updatedAt: now };
+    chunks.forEach(function(chunk, index) {
+      sh.getRange(rows[index], 1, 1, 6).setValues([[campus, campusName, chunk, now, index + 1, chunks.length]]);
+    });
+    rows.slice(chunks.length).forEach(function(row) {
+      sh.getRange(row, 1, 1, 6).setValues([[campus, campusName, '', now, '', '']]);
+    });
+    return { success: true, ok: true, campus: campus, updatedAt: now, chunks: chunks.length };
   } catch (err) {
     return { success: false, error: String(err && err.message || err) };
   }
