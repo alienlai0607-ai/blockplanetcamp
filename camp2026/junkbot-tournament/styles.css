@@ -379,6 +379,7 @@ button { color: inherit; cursor: pointer; }
 .sync-status i, .live-dot i { width: 9px; height: 9px; background: var(--green); border-radius: 50%; box-shadow: 0 0 0 5px rgba(83,184,107,.14); }
 .sync-status.saving i { background: var(--yellow); }
 .control-view { max-width: 1860px; margin: 0 auto; padding: 38px clamp(18px, 4vw, 64px) 80px; }
+.control-view.bracket-layout { max-width:none; padding-left:clamp(12px,1.6vw,28px); padding-right:clamp(12px,1.6vw,28px); }
 .toast { position: fixed; right: 25px; top: 100px; z-index: 100; padding: 15px 19px; color: #fff; background: var(--ink); border-radius: 12px; box-shadow: var(--shadow); font-weight: 900; }
 
 .page-heading { display: flex; align-items: flex-end; justify-content: space-between; gap: 20px; margin-bottom: 25px; }
@@ -721,7 +722,7 @@ button { color: inherit; cursor: pointer; }
   width: 100%;
   height: var(--board-height);
   display: grid;
-  grid-template-columns: minmax(0,1fr) clamp(176px,15vw,250px) minmax(0,1fr);
+  grid-template-columns: minmax(0,1fr) clamp(168px,13vw,225px) minmax(0,1fr);
   column-gap: var(--center-gap);
   position: relative;
 }
@@ -732,6 +733,12 @@ button { color: inherit; cursor: pointer; }
   display: grid;
   grid-template-columns: repeat(var(--side-rounds),minmax(0,1fr));
   gap: var(--round-gap);
+}
+.weighted-rounds .bracket-left {
+  grid-template-columns: minmax(0,1.28fr) repeat(var(--inner-rounds),minmax(0,1fr));
+}
+.weighted-rounds .bracket-right {
+  grid-template-columns: repeat(var(--inner-rounds),minmax(0,1fr)) minmax(0,1.28fr);
 }
 .bracket-round {
   height: 100%;

@@ -378,6 +378,7 @@ function renderControl() {
     button.classList.toggle('active', button.dataset.view === controlView);
   });
   const root = $('controlView');
+  root.classList.toggle('bracket-layout', controlView === 'bracket');
   if (controlView === 'teams') root.innerHTML = teamsView();
   else if (controlView === 'bracket') root.innerHTML = bracketView(true);
   else root.innerHTML = dashboardView();
@@ -538,8 +539,10 @@ function bracketView(control) {
     .join('');
   const bronzeMatch = stageMatches('bronze')[0];
   const firstSideMatchCount = Math.max(1, Math.ceil((rounds[0]?.matches?.length || 1) / 2));
-  const bracketHeight = Math.max(760, firstSideMatchCount * 148);
+  const matchPitch = sideRounds.length >= 5 ? 205 : sideRounds.length >= 4 ? 188 : 172;
+  const bracketHeight = Math.max(820, firstSideMatchCount * matchPitch);
   const bracketDensity = sideRounds.length >= 6 ? 'ultra-compact' : sideRounds.length >= 5 ? 'compact' : '';
+  const bracketShape = sideRounds.length > 1 ? 'weighted-rounds' : '';
   const byeTeamIds = Array.isArray(state.draw?.byeTeamIds)
     ? state.draw.byeTeamIds
     : (rounds[0]?.matches || []).filter((item) => item.resultType === 'bye').map((item) => item.winnerId).filter(Boolean);
@@ -576,7 +579,7 @@ function bracketView(control) {
     ${podium}
     ${drawSummary}
     <div class="bracket-scroll">
-      <div class="symmetric-bracket ${bracketDensity}" style="--board-height:${bracketHeight}px;--side-rounds:${Math.max(1, sideRounds.length)}">
+      <div class="symmetric-bracket ${bracketDensity} ${bracketShape}" style="--board-height:${bracketHeight}px;--side-rounds:${Math.max(1, sideRounds.length)};--inner-rounds:${Math.max(1, sideRounds.length - 1)}">
         <div class="bracket-compass" aria-hidden="true"><span>左側起點</span><b>勝者往中央爬升</b><span>右側起點</span></div>
         <div class="duel-bracket-board ${sideRounds.length ? '' : 'solo-final'}">
           <div class="bracket-side bracket-left">${leftColumns}</div>
