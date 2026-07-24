@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>2026 廢材機器人大賽｜布拉克星球</title>
+  <meta name="description" content="布拉克星球廢材機器人大賽即時戰況、選廢秀與賽事管理系統。">
+  <link rel="icon" href="../favicon-32.png">
+  <link rel="apple-touch-icon" href="../apple-touch-icon.png">
+  <link rel="stylesheet" href="styles.css?v=20260724-climbing-live">
+</head>
+<body>
+  <section class="gate" id="gate">
+    <div class="gate-art">
+      <img src="assets/hero-banner.png" alt="2026 布拉克星球廢材機器人大賽">
+      <div class="gate-sticker">1 MINUTE<br><b>NO PAUSE</b></div>
+    </div>
+    <div class="gate-panel">
+      <a class="back-link" href="../index.html">← 回營隊官網</a>
+      <img class="gate-logo" src="assets/junkbot-logo.png" alt="廢材機器人大賽">
+      <p class="eyebrow">2026 JUNK ROBOT TOURNAMENT</p>
+      <h1>今天要從哪裡<br>進入廢材競技場？</h1>
+      <p class="gate-lead">觀眾即時看戰況與選廢秀；比賽單位負責名單、倒數與晉級判定。</p>
+
+      <div class="role-grid" id="roleGrid">
+        <button class="role-card audience" data-role="audience">
+          <span class="role-icon">👀</span>
+          <strong>我是觀眾</strong>
+          <small>免密碼・唯讀即時戰況</small>
+          <b>進入觀眾席 →</b>
+        </button>
+        <button class="role-card control" data-role="control">
+          <span class="role-icon">🎛️</span>
+          <strong>比賽單位控制</strong>
+          <small>名單、影片、倒數與晉級</small>
+          <b>輸入密碼 →</b>
+        </button>
+      </div>
+
+      <form class="password-panel" id="passwordPanel" hidden>
+        <label>
+          <span>比賽單位密碼</span>
+          <input id="controlPassword" type="password" autocomplete="current-password" placeholder="請輸入密碼">
+        </label>
+        <button type="submit">確認身份</button>
+        <p id="passwordError" hidden>密碼不正確，請再試一次。</p>
+      </form>
+
+      <div class="campus-panel" id="campusPanel" hidden>
+        <p><b id="campusPrompt">請選擇觀看校區</b><span>兩邊名單、賽程與影片完全分開</span></p>
+        <div>
+          <button data-campus="dongqiao"><i>東</i><strong>東橋教室</strong><small>Dongqiao Arena</small></button>
+          <button data-campus="north"><i>北</i><strong>北區教室</strong><small>North Arena</small></button>
+        </div>
+        <button class="text-button" id="backToRoles">← 重新選擇身份</button>
+      </div>
+    </div>
+  </section>
+
+  <main class="control-app" id="controlApp" hidden>
+    <header class="topbar">
+      <button class="brand" data-view="dashboard">
+        <img src="assets/junkbot-logo.png" alt="">
+        <span><strong>廢材機器人大賽</strong><small id="controlCampusName">東橋教室</small></span>
+      </button>
+      <nav>
+        <button class="active" data-view="dashboard">賽事總覽</button>
+        <button data-view="teams">選手與選廢秀</button>
+        <button data-view="bracket">淘汰賽程</button>
+      </nav>
+      <div class="top-actions">
+        <span class="sync-status" id="syncStatus"><i></i><b>已連線</b></span>
+        <button class="soft-button" id="switchCampusControl">切換校區</button>
+        <button class="icon-button" id="leaveControl" aria-label="離開控制台">×</button>
+      </div>
+    </header>
+    <div class="toast" id="toast" hidden></div>
+    <section class="control-view" id="controlView"></section>
+  </main>
+
+  <main class="audience-app" id="audienceApp" hidden>
+    <header class="audience-header">
+      <div class="audience-brand">
+        <img src="assets/junkbot-logo.png" alt="廢材機器人大賽">
+        <span><b>LIVE ARENA</b><strong id="audienceCampusName">東橋教室</strong></span>
+      </div>
+      <div class="audience-actions">
+        <span class="live-dot"><i></i> LIVE</span>
+        <button id="switchCampusAudience">切換校區</button>
+        <button id="leaveAudience">離開</button>
+      </div>
+    </header>
+    <section id="audienceView"></section>
+  </main>
+
+  <div class="arena-root" id="arenaRoot"></div>
+  <div class="modal-root" id="modalRoot"></div>
+
+  <script src="app.js?v=20260724-climbing-live"></script>
+</body>
+</html>

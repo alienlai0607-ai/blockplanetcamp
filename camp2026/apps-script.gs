@@ -37,6 +37,16 @@ function floorHundred(n) { return Math.floor(n / 100) * 100; }
 
 // ===== 網頁 API 入口 =====
 function doGet(e) {
+  const action = (e.parameter.action || '').toLowerCase();
+
+  // ===== 觀眾唯讀快車道 =====
+  // 舊版所有 GET 都先搶 15 秒全域鎖、再掃一次優惠券。
+  // 多位家長同時每 4 秒讀戰況時，請求會排隊到逾時，前端因此一直顯示載入中。
+  // 這三個 action 只讀資料，直接回應，不跑優惠券清理也不占全域鎖。
+  if (action === 'drone-pilots') return respond(dronePilotList());
+  if (action === 'drone-state') return respond(droneStateGet());
+  if (action === 'junkbot-state') return respond(junkbotStateGet(e.parameter.campus));
+
   const lock = LockService.getScriptLock();
   try {
     lock.waitLock(15000);
@@ -45,8 +55,8 @@ function doGet(e) {
   }
 
   try {
-    cleanupExpired();
-    const action = (e.parameter.action || '').toLowerCase();
+    // 只有優惠券相關讀取才需要清理逾期券，其他後台／訂單 API 不應負擔這個成本。
+    if (['status', 'claim', 'verify', 'lookup', 'addmore'].indexOf(action) >= 0) cleanupExpired();
 
     switch(action) {
       case 'status': return respond(getStatus());
@@ -90,10 +100,6 @@ function doGet(e) {
       case 'expense-delete':
         return respond(expenseDelete(e.parameter));
 
-      // ===== 🚁 無人機足球晉級賽 =====
-      case 'drone-pilots': return respond(dronePilotList());
-      case 'drone-state':  return respond(droneStateGet());
-
       default:       return respond({ success: false, error: '無效的操作' });
     }
   } finally {
@@ -104,6 +110,14 @@ function doGet(e) {
 // POST 入口（無人機足球用：照片 base64 與賽事 JSON 太大，塞不進 GET 網址）
 // 前端用 Content-Type: text/plain 送 JSON，避免 CORS preflight
 function doPost(e) {
+  let p = {};
+  try { p = JSON.parse((e.postData && e.postData.contents) || '{}'); } catch (err) { p = {}; }
+  const action = String(p.action || '').toLowerCase();
+
+  // 影片寫入 Google Drive 時間較長，不占用整份試算表的全域鎖。
+  // 名單與賽程 URL 仍由 junkbot-state-set 另行寫入，避免上傳途中阻塞觀眾讀取。
+  if (action === 'junkbot-video-upload') return respond(junkbotVideoUpload(p));
+
   const lock = LockService.getScriptLock();
   try {
     lock.waitLock(15000);
@@ -112,14 +126,11 @@ function doPost(e) {
   }
 
   try {
-    let p = {};
-    try { p = JSON.parse((e.postData && e.postData.contents) || '{}'); } catch (err) { p = {}; }
-    const action = String(p.action || '').toLowerCase();
-
     switch(action) {
       case 'drone-pilot-add': return respond(dronePilotAdd(p));
       case 'drone-pilot-delete': return respond(dronePilotDelete(p));
       case 'drone-state-set': return respond(droneStateSet(p.state));
+      case 'junkbot-state-set': return respond(junkbotStateSet(p));
       default: return respond({ success: false, error: '無效的操作' });
     }
   } finally {
@@ -1846,6 +1857,169 @@ function droneStateSet(state) {
     const now = Utilities.formatDate(new Date(), 'Asia/Taipei', 'yyyy-MM-dd HH:mm:ss');
     sh.getRange(2, 1, 1, 3).setValues([['main', payload, now]]);
     return { success: true, ok: true, updatedAt: now };
+  } catch (err) {
+    return { success: false, error: String(err && err.message || err) };
+  }
+}
+
+// ============================================================
+//  🤖 2026 廢材機器人大賽（camp2026/junkbot-tournament/）
+//  東橋／北區各自一列 JSON；觀眾公開讀取，寫入與影片上傳需密碼 block。
+//  選廢秀影片存 Google Drive，賽事 JSON 只保存公開預覽網址。
+// ============================================================
+
+const JUNKBOT_STATE_SHEET = '廢材機器人賽事';
+const JUNKBOT_VIDEO_FOLDER = '2026廢材選廢秀影片';
+const JUNKBOT_CONTROL_PASSWORD = 'block';
+
+function junkbotNormalizeCampus(campus) {
+  const value = String(campus || '').toLowerCase().trim();
+  return value === 'north' ? 'north' : 'dongqiao';
+}
+
+function junkbotEmptyState(campus) {
+  return {
+    version: 1,
+    campus: campus,
+    entries: [],
+    matches: [],
+    activeMatchId: null,
+    championId: null,
+    runnerUpId: null,
+    thirdPlaceId: null,
+    live: null,
+    updatedAt: null
+  };
+}
+
+function getJunkbotStateSheet() {
+  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  let sh = ss.getSheetByName(JUNKBOT_STATE_SHEET);
+  if (!sh) sh = ss.insertSheet(JUNKBOT_STATE_SHEET);
+  if (sh.getLastRow() === 0) {
+    sh.getRange(1, 1, 1, 4)
+      .setValues([['校區 Key', '校區名稱', '賽事 Payload', '更新時間']])
+      .setFontWeight('bold')
+      .setBackground('#FFE1A6');
+    sh.setFrozenRows(1);
+    sh.getRange('C:C').setNumberFormat('@');
+    sh.appendRow(['dongqiao', '東橋教室', '', '']);
+    sh.appendRow(['north', '北區教室', '', '']);
+  }
+  return sh;
+}
+
+function junkbotFindCampusRow(sh, campus) {
+  const lastRow = sh.getLastRow();
+  if (lastRow >= 2) {
+    const values = sh.getRange(2, 1, lastRow - 1, 1).getValues();
+    for (let index = 0; index < values.length; index++) {
+      if (String(values[index][0] || '').toLowerCase() === campus) return index + 2;
+    }
+  }
+  const campusName = campus === 'north' ? '北區教室' : '東橋教室';
+  sh.appendRow([campus, campusName, '', '']);
+  return sh.getLastRow();
+}
+
+function junkbotStateGet(campusValue) {
+  const campus = junkbotNormalizeCampus(campusValue);
+  const empty = junkbotEmptyState(campus);
+  try {
+    // 觀眾 GET 必須保持純讀取；第一次建立分頁與校區列交給管理端 state-set。
+    const sh = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(JUNKBOT_STATE_SHEET);
+    if (!sh || sh.getLastRow() < 2) return { success: true, campus: campus, state: empty };
+    const values = sh.getRange(2, 1, sh.getLastRow() - 1, 1).getValues();
+    let row = 0;
+    for (let index = 0; index < values.length; index++) {
+      if (String(values[index][0] || '').toLowerCase() === campus) {
+        row = index + 2;
+        break;
+      }
+    }
+    if (!row) return { success: true, campus: campus, state: empty };
+    const payload = String(sh.getRange(row, 3).getValue() || '');
+    if (!payload) return { success: true, campus: campus, state: empty };
+    const state = JSON.parse(payload);
+    state.campus = campus;
+    return { success: true, campus: campus, state: state };
+  } catch (err) {
+    return { success: true, campus: campus, state: empty };
+  }
+}
+
+function junkbotStateSet(p) {
+  try {
+    if (String(p.password || '') !== JUNKBOT_CONTROL_PASSWORD) {
+      return { success: false, error: '比賽單位密碼不正確' };
+    }
+    const campus = junkbotNormalizeCampus(p.campus);
+    const state = p.state;
+    if (!state || typeof state !== 'object') return { success: false, error: '賽事資料格式不正確' };
+    state.campus = campus;
+    const payload = JSON.stringify(state);
+    if (payload.length > 48000) return { success: false, error: '賽事資料過大，請刪除不需要的舊資料' };
+
+    const sh = getJunkbotStateSheet();
+    const row = junkbotFindCampusRow(sh, campus);
+    const campusName = campus === 'north' ? '北區教室' : '東橋教室';
+    const now = Utilities.formatDate(new Date(), 'Asia/Taipei', 'yyyy-MM-dd HH:mm:ss');
+    sh.getRange(row, 1, 1, 4).setValues([[campus, campusName, payload, now]]);
+    return { success: true, ok: true, campus: campus, updatedAt: now };
+  } catch (err) {
+    return { success: false, error: String(err && err.message || err) };
+  }
+}
+
+function junkbotGetVideoFolder(campus) {
+  const rootFolders = DriveApp.getFoldersByName(JUNKBOT_VIDEO_FOLDER);
+  const root = rootFolders.hasNext() ? rootFolders.next() : DriveApp.createFolder(JUNKBOT_VIDEO_FOLDER);
+  const campusName = campus === 'north' ? '北區教室' : '東橋教室';
+  const campusFolders = root.getFoldersByName(campusName);
+  return campusFolders.hasNext() ? campusFolders.next() : root.createFolder(campusName);
+}
+
+function junkbotSafeFilename(value) {
+  return String(value || '選廢秀影片')
+    .replace(/[\\/:*?"<>|#%{}[\]]/g, '_')
+    .replace(/\s+/g, '_')
+    .slice(0, 80);
+}
+
+function junkbotVideoUpload(p) {
+  try {
+    if (String(p.password || '') !== JUNKBOT_CONTROL_PASSWORD) {
+      return { success: false, error: '比賽單位密碼不正確' };
+    }
+    const campus = junkbotNormalizeCampus(p.campus);
+    const teamId = String(p.teamId || '').trim();
+    const teamName = String(p.teamName || '').trim();
+    const mimeType = String(p.mimeType || 'video/mp4').toLowerCase();
+    const dataUrl = String(p.dataUrl || '');
+    if (!teamId || !teamName) return { success: false, error: '缺少隊伍資料' };
+    if (mimeType.indexOf('video/') !== 0) return { success: false, error: '只接受影片檔案' };
+    const comma = dataUrl.indexOf(',');
+    if (comma < 0 || dataUrl.indexOf('data:video/') !== 0) return { success: false, error: '影片資料格式不正確' };
+
+    const base64 = dataUrl.substring(comma + 1);
+    if (base64.length > 26000000) return { success: false, error: '影片過大，請壓縮至 18MB 以下或改貼影片網址' };
+    const bytes = Utilities.base64Decode(base64);
+    const originalName = junkbotSafeFilename(p.filename || 'showcase.mp4');
+    const fileName = junkbotSafeFilename(teamName) + '_' + teamId.slice(-8) + '_' + originalName;
+    const blob = Utilities.newBlob(bytes, mimeType, fileName);
+    const file = junkbotGetVideoFolder(campus).createFile(blob);
+    try {
+      file.setSharing(DriveApp.Access.ANYONE_WITH_LINK, DriveApp.Permission.VIEW);
+    } catch (sharingError) {
+      // Workspace 管理員若限制公開分享，仍保留檔案並回傳網址，管理者可在 Drive 手動開權限。
+    }
+    return {
+      success: true,
+      fileId: file.getId(),
+      filename: file.getName(),
+      url: file.getUrl(),
+      previewUrl: 'https://drive.google.com/file/d/' + file.getId() + '/preview'
+    };
   } catch (err) {
     return { success: false, error: String(err && err.message || err) };
   }

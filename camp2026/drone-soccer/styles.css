@@ -75,6 +75,20 @@ button:focus-visible, input:focus-visible, select:focus-visible {
 .audience-sync i { width: 9px; height: 9px; border-radius: 50%; background: var(--green); box-shadow: 0 0 0 6px rgba(84,200,79,0.13); animation: soft-pulse 1.5s infinite; }
 .audience-topbar > button { border: 1px solid rgba(23,52,49,0.15); border-radius: 999px; padding: 10px 15px; background: white; font-size: 10px; font-weight: 850; cursor: pointer; }
 .audience-page { width: min(1440px, calc(100% - 42px)); margin: 0 auto; padding: 28px 0 20px; }
+.spectator-offline-note {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  margin-bottom: 16px;
+  padding: 12px 16px;
+  color: #755019;
+  background: #fff2bc;
+  border: 1px solid #e4c96e;
+  border-radius: 13px;
+  font-size: 13px;
+}
+.spectator-offline-note span { color: #7c796e; }
 .audience-live-stage { position: relative; isolation: isolate; overflow: hidden; min-height: 570px; padding: 26px 34px 34px; border-radius: 32px; background: linear-gradient(142deg, #edfff6, #dff5ff 48%, #fff1bd); box-shadow: 0 26px 70px rgba(32,91,80,0.14); border: 1px solid rgba(23,52,49,0.1); }
 .audience-live-stage::before { content: ""; position: absolute; z-index: -1; inset: 0; background-image: linear-gradient(rgba(23,52,49,0.06) 1px, transparent 1px), linear-gradient(90deg, rgba(23,52,49,0.06) 1px, transparent 1px); background-size: 48px 48px; mask-image: radial-gradient(circle at center, black, transparent 75%); }
 .audience-live-stage.urgent { background: linear-gradient(140deg, #fff0d1, #ffd9cf 48%, #ffe476); animation: final-bg-pulse .8s infinite alternate; }

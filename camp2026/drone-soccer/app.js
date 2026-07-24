@@ -124,6 +124,7 @@ let lastSpectatorSyncAt = null;
 let lastSpectatorPilotSyncAt = 0;
 let lastLivePublishAt = 0;
 let stateSaveQueue = Promise.resolve();
+let spectatorConnectionOk = true;
 
 function musicChoice(choices, id) {
   return choices.find((choice) => choice.id === id) || choices[0];
@@ -416,8 +417,20 @@ function apiError(message) {
   if (message === '無效的操作') return '後端尚未支援無人機系統，請先部署最新版 Apps Script';
   return message;
 }
+async function fetchWithTimeout(url, options = {}, timeoutMs = 8000) {
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), timeoutMs);
+  try {
+    return await fetch(url, { ...options, signal: controller.signal });
+  } catch (error) {
+    if (error && error.name === 'AbortError') throw new Error('連線逾時，系統會自動重試');
+    throw error;
+  } finally {
+    clearTimeout(timer);
+  }
+}
 async function apiGet(action) {
-  const res = await fetch(API_URL + '?action=' + action, { method: 'GET' });
+  const res = await fetchWithTimeout(API_URL + '?action=' + action + '&_=' + Date.now(), { method: 'GET' });
   if (!res.ok) throw new Error('連線失敗（' + res.status + '）');
   const data = await res.json();
   if (data && data.success === false) throw new Error(apiError(data.error || '伺服器回報錯誤'));
@@ -437,8 +450,14 @@ async function apiPost(payload) {
 
 async function apiListPilots() {
   if (DEMO) return demoStore.read('pilots', []);
-  const data = await apiGet('drone-pilots');
-  return data.pilots || [];
+  try {
+    const data = await apiGet('drone-pilots');
+    const list = data.pilots || [];
+    localStorage.setItem('bp-drone-spectator-pilots-cache', JSON.stringify(list));
+    return list;
+  } catch (error) {
+    throw error;
+  }
 }
 async function apiCreatePilot(fields) {
   if (DEMO) {
@@ -471,8 +490,14 @@ async function apiDeletePilot(pilotId) {
 }
 async function apiGetState() {
   if (DEMO) return demoStore.read('state', EMPTY_STATE());
-  const data = await apiGet('drone-state');
-  return data.state || EMPTY_STATE();
+  try {
+    const data = await apiGet('drone-state');
+    const state = data.state || EMPTY_STATE();
+    localStorage.setItem('bp-drone-spectator-state-cache', JSON.stringify(state));
+    return state;
+  } catch (error) {
+    throw error;
+  }
 }
 async function apiSaveState(state) {
   if (DEMO) { demoStore.write('state', state); return; }
@@ -1613,9 +1638,11 @@ function renderSpectator() {
 
   root.innerHTML =
     '<header class="audience-topbar"><div><img src="assets/block-planet-logo.png" alt=""><span><strong>BLOCK PLANET LIVE</strong><small>無人機足球・今日戰況</small></span></div>' +
-      '<div class="audience-sync"><i></i><span>' + (lastSpectatorSyncAt ? '即時連線中' : '正在連線') + '</span></div>' +
+      '<div class="audience-sync"><i></i><span>' + (lastSpectatorSyncAt ? (spectatorConnectionOk ? '即時連線中' : '背景重試中') : '正在連線') + '</span></div>' +
       '<button id="spectatorSwitchAccessBtn">切換身份</button></header>' +
-    '<main class="audience-page">' + hero +
+    '<main class="audience-page">' +
+      (spectatorConnectionOk ? '' : '<div class="spectator-offline-note"><b>家長網路較慢，先顯示最近一次戰況。</b><span>系統正在背景自動重試，不需要重新整理。</span></div>') +
+      hero +
       '<div class="audience-dashboard">' + standingsHtml +
         '<section class="audience-panel audience-schedule"><header><div><span>MATCH CENTER</span><h2>接下來的賽程</h2></div><small>' + completed.length + ' 場已完成</small></header>' +
           '<div>' + (pendingMatches.length ? pendingMatches.map((match, index) =>
@@ -1897,20 +1924,28 @@ async function refreshSpectatorData() {
   spectatorSyncing = true;
   try {
     const shouldRefreshPilots = Date.now() - lastSpectatorPilotSyncAt > 30000;
-    const [pilotList, state] = await Promise.all([
+    const [pilotResult, stateResult] = await Promise.allSettled([
       shouldRefreshPilots ? apiListPilots() : Promise.resolve(pilots),
       apiGetState(),
     ]);
-    if (shouldRefreshPilots) {
-      pilots = pilotList;
+    if (shouldRefreshPilots && pilotResult.status === 'fulfilled') {
+      pilots = pilotResult.value;
       lastSpectatorPilotSyncAt = Date.now();
     }
-    eventState = normalizeEventState(state).state;
+    if (stateResult.status === 'fulfilled') {
+      eventState = normalizeEventState(stateResult.value).state;
+    }
+    if (pilotResult.status === 'rejected' && stateResult.status === 'rejected') {
+      throw stateResult.reason || pilotResult.reason;
+    }
+    spectatorConnectionOk = true;
     lastSpectatorSyncAt = new Date();
     renderSpectator();
   } catch (error) {
+    spectatorConnectionOk = false;
     const sync = document.querySelector('.audience-sync span');
     if (sync) sync.textContent = '連線重試中';
+    renderSpectator();
   } finally {
     spectatorSyncing = false;
   }
@@ -1918,7 +1953,7 @@ async function refreshSpectatorData() {
 function startSpectatorPolling() {
   stopSpectatorPolling();
   refreshSpectatorData();
-  spectatorRefreshInterval = setInterval(refreshSpectatorData, 4000 + Math.floor(Math.random() * 900));
+  spectatorRefreshInterval = setInterval(refreshSpectatorData, 6500 + Math.floor(Math.random() * 1800));
   spectatorClockInterval = setInterval(renderSpectator, 1000);
 }
 function enterAccessMode(mode) {
@@ -1931,6 +1966,14 @@ function enterAccessMode(mode) {
   $('matchScreenRoot').innerHTML = '';
   $('musicSelectorRoot').innerHTML = '';
   if (mode === 'spectator') {
+    try {
+      const cachedPilots = localStorage.getItem('bp-drone-spectator-pilots-cache');
+      const cachedState = localStorage.getItem('bp-drone-spectator-state-cache');
+      if (cachedPilots) pilots = JSON.parse(cachedPilots);
+      if (cachedState) eventState = normalizeEventState(JSON.parse(cachedState)).state;
+    } catch (error) {
+      // 快取損壞時直接忽略，背景同步會重新取得正式資料。
+    }
     pauseBattleMusic();
     startSpectatorPolling();
     renderSpectator();
@@ -2025,6 +2068,14 @@ function bindEvents() {
 async function init() {
   bindEvents();
   if (DEMO) $('saveStateText').textContent = '示範模式';
+  // 先讓身份入口與觀眾畫面可操作，再在背景取資料。
+  // 即使 Apps Script 冷啟動或家長網路較慢，也不會卡在載入動畫。
+  $('loadingStage').hidden = true;
+  $('page-' + section).hidden = false;
+  render();
+  const savedMode = sessionStorage.getItem('bp-drone-access-mode');
+  if (savedMode === 'spectator' || savedMode === 'control') enterAccessMode(savedMode);
+  else showAccessGate();
   try {
     const [pilotList, state] = await Promise.all([apiListPilots(), apiGetState()]);
     pilots = pilotList;
@@ -2034,12 +2085,8 @@ async function init() {
   } catch (error) {
     setNotice(error && error.message ? error.message : '資料連線失敗');
   }
-  $('loadingStage').hidden = true;
-  $('page-' + section).hidden = false;
-  render();
-  const savedMode = sessionStorage.getItem('bp-drone-access-mode');
-  if (savedMode === 'spectator' || savedMode === 'control') enterAccessMode(savedMode);
-  else showAccessGate();
+  if (accessMode === 'spectator') renderSpectator();
+  else render();
 }
 
 init();
