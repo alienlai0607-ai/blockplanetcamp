@@ -103,7 +103,16 @@ function stageLabelForSize(size) {
 }
 
 function matchStageLabel(item) {
-  return item?.stageLabel || STAGE_LABELS[item?.stage] || (item?.roundSize ? stageLabelForSize(item.roundSize) : '淘汰賽');
+  if (!item) return '淘汰賽';
+  if (item.stage === 'bronze') return '季軍賽';
+  if (item.stage === 'final' || item.roundSize === 2) return '冠亞軍賽';
+  if (Number.isFinite(Number(item.roundIndex))) return `第 ${Number(item.roundIndex) + 1} 輪`;
+  return item.stageLabel || STAGE_LABELS[item.stage] || '淘汰賽';
+}
+
+function matchDisplayLabel(item) {
+  if (!item) return '等待賽程';
+  return `${matchStageLabel(item)} · 第 ${Number(item.order) + 1} 場`;
 }
 
 function tournamentPlan(teamCount = state.entries.length) {
@@ -384,6 +393,7 @@ function renderControl() {
   if (controlView === 'teams') root.innerHTML = teamsView();
   else if (controlView === 'bracket') root.innerHTML = bracketView(true);
   else root.innerHTML = dashboardView();
+  if (controlView === 'bracket') scheduleBracketConnections();
 }
 
 function dashboardView() {
@@ -529,18 +539,34 @@ function bracketView(control) {
   const finalRound = rounds[rounds.length - 1];
   const finalMatch = finalRound?.matches?.[0];
   const sideRounds = rounds.slice(0, -1);
+  const sidePaths = bracketSidePaths(rounds);
   const leftColumns = sideRounds
-    .map((round, level) => bracketRoundColumn(round, 'left', level, sideRounds.length, control))
+    .map((round, level) => bracketRoundColumn(
+      round,
+      'left',
+      level,
+      sideRounds.length,
+      control,
+      bracketSideMatchGroups(rounds, sidePaths, round.roundIndex, 'left'),
+    ))
     .join('');
   const rightColumns = [...sideRounds]
     .reverse()
     .map((round) => {
       const level = sideRounds.indexOf(round);
-      return bracketRoundColumn(round, 'right', level, sideRounds.length, control);
+      return bracketRoundColumn(
+        round,
+        'right',
+        level,
+        sideRounds.length,
+        control,
+        bracketSideMatchGroups(rounds, sidePaths, round.roundIndex, 'right'),
+      );
     })
     .join('');
   const bronzeMatch = stageMatches('bronze')[0];
-  const firstSideMatchCount = Math.max(1, Math.ceil((rounds[0]?.matches?.length || 1) / 2));
+  const firstRoundPaths = sidePaths.get(rounds[0]?.roundIndex) || { left: [], right: [] };
+  const firstSideMatchCount = Math.max(1, firstRoundPaths.left.length, firstRoundPaths.right.length);
   const matchPitch = sideRounds.length >= 5 ? 205 : sideRounds.length >= 4 ? 188 : 172;
   const bracketHeight = Math.max(820, firstSideMatchCount * matchPitch);
   const bracketDensity = sideRounds.length >= 6 ? 'ultra-compact' : sideRounds.length >= 5 ? 'compact' : '';
@@ -584,6 +610,7 @@ function bracketView(control) {
       <div class="symmetric-bracket ${bracketDensity} ${bracketShape}" style="--board-height:${bracketHeight}px;--side-rounds:${Math.max(1, sideRounds.length)};--inner-rounds:${Math.max(1, sideRounds.length - 1)}">
         <div class="bracket-compass" aria-hidden="true"><span>左側起點</span><b>勝者往中央爬升</b><span>右側起點</span></div>
         <div class="duel-bracket-board ${sideRounds.length ? '' : 'solo-final'}">
+          <svg class="bracket-links" aria-hidden="true"></svg>
           <div class="bracket-side bracket-left">${leftColumns}</div>
           <section class="bracket-center">
             <div class="champion-crown ${state.championId ? 'has-champion' : ''}">
@@ -592,7 +619,7 @@ function bracketView(control) {
             </div>
             <div class="final-stage">
               <span>中央決戰</span>
-              <h3>${esc(finalRound?.label || '冠亞軍賽')}</h3>
+              <h3>冠亞軍賽</h3>
               ${finalMatch ? matchCard(finalMatch, control) : ''}
             </div>
             ${bronzeMatch ? `
@@ -609,25 +636,87 @@ function bracketView(control) {
   `;
 }
 
-function bracketRoundColumn(round, side, level, totalLevels, control) {
-  const half = Math.ceil(round.matches.length / 2);
-  const sideMatches = side === 'left' ? round.matches.slice(0, half) : round.matches.slice(half);
-  const pairs = [];
-  for (let index = 0; index < sideMatches.length; index += 2) {
-    const matches = sideMatches.slice(index, index + 2);
-    pairs.push(`
-      <div class="duel-pair ${matches.length === 1 ? 'single' : ''}">
-        ${matches.map((item) => `<div class="duel-slot">${matchCard(item, control)}</div>`).join('')}
-      </div>`);
-  }
+function bracketSidePaths(rounds) {
+  const result = new Map();
+  const finalMatch = rounds[rounds.length - 1]?.matches?.[0];
+  const roots = finalMatch?.sourceMatchIds || [];
+  const collectAtRound = (rootId, roundIndex) => {
+    const root = match(rootId);
+    if (!root) return [];
+    if (Number(root.roundIndex) === Number(roundIndex)) return [root];
+    return (root.sourceMatchIds || []).flatMap((sourceId) => collectAtRound(sourceId, roundIndex));
+  };
+  rounds.slice(0, -1).forEach((round) => {
+    result.set(round.roundIndex, {
+      left: roots[0] ? collectAtRound(roots[0], round.roundIndex) : [],
+      right: roots[1] ? collectAtRound(roots[1], round.roundIndex) : [],
+    });
+  });
+  return result;
+}
+
+function bracketSideMatchGroups(rounds, sidePaths, roundIndex, side) {
+  const currentIndex = rounds.findIndex((round) => Number(round.roundIndex) === Number(roundIndex));
+  const currentMatches = sidePaths.get(roundIndex)?.[side] || [];
+  if (currentIndex < 0 || currentIndex >= rounds.length - 2) return currentMatches.length ? [currentMatches] : [];
+  const nextRound = rounds[currentIndex + 1];
+  const nextMatches = sidePaths.get(nextRound.roundIndex)?.[side] || [];
+  const currentIds = new Set(currentMatches.map((item) => item.id));
+  return nextMatches
+    .map((target) => (target.sourceMatchIds || []).map((sourceId) => match(sourceId)).filter((source) => source && currentIds.has(source.id)))
+    .filter((group) => group.length);
+}
+
+function scheduleBracketConnections() {
+  requestAnimationFrame(() => requestAnimationFrame(drawBracketConnections));
+}
+
+function drawBracketConnections() {
+  document.querySelectorAll('.duel-bracket-board').forEach((board) => {
+    const svg = board.querySelector('.bracket-links');
+    if (!svg) return;
+    const boardRect = board.getBoundingClientRect();
+    const cards = new Map(
+      [...board.querySelectorAll('[data-match-card]')]
+        .map((card) => [card.dataset.matchCard, card]),
+    );
+    const paths = [];
+    state.matches
+      .filter((item) => item.stage !== 'bronze' && item.nextMatchId)
+      .forEach((item) => {
+        const source = cards.get(item.id);
+        const target = cards.get(item.nextMatchId);
+        if (!source || !target) return;
+        const sourceRect = source.getBoundingClientRect();
+        const targetRect = target.getBoundingClientRect();
+        const fromLeft = Boolean(source.closest('.bracket-left'));
+        const startX = (fromLeft ? sourceRect.right : sourceRect.left) - boardRect.left;
+        const endX = (fromLeft ? targetRect.left : targetRect.right) - boardRect.left;
+        const startY = sourceRect.top + sourceRect.height / 2 - boardRect.top;
+        const endY = targetRect.top + targetRect.height / 2 - boardRect.top;
+        const middleX = startX + (endX - startX) * .5;
+        const path = `M ${startX.toFixed(1)} ${startY.toFixed(1)} C ${middleX.toFixed(1)} ${startY.toFixed(1)}, ${middleX.toFixed(1)} ${endY.toFixed(1)}, ${endX.toFixed(1)} ${endY.toFixed(1)}`;
+        paths.push(`<path class="path-shadow" d="${path}"></path><path class="path-line" d="${path}"></path>`);
+      });
+    svg.setAttribute('viewBox', `0 0 ${Math.max(1, boardRect.width)} ${Math.max(1, boardRect.height)}`);
+    svg.innerHTML = paths.join('');
+  });
+}
+
+function bracketRoundColumn(round, side, level, totalLevels, control, matchGroups) {
+  const sideMatches = matchGroups.flat();
+  const pairs = matchGroups.map((matches) => `
+    <div class="duel-pair ${matches.length === 1 ? 'single' : ''}">
+      ${matches.map((item) => `<div class="duel-slot">${matchCard(item, control)}</div>`).join('')}
+    </div>`);
   const isOuter = level === 0;
   const isInner = level === totalLevels - 1;
   return `
     <section class="bracket-round ${side} ${isOuter ? 'outer' : ''} ${isInner ? 'inner' : ''}">
       <div class="round-heading">
         <small>${isOuter ? '抽籤起點' : isInner ? '通往中央' : '往中央晉級'}</small>
-        <strong>${esc(round.label)}</strong>
-        <span>${sideMatches.length} 場</span>
+        <strong>第 ${level + 1} 輪</strong>
+        <span>${sideMatches.length} 場 · ${round.roundSize} 隊階段</span>
       </div>
       <div class="round-pairs">${pairs.join('')}</div>
     </section>`;
@@ -642,16 +731,18 @@ function matchCard(item, control) {
     : plannedBye
       ? [item.participantIds.find(Boolean) || null]
     : item.participantIds;
+  const destination = item.nextMatchId ? match(item.nextMatchId) : null;
+  const routeText = destination ? `勝者 → ${matchDisplayLabel(destination)}` : '勝者進入冠軍席位';
   return `
-    <article class="match-card ${item.status === 'completed' ? 'completed' : ''} ${plannedBye ? 'bye' : ''} ${active ? 'live' : ''}">
-      <small>${esc(item.label)}</small>
+    <article class="match-card ${item.status === 'completed' ? 'completed' : ''} ${plannedBye ? 'bye' : ''} ${active ? 'live' : ''}" data-match-card="${esc(item.id)}">
+      <small>${esc(matchDisplayLabel(item))}</small>
       ${participantIds.map((id) => `
         <button class="match-team ${item.winnerId === id && id ? 'winner' : ''}" ${id ? `data-watch-team="${esc(id)}"` : 'disabled'}>
           <b>${esc(teamName(id, '等待晉級'))}</b><span>${id ? esc(entry(id)?.playerName || '') : '—'}</span>
         </button>`).join('')}
       ${plannedBye ? `<div class="bye-stamp">${item.resultType === 'bye' ? '開賽前已抽定 · 本輪輪空' : '預排輪空路線 · 勝者直升'}</div>` : ''}
       <footer>
-        <span>${item.status === 'completed' ? (item.resultType === 'bye' ? '直接晉級下一輪' : `勝：${esc(teamName(item.winnerId))}`) : active ? '賽場進行中' : plannedBye ? '開賽前已鎖定' : '等待比賽'}</span>
+        <span>${item.status === 'completed' ? (item.resultType === 'bye' ? routeText : `勝：${esc(teamName(item.winnerId))}`) : active ? '賽場進行中' : plannedBye ? `已鎖定 · ${routeText}` : routeText}</span>
         ${control && playable ? `<button data-start-match="${esc(item.id)}">${active ? '回到賽場' : '開啟賽場'}</button>` : ''}
       </footer>
     </article>`;
@@ -719,6 +810,7 @@ function renderAudience() {
     </div>
     ${state.matches.length ? `<section style="margin-top:32px">${bracketView(false)}</section>` : ''}
   `;
+  if (state.matches.length) scheduleBracketConnections();
 }
 
 function audienceSecondsLeft() {
@@ -1132,7 +1224,7 @@ function renderArena() {
       <div class="arena">
         <header class="arena-header">
           <img src="assets/junkbot-logo.png" alt="">
-          <div><small>${esc(matchStageLabel(item))} · ${esc(CAMPUS[campus].name)}</small><strong>${esc(item.label)}</strong></div>
+          <div><small>${esc(matchStageLabel(item))} · ${esc(CAMPUS[campus].name)}</small><strong>${esc(matchDisplayLabel(item))}</strong></div>
           <button class="outline" data-action="close-arena">離開賽場 ×</button>
         </header>
         <div class="arena-main">
@@ -1531,3 +1623,4 @@ function bindDynamicEvents() {
 initAccess();
 bindControlEvents();
 bindDynamicEvents();
+window.addEventListener('resize', scheduleBracketConnections);
