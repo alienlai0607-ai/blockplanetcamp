@@ -1968,6 +1968,9 @@ function junkbotStateSet(p) {
     const campus = junkbotNormalizeCampus(p.campus);
     const state = p.state;
     if (!state || typeof state !== 'object') return { success: false, error: '賽事資料格式不正確' };
+    if (state.draw && state.draw.method === 'random-draw') {
+      return { success: false, error: '這是重排前的舊版賽程，請重新整理頁面後再操作' };
+    }
     state.campus = campus;
     const payload = JSON.stringify(state);
     if (payload.length > 800000) return { success: false, error: '賽事資料超過 80 萬字元，請聯絡系統管理員' };

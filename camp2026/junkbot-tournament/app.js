@@ -205,7 +205,7 @@ async function fetchWithTimeout(url, options = {}, timeoutMs = 8000) {
 }
 
 async function loadCampusState(silent = false) {
-  if (!campus) return;
+  if (!campus) return false;
   try {
     if (!silent) setSync('saving', '讀取中');
     const result = await apiGet(campus);
@@ -216,6 +216,7 @@ async function loadCampusState(silent = false) {
     setSync('', '已連線');
     if (role === 'control') renderControl();
     if (role === 'audience') renderAudience();
+    return true;
   } catch (error) {
     connectionOk = false;
     setSync('error', '連線失敗');
@@ -227,6 +228,7 @@ async function loadCampusState(silent = false) {
       renderAudience();
     }
     if (!silent) showToast(`無法讀取賽事：${error.message}`, true);
+    return false;
   }
 }
 
@@ -1086,6 +1088,12 @@ function resetBracket() {
 }
 
 function openArena(matchId) {
+  if (state.matches.length && state.draw?.method !== 'single-draw-full-route') {
+    showToast('這是重排前的舊賽程，已禁止開場；請更新到最新賽程。', true);
+    controlView = 'bracket';
+    renderControl();
+    return;
+  }
   const item = match(matchId);
   if (!item || item.status === 'completed' || item.participantIds.filter(Boolean).length !== 2) return;
   state.activeMatchId = item.id;
@@ -1128,7 +1136,7 @@ function renderArena() {
           <button class="outline" data-action="close-arena">離開賽場 ×</button>
         </header>
         <div class="arena-main">
-          <div class="arena-team">
+          <div class="arena-team red">
             <div class="team-badge">A</div><h2>${esc(teamName(item.participantIds[0]))}</h2><p>${esc(entry(item.participantIds[0])?.playerName || '')}</p>
           </div>
           <div class="arena-clock">
@@ -1141,8 +1149,8 @@ function renderArena() {
               ${status === 'awaiting-decision' && item.replays < 1 ? `<button data-action="request-replay">重賽一次</button>` : ''}
             </div>
           </div>
-          <div class="arena-team">
-            <div class="team-badge" style="background:var(--blue-dark)">B</div><h2>${esc(teamName(item.participantIds[1]))}</h2><p>${esc(entry(item.participantIds[1])?.playerName || '')}</p>
+          <div class="arena-team blue">
+            <div class="team-badge">B</div><h2>${esc(teamName(item.participantIds[1]))}</h2><p>${esc(entry(item.participantIds[1])?.playerName || '')}</p>
           </div>
         </div>
         <footer class="arena-footer">掉出場外、停止移動超過 10 秒、未離開起始區、惡意觸碰等，依簡章由評審判定。</footer>
@@ -1381,7 +1389,7 @@ function bindControlEvents() {
     controlView = viewButton.dataset.view;
     renderControl();
   });
-  $('controlView').addEventListener('click', (event) => {
+  $('controlView').addEventListener('click', async (event) => {
     const viewJump = event.target.closest('[data-view-jump]');
     if (viewJump) {
       controlView = viewJump.dataset.viewJump;
@@ -1421,7 +1429,24 @@ function bindControlEvents() {
     }
     if (action === 'reset-bracket') resetBracket();
     const start = event.target.closest('[data-start-match]');
-    if (start) openArena(start.dataset.startMatch);
+    if (start) {
+      const requestedMatchId = start.dataset.startMatch;
+      start.disabled = true;
+      await syncQueue.catch(() => null);
+      const refreshed = await loadCampusState(true);
+      if (!refreshed) {
+        showToast('無法確認最新賽程，為避免開錯場次，本次不開場。', true);
+        return;
+      }
+      const latestMatch = match(requestedMatchId);
+      if (!latestMatch || latestMatch.status === 'completed' || latestMatch.participantIds.filter(Boolean).length !== 2) {
+        controlView = 'bracket';
+        renderControl();
+        showToast('這場已因重新抽籤而失效，已切換到最新賽程。', true);
+        return;
+      }
+      openArena(requestedMatchId);
+    }
     const edit = event.target.closest('[data-edit-team]');
     if (edit) openTeamEditor(edit.dataset.editTeam);
     const remove = event.target.closest('[data-delete-team]');
