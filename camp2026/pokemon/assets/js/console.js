@@ -5,6 +5,107 @@ const PASSWORD = 'block';
 
 const Console = {
   pendingPhoto: '',
+  pendingType: 'lightning',
+
+  mascotByType: {
+    grass: 'mascot-xingxing.jpg',
+    fire: 'mascot-keke.jpg',
+    water: 'mascot-lala.jpg',
+    lightning: 'mascot-xiaobu.jpeg',
+    psychic: 'mascot-aqiu.jpg',
+    fighting: 'mascot-keke.jpg',
+    darkness: 'mascot-aqiu.jpg',
+    metal: 'mascot-xiaobu.jpeg',
+    dragon: 'mascot-keke.jpg',
+    colorless: 'mascot-xingxing.jpg',
+  },
+
+  typeMeta(key) {
+    return TYPE_MAP[key] || TYPE_MAP.colorless;
+  },
+
+  mascotForType(key) {
+    return Console.mascotByType[key] || Console.mascotByType.colorless;
+  },
+
+  trainerProfile(key) {
+    const profiles = {
+      grass: { title: '森林探索家', motto: '觀察、成長、穩定前進', energy: 'grass.png' },
+      fire: { title: '火焰挑戰者', motto: '熱情、勇氣、果斷出擊', energy: 'fire.png' },
+      water: { title: '潮汐策略家', motto: '冷靜、靈活、掌握節奏', energy: 'water.png' },
+      lightning: { title: '閃電先鋒', motto: '敏捷、專注、搶得先機', energy: 'lightning.png' },
+      psychic: { title: '心靈觀察員', motto: '洞察、預判、精準布局', energy: 'psychic.png' },
+      fighting: { title: '格鬥實踐家', motto: '堅持、行動、正面突破', energy: 'fighting.png' },
+      darkness: { title: '暗夜策略家', motto: '沉著、變化、出奇制勝', energy: 'darkness.png' },
+      metal: { title: '鋼鐵守備者', motto: '紀律、耐心、穩固防線', energy: 'metal.png' },
+      dragon: { title: '龍之遠征者', motto: '氣勢、膽識、挑戰極限', mark: '龍' },
+      colorless: { title: '全能探險家', motto: '自在、適應、創造可能', mark: '無色' },
+    };
+    return profiles[key] || profiles.colorless;
+  },
+
+  trainerPass(tr, preview) {
+    const type = Console.typeMeta(tr.type);
+    const profile = Console.trainerProfile(type.key);
+    const no = tr.no ? String(tr.no).padStart(3, '0') : '---';
+    const name = tr.name || '訓練家姓名';
+    const initial = esc(name.slice(0, 1));
+    const registered = tr.registeredAt
+      ? new Date(tr.registeredAt).toLocaleDateString('zh-TW')
+      : new Date().toLocaleDateString('zh-TW');
+    const photo = tr.photo
+      ? `<img src="${tr.photo}" alt="${esc(name)}的正面照片">`
+      : `<span class="trainer-pass-initial">${initial}</span>`;
+    const typeMark = profile.energy
+      ? `<img src="../assets/img/cards/energy/${profile.energy}" alt="${esc(type.name)}屬性能量卡">`
+      : `<span>${esc(profile.mark)}</span>`;
+
+    return `<div class="trainer-pass-frame">
+      <article class="trainer-pass trainer-pass-${type.key}${preview ? ' is-preview' : ''}">
+      <div class="trainer-pass-world" aria-hidden="true"></div>
+      <div class="trainer-pass-mascot" aria-hidden="true"></div>
+      <div class="trainer-pass-energy-lines" aria-hidden="true"></div>
+      <header class="trainer-pass-header">
+        <img src="../assets/img/brand/blockplanet-logo.png" alt="">
+        <div>
+          <span>2026 BLOCK PLANET CAMP LEAGUE</span>
+          <b>寶可夢卡牌訓練家證</b>
+        </div>
+        <strong><small>TRAINER ID</small>No. ${no}</strong>
+      </header>
+      <div class="trainer-pass-body">
+        <div class="trainer-pass-photo-wrap">
+          <span>TRAINER PORTRAIT</span>
+          <div class="trainer-pass-photo">${photo}</div>
+          <b>正式參賽訓練家</b>
+        </div>
+        <div class="trainer-pass-identity">
+          <span class="trainer-pass-label">TRAINER NAME</span>
+          <h3>${esc(name)}</h3>
+          <div class="trainer-pass-type">
+            <div><b>${esc(profile.title)}</b><small>${esc(profile.motto)}</small></div>
+          </div>
+          <dl>
+            <div><dt>TRAINER CLASS</dt><dd>${esc(type.name)}系</dd></div>
+            <div><dt>STATUS</dt><dd>認證通過</dd></div>
+            <div><dt>ISSUED</dt><dd>${registered}</dd></div>
+          </dl>
+        </div>
+        <aside class="trainer-pass-affinity">
+          <span>TYPE LICENSE</span>
+          <div class="trainer-pass-energy">${typeMark}</div>
+          <b>${esc(type.name)}系</b>
+          <small>屬性認證</small>
+        </aside>
+      </div>
+      <footer class="trainer-pass-footer">
+        <b>TRAIN · LEARN · BATTLE</b>
+        <span aria-hidden="true"></span>
+        <strong>OFFICIAL CAMP TRAINER</strong>
+      </footer>
+      </article>
+    </div>`;
+  },
 
   init() {
     // 密碼
@@ -12,6 +113,7 @@ const Console = {
       const v = document.getElementById('pwd').value.trim();
       if (v === PASSWORD) {
         sessionStorage.setItem('bp_console_ok', '1');
+        document.getElementById('pwdErr').textContent = '';
         document.getElementById('lock').style.display = 'none';
         document.getElementById('panel').style.display = 'block';
         Console.boot();
@@ -49,6 +151,7 @@ const Console = {
     });
     // 訓練家 modal
     Console.setupTrainerModal();
+    window.addEventListener('resize', Console.fitTrainerPasses);
     // 罰則 / 爭議（靜態，一次渲染）
     Console.renderPenalty();
     Console.renderDispute();
@@ -73,13 +176,22 @@ const Console = {
         <span class="spacer"></span>
         ${s.meta.status === 'setup' ? `<button class="btn gold sm" id="addTrainerBtn">${bpIcon('plus')}新增訓練家</button>` : ''}
       </div>
-      ${s.trainers.length ? `<div class="trainer-grid">` + s.trainers.map(t => `
-        <div class="trainer">
+      ${s.trainers.length ? `<div class="trainer-grid">` + s.trainers.map(t => {
+        const type = Console.typeMeta(t.type);
+        const profile = Console.trainerProfile(type.key);
+        const mark = profile.energy
+          ? `<img src="../assets/img/cards/energy/${profile.energy}" alt="">`
+          : `<i>${esc(profile.mark)}</i>`;
+        return `
+        <div class="trainer trainer-type-${type.key}">
           <span class="tnum">#${t.no}</span>
           ${BV.photo(t,'photo')}
           <div class="tname">${esc(t.name)}</div>
+          <div class="trainer-card-type">${mark}<span>${esc(profile.title)} · ${esc(type.name)}系</span></div>
+          <button class="btn ghost sm trainer-pass-button" data-pass="${t.id}">${bpIcon('card')}查看訓練家證</button>
           ${s.meta.status === 'setup' ? `<button class="btn danger sm" style="margin-top:6px;padding:3px 10px" data-del="${t.id}">移除</button>` : ''}
-        </div>`).join('') + `</div>` : `<div class="empty"><div class="big">${bpIcon('trainers')}</div><p>還沒有訓練家，按右上角新增。</p></div>`}
+        </div>`;
+      }).join('') + `</div>` : `<div class="empty"><div class="big">${bpIcon('trainers')}</div><p>還沒有訓練家，按右上角新增。</p></div>`}
     </div>`;
 
     // 階段控制
@@ -178,6 +290,11 @@ const Console = {
       b.addEventListener('click', () => {
         if (confirm('移除這位訓練家？')) { const st = T.load(); T.removeTrainer(st, b.dataset.del); T.save(st); Console.refresh(); }
       }));
+    document.querySelectorAll('[data-pass]').forEach(b =>
+      b.addEventListener('click', () => {
+        const tr = T.byId(T.load(), b.dataset.pass);
+        if (tr) Console.openCredential(tr, false);
+      }));
     const sq = document.getElementById('startQual');
     if (sq) sq.addEventListener('click', () => { const st = T.load(); try { T.drawRound(st); T.save(st); Console.refresh(); } catch(e){ alert(e.message); } });
     const nr = document.getElementById('nextRound');
@@ -201,31 +318,115 @@ const Console = {
     const modal = document.getElementById('trainerModal');
     const pick = document.getElementById('photoPick');
     const file = document.getElementById('photoFile');
+    const nameInput = document.getElementById('trainerName');
+    const typeOptions = document.getElementById('trainerTypeOptions');
+
+    typeOptions.innerHTML = TYPES.map(type => `
+      <button type="button" class="trainer-type-option trainer-type-${type.key}" data-trainer-type="${type.key}">
+        <span class="trainer-type-dot">${esc(type.name)}</span>
+        <b>${esc(type.name)}系</b>
+      </button>`).join('');
+
+    typeOptions.addEventListener('click', e => {
+      const button = e.target.closest('[data-trainer-type]');
+      if (!button) return;
+      Console.pendingType = button.dataset.trainerType;
+      Console.updateTrainerTypeSelection();
+      Console.renderTrainerPassPreview();
+    });
+
+    nameInput.addEventListener('input', Console.renderTrainerPassPreview);
     pick.addEventListener('click', () => file.click());
     file.addEventListener('change', () => {
       const f = file.files[0]; if (!f) return;
-      Console.resizeImage(f, 240, (dataURL) => {
+      Console.resizeImage(f, 640, (dataURL) => {
         Console.pendingPhoto = dataURL;
-        pick.innerHTML = `<img src="${dataURL}" alt="">`;
+        pick.innerHTML = `<img src="${dataURL}" alt="已選擇的正面照片"><span class="photo-change">更換照片</span>`;
+        Console.renderTrainerPassPreview();
       });
     });
     document.getElementById('trainerCancel').addEventListener('click', () => Console.closeTrainerModal());
     modal.addEventListener('click', e => { if (e.target === modal) Console.closeTrainerModal(); });
     document.getElementById('trainerSave').addEventListener('click', () => {
-      const name = document.getElementById('trainerName').value.trim();
-      if (!name) { alert('請輸入訓練家暱稱'); return; }
-      const st = T.load(); T.addTrainer(st, name, Console.pendingPhoto); T.save(st);
-      Console.closeTrainerModal(); Console.refresh();
+      const name = nameInput.value.trim();
+      if (!name) { alert('請輸入訓練家姓名'); nameInput.focus(); return; }
+      const st = T.load();
+      T.addTrainer(st, name, Console.pendingPhoto, {
+        type: Console.pendingType,
+      });
+      const trainer = st.trainers[st.trainers.length - 1];
+      T.save(st);
+      Console.closeTrainerModal();
+      Console.refresh();
+      Console.openCredential(trainer, true);
     });
+
+    const credential = document.getElementById('credentialModal');
+    document.getElementById('credentialClose').addEventListener('click', Console.closeCredential);
+    document.getElementById('credentialDone').addEventListener('click', Console.closeCredential);
+    document.getElementById('credentialPrint').addEventListener('click', () => window.print());
+    credential.addEventListener('click', e => { if (e.target === credential) Console.closeCredential(); });
   },
   openTrainerModal() {
     Console.pendingPhoto = '';
+    Console.pendingType = 'lightning';
     document.getElementById('trainerName').value = '';
-    document.getElementById('photoPick').innerHTML = '點我上傳<br>照片';
+    document.getElementById('photoFile').value = '';
+    document.getElementById('photoPick').innerHTML = `${bpIcon('plus')}<b>上傳正面照片</b><small>臉部清楚、單人入鏡</small>`;
+    Console.updateTrainerTypeSelection();
+    Console.renderTrainerPassPreview();
     document.getElementById('trainerModal').classList.add('open');
     document.getElementById('trainerName').focus();
   },
   closeTrainerModal() { document.getElementById('trainerModal').classList.remove('open'); },
+
+  updateTrainerTypeSelection() {
+    document.querySelectorAll('[data-trainer-type]').forEach(button => {
+      const active = button.dataset.trainerType === Console.pendingType;
+      button.classList.toggle('selected', active);
+      button.setAttribute('aria-pressed', active ? 'true' : 'false');
+    });
+  },
+
+  renderTrainerPassPreview() {
+    const root = document.getElementById('trainerPassPreview');
+    if (!root) return;
+    root.innerHTML = Console.trainerPass({
+      no: null,
+      name: document.getElementById('trainerName')?.value.trim() || '',
+      photo: Console.pendingPhoto,
+      type: Console.pendingType,
+    }, true);
+    requestAnimationFrame(Console.fitTrainerPasses);
+  },
+
+  openCredential(trainer, isNew) {
+    document.getElementById('credentialEyebrow').textContent =
+      isNew ? 'Trainer Registration Complete' : 'Official Trainer License';
+    document.getElementById('credentialTitle').textContent =
+      isNew ? `${trainer.name}，授證完成` : `${trainer.name}的訓練家證`;
+    document.getElementById('credentialBody').innerHTML = Console.trainerPass(trainer, false);
+    document.getElementById('credentialModal').classList.add('open');
+    requestAnimationFrame(Console.fitTrainerPasses);
+  },
+
+  closeCredential() {
+    document.getElementById('credentialModal').classList.remove('open');
+  },
+
+  fitTrainerPasses() {
+    const baseWidth = 680;
+    const baseHeight = 429;
+    document.querySelectorAll('.trainer-pass-frame').forEach(frame => {
+      const pass = frame.querySelector('.trainer-pass');
+      if (!pass) return;
+      const available = frame.clientWidth;
+      if (!available) return;
+      const scale = Math.min(1, available / baseWidth);
+      pass.style.transform = `scale(${scale})`;
+      frame.style.height = `${Math.ceil(baseHeight * scale)}px`;
+    });
+  },
 
   resizeImage(file, max, cb) {
     const reader = new FileReader();

@@ -3,6 +3,23 @@
    也提供共用渲染給控制台使用
    ============================================================ */
 const BV = {
+  mascotByType: {
+    grass: 'mascot-xingxing.jpg',
+    fire: 'mascot-keke.jpg',
+    water: 'mascot-lala.jpg',
+    lightning: 'mascot-xiaobu.jpeg',
+    psychic: 'mascot-aqiu.jpg',
+    fighting: 'mascot-keke.jpg',
+    darkness: 'mascot-aqiu.jpg',
+    metal: 'mascot-xiaobu.jpeg',
+    dragon: 'mascot-keke.jpg',
+    colorless: 'mascot-xingxing.jpg',
+  },
+
+  typeMeta(tr) {
+    return TYPE_MAP[tr?.type] || TYPE_MAP.colorless;
+  },
+
   /* ---------- 共用：照片 ---------- */
   photo(tr, cls) {
     if (!tr) return `<span class="${cls}">?</span>`;
@@ -16,13 +33,18 @@ const BV = {
     elimSet = elimSet || new Set();
     if (!s.trainers.length) return '';
     return `<div class="card"><h2 class="section-title">${bpIcon('trainers')}參賽訓練家（${s.trainers.length}）</h2>
-      <div class="trainer-grid">` + s.trainers.map(t => `
-        <div class="trainer ${elimSet.has(t.id) ? 'elim' : ''}">
+      <div class="trainer-grid">` + s.trainers.map(t => {
+        const type = BV.typeMeta(t);
+        const mascot = t.mascot || BV.mascotByType[type.key];
+        return `
+        <div class="trainer trainer-type-${type.key} ${elimSet.has(t.id) ? 'elim' : ''}">
           <span class="tnum">#${t.no}</span>
           ${BV.photo(t, 'photo')}
           <div class="tname">${esc(t.name)}</div>
-          ${elimSet.has(t.id) ? '<div class="elim-x">✕</div>' : ''}
-        </div>`).join('') + `</div></div>`;
+          <div class="trainer-card-type"><img src="../assets/img/brand/${mascot}" alt=""><span>${esc(type.name)}系訓練家</span></div>
+          ${elimSet.has(t.id) ? '<div class="elim-x" aria-label="已淘汰"><span>已淘汰</span></div>' : ''}
+        </div>`;
+      }).join('') + `</div></div>`;
   },
 
   /* ---------- 排行榜 ---------- */
@@ -82,6 +104,7 @@ const BV = {
     const q = s.ko.quarter, sm = s.ko.semi, f = s.ko.final, third = s.ko.third;
     return `<div class="card"><h2 class="section-title">${bpIcon('battle')}八強淘汰賽</h2>
       <p class="section-sub">單局決勝，贏的人晉級。種子序為資格賽名次。</p>
+      <div class="bracket-scroll" aria-label="八強淘汰賽樹狀圖，可橫向滑動">
       <div class="bracket">
         <div class="round round-qf">
           <div class="round-title">八強</div>
@@ -98,7 +121,7 @@ const BV = {
           <div class="round-title" style="margin-top:14px">季軍賽</div>
           ${mkMatch(third, seedOf(third.a), seedOf(third.b))}
         </div>
-      </div></div>`;
+      </div></div></div>`;
   },
 
   /* ---------- 冠軍頒獎 ---------- */
@@ -106,7 +129,7 @@ const BV = {
     const p = T.podium(s);
     if (!p) return '';
     const c = T.byId(s, p.first), sec = T.byId(s, p.second), th = p.third ? T.byId(s, p.third) : null;
-    return `
+    return `<section class="ceremony-grid">
       <div class="champ-banner">
         <div class="crown" aria-hidden="true"></div>
         <div class="cphoto" style="${c.photo?`background-image:url('${c.photo}');background-size:cover;background-position:center`:''}">${c.photo?'':esc(c.name.slice(0,1))}</div>
@@ -114,22 +137,23 @@ const BV = {
         <h2>${esc(c.name)}</h2>
         <p style="color:var(--bp-muted)">恭喜 #${c.no} 號訓練家奪下冠軍！</p>
       </div>
-      <div class="card" style="margin-top:18px">
+      <div class="card ceremony-podium">
         <h2 class="section-title">${bpIcon('badge')}頒獎台</h2>
         <div class="podium">
           <div class="spot p2"><div class="ph" style="${sec.photo?`background-image:url('${sec.photo}');background-size:cover`:''}">${sec.photo?'':esc(sec.name.slice(0,1))}</div><b>亞軍 ${esc(sec.name)}</b><div class="pblock p2">2</div></div>
           <div class="spot p1"><div class="ph" style="${c.photo?`background-image:url('${c.photo}');background-size:cover`:''}">${c.photo?'':esc(c.name.slice(0,1))}</div><b>冠軍 ${esc(c.name)}</b><div class="pblock">1</div></div>
           <div class="spot p3"><div class="ph" style="${th&&th.photo?`background-image:url('${th.photo}');background-size:cover`:''}">${th?(th.photo?'':esc(th.name.slice(0,1))):'?'}</div><b>季軍 ${th?esc(th.name):'待定'}</b><div class="pblock p3">3</div></div>
         </div>
-      </div>`;
+      </div>
+    </section>`;
   },
 
   /* ---------- 流程步驟條 ---------- */
   flow(s) {
     const order = ['setup','qualifier','knockout','done'];
     const cur = order.indexOf(s.meta.status);
-    const labels = ['① 訓練家登記','② 資格賽','③ 八強淘汰','④ 冠軍誕生'];
-    return labels.map((l,i) => `<div class="step ${i<cur?'done':''} ${i===cur?'active':''}">${l}</div>`).join('');
+    const labels = ['訓練家登記','資格賽','八強淘汰','冠軍誕生'];
+    return labels.map((l,i) => `<div class="step ${i<cur?'done':''} ${i===cur?'active':''}"><span class="step-no">${i + 1}</span><span>${l}</span></div>`).join('');
   },
 };
 

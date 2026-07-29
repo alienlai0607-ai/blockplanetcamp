@@ -21,9 +21,19 @@ const T = {
   reset() { Store.remove(T_KEY); },
 
   /* ---------- 訓練家 ---------- */
-  addTrainer(s, name, photo) {
+  addTrainer(s, name, photo, profile) {
+    profile = profile || {};
     const no = s.trainers.length ? Math.max(...s.trainers.map(t => t.no)) + 1 : 1;
-    s.trainers.push({ id: 'T' + no + '_' + Math.floor(Math.random() * 1e6), no, name, photo: photo || '', tb: Math.random() });
+    s.trainers.push({
+      id: 'T' + no + '_' + Math.floor(Math.random() * 1e6),
+      no,
+      name,
+      photo: photo || '',
+      type: profile.type || 'colorless',
+      mascot: profile.mascot || '',
+      registeredAt: profile.registeredAt || new Date().toISOString(),
+      tb: Math.random(),
+    });
     return s;
   },
   removeTrainer(s, id) {

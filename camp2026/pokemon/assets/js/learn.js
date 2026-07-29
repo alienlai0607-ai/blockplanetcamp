@@ -1,745 +1,474 @@
 /* ============================================================
-   learn.js — 學習區互動邏輯
+   learn.js — 平板教室用圖解教材
    ============================================================ */
+
 const Learn = {
+  currentLesson: null,
+  currentSlide: 0,
+  fitRun: 0,
+
   init() {
-    Learn.tabs();
-    Learn.lessons();
+    Learn.bindTabs();
+    Learn.hub();
     Learn.types();
     Learn.quiz();
-    Learn.badges();
     Learn.rules();
     Learn.calc();
     Learn.timer();
-    // 開站時依 hash 切到對應分頁
-    const h = location.hash.replace('#', '');
-    if (h) Learn.showPane(h);
+    window.addEventListener('resize', () => Learn.fitVisual());
   },
 
-  /* ---------- 分頁 ---------- */
-  showPane(name) {
-    document.querySelectorAll('[data-pane]').forEach(s => s.hidden = (s.dataset.pane !== name));
-    document.querySelectorAll('#tabbar a').forEach(a =>
-      a.classList.toggle('active', a.getAttribute('href') === '#' + name));
-  },
-  tabs() {
-    document.querySelectorAll('#tabbar a').forEach(a => {
-      a.addEventListener('click', e => {
-        e.preventDefault();
-        const name = a.getAttribute('href').slice(1);
-        location.hash = name;
-        Learn.showPane(name);
-        window.scrollTo({ top: 0, behavior: 'smooth' });
-      });
-    });
-  },
-
-  /* ---------- 教材 ---------- */
   doneLessons() { return Store.get('bp_lessons_done', []); },
-  lessons() {
-    const hub = document.getElementById('lessonHub');
-    const view = document.getElementById('lessonView');
-    const render = () => {
-      hub.innerHTML = `<div class="lesson-nav">` + LESSONS.map(l => `
-        <div class="card lesson-card" data-l="${l.num}">
-          <div class="lesson-icon">${bpIcon(l.icon || 'card')}</div>
-          <div class="num">第 ${l.num} 章</div>
-          <h3>${esc(l.title)}</h3>
-        </div>`).join('') + `</div>`;
-      Learn.bindEvoControls(hub);
-      Learn.bindGuideControls(hub);
-      hub.querySelectorAll('.lesson-card').forEach(c =>
-        c.addEventListener('click', () => openLesson(+c.dataset.l)));
-    };
-    const openLesson = (num) => {
-      const i = LESSONS.findIndex(l => l.num === num);
-      const l = LESSONS[i];
-      // 記錄學習進度，列表不顯示狀態文字。
-      const done = Learn.doneLessons();
-      if (!done.includes(num)) { done.push(num); Store.set('bp_lessons_done', done); }
-      hub.style.display = 'none';
-      view.style.display = 'block';
-      view.innerHTML = `
-        <button class="btn ghost sm" id="backHub">← 回章節列表</button>
-        <div class="card lesson-body" style="margin-top:14px">
-          <div class="tag gold">第 ${l.num} 章</div>
-          <h1 style="margin:10px 0">${bpIcon(l.icon || 'card')}${esc(l.title)}</h1>
-          <div class="story">${esc(l.story)}</div>
-          ${Learn.cardDemo(l.num)}
-          ${l.body}
-          <div class="toolbar" style="margin-top:26px">
-            ${i > 0 ? `<button class="btn ghost" data-go="${LESSONS[i-1].num}">← 上一章</button>` : ''}
-            <span class="spacer"></span>
-            ${i < LESSONS.length-1 ? `<button class="btn" data-go="${LESSONS[i+1].num}">下一章 →</button>` :
-              `<a class="btn gold" href="#quiz" id="toQuiz">${bpIcon('badge')}去考測驗</a>`}
-          </div>
-        </div>`;
-      Learn.bindEvoControls(view);
-      Learn.bindGuideControls(view);
-      view.querySelector('#backHub').addEventListener('click', () => {
-        view.style.display = 'none'; hub.style.display = 'block'; render();
-        window.scrollTo({ top: 0, behavior: 'smooth' });
-      });
-      view.querySelectorAll('[data-go]').forEach(b =>
-        b.addEventListener('click', () => { openLesson(+b.dataset.go); window.scrollTo({ top: 0, behavior: 'smooth' }); }));
-      const tq = view.querySelector('#toQuiz');
-      if (tq) tq.addEventListener('click', e => { e.preventDefault(); location.hash = 'quiz'; Learn.showPane('quiz'); window.scrollTo({top:0}); });
-      window.scrollTo({ top: 0, behavior: 'smooth' });
-    };
-    render();
+  markDone(num) {
+    const done = Learn.doneLessons();
+    if (!done.includes(num)) Store.set('bp_lessons_done', done.concat(num));
+    Learn.renderBadges();
   },
 
-  cardDemo(num) {
-    const source = typeof LESSON_CARD_DEMOS !== 'undefined' ? LESSON_CARD_DEMOS :
-      (typeof OFFICIAL_CARD_DEMOS !== 'undefined' ? OFFICIAL_CARD_DEMOS : {});
-    const d = source[num] || null;
-    if (!d) return '';
-    const images = d.imgs || (d.img ? [d.img] : []);
-    const evoKeys = d.evolutions || (d.evolution ? [d.evolution] : []);
-    const multiEvo = evoKeys.length > 1;
-    const visual = evoKeys.length ? `
-      <div class="evo-showcases ${multiEvo ? 'multi' : 'solo'}">
-        ${evoKeys.map(key => Learn.evoCarousel(key, multiEvo)).join('')}
-      </div>` : `
-      <div class="demo-gallery">
-        ${images.map(img => `
-          <div class="demo-card-visual wide">
-            <img src="${esc(img)}" alt="${esc(d.title)}" loading="lazy" onerror="this.closest('.demo-card-visual').classList.add('missing')">
-            <div class="demo-card-missing">
-              <b>找不到卡牌圖</b>
-              <span>${esc(img.replace('../', ''))}</span>
-            </div>
-          </div>`).join('')}
-      </div>`;
-    return `
-      <section class="official-card-demo ${multiEvo ? 'has-multiple-evo' : ''}">
-        ${visual}
-        <div class="demo-card-copy">
-          <span class="tag gold">${esc(d.label || '卡牌示範')}</span>
-          <h2>${esc(d.title)}</h2>
-          <p>${esc(d.lesson)}</p>
-          <div class="demo-mini-title">這章請準備</div>
-          <div class="demo-chip-row">${d.cards.map(x => `<span class="tag">${esc(x)}</span>`).join('')}</div>
-          <div class="demo-mini-title">請孩子看卡面這些位置</div>
-          <ul class="demo-focus-list">${d.focus.map(x => `<li>${esc(x)}</li>`).join('')}</ul>
-          ${d.officialUrl ? `<a class="btn sm ghost" href="${esc(d.officialUrl)}" target="_blank" rel="noopener">打開參考資料</a>` : ''}
-        </div>
+  bindTabs() {
+    const show = (name) => {
+      document.querySelectorAll('[data-pane]').forEach(p => { p.hidden = p.dataset.pane !== name; });
+      document.querySelectorAll('#tabbar a').forEach(a => a.classList.toggle('active', a.getAttribute('href') === `#${name}`));
+      if (name !== 'lessons') {
+        document.getElementById('lessonHub').style.display = '';
+        document.getElementById('lessonView').style.display = 'none';
+      }
+    };
+    document.querySelectorAll('#tabbar a').forEach(a => a.addEventListener('click', e => {
+      e.preventDefault();
+      const name = a.getAttribute('href').slice(1);
+      history.replaceState(null, '', `#${name}`);
+      show(name);
+    }));
+    const first = location.hash.slice(1);
+    show(['lessons', 'types', 'quiz', 'rules', 'calc', 'timer'].includes(first) ? first : 'lessons');
+  },
+
+  hub() {
+    const box = document.getElementById('lessonHub');
+    const done = Learn.doneLessons();
+    box.innerHTML = `
+      <section class="lesson-hub-head">
+        <div><span class="eyebrow">11 個教學單元</span><h2>一畫面只教一件事</h2><p>每章 3 張教學投影片；卡片、能量與桌面位置都直接畫給孩子看。</p></div>
+        <div class="lesson-progress"><b>${done.length}<small>/ ${LESSONS.length}</small></b><span>已完成</span></div>
       </section>
-      ${Learn.lessonIllustration(num)}
-      ${d.beginnerIntro ? Learn.beginnerCardGuide() : ''}
-      ${d.anatomy ? Learn.cardAnatomy() : ''}
-      ${d.fullRules ? Learn.fullCardRuleGuide() : ''}`;
+      <div class="lesson-grid">${LESSONS.map(l => `
+        <button class="lesson-card ${done.includes(l.num) ? 'done' : ''}" data-lesson="${l.num}">
+          <span class="lesson-card-head">
+            <span class="lesson-index">${String(l.num).padStart(2, '0')}</span>
+            <span class="lesson-state">${done.includes(l.num) ? '已完成' : '開始'}</span>
+          </span>
+          <span class="lesson-card-copy">
+            <span class="lesson-card-title-row"><span class="lesson-icon">${bpIcon(l.icon)}</span><span class="lesson-title">${esc(l.title)}</span></span>
+            <span class="lesson-story">${esc(l.story)}</span>
+            <span class="lesson-meta">3 張互動圖解</span>
+          </span>
+          <span class="lesson-illustration"><img src="../assets/img/lesson-chibis/${esc(l.hubArt)}" alt="${esc(l.hubAlt)}" loading="lazy" decoding="async"></span>
+        </button>`).join('')}</div>`;
+    box.querySelectorAll('[data-lesson]').forEach(b => b.addEventListener('click', () => Learn.openLesson(+b.dataset.lesson)));
   },
 
-  lessonIllustration(num) {
-    const card = (name, src, cls = '') => `
-      <figure class="teach-card ${cls}">
-        <img src="${esc(src)}" alt="${esc(name)}" loading="lazy">
-        <figcaption>${esc(name)}</figcaption>
-      </figure>`;
-    const back = (label = '牌庫') => `<div class="teach-card-back"><span>${esc(label)}</span></div>`;
-    const energyMeta = (label = '能量卡', type = '') => {
-      const text = String(label);
-      const inferred = type ||
-        (text.includes('火') ? 'fire' :
-        text.includes('水') ? 'water' :
-        text.includes('草') || text.includes('葉') ? 'grass' :
-        text.includes('超') || text.includes('念') ? 'psychic' :
-        text.includes('鬥') || text.includes('拳') ? 'fighting' :
-        text.includes('惡') || text.includes('暗') ? 'darkness' :
-        text.includes('鋼') || text.includes('金') ? 'metal' :
-        text.includes('無') ? 'colorless' : 'lightning');
-      const data = {
-        lightning: ['雷', 'Lightning'],
-        fire: ['火', 'Fire'],
-        water: ['水', 'Water'],
-        grass: ['草', 'Grass'],
-        psychic: ['超', 'Psychic'],
-        fighting: ['鬥', 'Fighting'],
-        darkness: ['惡', 'Darkness'],
-        metal: ['鋼', 'Metal'],
-        colorless: ['無', 'Colorless'],
-      };
-      const [symbol, name] = data[inferred] || data.lightning;
-      return { key: inferred, symbol, name, label: text };
-    };
-    const energy = (label = '基本雷能量卡', type = '') => {
-      const info = energyMeta(label, type);
-      return `
-        <figure class="teach-energy teach-energy-card ${info.key}">
-          <img src="../assets/img/cards/energy/${esc(info.key)}.png?v=redraw1" alt="${esc(info.label)}" loading="lazy">
-          <span class="energy-type-badge" aria-hidden="true">${esc(info.symbol)}</span>
-          <figcaption>
-            <strong>${esc(info.label)}</strong>
-            <small>${esc(info.name)} Energy</small>
-          </figcaption>
-        </figure>`;
-    };
-    const trainer = (label = '訓練家卡') => `<div class="teach-trainer-card">${bpIcon('trainers')}<span>${esc(label)}</span></div>`;
-    const stack = (count, label) => `<div class="teach-stack">${Array.from({ length: count }).map(() => back('')).join('')}<b>${esc(label)}</b></div>`;
-    const points = (...items) => `<div class="teach-points">${items.map(x => `<span>${esc(x)}</span>`).join('')}</div>`;
-    const wrap = (kind, title, body) => `
-      <section class="lesson-graphic ${kind}">
-        <div class="lesson-graphic-head">
-          <span class="tag gold">課堂圖解</span>
-          <h2>${esc(title)}</h2>
+  openLesson(num) {
+    const lesson = LESSONS.find(l => l.num === num);
+    if (!lesson) return;
+    Learn.currentLesson = lesson;
+    Learn.currentSlide = 0;
+    document.body.classList.add('lesson-open');
+    document.getElementById('lessonHub').style.display = 'none';
+    document.getElementById('lessonView').style.display = '';
+    Learn.renderLesson();
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  },
+
+  renderLesson() {
+    const lesson = Learn.currentLesson;
+    const slide = lesson.slides[Learn.currentSlide];
+    const view = document.getElementById('lessonView');
+    const last = Learn.currentSlide === lesson.slides.length - 1;
+    view.innerHTML = `
+      <section class="lesson-deck">
+        <header class="lesson-deck-head">
+          <button class="icon-btn" id="lessonBack" aria-label="回到章節列表" title="回到章節列表">←</button>
+          <div><span>第 ${lesson.num} 章</span><h2>${esc(lesson.title)}</h2></div>
+          <div class="slide-count">${Learn.currentSlide + 1} / ${lesson.slides.length}</div>
+        </header>
+        <div class="lesson-slide">
+          <div class="lesson-slide-copy">
+            <span class="eyebrow">課堂圖解 ${Learn.currentSlide + 1}</span>
+            <h3>${esc(slide.title)}</h3>
+            <p>${esc(slide.lead)}</p>
+          </div>
+          <div class="lesson-visual" data-visual="${esc(slide.visual)}">${Learn.visual(slide.visual)}</div>
+          <div class="lesson-takeaways">${slide.points.map((p, i) => `<div><b>${i + 1}</b><span>${esc(p)}</span></div>`).join('')}</div>
         </div>
-        ${body}
+        <footer class="lesson-deck-nav">
+          <button class="btn ghost" id="slidePrev" ${Learn.currentSlide === 0 ? 'disabled' : ''}>← 上一張</button>
+          <div class="slide-dots">${lesson.slides.map((_, i) => `<button data-slide="${i}" class="${i === Learn.currentSlide ? 'on' : ''}" aria-label="第 ${i + 1} 張"></button>`).join('')}</div>
+          <button class="btn gold" id="slideNext">${last ? '完成本章' : '下一張 →'}</button>
+        </footer>
       </section>`;
 
-    const xiaobu1 = '../assets/img/mascot-cards/stages/xiaobu-stage-1.png';
-    const xiaobu2 = '../assets/img/mascot-cards/stages/xiaobu-stage-2.png';
-    const keke1 = '../assets/img/mascot-cards/stages/keke-stage-1.png';
-    const aqiu1 = '../assets/img/mascot-cards/stages/aqiu-stage-1.png';
-    const lala1 = '../assets/img/mascot-cards/stages/lala-stage-1.png';
-    const xing1 = '../assets/img/mascot-cards/stages/xingxing-stage-1.png';
-    const xing2 = '../assets/img/mascot-cards/stages/xingxing-stage-2.png';
-
-    const board = (active = '', bench = '') => `
-      <div class="teach-playmat">
-        <div class="mat-zone prize">${stack(6, '獎勵卡 6 張')}</div>
-        <div class="mat-zone active"><b>戰鬥區</b>${active}</div>
-        <div class="mat-zone deck">${back('牌庫')}</div>
-        <div class="mat-zone bench"><b>備戰區 最多 5 隻</b>${bench}</div>
-        <div class="mat-zone discard"><b>棄牌堆</b></div>
-      </div>`;
-
-    const diagrams = {
-      1: wrap('graphic-card-types', '先分清楚三種卡：角色、能量、支援',
-        `<div class="teach-three-cards">
-          ${card('寶可夢卡：上場戰鬥', xiaobu1)}
-          ${energy('基本雷能量卡：貼在寶可夢身上', 'lightning')}
-          ${trainer('訓練家卡：抽牌、找牌、補血')}
-        </div>
-        ${points('寶可夢卡有 HP 和招式', '能量卡是出招燃料', '訓練家卡使用後照文字處理')}`),
-      2: wrap('graphic-read-card', '讀卡順序：上方、中間、底部',
-        `<div class="teach-read-map">
-          ${card('小布卡', xiaobu2)}
-          <div class="read-band top"><b>上方</b><span>名稱、HP、屬性、進化階段</span></div>
-          <div class="read-band middle"><b>中間</b><span>角色圖、特性、招式、傷害</span></div>
-          <div class="read-band bottom"><b>底部</b><span>弱點、抵抗力、撤退、收集資訊</span></div>
-          <div class="read-tools">${energy('基本水能量卡', 'water')}${trainer('訓練家卡')}</div>
-        </div>`),
-      3: wrap('graphic-table', '桌面擺法：誰會被打、誰在等候',
-        `${board(card('克克出戰', keke1, 'active-card'), card('阿球備戰', aqiu1, 'bench-card'))}
-        ${points('戰鬥區只有 1 隻會被攻擊', '備戰區最多 5 隻', '牌庫背面朝上，獎勵卡蓋 6 張')}`),
-      4: wrap('graphic-opening', '開局：從手牌找基礎寶可夢',
-        `<div class="teach-hand-flow">
-          <div class="teach-hand">
-            ${card('基礎：可放上場', xing1)}
-            ${card('1 階：先留手牌', xing2)}
-            ${energy('基本草能量卡', 'grass')}
-            ${trainer('訓練家卡')}
-          </div>
-          <div class="teach-arrow">把基礎放到場上</div>
-          ${board(card('小星星出戰', xing1), '')}
-        </div>
-        ${points('沒有基礎寶可夢就重抽', '進化卡不能直接當開局出戰', '獎勵卡開局蓋 6 張')}`),
-      5: wrap('graphic-turn', '自己的回合：抽牌、做事、攻擊',
-        `<div class="turn-flow-board">
-          <div class="turn-step"><b>1</b><strong>從牌庫抽 1 張</strong>${back('牌庫')}</div>
-          <div class="turn-step"><b>2</b><strong>自由做事</strong><div class="turn-card-row">${energy('基本雷能量卡', 'lightning')}${trainer('訓練家')}</div><ul><li>貼 1 張能量</li><li>放備戰寶可夢</li><li>進化、撤退</li><li>使用訓練家卡</li></ul></div>
-          <div class="turn-step"><b>3</b><strong>使用招式</strong>${card('出戰寶可夢攻擊', lala1)}</div>
-        </div>
-        ${points('貼能量通常每回合 1 張', '支援者通常每回合 1 張', '攻擊後換對手回合')}`),
-      6: wrap('graphic-attack', '攻擊：先看能量，再算傷害',
-        `${board(`<div class="attack-source">${card('克克', keke1)}<div class="attach-energy-row">${energy('基本火能量卡', 'fire')}${energy('任意能量支付無色需求', 'water')}</div></div>`, card('小星星目標', xing1))}
-        <div class="damage-formula"><span>招式 40</span><b>弱點 ×2</b><strong>80 傷害</strong></div>
-        ${points('能量不夠不能出招', '弱點只看被攻擊的戰鬥寶可夢', '招式用完後能量仍留在身上')}`),
-      7: wrap('graphic-evolution', '進化：從手牌拿下一階段疊上去',
-        `<div class="evolution-flow-board">
-          ${card('場上的小小布', xiaobu1)}
-          <div class="teach-arrow">手牌有 Stage 1</div>
-          ${card('疊上星布', xiaobu2)}
-          <div class="energy-note">${energy('已貼好的基本雷能量卡', 'lightning')}<span>能量不是進化費用</span></div>
-        </div>
-        ${points('剛放上場通常不能馬上進化', '傷害與能量保留', '睡眠、麻痺、中毒等狀態會清除')}`),
-      8: wrap('graphic-status', '特殊狀態：用方向和標記看懂',
-        `<div class="status-board">
-          <div>${card('睡眠 / 麻痺：轉橫', aqiu1, 'card-sideways')}<b>不能攻擊或撤退</b></div>
-          <div>${card('混亂：上下顛倒', aqiu1, 'card-upside')}<b>攻擊前要擲幣</b></div>
-          <div>${card('中毒 / 灼傷：放標記', aqiu1)}<span class="status-token">毒</span><span class="status-token burn">灼</span></div>
-        </div>
-        ${points('撤退或進化可清除多數特殊狀態', '狀態一定要用標記或轉向，不只口頭說')}`),
-      9: wrap('graphic-win', '勝利：打倒對手，拿獎勵卡',
-        `<div class="win-board">
-          ${card('小布攻擊', xiaobu1)}
-          <div class="teach-arrow">打倒</div>
-          ${card('克克昏厥', keke1, 'fainted')}
-          <div class="teach-arrow">拿 1 張</div>
-          ${stack(6, '獎勵卡')}
-        </div>
-        ${points('拿完 6 張獎勵卡獲勝', '對手場上沒寶可夢也獲勝', '對手抽不出牌也獲勝')}`),
-      10: wrap('graphic-strategy', '策略：能量集中，備戰接棒',
-        `<div class="strategy-board">
-          ${board(`<div class="attack-source">${card('主力小布', xiaobu2)}<div class="attach-energy-row">${energy('基本雷能量卡', 'lightning')}${energy('任意能量支付無色需求', 'water')}</div></div>`, `${card('拉拉備戰', lala1)}${card('阿球備戰', aqiu1)}`)}
-          <div class="strategy-notes"><b>不要平均亂貼</b><span>先讓主力能出招，再養下一隻。</span></div>
-        </div>
-        ${points('主力要先貼夠能量', '備戰區準備下一隻', '快被打倒時考慮撤退')}`),
-      11: wrap('graphic-mistakes', '常見錯誤：左邊錯，右邊改正',
-        `<div class="mistake-board">
-          <div class="mistake wrong"><b>錯</b><span>同回合貼兩張能量</span>${energy('基本火能量卡', 'fire')}${energy('基本水能量卡', 'water')}</div>
-          <div class="mistake right"><b>對</b><span>通常一回合只貼 1 張</span>${energy('基本雷能量卡', 'lightning')}</div>
-          <div class="mistake wrong"><b>錯</b><span>剛放上場立刻進化</span>${card('Stage 1', xiaobu2)}</div>
-          <div class="mistake right"><b>對</b><span>等下一個自己的回合再進化</span>${card('基礎', xiaobu1)}</div>
-        </div>
-        ${points('支援者通常每回合 1 張', '弱點不要算到備戰區', '不確定就先停下來問裁判')}`),
-    };
-    return diagrams[num] || '';
+    document.getElementById('lessonBack').addEventListener('click', () => Learn.closeLesson());
+    document.getElementById('slidePrev').addEventListener('click', () => {
+      if (Learn.currentSlide > 0) { Learn.currentSlide--; Learn.renderLesson(); }
+    });
+    document.getElementById('slideNext').addEventListener('click', () => {
+      if (last) { Learn.markDone(lesson.num); Learn.closeLesson(); }
+      else { Learn.currentSlide++; Learn.renderLesson(); }
+    });
+    view.querySelectorAll('[data-slide]').forEach(b => b.addEventListener('click', () => {
+      Learn.currentSlide = +b.dataset.slide;
+      Learn.renderLesson();
+    }));
+    Learn.bindCardZoom(view);
+    Learn.fitVisual();
   },
 
-  beginnerCardGuide() {
-    const items = [
-      ['卡名', '先問：這張卡是誰？卡名就是你要派上場的角色。'],
-      ['HP', '再看血量。受到的傷害累積到 HP 以上，這張卡就被打倒。'],
-      ['屬性', '看左上角徽章。屬性會影響弱點、抵抗與能量選擇。'],
-      ['角色圖', '中間大圖幫你快速認角色，上課時可以先用圖確認孩子有沒有拿對卡。'],
-      ['招式區', '招式區告訴你「能做什麼」。左邊是需要的能量，右邊是傷害。'],
-      ['底部資訊', '最底部是被攻擊和換人時要看的地方：弱點、抵抗、撤退。'],
-    ];
-    return `
-      <section class="beginner-card-guide">
-        <div class="beginner-card-visual">
-          <div class="beginner-card-scan">
-            <img src="../assets/img/mascot-cards/stages/xiaobu-stage-2.png" alt="星布卡牌新手導覽" loading="lazy">
-            ${[
-              ['1', 20, 4, 'top'], ['2', 96, 8, 'left'], ['3', 2, 15, 'right'],
-              ['4', 98, 36, 'left'], ['5', 2, 63, 'right'], ['6', 98, 88, 'left'],
-            ].map(m => `<button class="anatomy-marker" type="button" data-guide-marker="${m[0]}" data-label="${esc(items[+m[0] - 1][0])}" data-side="${m[3]}" style="left:${m[1]}%;top:${m[2]}%">${m[0]}</button>`).join('')}
-          </div>
-          <div class="guide-current-label" data-guide-current>1　卡名</div>
-        </div>
-        <div class="beginner-card-copy">
-          <span class="tag gold">第一次看卡，只看這 6 個位置</span>
-          <h2>一張卡不是圖片，是一張對戰說明書</h2>
-          <p>先照 1 到 6 看，不需要背專有名詞。看懂這六格，就知道這張卡是誰、能撐多久、怎麼攻擊、被打時要注意什麼。</p>
-          <div class="beginner-guide-list">
-            ${items.map((x, i) => `
-              <button class="anatomy-item" type="button" data-guide-item="${i + 1}">
-                <b>${i + 1}</b>
-                <span><strong>${esc(x[0])}</strong><em>${esc(x[1])}</em></span>
-              </button>`).join('')}
-          </div>
-        </div>
-      </section>`;
-  },
-
-  evoCarousel(key, compact = false) {
-    const card = (typeof MASCOT_CARD_LIBRARY !== 'undefined' ? MASCOT_CARD_LIBRARY : []).find(x => x.key === key);
-    if (!card) return '';
-    const stages = card.stages || [];
-    return `
-      <article class="evo-card-carousel ${compact ? 'compact' : ''}" data-evo="${esc(key)}" data-stage="0">
-        <div class="evo-head">
-          <span class="tag gold">${esc(card.type)}屬性</span>
-          <b>${esc(card.name)}</b>
-          <small>${esc(card.role)}</small>
-        </div>
-        <div class="evo-frame">
-          <button class="evo-arrow prev" type="button" data-evo-prev aria-label="上一階">‹</button>
-          <div class="evo-stage-window">
-            ${stages.map((s, i) => `
-              <figure class="evo-stage ${i === 0 ? 'active' : ''}" data-stage-panel="${i}">
-                <img src="${esc(s.img)}" alt="${esc(s.name)}卡牌" loading="lazy">
-                <figcaption>
-                  <strong>${esc(s.label)}</strong>
-                  <span>${esc(s.name)} · HP ${esc(String(s.hp))}</span>
-                </figcaption>
-              </figure>`).join('')}
-          </div>
-          <button class="evo-arrow next" type="button" data-evo-next aria-label="下一階">›</button>
-        </div>
-        <div class="evo-dots" aria-label="進化階段">
-          ${stages.map((s, i) => `<button class="${i === 0 ? 'active' : ''}" type="button" data-evo-dot="${i}" aria-label="${esc(s.label)}"></button>`).join('')}
-        </div>
-      </article>`;
-  },
-
-  bindEvoControls(root = document) {
-    root.querySelectorAll('.evo-card-carousel').forEach(car => {
-      const panels = [...car.querySelectorAll('[data-stage-panel]')];
-      const dots = [...car.querySelectorAll('[data-evo-dot]')];
-      const setStage = (idx) => {
-        if (!panels.length) return;
-        const next = (idx + panels.length) % panels.length;
-        car.dataset.stage = String(next);
-        panels.forEach((p, i) => p.classList.toggle('active', i === next));
-        dots.forEach((d, i) => d.classList.toggle('active', i === next));
+  bindCardZoom(scope) {
+    scope.querySelectorAll('.tcg-card').forEach(card => {
+      if (card.dataset.zoomBound === '1') return;
+      card.dataset.zoomBound = '1';
+      card.tabIndex = 0;
+      card.setAttribute('role', 'button');
+      card.setAttribute('aria-label', `${card.innerText.trim().split('\n')[0] || '卡牌'}，放大查看`);
+      card.title = '放大查看卡牌';
+      const open = e => {
+        if (e.type === 'keydown' && !['Enter', ' '].includes(e.key)) return;
+        e.preventDefault();
+        Learn.openCardZoom(card);
       };
-      car.querySelector('[data-evo-prev]')?.addEventListener('click', () => setStage((+car.dataset.stage || 0) - 1));
-      car.querySelector('[data-evo-next]')?.addEventListener('click', () => setStage((+car.dataset.stage || 0) + 1));
-      dots.forEach(dot => dot.addEventListener('click', () => setStage(+dot.dataset.evoDot || 0)));
+      card.addEventListener('click', open);
+      card.addEventListener('keydown', open);
     });
   },
 
-  bindGuideControls(root = document) {
-    const boards = root.querySelectorAll('.beginner-card-guide, .card-anatomy-board');
-    boards.forEach(board => {
-      const setActive = (id) => {
-        board.querySelectorAll('[data-guide-marker]').forEach(el =>
-          el.classList.toggle('active', el.dataset.guideMarker === id));
-        board.querySelectorAll('[data-guide-item]').forEach(el =>
-          el.classList.toggle('active', el.dataset.guideItem === id));
-        const current = board.querySelector('[data-guide-current]');
-        const marker = board.querySelector(`[data-guide-marker="${id}"]`);
-        if (current && marker) current.textContent = `${id}　${marker.dataset.label || ''}`;
-      };
-      board.querySelectorAll('[data-guide-marker]').forEach(el => {
-        el.addEventListener('click', () => setActive(el.dataset.guideMarker));
-        el.addEventListener('mouseenter', () => setActive(el.dataset.guideMarker));
-      });
-      board.querySelectorAll('[data-guide-item]').forEach(el => {
-        el.addEventListener('click', () => setActive(el.dataset.guideItem));
-        el.addEventListener('mouseenter', () => setActive(el.dataset.guideItem));
-      });
-      setActive('1');
+  openCardZoom(card) {
+    document.querySelector('.card-zoom')?.remove();
+    const overlay = document.createElement('div');
+    overlay.className = 'card-zoom';
+    const clone = card.cloneNode(true);
+    clone.classList.remove('compact');
+    clone.removeAttribute('role');
+    clone.removeAttribute('tabindex');
+    clone.removeAttribute('title');
+    overlay.innerHTML = `<div class="card-zoom-panel"><button class="card-zoom-close" aria-label="關閉放大卡牌">${bpIcon('close')}</button></div>`;
+    overlay.querySelector('.card-zoom-panel').appendChild(clone);
+    const close = () => overlay.remove();
+    overlay.querySelector('.card-zoom-close').addEventListener('click', close);
+    overlay.addEventListener('click', e => { if (e.target === overlay) close(); });
+    document.body.appendChild(overlay);
+    overlay.querySelector('.card-zoom-close').focus();
+    const onKey = e => { if (e.key === 'Escape') { close(); document.removeEventListener('keydown', onKey); } };
+    document.addEventListener('keydown', onKey);
+  },
+
+  fitVisual() {
+    const visual = document.querySelector('#lessonView .lesson-visual');
+    const child = visual?.firstElementChild;
+    if (!visual || !child) return;
+    const run = ++Learn.fitRun;
+    const nativeLayout = new Set(['opening-hand', 'mulligan']);
+    if (nativeLayout.has(visual.dataset.visual)) {
+      visual.classList.remove('is-fitted');
+      visual.style.removeProperty('--fit-scale');
+      return;
+    }
+    const scrollOnPhone = new Set(['card-kinds', 'evolution-line', 'strategy-trainers', 'status-sideways', 'status-tokens', 'win-prizes', 'mistake-energy', 'mistake-supporter']);
+    if (matchMedia('(max-width: 700px)').matches && scrollOnPhone.has(visual.dataset.visual)) {
+      visual.classList.remove('is-fitted');
+      visual.style.removeProperty('--fit-scale');
+      return;
+    }
+    const fit = () => requestAnimationFrame(() => {
+      if (run !== Learn.fitRun || !visual.isConnected || visual.firstElementChild !== child) return;
+      const cs = getComputedStyle(visual);
+      const innerWidth = visual.clientWidth - parseFloat(cs.paddingLeft) - parseFloat(cs.paddingRight);
+      const innerHeight = visual.clientHeight - parseFloat(cs.paddingTop) - parseFloat(cs.paddingBottom);
+      const width = Math.max(child.scrollWidth, child.offsetWidth);
+      const height = Math.max(child.scrollHeight, child.offsetHeight);
+      const scale = Math.min(1, (innerWidth - 6) / width, (innerHeight - 6) / height);
+      if (scale < .985) {
+        visual.style.setProperty('--fit-scale', Math.max(.42, scale).toFixed(3));
+        visual.classList.add('is-fitted');
+      } else {
+        visual.classList.remove('is-fitted');
+        visual.style.removeProperty('--fit-scale');
+      }
     });
+    const images = [...visual.querySelectorAll('img')];
+    const ready = images.length
+      ? Promise.all(images.map(img => img.decode?.().catch(() => {}) || Promise.resolve()))
+      : Promise.resolve();
+    fit();
+    ready.then(fit);
+    document.fonts?.ready.then(fit);
+    [120, 360, 700].forEach(delay => window.setTimeout(fit, delay));
   },
 
-  cardAnatomy() {
-    const items = [
-      ['名稱', '卡牌的角色名稱。牌組裡同名卡通常最多 4 張。'],
-      ['HP', '右上角血量；受到等同或超過 HP 的傷害就會昏厥。'],
-      ['屬性', '影響弱點與抵抗力，也會影響能量與策略選擇。'],
-      ['進化標記', '看這裡確認是基礎、1 階或 2 階；進化要照來源名稱疊上去。'],
-      ['特性', '不是攻擊；發動後通常不會結束回合。'],
-      ['招式', '左邊看能量需求，右邊看傷害或效果文字。'],
-      ['弱點', '被指定屬性打中時，通常傷害 x2。'],
-      ['抵抗力', '被指定屬性攻擊時，依卡面減少傷害。'],
-      ['撤退', '從出戰位退到備戰區時，要丟棄的能量數量。'],
-    ];
-    return `
-      <section class="card-anatomy-board">
-        <div class="anatomy-visual">
-          <div class="anatomy-card-scan">
-            <img src="../assets/img/mascot-cards/stages/xiaobu-stage-2.png" alt="小布卡牌卡面導覽" loading="lazy">
-            ${[
-              ['1', 16, 3, 'top'], ['2', 98, 8, 'left'], ['3', 2, 12, 'right'], ['4', 2, 62, 'right'],
-              ['5', 98, 62, 'left'], ['6', 2, 78, 'right'], ['7', 2, 88, 'right'], ['8', 52, 94, 'top'],
-              ['9', 98, 88, 'left'],
-            ].map(m => `<button class="anatomy-marker" type="button" data-guide-marker="${m[0]}" data-label="${esc(items[+m[0] - 1][0])}" data-side="${m[3]}" style="left:${m[1]}%;top:${m[2]}%">${m[0]}</button>`).join('')}
+  closeLesson() {
+    document.body.classList.remove('lesson-open');
+    document.getElementById('lessonView').style.display = 'none';
+    document.getElementById('lessonHub').style.display = '';
+    Learn.hub();
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  },
+
+  visual(type) {
+    const p = (key, stage, cap = '') => CardUI.pokemon(key, stage, cap);
+    const e = (typeName, cap = '') => CardUI.energy(typeName, cap);
+    const t = (kind, compact = false) => CardUI.trainer(kind, compact);
+    const arrow = (label = '') => `<div class="scene-arrow"><i></i>${label ? `<span>${esc(label)}</span>` : ''}</div>`;
+    const action = (icon, title, sub) => `<div class="action-tile">${bpIcon(icon)}<b>${esc(title)}</b><small>${esc(sub)}</small></div>`;
+    const actionCard = (visual, title, sub) => `<article class="action-card"><div class="action-card-visual">${visual}</div><div><b>${esc(title)}</b><small>${esc(sub)}</small></div></article>`;
+    const token = (cls, name, detail) => `<div class="status-figure ${esc(cls)}"><div class="status-card">${p('aqiu', 0)}</div><span class="status-mark"></span><b>${esc(name)}</b><small>${esc(detail)}</small></div>`;
+
+    const scenes = {
+      'card-kinds': () => `<div class="scene-three scene-card-kinds">${p('xiaobu', 0, '寶可夢：上場對戰')}${e('lightning', '能量：支付招式')}${t('supporter', true)}${CardUI.pokemonEx('xiaobu', '特殊卡：讀 ex 規則')}</div>`,
+      'card-overview': () => `<div class="card-map">${p('xiaobu', 1)}<div class="map-callouts"><span><b>上方</b>名稱 · HP · 屬性 · 階段</span><span><b>中間</b>角色圖 · 特性 · 招式</span><span><b>底部</b>弱點 · 抵抗 · 撤退</span></div></div>`,
+      'battle-goal': () => `<div class="battle-scene"><div>${p('xiaobu', 1, '攻擊方')}${CardUI.energyCost(['lightning', 'colorless'])}</div>${arrow('使用招式 40')}<div class="target-hit">${p('keke', 0, '受到 40 傷害')}<span class="damage-burst">40</span></div></div>`,
+      anatomy: () => `<div class="anatomy-scene"><div class="anatomy-card-wrap">${p('xiaobu', 1)}${['名稱', 'HP', '屬性', '階段', '招式', '底部'].map((x, i) => `<span class="anatomy-pin pin-${i + 1}">${i + 1}</span>`).join('')}</div><ol>${['卡名：這張卡是誰', 'HP：可承受多少傷害', '屬性：能量與弱點判讀', '階段：基礎、1 階或 2 階', '招式：需求、名稱、傷害、效果', '底部：弱點、抵抗力、撤退'].map((x, i) => `<li><b>${i + 1}</b>${esc(x)}</li>`).join('')}</ol></div>`,
+      'attack-line': () => `<div class="attack-read-scene">${p('xiaobu', 1)}<div class="attack-zoom"><span class="zoom-label">招式區放大</span><div>${CardUI.energyCost(['lightning', 'colorless'])}<b>星光電擊</b><strong>40</strong></div><p>左邊先確認需求，右邊再看傷害；下方效果文字也要完整處理。</p></div></div>`,
+      'bottom-line': () => `<div class="bottom-read-scene">${p('lala', 1)}<div class="bottom-zoom"><div><span>弱點</span><b>依卡面 ×2</b></div><div><span>抵抗力</span><b>依卡面減傷</b></div><div><span>撤退</span><b>${CardUI.energyCost(['colorless', 'colorless'])}</b></div><em>每張卡都可能不同，請讀正在被攻擊的那張卡。</em></div></div>`,
+      playmat: () => Learn.playmat(`${p('xiaobu', 0, '戰鬥區')}`, `${p('lala', 0, '備戰 1')}${p('aqiu', 0, '備戰 2')}`),
+      zones: () => `<div class="zone-scene">${CardUI.prize(6)}${CardUI.back('牌庫')}<div class="discard-figure">${t('item', true)}<b>棄牌區</b></div><div class="zone-key"><span>背面朝上</span><span>彼此分開</span><span>位置固定</span></div></div>`,
+      attached: () => `<div class="attach-scene">
+        <section class="attach-demo">
+          <span class="scene-label">同一隻寶可夢</span>
+          <div class="attach-stack">
+            <div class="attach-main">${p('xiaobu', 1, '場上的寶可夢')}</div>
+            <div class="attach-card">${e('lightning', '附著的能量')}</div>
+            <div class="attach-card">${t('tool', true)}<b>寶可夢道具</b></div>
           </div>
-          <div class="guide-current-label" data-guide-current>1　名稱</div>
+        </section>
+        <section class="attach-copy">
+          <span class="scene-label">桌面擺法</span>
+          <h4>卡片跟著同一隻寶可夢</h4>
+          <div><b>1</b><span>能量卡放在寶可夢下方，露出屬性與張數。</span></div>
+          <div><b>2</b><span>寶可夢道具也放在下方，露出卡名與效果。</span></div>
+          <div><b>3</b><span>進化時一起保留；離場時依卡片規則處理。</span></div>
+        </section>
+      </div>`,
+      'opening-hand': () => `<div class="opening-scene">
+        <section class="opening-hand-panel">
+          <span class="scene-label">起手牌 7 張</span>
+          <div class="hand-fan">${CardUI.back()}${CardUI.back()}${p('xingxing', 0)}${e('grass')}${t('item', true)}${CardUI.back()}${CardUI.back()}</div>
+          <b class="scene-note">先找有「基礎」標記的寶可夢</b>
+        </section>
+        ${arrow('找到基礎')}
+        <section class="chosen-basic"><span class="scene-label">選出 1 張</span>${p('xingxing', 0, '放到戰鬥區')}</section>
+      </div>`,
+      mulligan: () => `<div class="mulligan-scene">
+        <section class="bad-hand">
+          <span class="scene-label">沒有基礎寶可夢</span>
+          <div class="bad-hand-row">${e('water')}${t('item', true)}${t('supporter', true)}</div>
+          <b class="scene-note">公開手牌給對手確認</b>
+        </section>
+        ${arrow('洗回牌庫，重抽 7 張')}
+        <section class="new-hand"><span class="scene-label">重抽成功</span>${p('lala', 0, '找到基礎')}<b>可以開始擺場</b></section>
+      </div>`,
+      'setup-ready': () => `<div class="setup-scene"><div>${Learn.playmat(p('xingxing', 0), p('lala', 0))}</div><div class="setup-checks"><span>抽 7 張</span><span>放基礎寶可夢</span><span>蓋 6 張獎賞卡</span><b>一起翻開</b></div></div>`,
+      'draw-step': () => `<div class="draw-scene">${CardUI.back('牌庫頂')}${arrow('抽 1 張')}<div class="hand-slot">${t('item', true)}<b>加入手牌</b></div><span class="must-do">回合開始必做</span></div>`,
+      'free-actions': () => `<div class="action-showcase">${actionCard(p('lala', 0), '放基礎寶可夢', '放到備戰區')}${actionCard(p('xingxing', 1), '進化', '疊上正確進化卡')}${actionCard(e('lightning'), '附能量', '通常每回合 1 張')}${actionCard(t('supporter', true), '訓練家卡', '照文字執行效果')}${actionCard(p('keke', 0), '撤退', '支付卡面撤退費用')}${actionCard(p('aqiu', 1), '使用特性', '依卡片文字與時機')}</div>`,
+      'turn-end': () => `<div class="turn-timeline"><div><b>1</b><span>抽 1 張</span>${CardUI.back()}</div>${arrow()}<div><b>2</b><span>自由行動</span>${e('lightning')}</div>${arrow()}<div class="final-step"><b>3</b><span>使用招式</span>${p('xiaobu', 1)}</div><em>攻擊後回合結束</em></div>`,
+      'energy-ready': () => `<div class="energy-lesson-scene"><div class="ready-pokemon">${p('xiaobu', 1, '招式需要 2 個能量')}<div class="attached-energy-pair">${e('lightning', '第 1 張')}${e('lightning', '第 2 張')}</div></div><div class="energy-legend"><b>${CardUI.energyCost(['lightning', 'colorless'])} 星光電擊 40</b><span>雷需求由雷能量支付</span><span>無色需求也可由雷能量支付</span></div></div>`,
+      'attack-ready': () => `<div class="attack-ready-scene"><div class="red-frame"><div>${p('xiaobu', 1)}</div><div class="attached-energy-pair">${e('lightning')}${e('lightning')}</div></div><div class="red-rule"><span>能量已符合</span><b>${CardUI.energyCost(['lightning', 'colorless'])} 星光電擊 40</b><strong>可以宣告攻擊</strong></div></div>`,
+      'damage-math': () => `<div class="damage-scene"><div>${p('xiaobu', 1, '招式傷害 40')}</div>${arrow('讀對手卡面')}<div class="weakness-target">${p('lala', 0, '底部寫：雷 ×2')}<div class="math-box"><span>40</span><i>× 2</i><b>80</b></div></div></div>`,
+      'evolution-line': () => `<div class="evolution-scene">${p('aqiu', 0)}${arrow('疊上 1 階')}${p('aqiu', 1)}${arrow('疊上 2 階')}${p('aqiu', 2)}</div>`,
+      'evolution-wait': () => `<div class="wait-scene"><div class="just-played">${p('xingxing', 0)}<span>本回合剛上場</span></div><div class="stop-sign">現在不能進化</div>${arrow('等到下個自己的回合')}<div>${p('xingxing', 1)}<b>再進化</b></div></div>`,
+      'evolution-result': () => `<div class="evolution-result-scene">
+        <div class="evolution-result-row">
+          <article class="evolution-result-card">
+            <div class="evolution-result-art">${p('aqiu', 0)}<span class="damage-chip">30</span><span class="status-chip">中毒</span></div>
+            <span class="result-stage">進化前</span>
+          </article>
+          ${arrow('進化')}
+          <article class="evolution-result-card">
+            <div class="evolution-result-art">${p('aqiu', 1)}<span class="damage-chip">30</span><span class="status-cleared">狀態解除</span></div>
+            <span class="result-stage">進化後</span>
+          </article>
         </div>
-        <div class="anatomy-copy">
-          <span class="tag gold">像官方教材一樣讀卡</span>
-          <h2>卡面 9 個玩法位置，一次看懂</h2>
-          <p>這裡只放真正會影響上桌對戰的資訊：名稱、HP、屬性、進化、特性、招式、弱點、抵抗力、撤退。</p>
-          <div class="anatomy-list">
-            ${items.map((x, i) => `
-              <button class="anatomy-item" type="button" data-guide-item="${i + 1}">
-                <b>${i + 1}</b>
-                <span><strong>${esc(x[0])}</strong>${esc(x[1])}</span>
-              </button>`).join('')}
-          </div>
+        <div class="evolution-result-summary">
+          <span><b>30</b> 傷害保留</span>
+          <span>能量與道具保留</span>
+          <strong>特殊狀態解除</strong>
         </div>
-      </section>`;
+      </div>`,
+      'status-sideways': () => `<div class="status-grid">${token('sleep', '睡眠', '橫放；檢查時擲幣')}${token('paralyze', '麻痺', '橫放；經過下個自己回合解除')}</div>`,
+      'status-tokens': () => `<div class="status-grid">${token('poison', '中毒', '每次檢查 10 傷害')}${token('burn', '灼傷', '每次檢查 20 傷害，再擲幣')}</div>`,
+      'status-confused': () => `<div class="confused-scene"><div class="upside-down">${p('aqiu', 0)}</div><div class="coin"><span>正面</span><b>正常攻擊</b></div><div class="coin bad"><span>反面</span><b>攻擊失敗 + 自傷 30</b></div></div>`,
+      'win-prizes': () => `<div class="prize-rule-scene"><div class="prize-case">${p('keke', 0, '一般寶可夢')}<div class="prize-count one">${CardUI.back('獎賞')}<b>對手拿 1 張</b></div></div><div class="prize-case special">${CardUI.pokemonEx('xiaobu')}<div class="prize-count two">${CardUI.back('獎賞')}${CardUI.back('獎賞')}<b>對手拿 2 張</b></div></div></div>`,
+      'win-empty-field': () => `<div class="empty-field-scene"><div class="ko-card">${p('keke', 0)}<span>昏厥</span></div>${arrow()}<div class="empty-bench"><b>戰鬥區：空</b><b>備戰區：空</b><strong>沒有寶可夢可出戰 → 敗北</strong></div></div>`,
+      'win-deckout': () => `<div class="deckout-scene"><div class="empty-deck">${CardUI.back('牌庫')}<span>0 張</span></div>${arrow('回合開始要抽 1 張')}<div class="cannot-draw">抽不到牌<strong>敗北</strong></div></div>`,
+      'strategy-main': () => `<div class="strategy-scene">
+        <article class="strategy-case good-plan">
+          <div class="strategy-case-visual">
+            <div class="strategy-unit strategy-unit-main">${p('xiaobu', 1)}<b>1 階 · 星布</b></div>
+            <div class="strategy-energy-group">${e('lightning')}${e('lightning')}<b>2 張雷能量</b></div>
+          </div>
+          <div class="strategy-case-copy"><span>集中培養</span><strong>下回合可以出招</strong></div>
+        </article>
+        <article class="strategy-case bad-plan">
+          <div class="strategy-case-visual strategy-split">
+            <div class="strategy-unit">${p('lala', 0)}${e('water')}<b>小拉拉 + 1 水</b></div>
+            <div class="strategy-unit">${p('keke', 0)}${e('fire')}<b>小克克 + 1 火</b></div>
+          </div>
+          <div class="strategy-case-copy"><span>平均分散</span><strong>兩隻都還不能出招</strong></div>
+        </article>
+      </div>`,
+      'strategy-bench': () => Learn.playmat(`${p('xiaobu', 1, '主力')}`, `${p('lala', 1, '下一棒')}${p('aqiu', 0, '支援')}`),
+      'strategy-trainers': () => `<div class="trainer-showcase">${t('item')}${t('supporter')}${t('tool')}${t('stadium')}</div>`,
+      'mistake-energy': () => `<div class="mistake-scene"><div class="wrong-case">${p('xiaobu', 0)}${e('lightning')}${e('lightning')}<b>同回合手動附 2 張</b></div><span class="fix-arrow">修正</span><div class="right-case">${p('xiaobu', 0)}${e('lightning')}<b>只附 1 張</b></div></div>`,
+      'mistake-supporter': () => `<div class="mistake-scene"><div class="wrong-case">${t('supporter', true)}${t('supporter', true)}<b>同回合 2 張支援者</b></div><span class="fix-arrow">修正</span><div class="right-case">${t('supporter', true)}<b>選最需要的 1 張</b></div></div>`,
+      'judge-check': () => `<div class="judge-scene">
+        <figure class="judge-mascot">
+          <img src="../assets/img/trainer-cards/aqiu-research-art.png" alt="裁判阿球保持桌面並向孩子說明規則">
+          <figcaption><b>裁判阿球</b><span>先保留現場，再依序查證</span></figcaption>
+        </figure>
+        <div class="judge-steps">${action('pause', '1 停手', '保持桌面')}${action('listen', '2 聽雙方', '各說一次')}${action('rules', '3 讀卡查規則', '不憑印象')}${action('judge', '4 裁定', '說明並記錄')}</div>
+      </div>`,
+    };
+    return (scenes[type] || scenes['card-kinds'])();
   },
 
-  fullCardRuleGuide() {
-    const sections = typeof CARD_RULE_DETAIL_SECTIONS !== 'undefined' ? CARD_RULE_DETAIL_SECTIONS : [];
-    if (!sections.length) return '';
-    return `
-      <section class="rule-detail-board">
-        <aside class="rule-detail-nav" aria-label="卡牌種類導覽">
-          <span class="tag gold">完整細節</span>
-          <h2>卡牌種類和卡面介紹</h2>
-          <p>照這個順序上課：先認卡種，再看卡面位置，最後看特殊規則。</p>
-          <div class="rule-detail-links">
-            ${sections.map(s => `<a href="#${esc(s.id)}">${bpIcon(s.icon || 'card')}${esc(s.title)}</a>`).join('')}
-          </div>
-        </aside>
-        <div class="rule-detail-content">
-          ${sections.map(s => `
-            <article class="rule-topic" id="${esc(s.id)}">
-              <div class="rule-topic-head">
-                <span class="rule-topic-icon">${bpIcon(s.icon || 'card')}</span>
-                <div>
-                  <span class="tag">${esc(s.kicker)}</span>
-                  <h3>${esc(s.title)}</h3>
-                  <p>${esc(s.summary)}</p>
-                </div>
-              </div>
-              ${Learn.ruleTopicVisual(s.id)}
-              <div class="rule-point-grid">
-                ${s.points.map((p, i) => `
-                  <div class="rule-point">
-                    <b>${i + 1}</b>
-                    <span><strong>${esc(p[0])}</strong>${esc(p[1])}</span>
-                  </div>`).join('')}
-              </div>
-              ${s.teacher ? `<div class="teacher-note">${bpIcon('judge')}<span>${esc(s.teacher)}</span></div>` : ''}
-            </article>`).join('')}
-        </div>
-      </section>`;
+  playmat(active, bench) {
+    return `<div class="teach-playmat">
+      <div class="playmat-prize">${CardUI.prize(6)}</div>
+      <div class="playmat-active"><span>戰鬥區</span>${active}</div>
+      <div class="playmat-deck">${CardUI.back('牌庫')}</div>
+      <div class="playmat-bench"><span>備戰區 · 最多 5 隻</span><div>${bench}</div></div>
+      <div class="playmat-discard"><span>棄牌區</span></div>
+    </div>`;
   },
 
-  ruleTopicVisual(id) {
-    const card = (src, title, meta = '') => `
-      <figure class="rule-mini-card">
-        <img src="${src}" alt="${esc(title)}" loading="lazy">
-        <figcaption><strong>${esc(title)}</strong>${meta ? `<span>${esc(meta)}</span>` : ''}</figcaption>
-      </figure>`;
-    const token = (label, type = '') => `<span class="rule-energy-token ${type}">${esc(label)}</span>`;
-    if (id === 'rule-pokemon-card') {
-      return `
-        <div class="rule-topic-visual visual-play">
-          <div class="visual-zone active-zone">
-            <span class="zone-label">戰鬥區</span>
-            ${card('../assets/img/mascot-cards/stages/xiaobu-stage-1.png', '小小布', 'HP 50')}
-            <div class="attached-row">${token('雷', 'lightning')}</div>
-          </div>
-          <div class="visual-arrow">攻擊</div>
-          <div class="visual-zone bench-zone">
-            <span class="zone-label">對手出戰</span>
-            ${card('../assets/img/mascot-cards/stages/keke-stage-1.png', '小克克', '受到傷害')}
-          </div>
-          <p class="visual-caption">寶可夢卡放到戰鬥區或備戰區。貼夠能量後，用招式攻擊對手；受到傷害累積到 HP 以上就昏厥。</p>
-        </div>`;
-    }
-    if (id === 'rule-card-face') {
-      return `
-        <div class="rule-topic-visual visual-map">
-          <div class="map-card-shell">
-            <img src="../assets/img/mascot-cards/stages/xiaobu-stage-2.png" alt="卡面位置示意" loading="lazy">
-          </div>
-          <div class="map-layers">
-            <div><b>上方</b><span>名稱、HP、屬性、階段</span></div>
-            <div><b>中間</b><span>角色圖、特性、招式</span></div>
-            <div><b>底部</b><span>弱點、抵抗、撤退、收集資訊</span></div>
-          </div>
-          <p class="visual-caption">新手先分三層看：上方看身份，中間看能做什麼，底部看被攻擊和換人時的規則。</p>
-        </div>`;
-    }
-    if (id === 'rule-evolution') {
-      return `
-        <div class="rule-topic-visual visual-evolution">
-          ${card('../assets/img/mascot-cards/stages/xiaobu-stage-1.png', '基礎 / Baby Stage', '先在場上')}
-          <div class="evo-condition">
-            <b>手牌有下一階段卡</b>
-            <span>符合回合限制後，疊上去</span>
-          </div>
-          ${card('../assets/img/mascot-cards/stages/xiaobu-stage-2.png', '1 階 / Stage 1', '疊在原卡上')}
-          <div class="evo-condition no-energy">
-            <b>不是能量集滿進化</b>
-            <span>能量是出招和撤退用</span>
-          </div>
-          ${card('../assets/img/mascot-cards/stages/xiaobu-stage-3.png', '2 階 / Final Stage', '繼續疊上去')}
-          <p class="visual-caption">進化看「階段」和「從誰進化」，不是看身上有幾顆能量。傷害保留，特殊狀態會清除。</p>
-        </div>`;
-    }
-    if (id === 'rule-type') {
-      return `
-        <div class="rule-topic-visual visual-type">
-          <div class="type-card fire">${bpIcon('type')}火屬性攻擊</div>
-          <div class="type-math">打中弱點 ×2</div>
-          <div class="type-card grass">${bpIcon('type')}草屬性弱點</div>
-          <div class="type-result">40 傷害 → 80 傷害</div>
-          <p class="visual-caption">攻擊前先看對手底部的弱點與抵抗力。打到弱點通常先把傷害加倍，再處理其他效果。</p>
-        </div>`;
-    }
-    if (id === 'rule-energy') {
-      return `
-        <div class="rule-topic-visual visual-energy">
-          <div class="energy-card-wrap">
-            ${card('../assets/img/mascot-cards/stages/xiaobu-stage-2.png', '星布', '招式需要 2 顆能量')}
-            <div class="energy-attach">
-              <span class="attach-label">能量貼在寶可夢身上</span>
-              ${token('雷', 'lightning')}<span class="rule-cost-note">無色需求可用任意實際能量支付</span>
-            </div>
-          </div>
-          <ol class="visual-steps">
-            <li><b>從手牌貼</b><span>自己的回合通常只能貼 1 張能量。</span></li>
-            <li><b>放在卡下方或旁邊</b><span>上課時可半壓在寶可夢卡下緣，表示它已經附著。</span></li>
-            <li><b>看招式需求</b><span>招式左邊要幾顆，就要先湊到幾顆才能用。</span></li>
-          </ol>
-          <p class="visual-caption">能量夠了是可以使用招式；進化不是靠能量數量，而是手上有正確下一階段卡。</p>
-        </div>`;
-    }
-    if (id === 'rule-trainer') {
-      return `
-        <div class="rule-topic-visual visual-trainer">
-          ${[
-            ['物品卡', '可用來找牌、抽牌、補血', 'i-card'],
-            ['支援者卡', '效果強，每回合通常 1 張', 'i-trainers'],
-            ['競技場卡', '放在場中央，影響雙方', 'i-screen'],
-            ['寶可夢道具', '裝到寶可夢身上持續生效', 'i-badge'],
-          ].map(x => `
-            <div class="trainer-card-demo">
-              <span class="bp-icon ${x[2]}"></span>
-              <b>${x[0]}</b>
-              <small>${x[1]}</small>
-            </div>`).join('')}
-          <p class="visual-caption">訓練家卡不是角色，不會放到戰鬥區打架；它們是用來支援你的牌組運轉。</p>
-        </div>`;
-    }
-    if (id === 'rule-special') {
-      return `
-        <div class="rule-topic-visual visual-special">
-          ${[
-            ['寶可夢 ex', '更強，但被擊倒通常給更多獎勵卡', 'ex'],
-            ['古代 / 未來', '看特殊標記，會和指定效果互動', 'mark'],
-            ['訓練家的寶可夢', '名字帶訓練家，依卡面規則判斷', 'trainer'],
-          ].map(x => `
-            <div class="special-card-demo ${x[2]}">
-              <span>${x[0]}</span>
-              <b>${x[2] === 'ex' ? 'ex' : x[2] === 'mark' ? '古 / 未' : 'TRAINER'}</b>
-              <small>${x[1]}</small>
-            </div>`).join('')}
-          <p class="visual-caption">看到特殊標記時，不要靠猜。先讀卡上的規則框，再決定獎勵卡、同名卡和效果怎麼處理。</p>
-        </div>`;
-    }
-    return '';
-  },
-
-  /* ---------- 屬性相剋 ---------- */
   types() {
     const grid = document.getElementById('typeGrid');
-    grid.innerHTML = TYPES.map(t => `
-      <div class="type-chip">
-        <span class="type-dot type-${t.key}" style="background:${t.color}"></span>
-        <span><b>${t.name}屬性</b><small>怕：${t.weakTo.map(k => TYPE_MAP[k].name).join('、') || '—'}</small></span>
-      </div>`).join('');
-    const wl = document.getElementById('weakList');
-    wl.innerHTML = TYPES.filter(t => t.beats.length).map(t => `
-      <div class="weak-row">
-        <span class="tag" style="background:${t.color}22;color:${t.color}">${t.name}</span>
-        <span class="arrow">剋 ➜</span>
-        ${t.beats.map(k => `<span class="tag" style="background:${TYPE_MAP[k].color}22;color:${TYPE_MAP[k].color}">${TYPE_MAP[k].name}</span>`).join('')}
-        <span class="arrow">（傷害 ×2）</span>
-      </div>`).join('');
+    if (grid) grid.innerHTML = TYPES.map(t => `<div class="type-chip"><span class="type-dot type-${t.key}" style="background:${t.color}"></span><span><b>${esc(t.name)}屬性</b><small>辨識能量與卡面符號</small></span></div>`).join('');
+    const list = document.getElementById('weakList');
+    if (list) list.innerHTML = `
+      <section class="type-reading-demo">
+        <div>${CardUI.pokemon('lala', 0, '被攻擊方')}</div>
+        <div class="type-rule-copy">
+          <span class="eyebrow">正確判讀方式</span>
+          <h3>不要背固定屬性表，直接讀被攻擊卡的底部</h3>
+          <div class="type-rule-row"><b>1</b><span>確認攻擊方招式的屬性與傷害</span></div>
+          <div class="type-rule-row"><b>2</b><span>讀被攻擊寶可夢的弱點倍率與抵抗數字</span></div>
+          <div class="type-rule-row"><b>3</b><span>再依卡面與招式效果完成計算</span></div>
+        </div>
+      </section>`;
   },
 
-  /* ---------- 測驗 ---------- */
   quiz() {
     const card = document.getElementById('quizCard');
+    if (!card || typeof QUIZ === 'undefined') return;
     let idx = 0, score = 0, locked = false;
-    const start = () => { idx = 0; score = 0; locked = false; show(); };
     const show = () => {
       if (idx >= QUIZ.length) return finish();
       const q = QUIZ[idx];
-      card.innerHTML = `
-        <div class="quiz-progress"><i style="width:${(idx/QUIZ.length)*100}%"></i></div>
-        <div class="tag">第 ${idx+1} / ${QUIZ.length} 題　目前 ${score} 分</div>
-        <p class="quiz-q">${esc(q.q)}</p>
-        <div class="quiz-options">
-          ${q.options.map((o,i)=>`<button class="quiz-opt" data-i="${i}">${esc(o)}</button>`).join('')}
-        </div>
-        <p id="quizWhy" style="color:var(--bp-muted);margin-top:14px"></p>`;
+      card.innerHTML = `<div class="quiz-progress"><i style="width:${(idx / QUIZ.length) * 100}%"></i></div><span class="eyebrow">第 ${idx + 1} / ${QUIZ.length} 題</span><p class="quiz-q">${esc(q.q)}</p><div class="quiz-options">${q.options.map((o, i) => `<button class="quiz-opt" data-i="${i}">${esc(o)}</button>`).join('')}</div><p id="quizWhy" class="quiz-why"></p>`;
       locked = false;
-      card.querySelectorAll('.quiz-opt').forEach(b =>
-        b.addEventListener('click', () => pick(+b.dataset.i)));
+      card.querySelectorAll('.quiz-opt').forEach(b => b.addEventListener('click', () => pick(+b.dataset.i)));
     };
-    const pick = (i) => {
-      if (locked) return; locked = true;
-      const q = QUIZ[idx];
-      const opts = card.querySelectorAll('.quiz-opt');
+    const pick = i => {
+      if (locked) return;
+      locked = true;
+      const q = QUIZ[idx], opts = card.querySelectorAll('.quiz-opt');
       opts[q.answer].classList.add('correct');
       if (i === q.answer) score++; else opts[i].classList.add('wrong');
-      card.querySelector('#quizWhy').innerHTML = `${bpIcon('check')} ${esc(q.why)}`;
-      const next = el('button', 'btn', idx === QUIZ.length-1 ? '看結果' : '下一題 →');
-      next.style.marginTop = '14px';
+      document.getElementById('quizWhy').textContent = q.why;
+      const next = el('button', 'btn gold quiz-next', idx === QUIZ.length - 1 ? '看結果' : '下一題 →');
       next.addEventListener('click', () => { idx++; show(); });
       card.appendChild(next);
     };
     const finish = () => {
-      const pass = score >= Math.ceil(QUIZ.length * 0.7);
-      if (pass) {
-        const b = Store.get('bp_badges', {});
-        b.quiz = true; Store.set('bp_badges', b);
-        Learn.renderBadges();
-      }
-      card.innerHTML = `
-        <div style="text-align:center;padding:20px">
-          <div style="font-size:64px">${bpIcon(pass ? 'badge' : 'heart')}</div>
-          <h2 style="margin:10px 0">${score} / ${QUIZ.length} 分</h2>
-          <p style="color:var(--bp-muted)">${pass ? '太棒了！你拿到「規則大師」徽章，可以上場比賽了！' : '再複習一下教材，你一定可以的！（答對 7 題以上拿徽章）'}</p>
-          <button class="btn gold" id="quizAgain">再玩一次</button>
-        </div>`;
-      card.querySelector('#quizAgain').addEventListener('click', start);
+      const pass = score >= Math.ceil(QUIZ.length * .7);
+      if (pass) { const b = Store.get('bp_badges', {}); b.quiz = true; Store.set('bp_badges', b); }
+      card.innerHTML = `<div class="quiz-finish">${bpIcon(pass ? 'badge' : 'learn')}<span class="eyebrow">測驗完成</span><h2>${score} / ${QUIZ.length}</h2><p>${pass ? '你已經抓到關鍵規則，可以進入實桌練習。' : '回教材重看不熟的章節，再挑戰一次。'}</p><button class="btn gold" id="quizAgain">再玩一次</button></div>`;
+      document.getElementById('quizAgain').addEventListener('click', () => { idx = 0; score = 0; show(); });
+      Learn.renderBadges();
     };
-    start();
+    show();
   },
 
-  badges() { Learn.renderBadges(); },
   renderBadges() {
     const grid = document.getElementById('badgeGrid');
     if (!grid) return;
-    const b = Store.get('bp_badges', {});
-    const doneCount = Learn.doneLessons().length;
-    const list = [
-      { key: 'reader', icon: 'learn', name: '閱讀新星', earned: doneCount >= 1 },
-      { key: 'scholar', icon: 'rules', name: '規則學者', earned: doneCount >= LESSONS.length },
-      { key: 'quiz', icon: 'badge', name: '規則大師', earned: !!b.quiz },
-      { key: 'ready', icon: 'battle', name: '參賽資格', earned: !!b.quiz },
+    const b = Store.get('bp_badges', {}), done = Learn.doneLessons().length;
+    const badges = [
+      ['learn', '第一步', done >= 1], ['rules', '規則完成', done >= LESSONS.length], ['badge', '測驗通過', !!b.quiz], ['battle', '準備上桌', !!b.quiz],
     ];
-    grid.innerHTML = list.map(x => `
-      <div class="badge ${x.earned ? 'earned' : ''}">
-        <div class="ring">${bpIcon(x.icon)}</div>
-        <small>${x.name}</small>
-      </div>`).join('');
+    grid.innerHTML = badges.map(x => `<div class="badge ${x[2] ? 'earned' : ''}"><div class="ring">${bpIcon(x[0])}</div><small>${esc(x[1])}</small></div>`).join('');
   },
 
-  /* ---------- 規則速查 / 狀態 ---------- */
   rules() {
     const qr = document.getElementById('quickRules');
-    qr.innerHTML = QUICK_RULES.map(r => `
-      <div class="weak-row" style="display:block">
-        <b style="color:var(--bp-gold-2)">Q：${esc(r.q)}</b><br>
-        <span style="color:var(--bp-text)">A：${esc(r.a)}</span>
-      </div>`).join('');
+    if (qr) qr.innerHTML = `<div class="quick-rule-grid">${QUICK_RULES.map((r, i) => `<article><b>${String(i + 1).padStart(2, '0')}</b><div class="quick-rule-visual">${Learn.ruleVisual(r.visual)}</div><div><h3>${esc(r.q)}</h3><p>${esc(r.a)}</p></div></article>`).join('')}</div>`;
+    const cards = document.getElementById('cardRuleShowcase');
+    if (cards) cards.innerHTML = `<section class="official-card-guide">
+      <div class="official-card-head"><span class="eyebrow">官方規則架構</span><h3>四大類卡，一眼看懂使用方式</h3><p>不只認圖，還要知道卡牌用完後放哪裡、一回合能用幾張。</p></div>
+      <div class="official-card-row">
+        <article>${CardUI.pokemon('xiaobu', 0)}<div><b>寶可夢卡</b><span>放到戰鬥區或備戰區，使用 HP、特性與招式對戰。</span></div></article>
+        <article>${CardUI.energy('lightning')}<div><b>基本能量</b><span>通常每回合從手牌附 1 張，用來支付招式與撤退。</span></div></article>
+        <article>${CardUI.specialEnergy('colorless')}<div><b>特殊能量</b><span>也提供能量，但還有額外文字，必須逐張讀完。</span></div></article>
+        <article>${CardUI.pokemonEx('xiaobu')}<div><b>特殊寶可夢</b><span>名稱含 ex 且有 ex 規則；昏厥時對手拿 2 張獎賞卡。</span></div></article>
+      </div>
+      <h3 class="trainer-guide-title">訓練家卡四種用法</h3>
+      <div class="official-trainer-row">${['item','tool','supporter','stadium'].map(k => `<article>${CardUI.trainer(k)}<div><b>${esc(BP_TRAINER_CARDS[k].kind)}</b><span>${esc(BP_TRAINER_CARDS[k].timing)}</span></div></article>`).join('')}</div>
+      <h3 class="trainer-guide-title">特殊規則要看卡面，不靠猜</h3>
+      <div class="official-special-rules">
+        <article><div class="special-rule-visual">${CardUI.pokemonEx('xiaobu')}<strong class="rule-prize two">2 張</strong></div><div><b>寶可夢 ex</b><span>名稱含 ex；這隻寶可夢昏厥時，對手拿取 2 張獎賞卡。</span></div></article>
+        <article><div class="special-rule-visual mega">${CardUI.pokemonEx('keke')}<em>MEGA</em><strong class="rule-prize three">3 張</strong></div><div><b>超級進化寶可夢 ex</b><span>依卡面專屬規則處理；昏厥時，對手拿取 3 張獎賞卡。</span></div></article>
+        <article><div class="special-rule-visual labels">${CardUI.pokemon('lala', 1)}<i>古代</i><i>未來</i></div><div><b>古代／未來標記</b><span>標記本身沒有額外效果；只有卡面文字或其他卡指定時才產生作用。</span></div></article>
+        <article><div class="special-rule-visual lineage">${CardUI.pokemon('xingxing', 0)}<span class="mini-arrow"></span>${CardUI.pokemon('xingxing', 1)}</div><div><b>訓練家的寶可夢</b><span>進化時要核對完整來源名稱；不同訓練家的同種寶可夢不能混著進化。</span></div></article>
+      </div>
+    </section>`;
     const sl = document.getElementById('statusList');
-    sl.innerHTML = STATUS.map(s => `
-      <div class="penalty-tier t2" style="border-color:var(--bp-primary)">
-        <h4>${bpIcon(s.icon || 'status')}${esc(s.name)}</h4>
-        <p>${esc(s.rule)}</p>
-        <p style="color:var(--bp-green)">✓ 解除：${esc(s.clear)}</p>
-      </div>`).join('');
+    if (sl) sl.innerHTML = `<div class="status-rule-grid">${STATUS.map(s => `<article class="status-rule-card"><div class="status-rule-visual ${esc(s.icon)}">${CardUI.pokemon('aqiu', 0)}<span></span></div><div><span class="eyebrow">${esc(s.pose)}</span><h3>${esc(s.name)}</h3><p>${esc(s.rule)}</p><small>解除：${esc(s.clear)}</small></div></article>`).join('')}</div>`;
+    Learn.bindCardZoom(document.querySelector('[data-pane="rules"]'));
   },
 
-  /* ---------- 傷害計算機 ---------- */
-  calc() {
-    const base = document.getElementById('baseDmg');
-    const sel = document.getElementById('weakSel');
-    const extra = document.getElementById('extraDmg');
-    const out = document.getElementById('dmgOut');
-    const formula = document.getElementById('dmgFormula');
-    const compute = () => {
-      let b = +base.value || 0;
-      const ex = +extra.value || 0;
-      let total = b, parts = [`${b}`];
-      if (sel.value === 'weak') { total = b * 2; parts = [`${b} ×2（弱點）`]; }
-      else if (sel.value === 'resist') { total = b - 30; parts = [`${b} −30（抵抗）`]; }
-      if (ex) { total += ex; parts.push(`${ex >= 0 ? '+' : ''}${ex}`); }
-      if (total < 0) total = 0;
-      out.textContent = total;
-      formula.textContent = parts.join(' ') + ` = ${total} 傷害`;
+  ruleVisual(type) {
+    const visuals = {
+      deck: CardUI.back('牌庫頂'),
+      energy: CardUI.energy('lightning'),
+      supporter: CardUI.trainer('supporter', true),
+      item: CardUI.trainer('item', true),
+      evolution: CardUI.pokemon('xingxing', 1),
+      bench: CardUI.pokemon('lala', 0),
+      weakness: CardUI.pokemon('lala', 0),
+      retreat: `${CardUI.pokemon('xiaobu', 0)}${CardUI.energy('lightning')}`,
+      ex: CardUI.pokemonEx('xiaobu'),
+      prize: CardUI.prize(6),
     };
-    [base, sel, extra].forEach(e => e.addEventListener('input', compute));
+    return visuals[type] || CardUI.back();
+  },
+
+  calc() {
+    const base = document.getElementById('baseDmg'), sel = document.getElementById('weakSel'), extra = document.getElementById('extraDmg'), out = document.getElementById('dmgOut'), formula = document.getElementById('dmgFormula');
+    if (!base || !sel || !extra || !out || !formula) return;
+    const compute = () => {
+      const raw = +base.value || 0, add = +extra.value || 0;
+      let total = raw, text = `${raw}`;
+      if (sel.value === 'weak') { total = raw * 2; text = `${raw} × 2`; }
+      if (sel.value === 'resist') { total = raw - 30; text = `${raw} − 30`; }
+      total = Math.max(0, total + add);
+      out.textContent = total;
+      formula.textContent = `${text}${add ? ` ${add > 0 ? '+' : '−'} ${Math.abs(add)}` : ''} = ${total} 傷害`;
+    };
+    [base, sel, extra].forEach(x => x.addEventListener('input', compute));
     compute();
   },
 
-  /* ---------- 計時器 ---------- */
   timer() {
     const disp = document.getElementById('timerDisp');
-    let total = 600, remain = 600, tick = null;
-    const fmt = (s) => `${String(Math.floor(s/60)).padStart(2,'0')}:${String(s%60).padStart(2,'0')}`;
-    const paint = () => {
-      disp.textContent = fmt(remain);
-      disp.classList.toggle('warn', remain <= 60);
-    };
-    const stop = () => { if (tick) { clearInterval(tick); tick = null; } };
-    document.querySelectorAll('[data-min]').forEach(b =>
-      b.addEventListener('click', () => { stop(); total = remain = +b.dataset.min * 60; paint(); }));
-    document.getElementById('timerStart').addEventListener('click', () => {
-      if (tick) return;
-      tick = setInterval(() => {
-        if (remain <= 0) { stop(); disp.textContent = '時間到！'; disp.classList.add('warn'); return; }
-        remain--; paint();
-      }, 1000);
-    });
-    document.getElementById('timerPause').addEventListener('click', stop);
-    document.getElementById('timerReset').addEventListener('click', () => { stop(); remain = total; paint(); });
+    if (!disp) return;
+    let total = 600, remain = total, tick = null;
+    const fmt = s => `${String(Math.floor(s / 60)).padStart(2, '0')}:${String(s % 60).padStart(2, '0')}`;
+    const paint = () => { disp.textContent = fmt(remain); disp.classList.toggle('warn', remain <= 60); };
+    const stop = () => { clearInterval(tick); tick = null; };
+    document.querySelectorAll('[data-min]').forEach(b => b.addEventListener('click', () => { stop(); total = remain = +b.dataset.min * 60; paint(); }));
+    document.getElementById('timerStart')?.addEventListener('click', () => { if (tick) return; tick = setInterval(() => { if (remain <= 0) { stop(); disp.textContent = '時間到'; disp.classList.add('warn'); return; } remain--; paint(); }, 1000); });
+    document.getElementById('timerPause')?.addEventListener('click', stop);
+    document.getElementById('timerReset')?.addEventListener('click', () => { stop(); remain = total; paint(); });
     paint();
   },
 };

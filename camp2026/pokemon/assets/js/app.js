@@ -40,7 +40,7 @@ function renderHeader(active) {
       <span class="full">布拉克星球 ‧ 卡牌大賽</span>
     </a>
     <nav class="nav">
-      <a href="${base}index.html" data-k="home">首頁</a>
+      <a href="${base}index.html" data-k="home">${bpIcon('home')}首頁</a>
       <a href="${base}learn/index.html" data-k="learn">${bpIcon('learn')}學習</a>
       <a href="${base}battle/index.html" data-k="battle">${bpIcon('battle')}賽事</a>
       <a href="${base}battle/console.html" data-k="console">${bpIcon('judge')}裁判台</a>
@@ -108,18 +108,17 @@ function stripEmoji(s) {
     .replace(/\s{2,}/g, ' ');
 }
 
-/* ---------- 屬性相剋表（給教學 + 裁判傷害計算共用）---------- */
+/* ---------- 現行卡牌屬性（弱點 / 抵抗力必須逐張讀卡）---------- */
 const TYPES = [
-  { key: 'grass',     name: '草',   color: 'var(--t-grass)',     weakTo: ['fire'],            beats: ['water'] },
-  { key: 'fire',      name: '火',   color: 'var(--t-fire)',      weakTo: ['water'],           beats: ['grass'] },
-  { key: 'water',     name: '水',   color: 'var(--t-water)',     weakTo: ['lightning'],       beats: ['fire'] },
-  { key: 'lightning', name: '雷',   color: 'var(--t-lightning)', weakTo: ['fighting'],        beats: ['water'] },
-  { key: 'psychic',   name: '超', color: 'var(--t-psychic)',   weakTo: ['darkness'],        beats: ['fighting'] },
-  { key: 'fighting',  name: '鬥', color: 'var(--t-fighting)',  weakTo: ['psychic'],         beats: ['lightning','darkness'] },
-  { key: 'darkness',  name: '惡',   color: 'var(--t-darkness)',  weakTo: ['fighting'],        beats: ['psychic'] },
-  { key: 'metal',     name: '鋼',   color: 'var(--t-metal)',     weakTo: ['fire'],            beats: ['fairy'] },
-  { key: 'dragon',    name: '龍',   color: 'var(--t-dragon)',    weakTo: ['dragon'],          beats: [] },
-  { key: 'fairy',     name: '妖', color: 'var(--t-fairy)',     weakTo: ['metal'],           beats: ['dragon'] },
-  { key: 'colorless', name: '無色', color: 'var(--t-colorless)', weakTo: ['fighting'],        beats: [] },
+  { key: 'grass', name: '草', symbol: 'leaf', color: 'var(--t-grass)' },
+  { key: 'fire', name: '火', symbol: 'flame', color: 'var(--t-fire)' },
+  { key: 'water', name: '水', symbol: 'drop', color: 'var(--t-water)' },
+  { key: 'lightning', name: '雷', symbol: 'bolt', color: 'var(--t-lightning)' },
+  { key: 'psychic', name: '超', symbol: 'eye', color: 'var(--t-psychic)' },
+  { key: 'fighting', name: '鬥', symbol: 'fist', color: 'var(--t-fighting)' },
+  { key: 'darkness', name: '惡', symbol: 'moon', color: 'var(--t-darkness)' },
+  { key: 'metal', name: '鋼', symbol: 'metal', color: 'var(--t-metal)' },
+  { key: 'dragon', name: '龍', symbol: 'dragon', color: 'var(--t-dragon)' },
+  { key: 'colorless', name: '無色', symbol: 'star', color: 'var(--t-colorless)' },
 ];
 const TYPE_MAP = Object.fromEntries(TYPES.map(t => [t.key, t]));

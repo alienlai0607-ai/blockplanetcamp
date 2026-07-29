@@ -5,8 +5,8 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>裁判控制台 ‧ 布拉克星球寶可夢卡牌大賽</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;600;700;800;900&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="../assets/css/style.css">
+  <link href="https://fonts.googleapis.com/css2?family=M+PLUS+Rounded+1c:wght@700;800;900&family=Noto+Sans+TC:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../assets/css/style.css?v=bp-trainer-pass-v18-20260729">
 </head>
 <body>
   <main class="wrap" style="padding-top:24px;padding-bottom:40px">
@@ -47,27 +47,75 @@
 
   <!-- 新增訓練家 modal -->
   <div class="modal-backdrop" id="trainerModal">
-    <div class="card modal">
-      <h3><span class="bp-icon i-plus"></span>新增訓練家</h3>
-      <div class="photo-pick" id="photoPick">點我上傳<br>照片</div>
-      <input type="file" id="photoFile" accept="image/*" hidden>
-      <div class="field" style="margin-top:14px">
-        <label>訓練家暱稱</label>
-        <input type="text" id="trainerName" placeholder="例：小智、球球" maxlength="12">
+    <div class="card modal trainer-register-modal" role="dialog" aria-modal="true" aria-labelledby="trainerModalTitle">
+      <header class="trainer-register-head">
+        <div>
+          <span class="eyebrow">Block Planet Trainer Registration</span>
+          <h2 id="trainerModalTitle">登錄參賽訓練家</h2>
+          <p>建立專屬訓練家證，完成後可直接列印。</p>
+        </div>
+        <div class="trainer-register-world" aria-hidden="true"></div>
+        <span class="registration-step">TRAINER ID</span>
+      </header>
+      <div class="trainer-register-grid">
+        <div class="trainer-register-form">
+          <div class="photo-field">
+            <label>正面大頭照</label>
+            <button class="photo-pick" id="photoPick" type="button">
+              <span class="bp-icon i-plus"></span>
+              <b>上傳正面照片</b>
+              <small>臉部清楚、單人入鏡</small>
+            </button>
+            <input type="file" id="photoFile" accept="image/*" hidden>
+          </div>
+          <div class="field">
+            <label for="trainerName">訓練家姓名</label>
+            <input type="text" id="trainerName" placeholder="例：小智、球球" maxlength="12" autocomplete="off">
+          </div>
+          <fieldset class="trainer-type-field">
+            <legend>選擇訓練家屬性</legend>
+            <div class="trainer-type-options" id="trainerTypeOptions"></div>
+          </fieldset>
+          <div class="registration-note">
+            <span class="bp-icon i-card"></span>
+            <p><b>登錄規則</b><br>屬性代表訓練家風格，不限制比賽時使用的牌組。</p>
+          </div>
+        </div>
+        <div class="trainer-pass-preview">
+          <span class="preview-label">訓練家證預覽</span>
+          <div id="trainerPassPreview"></div>
+        </div>
       </div>
-      <div class="toolbar">
+      <div class="toolbar trainer-register-actions">
         <button class="btn ghost" id="trainerCancel">取消</button>
         <span class="spacer"></span>
-        <button class="btn gold" id="trainerSave">加入比賽</button>
+        <button class="btn gold" id="trainerSave">授予訓練家資格</button>
       </div>
     </div>
   </div>
 
-  <script src="../assets/js/app.js"></script>
-  <script src="../assets/js/tournament.js"></script>
-  <script src="../assets/js/data/rules.js"></script>
-  <script src="../assets/js/battle-view.js"></script>
-  <script src="../assets/js/console.js"></script>
+  <div class="modal-backdrop credential-modal" id="credentialModal">
+    <div class="card modal credential-dialog" role="dialog" aria-modal="true" aria-labelledby="credentialTitle">
+      <header class="credential-head">
+        <div>
+          <span class="eyebrow" id="credentialEyebrow">Trainer Registration Complete</span>
+          <h2 id="credentialTitle">訓練家證</h2>
+        </div>
+        <button class="icon-btn" id="credentialClose" aria-label="關閉">×</button>
+      </header>
+      <div class="credential-print-root" id="credentialBody"></div>
+      <div class="credential-actions">
+        <button class="btn ghost" id="credentialDone">完成</button>
+        <button class="btn gold" id="credentialPrint"><span class="bp-icon i-print"></span>列印訓練家證</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="../assets/js/app.js?v=bp-trainer-pass-v1-20260729"></script>
+  <script src="../assets/js/tournament.js?v=bp-trainer-pass-v2-20260729"></script>
+  <script src="../assets/js/data/rules.js?v=bp-worldclass-v3-20260721"></script>
+  <script src="../assets/js/battle-view.js?v=bp-trainer-pass-v2-20260729"></script>
+  <script src="../assets/js/console.js?v=bp-trainer-pass-v16-20260729"></script>
   <script>
     renderHeader('console');
     renderFooter();
