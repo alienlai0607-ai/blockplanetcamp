@@ -40,6 +40,29 @@
     chip.style.color = mode === 'ok' ? '#08783f' : mode === 'busy' ? '#735600' : '#a3172d';
   }
 
+  function stateForSync(source) {
+    const next = JSON.parse(JSON.stringify(source || {}));
+    next.trainers = (next.trainers || []).map(trainer => {
+      const lightweight = { ...trainer };
+      delete lightweight.photo;
+      return lightweight;
+    });
+    return next;
+  }
+
+  function restoreLocalPhotos(remoteState) {
+    const current = Store.get('bp_tournament', null);
+    const photos = new Map((current?.trainers || [])
+      .filter(trainer => trainer.photo)
+      .map(trainer => [trainer.id, trainer.photo]));
+    const next = JSON.parse(JSON.stringify(remoteState || {}));
+    next.trainers = (next.trainers || []).map(trainer => ({
+      ...trainer,
+      photo: trainer.photo || photos.get(trainer.id) || '',
+    }));
+    return next;
+  }
+
   async function request(method, payload) {
     const controller = new AbortController();
     const timeout = setTimeout(() => controller.abort(), CONFIG.requestTimeoutMs);
@@ -68,8 +91,9 @@
     revision = result.revision;
     if (result.state) {
       trainerCount = result.state.trainers?.length || 0;
+      const restoredState = restoreLocalPhotos(result.state);
       const current = localStorage.getItem('bp_tournament');
-      const next = JSON.stringify(result.state);
+      const next = JSON.stringify(restoredState);
       if (current !== next) {
         localStorage.setItem('bp_tournament', next);
         window.dispatchEvent(new CustomEvent('bp-tournament-sync', {
@@ -134,7 +158,7 @@
 
   const BPSync = {
     queueMerge(state) {
-      queuedState = JSON.parse(JSON.stringify(state));
+      queuedState = stateForSync(state);
       clearTimeout(timer);
       timer = setTimeout(flush, 80);
     },
@@ -149,11 +173,11 @@
         const remote = await request('GET');
         apply(remote);
         if (hasUnsyncedData(local, remote.state)) {
-          queuedState = local;
+          queuedState = stateForSync(local);
           await flush();
         }
       } catch (_) {
-        if (local) queuedState = local;
+        if (local) queuedState = stateForSync(local);
         status('正在重新連線，本機資料已保存', 'error');
         if (queuedState) scheduleRetry();
       }
