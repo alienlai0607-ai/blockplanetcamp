@@ -27,6 +27,10 @@ const BV = {
     return `<span class="${cls}">${esc((tr.name || '?').slice(0,1))}</span>`;
   },
   name(tr) { return tr ? `${esc(tr.name)}` : '<i style="color:var(--bp-muted)">待定</i>'; },
+  classroomBadge(match, roundIdx) {
+    const classroom = T.qualClassroom(match, roundIdx);
+    return `<span class="classroom-badge room-${classroom}">教室 ${classroom}</span>`;
+  },
 
   /* ---------- 訓練家牆 ---------- */
   trainerWall(s, elimSet) {
@@ -70,16 +74,18 @@ const BV = {
     const r = s.qual.rounds[roundIdx];
     if (!r) return '';
     return `<div class="card"><h2 class="section-title">${bpIcon('draw')}資格賽 第 ${roundIdx+1} 輪　配對</h2>
-      <p class="section-sub">抽籤產生的對戰組合，桌上用真卡對決後回報結果。</p>
+      <p class="section-sub">每場已平均分流至教室 1、2、3；請依教室色標和桌號前往真卡對戰。</p>
       <div class="match-list">` + r.map(m => {
         const a = T.byId(s, m.a), b = m.b ? T.byId(s, m.b) : null;
         if (m.bye) return `<div class="match"><div class="side win"><span class="ph">${esc((a?.name||'?').slice(0,1))}</span><span class="name">${BV.name(a)}</span></div><div class="vs">輪空</div><div class="side right" style="color:var(--bp-muted)">自動晉級</div></div>`;
         const aw = m.winner === m.a, bw = m.winner === m.b;
-        return `<div class="match">
+        const ready = T.qualMatchReady(s, roundIdx, m);
+        const progress = m.winner ? '已完成' : ready ? '可開打' : '等待選手';
+        return `<div class="match qualifier-match">
           <div class="side ${aw?'win':''}">${BV.photo(a,'ph')}<span class="name"><b>#${a?.no} ${esc(a?.name)}</b></span></div>
           <div class="vs">VS</div>
           <div class="side right ${bw?'win':''}">${BV.photo(b,'ph')}<span class="name"><b>#${b?.no} ${esc(b?.name)}</b></span></div>
-          <div class="table-no">${m.table} 號桌${m.winner ? '　已回報' : '　進行中'}</div>
+          <div class="match-location">${BV.classroomBadge(m, roundIdx)}<span class="table-no">第 ${m.table} 桌　${progress}</span></div>
         </div>`;
       }).join('') + `</div></div>`;
   },
@@ -179,7 +185,7 @@ const BattleView = {
     let html = '';
     const status = s.meta.status;
     document.getElementById('evtStatus').textContent =
-      status === 'qualifier' ? `資格賽進行中（第 ${s.meta.qualRound} / ${s.meta.qualTotalRounds} 輪）` :
+      status === 'qualifier' ? `資格賽進行中（每人 ${s.meta.qualTotalRounds} 場，依個別進度接續）` :
       status === 'knockout' ? '八強淘汰賽進行中' :
       status === 'done' ? '比賽結束 ‧ 冠軍誕生！' : '訓練家登記中';
 
