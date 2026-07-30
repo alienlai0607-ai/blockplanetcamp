@@ -65,6 +65,8 @@
 
   function relabel() {
     document.querySelectorAll('#printQual,#downloadQual').forEach(button => {
+      if (button.dataset.qualDownloadReady === 'true') return;
+      button.dataset.qualDownloadReady = 'true';
       button.id = 'downloadQual';
       const icon = button.querySelector('.bp-icon');
       button.replaceChildren(...(icon ? [icon] : []), document.createTextNode('下載教室賽程檔'));
