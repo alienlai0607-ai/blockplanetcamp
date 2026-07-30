@@ -16,6 +16,7 @@
   let timer = null;
   let retryTimer = null;
   let retryDelay = 1500;
+  let trainerCount = 0;
 
   function validConfig() {
     return /^https:\/\//.test(CONFIG.endpoint) && !CONFIG.endpoint.includes('BP_SYNC_');
@@ -66,6 +67,7 @@
     if (result.revision < revision) return;
     revision = result.revision;
     if (result.state) {
+      trainerCount = result.state.trainers?.length || 0;
       const current = localStorage.getItem('bp_tournament');
       const next = JSON.stringify(result.state);
       if (current !== next) {
@@ -75,7 +77,7 @@
         }));
       }
     }
-    status(`多機同步中 · ${result.state?.trainers?.length || 0} 位`, 'ok');
+    status(`多機同步中 · ${trainerCount} 位`, 'ok');
     retryDelay = 1500;
   }
 
@@ -106,7 +108,12 @@
     if (!validConfig() || pushing) return;
     try {
       const result = await request('GET');
-      if (result.revision !== revision) apply(result);
+      if (result.revision !== revision || result.state) {
+        apply(result);
+      } else {
+        status(`多機同步中 · ${trainerCount} 位`, 'ok');
+        retryDelay = 1500;
+      }
     } catch (_) {
       status('正在重新連線，本機資料已保存', 'error');
     }
@@ -137,6 +144,7 @@
         return;
       }
       const local = Store.get('bp_tournament', null);
+      trainerCount = local?.trainers?.length || 0;
       try {
         const remote = await request('GET');
         apply(remote);
