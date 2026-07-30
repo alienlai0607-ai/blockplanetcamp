@@ -51,12 +51,20 @@ const T = {
     }));
     return map;
   },
+  // Three rooms rotate by round and table, keeping every qualifier round balanced.
+  qualClassroomFor(roundIdx, table) {
+    return ((Number(roundIdx) + Number(table) - 1) % 3) + 1;
+  },
+  qualClassroom(match, roundIdx) {
+    return Number(match?.classroom) || T.qualClassroomFor(roundIdx, match?.table || 1);
+  },
   drawRound(s) {
     if (s.trainers.length < 2) throw new Error('至少需要 2 位訓練家');
     const past = T.pastOpponents(s);
     const ids = shuffle(s.trainers.map(t => t.id));
     const matches = [];
     const used = new Set();
+    const roundIdx = s.qual.rounds.length;
     let table = 1;
     for (let i = 0; i < ids.length; i++) {
       const a = ids[i];
@@ -77,11 +85,13 @@ const T = {
       }
       if (partner) {
         used.add(a); used.add(partner);
-        matches.push({ table: table++, a, b: partner, winner: null });
+        const currentTable = table++;
+        matches.push({ table: currentTable, classroom: T.qualClassroomFor(roundIdx, currentTable), a, b: partner, winner: null });
       } else {
         // 落單 → 輪空(自動勝)
         used.add(a);
-        matches.push({ table: table++, a, b: null, winner: a, bye: true });
+        const currentTable = table++;
+        matches.push({ table: currentTable, classroom: T.qualClassroomFor(roundIdx, currentTable), a, b: null, winner: a, bye: true });
       }
     }
     s.qual.rounds.push(matches);
@@ -89,9 +99,26 @@ const T = {
     s.meta.status = 'qualifier';
     return s;
   },
+  drawQualifierSchedule(s) {
+    while (s.qual.rounds.length < s.meta.qualTotalRounds) T.drawRound(s);
+    s.meta.qualRound = s.qual.rounds.length;
+    s.meta.status = 'qualifier';
+    return s;
+  },
+  trainerRoundComplete(s, trainerId, roundIdx) {
+    if (roundIdx < 0) return true;
+    const match = s.qual.rounds[roundIdx]?.find(m => m.a === trainerId || m.b === trainerId);
+    return Boolean(match?.winner);
+  },
+  qualMatchReady(s, roundIdx, match) {
+    if (!match || match.bye || match.winner) return true;
+    if (roundIdx === 0) return true;
+    return T.trainerRoundComplete(s, match.a, roundIdx - 1)
+      && T.trainerRoundComplete(s, match.b, roundIdx - 1);
+  },
   setQualResult(s, roundIdx, table, winnerId) {
     const m = s.qual.rounds[roundIdx]?.find(x => x.table === table);
-    if (m && !m.bye) m.winner = winnerId;
+    if (m && !m.bye && T.qualMatchReady(s, roundIdx, m)) m.winner = winnerId;
     return s;
   },
 
