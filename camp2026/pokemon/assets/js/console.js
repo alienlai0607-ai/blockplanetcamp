@@ -448,31 +448,35 @@ ${roomSections}
       button.innerHTML = `${bpIcon('print')}正在製作 PDF…`;
     }
 
-    const frame = document.createElement('iframe');
-    frame.setAttribute('aria-hidden', 'true');
-    frame.style.cssText = [
+    const parsedDocument = new DOMParser().parseFromString(
+      Console.qualDownloadDocument(s),
+      'text/html'
+    );
+    const host = document.createElement('div');
+    host.setAttribute('aria-hidden', 'true');
+    host.style.cssText = [
       'position:fixed',
       'left:-100000px',
       'top:0',
       'width:1212px',
-      'height:1600px',
-      'border:0',
-      'opacity:0',
+      'background:#eef3f9',
       'pointer-events:none',
     ].join(';');
 
     try {
-      const loaded = new Promise((resolve, reject) => {
-        frame.onload = resolve;
-        frame.onerror = reject;
-      });
-      document.body.appendChild(frame);
-      frame.srcdoc = Console.qualDownloadDocument(s);
-      await loaded;
+      const documentStyles = [...parsedDocument.querySelectorAll('style')]
+        .map(style => style.textContent)
+        .join('\n');
+      const style = document.createElement('style');
+      style.textContent = documentStyles;
+      host.appendChild(style);
+      [...parsedDocument.querySelectorAll('.cover, .room-sheet, .route-sheet')]
+        .forEach(section => host.appendChild(document.importNode(section, true)));
+      document.body.appendChild(host);
+      await document.fonts?.ready;
+      await new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve)));
 
-      const frameDocument = frame.contentDocument;
-      await frameDocument.fonts?.ready;
-      const sections = [...frameDocument.querySelectorAll('.cover, .room-sheet, .route-sheet')];
+      const sections = [...host.querySelectorAll('.cover, .room-sheet, .route-sheet')];
       if (!sections.length) throw new Error('找不到資格賽 PDF 內容');
 
       const pdf = new JsPdf({
@@ -535,7 +539,7 @@ ${roomSections}
       console.error('Qualification PDF download failed:', error);
       alert('PDF 產生失敗，請重新整理頁面後再試一次。');
     } finally {
-      frame.remove();
+      host.remove();
       if (button) {
         button.disabled = false;
         button.innerHTML = originalLabel;
