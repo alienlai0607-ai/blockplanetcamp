@@ -3,7 +3,8 @@
   const CONFIG = {
     endpoint: 'https://radius-release-drinking-contacts.trycloudflare.com',
     key: 'bp-camp-20260730-live',
-    pollMs: 1200,
+    pollMs: 3000,
+    requestTimeoutMs: 30000,
   };
   const clientId = localStorage.getItem('bp_sync_client_id')
     || `device_${Date.now()}_${Math.random().toString(36).slice(2, 9)}`;
@@ -13,6 +14,8 @@
   let pushing = false;
   let queuedState = null;
   let timer = null;
+  let retryTimer = null;
+  let retryDelay = 1500;
 
   function validConfig() {
     return /^https:\/\//.test(CONFIG.endpoint) && !CONFIG.endpoint.includes('BP_SYNC_');
@@ -37,17 +40,25 @@
   }
 
   async function request(method, payload) {
-    const response = await fetch(`${CONFIG.endpoint}/api/state`, {
-      method,
-      cache: 'no-store',
-      headers: {
-        'Content-Type': 'application/json',
-        'X-BP-Sync-Key': CONFIG.key,
-      },
-      body: payload ? JSON.stringify(payload) : undefined,
-    });
-    if (!response.ok) throw new Error(`sync_${response.status}`);
-    return response.json();
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), CONFIG.requestTimeoutMs);
+    const since = method === 'GET' && revision >= 0 ? `?since=${revision}` : '';
+    try {
+      const response = await fetch(`${CONFIG.endpoint}/api/state${since}`, {
+        method,
+        cache: 'no-store',
+        signal: controller.signal,
+        headers: {
+          'Content-Type': 'application/json',
+          'X-BP-Sync-Key': CONFIG.key,
+        },
+        body: payload ? JSON.stringify(payload) : undefined,
+      });
+      if (!response.ok) throw new Error(`sync_${response.status}`);
+      return response.json();
+    } finally {
+      clearTimeout(timeout);
+    }
   }
 
   function apply(result) {
@@ -65,6 +76,13 @@
       }
     }
     status(`多機同步中 · ${result.state?.trainers?.length || 0} 位`, 'ok');
+    retryDelay = 1500;
+  }
+
+  function scheduleRetry() {
+    clearTimeout(retryTimer);
+    retryTimer = setTimeout(flush, retryDelay);
+    retryDelay = Math.min(retryDelay * 2, 15000);
   }
 
   async function flush() {
@@ -77,10 +95,10 @@
       apply(await request('POST', { clientId, state }));
     } catch (error) {
       queuedState = state;
-      status('同步暫時中斷，資料仍保留在本機', 'error');
+      status('正在重新連線，本機資料已保存', 'error');
+      scheduleRetry();
     } finally {
       pushing = false;
-      if (queuedState) setTimeout(flush, 250);
     }
   }
 
@@ -90,8 +108,21 @@
       const result = await request('GET');
       if (result.revision !== revision) apply(result);
     } catch (_) {
-      status('同步暫時中斷，資料仍保留在本機', 'error');
+      status('正在重新連線，本機資料已保存', 'error');
     }
+  }
+
+  function hasUnsyncedData(local, remote) {
+    if (!local) return false;
+    if (!remote) return true;
+    const remoteIds = new Set((remote.trainers || []).map(trainer => trainer.id));
+    if ((local.trainers || []).some(trainer => !remoteIds.has(trainer.id))) return true;
+    const remoteRounds = remote.qual?.rounds || [];
+    return (local.qual?.rounds || []).some((round, roundIndex) =>
+      (round || []).some((match, matchIndex) =>
+        match?.winner && !remoteRounds[roundIndex]?.[matchIndex]?.winner
+      )
+    );
   }
 
   const BPSync = {
@@ -106,16 +137,27 @@
         return;
       }
       const local = Store.get('bp_tournament', null);
-      if (local) {
-        queuedState = local;
-        await flush();
-      } else {
-        await pull();
+      try {
+        const remote = await request('GET');
+        apply(remote);
+        if (hasUnsyncedData(local, remote.state)) {
+          queuedState = local;
+          await flush();
+        }
+      } catch (_) {
+        if (local) queuedState = local;
+        status('正在重新連線，本機資料已保存', 'error');
+        if (queuedState) scheduleRetry();
       }
       setInterval(pull, CONFIG.pollMs);
     },
   };
 
   window.BPSync = BPSync;
+  window.addEventListener('online', () => {
+    retryDelay = 1500;
+    if (queuedState) flush();
+    else pull();
+  });
   window.addEventListener('DOMContentLoaded', () => BPSync.start());
 })();
