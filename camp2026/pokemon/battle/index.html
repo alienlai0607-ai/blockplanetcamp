@@ -28,6 +28,7 @@
 
   <script src="../assets/js/app.js?v=bp-worldclass-v3-20260721"></script>
   <script src="../assets/js/tournament.js?v=bp-trainer-pass-v2-20260729"></script>
+  <script src="../assets/js/live-sync.js?v=bp-live-sync-20260730"></script>
   <script src="../assets/js/battle-view.js?v=bp-trainer-pass-v2-20260729"></script>
   <script>
     renderHeader('battle');
@@ -36,6 +37,7 @@
     document.getElementById('refreshBtn').addEventListener('click', () => BattleView.render());
     // 跨分頁同步：控制台改了資料，這頁自動更新
     window.addEventListener('storage', e => { if (e.key === 'bp_tournament') BattleView.render(); });
+    window.addEventListener('bp-tournament-sync', () => BattleView.render());
   </script>
 </body>
 </html>

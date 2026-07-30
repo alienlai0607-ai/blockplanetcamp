@@ -9,7 +9,10 @@ const T = {
   load() {
     return Store.get(T_KEY, T.blank());
   },
-  save(s) { Store.set(T_KEY, s); },
+  save(s) {
+    Store.set(T_KEY, s);
+    if (window.BPSync) window.BPSync.queueMerge(s);
+  },
   blank() {
     return {
       meta: { name: '布拉克星球寶可夢卡牌大賽', status: 'setup', qualRound: 0, qualTotalRounds: 3, createdAt: '' },
