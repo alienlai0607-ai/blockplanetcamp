@@ -7,21 +7,51 @@ const T_KEY = 'bp_tournament';
 const T = {
   /* ---------- 載入 / 儲存 ---------- */
   load() {
-    return Store.get(T_KEY, T.blank());
+    const state = Store.get(T_KEY, T.blank());
+    state.meta ||= {};
+    const today = window.BPEvents?.localDate?.() || new Date().toISOString().slice(0, 10);
+    state.meta.eventDate ||= today;
+    state.meta.venue ||= '布拉克星球教室';
+    state.meta.eventId ||= window.BPEvents?.eventId?.(state.meta.eventDate, state.meta.venue)
+      || `${state.meta.eventDate}-main`;
+    return state;
   },
   save(s) {
     Store.set(T_KEY, s);
+    if (window.BPEvents) window.BPEvents.save(s).catch(console.error);
     if (window.BPSync) window.BPSync.queueMerge(s);
   },
-  blank() {
+  blank(options) {
+    const today = window.BPEvents?.localDate?.() || new Date().toISOString().slice(0, 10);
+    const eventDate = options?.eventDate || today;
+    const venue = options?.venue || '布拉克星球教室';
     return {
-      meta: { name: '布拉克星球寶可夢卡牌大賽', status: 'setup', qualRound: 0, qualTotalRounds: 3, createdAt: '' },
+      meta: {
+        name: options?.name || '布拉克星球寶可夢卡牌大賽',
+        status: 'setup',
+        qualRound: 0,
+        qualTotalRounds: 3,
+        createdAt: new Date().toISOString(),
+        eventDate,
+        venue,
+        eventId: window.BPEvents?.eventId?.(eventDate, venue) || `${eventDate}-main`,
+      },
       trainers: [],
       qual: { rounds: [] },
       ko: { seeds: [], quarter: [], semi: [], final: null, third: null },
     };
   },
-  reset() { Store.remove(T_KEY); },
+  reset() {
+    const current = T.load();
+    const blank = T.blank({
+      eventDate: current.meta.eventDate,
+      venue: current.meta.venue,
+      name: current.meta.name,
+    });
+    blank.meta.eventId = current.meta.eventId;
+    Store.set(T_KEY, blank);
+    if (window.BPEvents) window.BPEvents.save(blank).catch(console.error);
+  },
 
   /* ---------- 訓練家 ---------- */
   addTrainer(s, name, photo, profile) {
