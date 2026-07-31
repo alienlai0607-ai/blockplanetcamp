@@ -56,7 +56,7 @@ const BV = {
     const rows = T.standings(s);
     if (!rows.length) return '';
     return `<div class="card"><h2 class="section-title">${bpIcon('standings')}排行榜</h2>
-      <p class="section-sub">依勝場排序，<span class="tag gold">前 8 名</span>晉級八強。</p>
+      <p class="section-sub">三勝者優先進入抽籤；不足 8 位時，再由兩勝一敗者抽籤補足。</p>
       <div style="overflow-x:auto"><table class="table">
         <thead><tr><th>名次</th><th>訓練家</th><th>勝</th><th>負</th><th>已賽</th></tr></thead>
         <tbody>` + rows.map(t => `
