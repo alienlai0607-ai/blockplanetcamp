@@ -4259,6 +4259,86 @@ body.lesson-open .site-footer { display: none; }
   }
 }
 
+/* Tournament date archive and venue switcher */
+.event-switcher {
+  display: grid;
+  grid-template-columns: minmax(280px, 1fr) minmax(300px, 420px) auto auto;
+  align-items: end;
+  gap: 12px;
+  margin: 16px 0 20px;
+  padding: 16px 18px;
+  border: 1px solid #c9ddfb;
+  border-left: 6px solid var(--bp-blue);
+  border-radius: 8px;
+  background: #fff;
+  box-shadow: 0 8px 24px rgba(25, 67, 126, .08);
+}
+
+.event-current {
+  min-width: 0;
+  display: grid;
+  gap: 3px;
+}
+
+.event-kicker,
+.event-select-label > span {
+  color: var(--bp-muted);
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.event-current strong {
+  overflow: hidden;
+  color: var(--bp-ink);
+  font-size: 19px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.event-current small {
+  color: var(--bp-muted);
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.event-select-label {
+  min-width: 0;
+  display: grid;
+  gap: 6px;
+}
+
+.event-select-label select {
+  width: 100%;
+  min-height: 42px;
+  padding: 8px 38px 8px 12px;
+  border: 1px solid #bed3f2;
+  border-radius: 6px;
+  background: #f8fbff;
+  color: var(--bp-ink);
+  font: 700 14px/1.25 "Noto Sans TC", sans-serif;
+}
+
+.event-modal {
+  width: min(620px, calc(100vw - 40px));
+}
+
+.event-form-grid {
+  display: grid;
+  grid-template-columns: 180px minmax(0, 1fr);
+  gap: 14px;
+  margin: 18px 0;
+}
+
+@media (max-width: 1100px) {
+  .event-switcher {
+    grid-template-columns: minmax(240px, 1fr) minmax(280px, 1fr);
+  }
+
+  .event-switcher > .btn {
+    width: 100%;
+  }
+}
+
 /* Damage math visual: keep the attack card, reading arrow and weakness card
    in one stable teaching sequence on laptop screens. */
 @media (min-width: 1100px) {
