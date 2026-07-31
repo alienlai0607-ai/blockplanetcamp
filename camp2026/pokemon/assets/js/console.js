@@ -309,13 +309,24 @@ const Console = {
       }
       const matches = s.qual.rounds.flat();
       const completed = matches.filter(m => m.winner).length;
+      const drawPool = T.qualComplete(s) ? T.knockoutDrawPool(s) : null;
+      const enoughCandidates = drawPool
+        && drawPool.undefeated.length + drawPool.twoWins.length >= 8;
+      const drawSummary = drawPool ? (
+        drawPool.undefeated.length > 8
+          ? `三勝者 ${drawPool.undefeated.length} 位，將抽出 8 位晉級。`
+          : drawPool.needFromTwoWins > 0
+            ? `三勝者 ${drawPool.undefeated.length} 位全數晉級，再從 ${drawPool.twoWins.length} 位兩勝一敗者中抽出 ${drawPool.needFromTwoWins} 位。`
+            : `三勝者共 8 位，將抽籤決定八強對戰位置。`
+      ) : '';
       html += `<div class="card"><h2 class="section-title">推進賽程</h2>
         <div class="toolbar">
           <button class="btn ghost" id="downloadQual">${bpIcon('print')}下載教室賽程 PDF</button>
-          ${T.qualComplete(s) ? `<button class="btn gold ${s.trainers.length>=8?'':'disabled'}" id="seedKo" ${s.trainers.length>=8?'':'disabled'}>${bpIcon('battle')}結束資格賽 ‧ 產生八強</button>` : ''}
+          ${T.qualComplete(s) ? `<button class="btn gold ${enoughCandidates?'':'disabled'}" id="seedKo" ${enoughCandidates?'':'disabled'}>${bpIcon('draw')}抽籤決定八強</button>` : ''}
           <span class="tag">已完成 ${completed} / ${matches.length} 場</span>
         </div>
-        ${T.qualComplete(s) && s.trainers.length<8 ? '<p class="tag red" style="margin-top:8px">不足 8 位訓練家，無法產生八強</p>' : ''}
+        ${drawSummary ? `<p class="section-sub" style="margin-top:12px"><strong>本次抽籤：</strong>${esc(drawSummary)}</p>` : ''}
+        ${T.qualComplete(s) && !enoughCandidates ? '<p class="tag red" style="margin-top:8px">三勝與兩勝一敗者合計不足 8 位，無法產生八強。</p>' : ''}
       </div>`;
     } else if (s.meta.status === 'knockout' || s.meta.status === 'done') {
       html += `<div class="card qualification-print-toolbar"><div class="toolbar"><div><h2 class="section-title">資格賽資料</h2><p class="section-sub">八強已產生，仍可下載依教室分類的完整資格賽紀錄。</p></div><span class="spacer"></span><button class="btn ghost" id="downloadQual">${bpIcon('print')}下載教室賽程 PDF</button></div></div>`;
@@ -695,7 +706,23 @@ ${roomSections}
     const downloadQual = document.getElementById('downloadQual');
     if (downloadQual) downloadQual.addEventListener('click', () => Console.downloadQualificationFile(T.load()));
     const sk = document.getElementById('seedKo');
-    if (sk) sk.addEventListener('click', () => { const st = T.load(); try { T.seedKnockout(st); T.save(st); Console.refresh(); } catch(e){ alert(e.message); } });
+    if (sk) sk.addEventListener('click', () => {
+      const st = T.load();
+      const pool = T.knockoutDrawPool(st);
+      const message = pool.undefeated.length > 8
+        ? `共有 ${pool.undefeated.length} 位三勝者，確定抽出 8 位晉級八強？`
+        : pool.needFromTwoWins > 0
+          ? `${pool.undefeated.length} 位三勝者全數晉級，並從 ${pool.twoWins.length} 位兩勝一敗者中抽出 ${pool.needFromTwoWins} 位。確定開始抽籤？`
+          : '共有 8 位三勝者。確定抽籤決定八強對戰位置？';
+      if (!confirm(message)) return;
+      try {
+        T.seedKnockout(st);
+        T.save(st);
+        Console.refresh();
+      } catch(e) {
+        alert(e.message);
+      }
+    });
     document.querySelectorAll('[data-qwin]').forEach(b =>
       b.addEventListener('click', () => {
         const [ri, table, win] = b.dataset.qwin.split('|');
