@@ -178,10 +178,44 @@ const T = {
   },
 
   /* ---------- 產生八強 ---------- */
+  knockoutDrawPool(s) {
+    const standings = T.standings(s);
+    const undefeated = standings.filter(t => t.wins === 3 && t.losses === 0);
+    const twoWins = standings.filter(t => t.wins === 2 && t.losses === 1);
+    const needFromTwoWins = Math.max(0, 8 - undefeated.length);
+    return {
+      undefeated,
+      twoWins,
+      needFromTwoWins,
+      drawFromUndefeated: undefeated.length > 8 ? 8 : undefeated.length,
+    };
+  },
   seedKnockout(s) {
-    const top = T.standings(s).slice(0, 8).map(t => t.id);
-    if (top.length < 8) throw new Error('需要至少 8 位訓練家才能進入八強賽');
+    if (!T.qualComplete(s)) throw new Error('資格賽尚未全部完成');
+    const pool = T.knockoutDrawPool(s);
+    if (pool.undefeated.length + pool.twoWins.length < 8) {
+      throw new Error('三勝與兩勝一敗的訓練家合計不足 8 位，無法產生八強');
+    }
+
+    let selected;
+    if (pool.undefeated.length >= 8) {
+      selected = shuffle(pool.undefeated.map(t => t.id)).slice(0, 8);
+    } else {
+      selected = [
+        ...pool.undefeated.map(t => t.id),
+        ...shuffle(pool.twoWins.map(t => t.id)).slice(0, pool.needFromTwoWins),
+      ];
+    }
+
+    // 晉級名單與對戰位置皆由抽籤決定，不沿用排行榜順序。
+    const top = shuffle(selected);
     s.ko.seeds = top;
+    s.ko.draw = {
+      drawnAt: new Date().toISOString(),
+      undefeatedCandidates: pool.undefeated.map(t => t.id),
+      twoWinCandidates: pool.twoWins.map(t => t.id),
+      selected: [...top],
+    };
     // 1v8, 4v5 → 上半；2v7, 3v6 → 下半
     s.ko.quarter = [
       { a: top[0], b: top[7], winner: null },
