@@ -30,6 +30,19 @@
         <button class="btn danger sm" id="resetBtn"><span class="bp-icon i-trash"></span>全部重來</button>
         <input type="file" id="importFile" accept=".json" hidden>
       </div>
+      <section class="event-switcher" aria-label="賽事日期與場地">
+        <div class="event-current">
+          <span class="event-kicker">目前賽事</span>
+          <strong id="eventCurrentTitle">載入中</strong>
+          <small id="eventCurrentMeta"></small>
+        </div>
+        <label class="event-select-label" for="eventSelect">
+          <span>切換歷史賽事</span>
+          <select id="eventSelect"></select>
+        </label>
+        <button class="btn ghost sm" id="archiveEventBtn">封存今日賽果</button>
+        <button class="btn gold sm" id="newEventBtn">建立新賽事</button>
+      </section>
 
       <div class="flow-steps" id="flowSteps"></div>
 
@@ -94,6 +107,33 @@
     </div>
   </div>
 
+  <div class="modal-backdrop" id="eventModal">
+    <div class="card modal event-modal" role="dialog" aria-modal="true" aria-labelledby="eventModalTitle">
+      <span class="eyebrow">New Tournament Event</span>
+      <h2 id="eventModalTitle">建立另一日期的賽事</h2>
+      <p class="section-sub">目前賽事會自動保存，新賽事會使用全新的訓練家名單與賽程。</p>
+      <div class="event-form-grid">
+        <div class="field">
+          <label for="eventDate">比賽日期</label>
+          <input type="date" id="eventDate">
+        </div>
+        <div class="field">
+          <label for="eventVenue">場地名稱</label>
+          <input type="text" id="eventVenue" maxlength="30" placeholder="例：布拉克星球中和教室">
+        </div>
+      </div>
+      <div class="registration-note">
+        <span class="bp-icon i-card"></span>
+        <p><b>資料不會消失</b><br>今天的名單、資格賽結果、排行榜與淘汰賽都會保留在歷史賽事。</p>
+      </div>
+      <div class="toolbar">
+        <button class="btn ghost" id="eventCancel">取消</button>
+        <span class="spacer"></span>
+        <button class="btn gold" id="eventCreate">建立並切換</button>
+      </div>
+    </div>
+  </div>
+
   <div class="modal-backdrop credential-modal" id="credentialModal">
     <div class="card modal credential-dialog" role="dialog" aria-modal="true" aria-labelledby="credentialTitle">
       <header class="credential-head">
@@ -112,18 +152,20 @@
   </div>
 
   <script src="../assets/js/app.js?v=bp-trainer-pass-v1-20260729"></script>
+  <script src="../assets/js/event-store.js?v=bp-events-v2-20260730"></script>
   <script src="../assets/js/tournament.js?v=bp-trainer-pass-v2-20260729"></script>
-  <script src="../assets/js/live-sync.js?v=bp-live-sync-v4-20260730"></script>
+  <script src="../assets/js/live-sync.js?v=bp-cloud-sync-20260731"></script>
   <script src="../assets/js/data/rules.js?v=bp-worldclass-v3-20260721"></script>
   <script src="../assets/js/battle-view.js?v=bp-trainer-pass-v2-20260729"></script>
   <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.2/dist/jspdf.umd.min.js"></script>
-  <script src="../assets/js/console.js?v=bp-qual-room-pdf-v3-20260730"></script>
+  <script src="../assets/js/console.js?v=bp-event-archive-v4-20260730"></script>
   <script>
     renderHeader('console');
     renderFooter();
-    Console.init();
+    Promise.resolve(BPEvents.start()).finally(() => Console.init());
     window.addEventListener('bp-tournament-sync', () => Console.refresh());
+    window.addEventListener('bp-event-changed', () => Console.refresh());
   </script>
 </body>
 </html>
