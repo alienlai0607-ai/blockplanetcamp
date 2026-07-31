@@ -151,6 +151,7 @@ const Console = {
     });
     // 訓練家 modal
     Console.setupTrainerModal();
+    Console.setupEventControls();
     window.addEventListener('resize', Console.fitTrainerPasses);
     // 罰則 / 爭議（靜態，一次渲染）
     Console.renderPenalty();
@@ -165,7 +166,101 @@ const Console = {
       T.save(s);
     }
     document.getElementById('flowSteps').innerHTML = BV.flow(s);
+    Console.renderEventControls(s);
     Console.renderManage(s);
+  },
+
+  setupEventControls() {
+    const modal = document.getElementById('eventModal');
+    const dateInput = document.getElementById('eventDate');
+    const venueInput = document.getElementById('eventVenue');
+    const createButton = document.getElementById('eventCreate');
+    const close = () => modal.classList.remove('open');
+    document.getElementById('newEventBtn').addEventListener('click', () => {
+      dateInput.value = BPEvents.localDate();
+      venueInput.value = '';
+      modal.classList.add('open');
+      setTimeout(() => venueInput.focus(), 30);
+    });
+    document.getElementById('eventCancel').addEventListener('click', close);
+    modal.addEventListener('click', event => {
+      if (event.target === modal) close();
+    });
+    createButton.addEventListener('click', async () => {
+      const eventDate = dateInput.value;
+      const venue = venueInput.value.trim();
+      if (!eventDate || !venue) {
+        alert('請填寫比賽日期與場地名稱。');
+        return;
+      }
+      createButton.disabled = true;
+      createButton.textContent = '正在建立…';
+      try {
+        await BPEvents.create({ eventDate, venue });
+        close();
+        Console.refresh();
+      } catch (error) {
+        alert(error.message || '建立賽事失敗');
+      } finally {
+        createButton.disabled = false;
+        createButton.textContent = '建立並切換';
+      }
+    });
+    document.getElementById('eventSelect').addEventListener('change', async event => {
+      if (!event.target.value || event.target.value === BPEvents.activeId()) return;
+      event.target.disabled = true;
+      try {
+        await BPEvents.switchTo(event.target.value);
+        Console.refresh();
+      } catch (error) {
+        alert(error.message || '切換賽事失敗');
+      } finally {
+        event.target.disabled = false;
+      }
+    });
+    document.getElementById('archiveEventBtn').addEventListener('click', async () => {
+      const state = T.load();
+      const title = `${state.meta.eventDate} · ${state.meta.venue}`;
+      if (!confirm(`確定封存「${title}」？\n封存後仍可隨時切換查看與下載。`)) return;
+      try {
+        await BPEvents.archiveCurrent();
+        Console.refresh();
+      } catch (error) {
+        alert(error.message || '封存失敗');
+      }
+    });
+  },
+
+  async renderEventControls(s) {
+    const activeId = s.meta.eventId;
+    const title = document.getElementById('eventCurrentTitle');
+    const meta = document.getElementById('eventCurrentMeta');
+    const select = document.getElementById('eventSelect');
+    const archiveButton = document.getElementById('archiveEventBtn');
+    if (!title || !meta || !select) return;
+
+    title.textContent = `${s.meta.eventDate} · ${s.meta.venue}`;
+    const statusLabels = {
+      setup: '登記中',
+      qualifier: '資格賽',
+      ranking: '排行榜',
+      knockout: '八強賽',
+      done: '賽事完成',
+    };
+    meta.textContent = `${s.trainers.length} 位訓練家 · ${statusLabels[s.meta.status] || '準備中'}${s.meta.archivedAt ? ' · 已封存' : ''}`;
+    archiveButton.disabled = Boolean(s.meta.archivedAt);
+    archiveButton.textContent = s.meta.archivedAt ? '今日賽果已封存' : '封存今日賽果';
+
+    try {
+      const events = await BPEvents.list();
+      if (T.load().meta.eventId !== activeId) return;
+      select.innerHTML = events.map(event => {
+        const archived = event.archivedAt ? ' · 已封存' : '';
+        return `<option value="${esc(event.id)}" ${event.id === activeId ? 'selected' : ''}>${esc(event.eventDate)} · ${esc(event.venue)} · ${event.trainerCount} 位${archived}</option>`;
+      }).join('');
+    } catch (error) {
+      console.error('無法讀取歷史賽事', error);
+    }
   },
 
   /* ---------- 賽事管理主畫面 ---------- */
@@ -290,6 +385,8 @@ const Console = {
   /* ---------- 資格賽列印資料表 ---------- */
   qualPrintSheet(s) {
     const rounds = s.qual.rounds || [];
+    const eventDate = s.meta.eventDate || BPEvents.localDate(s.meta.createdAt);
+    const venue = s.meta.venue || '布拉克星球教室';
     const opponentRows = s.trainers.map(t => {
       const opponents = rounds.map(r => {
         const m = r.find(x => x.a === t.id || x.b === t.id);
@@ -316,16 +413,18 @@ const Console = {
       return `<tr><td>第 ${ri + 1} 輪</td><td>教室 ${T.qualClassroom(m, ri)}</td><td>第 ${m.table} 桌</td><td>#${a?.no} ${esc(a?.name || '')}</td><td>${b ? `#${b.no} ${esc(b.name)}` : '輪空'}</td><td>${winner}</td></tr>`;
     }).join('')).join('');
     return `<section class="qualification-print-sheet" id="qualificationPrintSheet">
-      <header class="print-sheet-head"><div><p class="print-kicker">BLOCK PLANET CAMP LEAGUE</p><h1>資格賽對戰資料表</h1><p>${esc(s.meta.name)}　·　共 ${rounds.length} 輪</p></div><div class="print-date">列印日期<br><b>${new Date().toLocaleDateString('zh-TW')}</b></div></header>
+      <header class="print-sheet-head"><div><p class="print-kicker">BLOCK PLANET CAMP LEAGUE</p><h1>資格賽對戰資料表</h1><p>${esc(s.meta.name)}　·　${esc(eventDate)}　·　${esc(venue)}　·　共 ${rounds.length} 輪</p></div><div class="print-date">賽事日期<br><b>${esc(eventDate)}</b></div></header>
       <section class="print-summary"><h2>訓練家對手總表</h2><p>每一列是一位訓練家；快速格式如「VS：#3、#10、#17」，各輪欄位可再逐一核對，輪空以「輪空」標示。</p><table><thead><tr><th>編號</th><th>訓練家</th><th>對手順序</th>${rounds.map((_, i) => `<th>第 ${i + 1} 輪 VS</th>`).join('')}<th>勝</th><th>負</th><th>排名</th></tr></thead><tbody>${opponentRows}</tbody></table></section>
       <section class="print-summary"><h2>各場對戰、教室與結果</h2><p>每輪依桌次平均輪替分配教室 1、2、3，讓各教室同時進行的場次盡量平均。</p><table><thead><tr><th>輪次</th><th>教室</th><th>桌號</th><th>訓練家 A</th><th>訓練家 B</th><th>結果</th></tr></thead><tbody>${matchRows}</tbody></table></section>
-      <footer class="print-sheet-foot"><span>裁判確認後留存</span><span>資格賽共 ${rounds.length} 輪　·　前 8 名晉級八強</span></footer>
+      <footer class="print-sheet-foot"><span>${esc(eventDate)}　·　${esc(venue)}　·　裁判確認後留存</span><span>資格賽共 ${rounds.length} 輪　·　前 8 名晉級八強</span></footer>
     </section>`;
   },
 
   /* ---------- 下載資格賽教室工作檔 ---------- */
   qualDownloadDocument(s) {
     const rounds = s.qual.rounds || [];
+    const eventDate = s.meta.eventDate || BPEvents.localDate(s.meta.createdAt);
+    const venue = s.meta.venue || '布拉克星球教室';
     const roomColors = {
       1: { main: '#1769e8', soft: '#edf5ff', label: '藍色教室' },
       2: { main: '#15966a', soft: '#ecfaf4', label: '綠色教室' },
@@ -376,7 +475,7 @@ const Console = {
       }).join('');
       return `<article class="room-sheet" style="--room:${theme.main};--room-soft:${theme.soft}">
         <header class="room-head">
-          <div><p>BLOCK PLANET CAMP LEAGUE</p><h1>教室 ${roomNo} 裁判場次表</h1></div>
+          <div><p>BLOCK PLANET CAMP LEAGUE　·　${safe(eventDate)}　·　${safe(venue)}</p><h1>教室 ${roomNo} 裁判場次表</h1></div>
           <div class="room-chip">${theme.label}</div>
         </header>
         <div class="room-summary">
@@ -384,7 +483,7 @@ const Console = {
           <span>選手與對手都完成上一場後即可開打，不必等待全體換輪。</span>
         </div>
         ${roundBlocks}
-        <footer>教室 ${roomNo}　·　裁判簽名：________________　·　交回時間：________</footer>
+        <footer>${safe(eventDate)}　·　${safe(venue)}　·　教室 ${roomNo}　·　裁判簽名：________________　·　交回時間：________</footer>
       </article>`;
     }).join('');
     const routeRows = [...s.trainers]
@@ -406,7 +505,7 @@ const Console = {
 <style>
 *{box-sizing:border-box}body{margin:0;background:#eef3f9;color:#142b50;font-family:"Noto Sans TC","PingFang TC",Arial,sans-serif}
 .cover,.room-sheet,.route-sheet{width:min(1180px,calc(100% - 32px));margin:24px auto;background:#fff;border:1px solid #cfdded;border-radius:12px;box-shadow:0 8px 24px #173a6914;padding:28px}
-.cover{border-top:10px solid #1769e8}.eyebrow,.room-head p{margin:0 0 6px;color:#1769e8;font-size:12px;font-weight:900;letter-spacing:.08em}.cover h1,.room-head h1{margin:0;font-size:30px}.cover-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-top:22px}.metric{padding:14px;border:1px solid #d8e4f2;background:#f7faff;border-radius:8px}.metric span{display:block;color:#647895;font-size:13px}.metric b{font-size:22px}
+.cover{border-top:10px solid #1769e8}.eyebrow,.room-head p{margin:0 0 6px;color:#1769e8;font-size:12px;font-weight:900;letter-spacing:.08em}.cover h1,.room-head h1{margin:0;font-size:30px}.cover-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-top:22px}.metric{padding:14px;border:1px solid #d8e4f2;background:#f7faff;border-radius:8px}.metric span{display:block;color:#647895;font-size:13px}.metric b{font-size:22px}
 .legend{display:flex;gap:12px;margin-top:18px;flex-wrap:wrap}.legend span{padding:8px 12px;border-radius:6px;font-weight:800}.notice{margin-top:18px;padding:14px 16px;background:#fff6d8;border-left:5px solid #ffc400;font-weight:700}
 .room-sheet{border-top:10px solid var(--room);page-break-before:always}.room-head{display:flex;align-items:center;justify-content:space-between;border-bottom:2px solid var(--room);padding-bottom:14px}.room-head p{color:var(--room)}.room-chip{background:var(--room);color:#fff;padding:10px 16px;border-radius:6px;font-weight:900}.room-summary{display:flex;gap:20px;align-items:center;margin:16px 0;padding:12px 14px;background:var(--room-soft);border-left:5px solid var(--room)}.room-summary span{color:#516681}
 .round-block{margin-top:20px}.round-block h2{display:flex;align-items:center;justify-content:space-between;margin:0;padding:10px 12px;background:var(--room);color:#fff;font-size:19px;border-radius:6px 6px 0 0}.round-block h2 span{font-size:13px}
@@ -419,6 +518,8 @@ table{width:100%;border-collapse:collapse;table-layout:fixed}th,td{border:1px so
   <p class="eyebrow">BLOCK PLANET CAMP LEAGUE</p>
   <h1>${safe(s.meta.name)}－資格賽教室分配</h1>
   <div class="cover-grid">
+    <div class="metric"><span>比賽日期</span><b>${safe(eventDate)}</b></div>
+    <div class="metric"><span>比賽場地</span><b style="font-size:18px">${safe(venue)}</b></div>
     <div class="metric"><span>參賽訓練家</span><b>${s.trainers.length} 位</b></div>
     <div class="metric"><span>資格賽輪次</span><b>${rounds.length} 輪</b></div>
     <div class="metric"><span>總場次</span><b>${rounds.flat().length} 場</b></div>
@@ -428,7 +529,7 @@ table{width:100%;border-collapse:collapse;table-layout:fixed}th,td{border:1px so
   <div class="notice">自由流水賽制：每一場獨立開打。兩位選手完成上一場後，可直接到指定教室找裁判，不必等同輪其他場次。</div>
 </section>
 ${roomSections}
-<article class="route-sheet"><h1>訓練家移動總表</h1><p>中央裁判可用編號快速告知每位訓練家下一場的教室與對手。</p>
+<article class="route-sheet"><h1>訓練家移動總表</h1><p>${safe(eventDate)}　·　${safe(venue)}　·　中央裁判可用編號快速告知每位訓練家下一場的教室與對手。</p>
 <table><thead><tr><th>編號</th><th>訓練家</th>${rounds.map((_, index) => `<th>第 ${index + 1} 輪</th>`).join('')}</tr></thead><tbody>${routeRows}</tbody></table></article>
 </body></html>`;
   },
@@ -533,8 +634,9 @@ ${roomSections}
         }
       }
 
-      const date = new Date().toISOString().slice(0, 10);
-      pdf.save(`布拉克星球_資格賽教室分配_${s.trainers.length}人_${date}.pdf`);
+      const eventDate = s.meta.eventDate || BPEvents.localDate(s.meta.createdAt);
+      const safeVenue = String(s.meta.venue || '布拉克星球教室').replace(/[\\/:*?"<>|]/g, '-');
+      pdf.save(`布拉克星球_資格賽教室分配_${eventDate}_${safeVenue}_${s.trainers.length}人.pdf`);
     } catch (error) {
       console.error('Qualification PDF download failed:', error);
       alert('PDF 產生失敗，請重新整理頁面後再試一次。');
@@ -743,8 +845,10 @@ ${roomSections}
     const blob = new Blob([T.exportJSON(s)], { type: 'application/json' });
     const a = document.createElement('a');
     a.href = URL.createObjectURL(blob);
-    a.download = '布拉克星球賽事備份.json';
+    const safeVenue = String(s.meta.venue || '場地').replace(/[\\/:*?"<>|]/g, '-');
+    a.download = `布拉克星球賽事備份-${s.meta.eventDate}-${safeVenue}.json`;
     a.click();
+    setTimeout(() => URL.revokeObjectURL(a.href), 1000);
   },
   importData(e) {
     const f = e.target.files[0]; if (!f) return;
