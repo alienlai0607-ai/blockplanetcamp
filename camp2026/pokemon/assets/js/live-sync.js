@@ -7,6 +7,10 @@
     pollMs: 3000,
     requestTimeoutMs: 30000,
   };
+  const FORCED_DELETED_TRAINER_IDS = new Set([
+    'T31_624152',
+    'T32_69902',
+  ]);
   const clientId = localStorage.getItem('bp_sync_client_id')
     || `device_${Date.now()}_${Math.random().toString(36).slice(2, 9)}`;
   localStorage.setItem('bp_sync_client_id', clientId);
@@ -56,11 +60,18 @@
 
   function stateForSync(source) {
     const next = copy(source || {});
-    next.trainers = (next.trainers || []).map(trainer => {
-      const lightweight = { ...trainer };
-      delete lightweight.photo;
-      return lightweight;
-    });
+    next.meta ||= {};
+    next.meta.deletedTrainerIds = Array.from(new Set([
+      ...(next.meta.deletedTrainerIds || []),
+      ...FORCED_DELETED_TRAINER_IDS,
+    ]));
+    next.trainers = (next.trainers || [])
+      .filter(trainer => !next.meta.deletedTrainerIds.includes(trainer.id))
+      .map(trainer => {
+        const lightweight = { ...trainer };
+        delete lightweight.photo;
+        return lightweight;
+      });
     return next;
   }
 
@@ -74,10 +85,16 @@
     const next = copy(remoteState || {});
     next.meta ||= {};
     next.meta.eventId ||= eventId;
-    next.trainers = (next.trainers || []).map(trainer => ({
-      ...trainer,
-      photo: trainer.photo || photos.get(trainer.id) || '',
-    }));
+    next.meta.deletedTrainerIds = Array.from(new Set([
+      ...(next.meta.deletedTrainerIds || []),
+      ...FORCED_DELETED_TRAINER_IDS,
+    ]));
+    next.trainers = (next.trainers || [])
+      .filter(trainer => !next.meta.deletedTrainerIds.includes(trainer.id))
+      .map(trainer => ({
+        ...trainer,
+        photo: trainer.photo || photos.get(trainer.id) || '',
+      }));
     return next;
   }
 
@@ -129,8 +146,8 @@
     revisions.set(eventId, result.revision);
 
     if (result.state && activeEventId() === eventId) {
-      trainerCount = result.state.trainers?.length || 0;
       const restoredState = restoreLocalPhotos(result.state, eventId);
+      trainerCount = restoredState.trainers?.length || 0;
       if (restoredState.meta.eventId !== eventId) return result;
       const current = localStorage.getItem('bp_tournament');
       const next = JSON.stringify(restoredState);
