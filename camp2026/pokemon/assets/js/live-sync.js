@@ -216,6 +216,21 @@
     }
   }
 
+  async function selectRemoteActiveEvent() {
+    const result = await apiRequest('/api/events', 'GET');
+    const remoteEvents = Array.isArray(result) ? result : (result.events || []);
+    const latestActive = remoteEvents.find(event => !event.archivedAt);
+    const localId = activeEventId();
+    if (!latestActive?.id || latestActive.id === localId) return false;
+    queues.delete(localId);
+    status('正在載入今日賽事…', 'busy');
+    if (window.BPEvents?.switchTo) {
+      await window.BPEvents.switchTo(latestActive.id);
+      return true;
+    }
+    return false;
+  }
+
   const BPSync = {
     config: CONFIG,
     queueMerge(state) {
@@ -227,7 +242,8 @@
       setTimeout(flush, 80);
     },
     async listEvents() {
-      return apiRequest('/api/events', 'GET');
+      const result = await apiRequest('/api/events', 'GET');
+      return Array.isArray(result) ? result : (result.events || []);
     },
     async createEvent(state) {
       const result = await apiRequest('/api/events', 'POST', {
@@ -249,6 +265,11 @@
       if (!validConfig()) {
         status('同步尚未啟用', 'error');
         return;
+      }
+      try {
+        await selectRemoteActiveEvent();
+      } catch (_) {
+        status('正在重新連線，本機資料已保存', 'error');
       }
       const local = activeState();
       const eventId = local?.meta?.eventId;
