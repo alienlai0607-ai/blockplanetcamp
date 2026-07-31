@@ -1,8 +1,9 @@
-/* Multi-device live tournament sync. The endpoint is injected before deployment. */
+/* Multi-device live tournament sync, isolated by event date and venue. */
 (function () {
   const CONFIG = {
-    endpoint: 'https://radius-release-drinking-contacts.trycloudflare.com',
-    key: 'bp-camp-20260730-live',
+    endpoint: localStorage.getItem('bp_sync_endpoint')
+      || 'https://blockplanet-pokemon-camp-sync.alienlai0607.workers.dev',
+    key: localStorage.getItem('bp_sync_key') || 'bp-camp-20260730-live',
     pollMs: 3000,
     requestTimeoutMs: 30000,
   };
@@ -10,16 +11,25 @@
     || `device_${Date.now()}_${Math.random().toString(36).slice(2, 9)}`;
   localStorage.setItem('bp_sync_client_id', clientId);
 
-  let revision = -1;
+  const revisions = new Map();
+  const queues = new Map();
   let pushing = false;
-  let queuedState = null;
-  let timer = null;
+  let pollTimer = null;
   let retryTimer = null;
   let retryDelay = 1500;
   let trainerCount = 0;
 
   function validConfig() {
-    return /^https:\/\//.test(CONFIG.endpoint) && !CONFIG.endpoint.includes('BP_SYNC_');
+    return /^https?:\/\//.test(CONFIG.endpoint) && !CONFIG.endpoint.includes('BP_SYNC_');
+  }
+
+  function activeState() {
+    return Store.get('bp_tournament', null);
+  }
+
+  function activeEventId() {
+    const state = activeState();
+    return state?.meta?.eventId || window.BPEvents?.activeId?.() || '';
   }
 
   function status(text, mode) {
@@ -40,8 +50,12 @@
     chip.style.color = mode === 'ok' ? '#08783f' : mode === 'busy' ? '#735600' : '#a3172d';
   }
 
+  function copy(value) {
+    return value == null ? value : JSON.parse(JSON.stringify(value));
+  }
+
   function stateForSync(source) {
-    const next = JSON.parse(JSON.stringify(source || {}));
+    const next = copy(source || {});
     next.trainers = (next.trainers || []).map(trainer => {
       const lightweight = { ...trainer };
       delete lightweight.photo;
@@ -50,12 +64,16 @@
     return next;
   }
 
-  function restoreLocalPhotos(remoteState) {
-    const current = Store.get('bp_tournament', null);
-    const photos = new Map((current?.trainers || [])
-      .filter(trainer => trainer.photo)
-      .map(trainer => [trainer.id, trainer.photo]));
-    const next = JSON.parse(JSON.stringify(remoteState || {}));
+  function restoreLocalPhotos(remoteState, eventId) {
+    const current = activeState();
+    const photos = current?.meta?.eventId === eventId
+      ? new Map((current.trainers || [])
+        .filter(trainer => trainer.photo)
+        .map(trainer => [trainer.id, trainer.photo]))
+      : new Map();
+    const next = copy(remoteState || {});
+    next.meta ||= {};
+    next.meta.eventId ||= eventId;
     next.trainers = (next.trainers || []).map(trainer => ({
       ...trainer,
       photo: trainer.photo || photos.get(trainer.id) || '',
@@ -63,12 +81,14 @@
     return next;
   }
 
-  async function request(method, payload) {
+  async function apiRequest(path, method, payload, since) {
     const controller = new AbortController();
     const timeout = setTimeout(() => controller.abort(), CONFIG.requestTimeoutMs);
-    const since = method === 'GET' && revision >= 0 ? `?since=${revision}` : '';
+    const query = method === 'GET' && Number.isFinite(since) && since >= 0
+      ? `${path.includes('?') ? '&' : '?'}since=${since}`
+      : '';
     try {
-      const response = await fetch(`${CONFIG.endpoint}/api/state${since}`, {
+      const response = await fetch(`${CONFIG.endpoint}${path}${query}`, {
         method,
         cache: 'no-store',
         signal: controller.signal,
@@ -78,68 +98,97 @@
         },
         body: payload ? JSON.stringify(payload) : undefined,
       });
-      if (!response.ok) throw new Error(`sync_${response.status}`);
+      if (!response.ok) {
+        const error = new Error(`sync_${response.status}`);
+        error.status = response.status;
+        throw error;
+      }
       return response.json();
     } finally {
       clearTimeout(timeout);
     }
   }
 
-  function apply(result) {
-    if (!result || result.revision == null) return;
-    if (result.revision < revision) return;
-    revision = result.revision;
-    if (result.state) {
+  function eventPath(eventId, suffix) {
+    return `/api/events/${encodeURIComponent(eventId)}${suffix || '/state'}`;
+  }
+
+  async function requestEvent(method, eventId, payload) {
+    return apiRequest(
+      eventPath(eventId),
+      method,
+      payload,
+      method === 'GET' ? (revisions.get(eventId) ?? -1) : -1,
+    );
+  }
+
+  function apply(result, eventId) {
+    if (!result || result.revision == null) return result;
+    const previous = revisions.get(eventId) ?? -1;
+    if (result.revision < previous) return result;
+    revisions.set(eventId, result.revision);
+
+    if (result.state && activeEventId() === eventId) {
       trainerCount = result.state.trainers?.length || 0;
-      const restoredState = restoreLocalPhotos(result.state);
+      const restoredState = restoreLocalPhotos(result.state, eventId);
+      if (restoredState.meta.eventId !== eventId) return result;
       const current = localStorage.getItem('bp_tournament');
       const next = JSON.stringify(restoredState);
       if (current !== next) {
         localStorage.setItem('bp_tournament', next);
+        window.BPEvents?.save(restoredState).catch(console.error);
         window.dispatchEvent(new CustomEvent('bp-tournament-sync', {
-          detail: { revision, updatedAt: result.updatedAt },
+          detail: { eventId, revision: result.revision, updatedAt: result.updatedAt },
         }));
       }
     }
-    status(`多機同步中 · ${trainerCount} 位`, 'ok');
+    if (activeEventId() === eventId) {
+      status(`多機同步中 · ${trainerCount} 位`, 'ok');
+    }
     retryDelay = 1500;
+    return result;
   }
 
   function scheduleRetry() {
     clearTimeout(retryTimer);
-    retryTimer = setTimeout(flush, retryDelay);
+    retryTimer = setTimeout(() => {
+      retryTimer = null;
+      flush();
+    }, retryDelay);
     retryDelay = Math.min(retryDelay * 2, 15000);
   }
 
   async function flush() {
-    if (!validConfig() || pushing || !queuedState) return;
+    if (!validConfig() || pushing || !queues.size) return;
+    const [eventId, state] = queues.entries().next().value;
+    queues.delete(eventId);
     pushing = true;
-    const state = queuedState;
-    queuedState = null;
-    status('正在合併各裝置資料…', 'busy');
+    if (eventId === activeEventId()) status('正在合併各裝置資料…', 'busy');
     try {
-      apply(await request('POST', { clientId, state }));
+      apply(await requestEvent('POST', eventId, { clientId, state }), eventId);
     } catch (error) {
-      queuedState = state;
-      status('正在重新連線，本機資料已保存', 'error');
+      queues.set(eventId, state);
+      if (eventId === activeEventId()) status('正在重新連線，本機資料已保存', 'error');
       scheduleRetry();
     } finally {
       pushing = false;
+      if (queues.size && !retryTimer) setTimeout(flush, 30);
     }
   }
 
-  async function pull() {
-    if (!validConfig() || pushing) return;
+  async function pull(eventId) {
+    const targetId = eventId || activeEventId();
+    if (!validConfig() || !targetId) return null;
     try {
-      const result = await request('GET');
-      if (result.revision !== revision || result.state) {
-        apply(result);
-      } else {
+      const result = await requestEvent('GET', targetId);
+      apply(result, targetId);
+      if (result.unchanged && targetId === activeEventId()) {
         status(`多機同步中 · ${trainerCount} 位`, 'ok');
-        retryDelay = 1500;
       }
-    } catch (_) {
-      status('正在重新連線，本機資料已保存', 'error');
+      return result;
+    } catch (error) {
+      if (targetId === activeEventId()) status('正在重新連線，本機資料已保存', 'error');
+      throw error;
     }
   }
 
@@ -156,40 +205,93 @@
     );
   }
 
+  async function ensureRemoteEvent(state) {
+    const eventId = state?.meta?.eventId;
+    if (!eventId) return null;
+    try {
+      return await pull(eventId);
+    } catch (error) {
+      if (error.status !== 404) throw error;
+      return apiRequest('/api/events', 'POST', { clientId, state: stateForSync(state) });
+    }
+  }
+
   const BPSync = {
+    config: CONFIG,
     queueMerge(state) {
-      queuedState = stateForSync(state);
-      clearTimeout(timer);
-      timer = setTimeout(flush, 80);
+      const eventId = state?.meta?.eventId;
+      if (!eventId) return;
+      queues.set(eventId, stateForSync(state));
+      clearTimeout(retryTimer);
+      retryTimer = null;
+      setTimeout(flush, 80);
+    },
+    async listEvents() {
+      return apiRequest('/api/events', 'GET');
+    },
+    async createEvent(state) {
+      const result = await apiRequest('/api/events', 'POST', {
+        clientId,
+        state: stateForSync(state),
+      });
+      if (result?.event?.id && result.revision != null) {
+        revisions.set(result.event.id, result.revision);
+      }
+      return result;
+    },
+    async pullEvent(eventId) {
+      return pull(eventId);
+    },
+    async archiveEvent(eventId) {
+      return apiRequest(eventPath(eventId, '/archive'), 'POST', { clientId });
     },
     async start() {
       if (!validConfig()) {
         status('同步尚未啟用', 'error');
         return;
       }
-      const local = Store.get('bp_tournament', null);
+      const local = activeState();
+      const eventId = local?.meta?.eventId;
       trainerCount = local?.trainers?.length || 0;
-      try {
-        const remote = await request('GET');
-        apply(remote);
-        if (hasUnsyncedData(local, remote.state)) {
-          queuedState = stateForSync(local);
-          await flush();
+      if (local && eventId) {
+        try {
+          const remote = await ensureRemoteEvent(local);
+          if (remote?.state && hasUnsyncedData(local, remote.state)) {
+            BPSync.queueMerge(local);
+            await flush();
+          }
+        } catch (_) {
+          BPSync.queueMerge(local);
+          status('正在重新連線，本機資料已保存', 'error');
         }
-      } catch (_) {
-        if (local) queuedState = stateForSync(local);
-        status('正在重新連線，本機資料已保存', 'error');
-        if (queuedState) scheduleRetry();
       }
-      setInterval(pull, CONFIG.pollMs);
+      clearInterval(pollTimer);
+      pollTimer = setInterval(() => pull().catch(() => {}), CONFIG.pollMs);
     },
   };
 
   window.BPSync = BPSync;
   window.addEventListener('online', () => {
     retryDelay = 1500;
-    if (queuedState) flush();
-    else pull();
+    if (queues.size) flush();
+    else pull().catch(() => {});
+  });
+  window.addEventListener('bp-event-changed', () => {
+    const state = activeState();
+    const eventId = state?.meta?.eventId;
+    trainerCount = state?.trainers?.length || 0;
+    if (!eventId) return;
+    revisions.delete(eventId);
+    ensureRemoteEvent(state)
+      .then(result => {
+        if (result?.state && hasUnsyncedData(state, result.state)) {
+          BPSync.queueMerge(state);
+        }
+      })
+      .catch(() => {
+        BPSync.queueMerge(state);
+        status('正在重新連線，本機資料已保存', 'error');
+      });
   });
   window.addEventListener('DOMContentLoaded', () => BPSync.start());
 })();
