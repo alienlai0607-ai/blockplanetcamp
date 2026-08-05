@@ -1564,6 +1564,31 @@ function monthlyWeekdayCols(campName, session) {
   return cols;
 }
 
+// === 特定營隊固定上課日（梯次欄沒寫日期時用；自動扣週六日）===
+const CAMP_ROSTER_DATES = {
+  '小一新生營': { m1: 8, d1: 3, m2: 8, d2: 26 }   // 2026 暑期：8/3～8/26 平日
+};
+function campRosterOverride(campName) {
+  const key = Object.keys(CAMP_ROSTER_DATES).find(k => String(campName || '').includes(k));
+  return key ? CAMP_ROSTER_DATES[key] : null;
+}
+function rangeWeekdayCols({ m1, d1, m2, d2 }) {
+  const cols = [];
+  const sameMonth = m1 === m2;
+  const cursor = new Date(2026, m1 - 1, d1);
+  const end = new Date(2026, m2 - 1, d2);
+  let shade = false;
+  while (cursor <= end) {
+    const dow = cursor.getDay();
+    if (dow !== 0 && dow !== 6) {                    // 扣掉週六日
+      if (dow === 1) shade = !shade;                 // 每逢週一換底色群組
+      cols.push({ label: sameMonth ? String(cursor.getDate()) : (cursor.getMonth() + 1) + '/' + cursor.getDate(), shade });
+    }
+    cursor.setDate(cursor.getDate() + 1);
+  }
+  return cols;
+}
+
 // === 從「年級」欄抽出標準年級（吃乾淨值，也吃「姓名+年級」混填）===
 const _CN_NUM = { '一':1,'二':2,'三':3,'四':4,'五':5,'六':6,'七':7,'八':8,'九':9 };
 function extractGrade(raw) {
@@ -1799,9 +1824,12 @@ function renderSession(sessionIdx) {
     </div>`;
   });
   const monthly = isMonthlyCamp(_currentCampData.camp.name, session);
+  const _rosterOv = !monthly && campRosterOverride(_currentCampData.camp.name);
   const btnLabel = monthly
     ? `🖨️ 依年級列印點名簿（含七月每日簽到格，${students.length} 人）`
-    : `🖨️ 列印此梯次簽到單（${students.length} 人）`;
+    : _rosterOv
+      ? `🖨️ 列印此梯次簽到單（含 ${_rosterOv.m1}/${_rosterOv.d1}～${_rosterOv.m2}/${_rosterOv.d2} 平日簽到格，${students.length} 人）`
+      : `🖨️ 列印此梯次簽到單（${students.length} 人）`;
   html += `<button class="print-btn" onclick="printCurrent(${sessionIdx})">${btnLabel}</button></div>`;
   document.getElementById('sessionContent').innerHTML = html;
 }
@@ -1825,6 +1853,8 @@ function printFromBtn(btn) {
 // 依梯次／日期決定簽到欄位：包月 → 整月平日每日格；一般營隊 → 梯次日期；都沒有 → 單一簽到格
 function rosterCols(campName, session) {
   if (isMonthlyCamp(campName, session)) return monthlyWeekdayCols(campName, session);
+  const ov = campRosterOverride(campName);
+  if (ov) return rangeWeekdayCols(ov);
   return parseDates(session).map(d => ({ label: d, shade: false }));
 }
 
@@ -1846,6 +1876,8 @@ function printRollCallByGrade(campName, session, students) {
 // 共用：產生列印文件。sections = [{ label, students }]，每個 section 一頁。
 function rosterPrint(campName, session, sections) {
   const cols = rosterCols(campName, session);
+  const _ov = !isMonthlyCamp(campName, session) && campRosterOverride(campName);
+  const dateNote = _ov ? `｜上課日 ${_ov.m1}/${_ov.d1}～${_ov.m2}/${_ov.d2}（週一至週五）` : '';
   const hasCols = cols.length > 0;
   const headCols = hasCols ? cols : [{ label: '簽到', shade: false }];
   const dateCount = headCols.length;
@@ -1866,8 +1898,8 @@ function rosterPrint(campName, session, sections) {
       rows += `<tr><td class="num">${i + 1}</td><td class="name">${s.n}${s.g ? ' (' + s.g + ')' : ''}</td>${headCols.map(c => `<td class="check${c.shade ? ' wk' : ''}">${cellMark}</td>`).join('')}<td class="note">${noteItems.join('<br>')}</td></tr>`;
     });
     const info = sec.label
-      ? `${session}｜<b style="color:#C2410C">${sec.label}</b>｜共 ${n} 位`
-      : `${session}｜共 ${n} 位學員`;
+      ? `${session}${dateNote}｜<b style="color:#C2410C">${sec.label}</b>｜共 ${n} 位`
+      : `${session}${dateNote}｜共 ${n} 位學員`;
     return `<section style="font-size:${fontSize}pt;${si > 0 ? 'page-break-before:always;' : ''}">
       <h1>${campName}${sec.label ? ' — ' + sec.label : ''}</h1>
       <div class="info">${info}</div>
