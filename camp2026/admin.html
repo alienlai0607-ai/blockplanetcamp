@@ -1837,7 +1837,7 @@ function renderSession(sessionIdx) {
 function printCurrent(sessionIdx) {
   const { camp, sessionMap, sessionKeys } = _currentCampData;
   const session = sessionKeys[sessionIdx];
-  const students = sessionMap[session].map(s => ({ n: s.name, g: s.gender, a: s.allergy, note: s.note || '', gr: s.grade || '' }));
+  const students = sessionMap[session].map(s => ({ n: s.name, g: s.gender, a: s.allergy, note: s.note || '', gr: s.grade || '', p: s.parentPhone || '' }));
   if (isMonthlyCamp(camp.name, session)) printRollCallByGrade(camp.name, session, students);
   else printRollCall(camp.name, session, students);
 }
@@ -1845,7 +1845,7 @@ function closeModal(e) { if (!e || e.target.id === 'modal') document.getElementB
 function printFromBtn(btn) {
   const camp = decodeURIComponent(btn.dataset.camp);
   const session = decodeURIComponent(btn.dataset.session);
-  const students = JSON.parse(decodeURIComponent(btn.dataset.students)).map(s => ({ ...s, gr: s.gr || s.grade || '' }));
+  const students = JSON.parse(decodeURIComponent(btn.dataset.students)).map(s => ({ ...s, gr: s.gr || s.grade || '', p: s.p || s.parentPhone || '' }));
   if (isMonthlyCamp(camp, session)) printRollCallByGrade(camp, session, students);
   else printRollCall(camp, session, students);
 }
@@ -1873,6 +1873,24 @@ function printRollCallByGrade(campName, session, students) {
   rosterPrint(campName, session, sections);
 }
 
+// 家長電話排版：家長常填兩支（「爸0912…、媽0922…」）→ 拆成每支一行，避免撐爆欄寬
+function fmtRosterPhone(raw) {
+  const t = normalizeDigits(raw).trim();
+  if (!t) return '';
+  // 抓「(可選中文稱謂)+號碼」成對，稱謂跟號碼黏在同一行（避免「爸爸」自己一行）
+  const pairs = [...t.matchAll(/([一-龥]{1,3})?\s*[:：]?\s*(0\d{1,3}[-\s]?\d{3}[-\s]?\d{3,4})/g)]
+    .map(m => ({ rel: relShort(m[1]), num: m[2].replace(/[-\s]/g, '') }));
+  if (!pairs.length) return `<span class="ph">${t}</span>`;
+  return pairs.map(p => `<span class="ph">${p.rel ? `<i class="rel">${p.rel}</i>` : ''}${p.num}</span>`).join('<br>');
+}
+// 稱謂縮成一個字，省欄寬（爸爸→爸、奶奶→嬤…）
+const _REL_SHORT = { '爸爸':'爸','父親':'爸','爹':'爸','媽媽':'媽','母親':'媽','阿公':'公','爺爺':'公','阿嬤':'嬤','奶奶':'嬤','外公':'公','外婆':'嬤','姑姑':'姑','阿姨':'姨','舅舅':'舅','叔叔':'叔' };
+function relShort(rel) {
+  if (!rel) return '';
+  const r = rel.trim();
+  return _REL_SHORT[r] || r.slice(0, 1);
+}
+
 // 共用：產生列印文件。sections = [{ label, students }]，每個 section 一頁。
 function rosterPrint(campName, session, sections) {
   const cols = rosterCols(campName, session);
@@ -1882,8 +1900,9 @@ function rosterPrint(campName, session, sections) {
   const headCols = hasCols ? cols : [{ label: '簽到', shade: false }];
   const dateCount = headCols.length;
   const many = dateCount > 14;                 // 欄位多（如包月整月）→ 縮窄姓名/備註欄、留白方便打勾
-  const nameWidth = many ? 14 : 22, noteWidth = many ? 13 : 16, numWidth = many ? 4 : 5;
-  const dateWidth = ((100 - nameWidth - noteWidth - numWidth) / dateCount).toFixed(2);
+  const nameWidth = many ? 12 : 18, noteWidth = many ? 11 : 14, numWidth = many ? 4 : 5;
+  const phoneWidth = many ? 12 : 14;           // 家長電話：未到孩子可直接打電話
+  const dateWidth = ((100 - nameWidth - noteWidth - numWidth - phoneWidth) / dateCount).toFixed(2);
   const cellMark = dateCount <= 12 ? '☐' : ''; // 欄位多時不放 ☐，保持清楚
 
   const sectionsHTML = sections.map((sec, si) => {
@@ -1895,7 +1914,8 @@ function rosterPrint(campName, session, sections) {
       const noteItems = [];
       if (s.a && s.a !== '無') noteItems.push('⚠️ ' + s.a);
       if (s.note) noteItems.push('📝 ' + s.note);
-      rows += `<tr><td class="num">${i + 1}</td><td class="name">${s.n}${s.g ? ' (' + s.g + ')' : ''}</td>${headCols.map(c => `<td class="check${c.shade ? ' wk' : ''}">${cellMark}</td>`).join('')}<td class="note">${noteItems.join('<br>')}</td></tr>`;
+      const phone = fmtRosterPhone(s.p);
+      rows += `<tr><td class="num">${i + 1}</td><td class="name">${s.n}${s.g ? ' (' + s.g + ')' : ''}</td><td class="phone">${phone || '—'}</td>${headCols.map(c => `<td class="check${c.shade ? ' wk' : ''}">${cellMark}</td>`).join('')}<td class="note">${noteItems.join('<br>')}</td></tr>`;
     });
     const info = sec.label
       ? `${session}${dateNote}｜<b style="color:#C2410C">${sec.label}</b>｜共 ${n} 位`
@@ -1904,7 +1924,7 @@ function rosterPrint(campName, session, sections) {
       <h1>${campName}${sec.label ? ' — ' + sec.label : ''}</h1>
       <div class="info">${info}</div>
       <table style="--rh:${rowHeight}px">
-        <thead><tr><th style="width:${numWidth}%">No.</th><th style="width:${nameWidth}%">姓名</th>${headCols.map(c => `<th class="${c.shade ? 'wk' : ''}" style="width:${dateWidth}%">${c.label}</th>`).join('')}<th style="width:${noteWidth}%">備註</th></tr></thead>
+        <thead><tr><th style="width:${numWidth}%">No.</th><th style="width:${nameWidth}%">姓名</th><th style="width:${phoneWidth}%">📞 家長電話</th>${headCols.map(c => `<th class="${c.shade ? 'wk' : ''}" style="width:${dateWidth}%">${c.label}</th>`).join('')}<th style="width:${noteWidth}%">備註</th></tr></thead>
         <tbody>${rows}</tbody>
       </table>
     </section>`;
@@ -1916,13 +1936,16 @@ function rosterPrint(campName, session, sections) {
     html, body { margin: 0; padding: 10px; font-family: 'Microsoft JhengHei','PingFang TC','Noto Sans TC',sans-serif; color: #000; }
     h1 { text-align: center; font-size: 18pt; margin: 0 0 6px; font-weight: 900; }
     .info { text-align: center; color: #333; margin-bottom: 10px; font-size: 12pt; }
-    table { width: 100%; border-collapse: collapse; }
+    table { width: 100%; border-collapse: collapse; table-layout: fixed; }
     tr { page-break-inside: avoid; }
     th, td { border: 1.5px solid #000; padding: 3px 5px; text-align: center; height: var(--rh, 24px); vertical-align: middle; word-wrap: break-word; }
     thead th { background: #FFF3E0; font-weight: 900; }
     thead th.wk { background: #FFE5C2; }
     td.num { color: #555; }
-    td.name { text-align: left; padding-left: 8px; font-weight: 700; white-space: nowrap; }
+    td.name { text-align: left; padding-left: 8px; font-weight: 700; line-height: 1.2; }
+    td.phone { font-size: .85em; letter-spacing: .2px; font-weight: 600; line-height: 1.25; padding: 2px 3px; }
+    td.phone .ph { white-space: nowrap; font-family: 'Menlo','Consolas',monospace; }
+    td.phone .rel { font-style: normal; font-size: .82em; color: #555; margin-right: 1px; font-family: 'Microsoft JhengHei','PingFang TC',sans-serif; }
     td.note { text-align: left; padding-left: 6px; font-size: .85em; color: #C93A2A; }
     td.check { color: #aaa; font-size: 1.25em; }
     td.wk { background: #FAFAFA; }

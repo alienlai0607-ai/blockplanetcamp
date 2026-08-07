@@ -269,7 +269,7 @@ function openCamp(idx) {
       </div>`;
     });
 
-    body += `<button class="print-btn" data-camp="${encodeURIComponent(camp.name)}" data-session="${encodeURIComponent(session)}" data-students='${encodeURIComponent(JSON.stringify(students.map(s => ({n:s.name, g:s.gender, a:s.allergy}))))}' onclick="printFromBtn(this)">🖨️ 列印簽到單（${students.length} 人，一頁完成）</button>
+    body += `<button class="print-btn" data-camp="${encodeURIComponent(camp.name)}" data-session="${encodeURIComponent(session)}" data-students='${encodeURIComponent(JSON.stringify(students.map(s => ({n:s.name, g:s.gender, a:s.allergy, p:s.parentPhone||''}))))}' onclick="printFromBtn(this)">🖨️ 列印簽到單（${students.length} 人，一頁完成）</button>
     </div>`;
   });
 
@@ -290,6 +290,24 @@ function printFromBtn(btn) {
   printRollCall(camp, session, students);
 }
 
+// 家長電話排版：家長常填兩支（「爸0912…、媽0922…」）→ 拆成每支一行，避免撐爆欄寬
+function fmtRosterPhone(raw) {
+  const t = String(raw || '').trim();
+  if (!t) return '';
+  // 抓「(可選中文稱謂)+號碼」成對，稱謂跟號碼黏在同一行（避免「爸爸」自己一行）
+  const pairs = [...t.matchAll(/([一-龥]{1,3})?\s*[:：]?\s*(0\d{1,3}[-\s]?\d{3}[-\s]?\d{3,4})/g)]
+    .map(m => ({ rel: relShort(m[1]), num: m[2].replace(/[-\s]/g, '') }));
+  if (!pairs.length) return `<span class="ph">${t}</span>`;
+  return pairs.map(p => `<span class="ph">${p.rel ? `<i class="rel">${p.rel}</i>` : ''}${p.num}</span>`).join('<br>');
+}
+// 稱謂縮成一個字，省欄寬（爸爸→爸、奶奶→嬤…）
+const _REL_SHORT = { '爸爸':'爸','父親':'爸','爹':'爸','媽媽':'媽','母親':'媽','阿公':'公','爺爺':'公','阿嬤':'嬤','奶奶':'嬤','外公':'公','外婆':'嬤','姑姑':'姑','阿姨':'姨','舅舅':'舅','叔叔':'叔' };
+function relShort(rel) {
+  if (!rel) return '';
+  const r = rel.trim();
+  return _REL_SHORT[r] || r.slice(0, 1);
+}
+
 function printRollCall(campName, session, students) {
   const dates = parseDates(session);
   const n = students.length;
@@ -298,16 +316,18 @@ function printRollCall(campName, session, students) {
 
   // 動態計算欄位寬度百分比（橫式 A4）
   const dateCount = dates.length > 0 ? dates.length : 1;
-  const nameWidth = 22;
-  const noteWidth = 16;
+  const nameWidth = 18;
+  const noteWidth = 14;
   const numWidth = 5;
-  const dateWidth = ((100 - nameWidth - noteWidth - numWidth) / dateCount).toFixed(2);
+  const phoneWidth = 13;   // 家長電話：未到孩子可直接打電話
+  const dateWidth = ((100 - nameWidth - noteWidth - numWidth - phoneWidth) / dateCount).toFixed(2);
 
   let rows = '';
   students.forEach((s, i) => {
     rows += `<tr>
       <td class="num">${i + 1}</td>
       <td class="name">${s.n}${s.g ? ' ('+s.g+')' : ''}</td>
+      <td class="phone">${fmtRosterPhone(s.p) || '—'}</td>
       ${(dates.length > 0 ? dates : ['']).map(() => '<td class="check">☐</td>').join('')}
       <td class="note">${s.a && s.a !== '無' ? '⚠️ ' + s.a : ''}</td>
     </tr>`;
@@ -319,12 +339,15 @@ function printRollCall(campName, session, students) {
     html, body { margin: 0; padding: 10px; font-family: 'Microsoft JhengHei','PingFang TC','Noto Sans TC',sans-serif; color: #000; }
     h1 { text-align: center; font-size: 18pt; margin: 0 0 6px; font-weight: 900; color: #000; }
     .info { text-align: center; color: #333; margin-bottom: 10px; font-size: 12pt; }
-    table { width: 100%; border-collapse: collapse; }
+    table { width: 100%; border-collapse: collapse; table-layout: fixed; }
     tr { page-break-inside: avoid; }
     th, td { border: 1.5px solid #000; padding: 4px 6px; text-align: center; font-size: ${fontSize}pt; height: ${rowHeight}px; vertical-align: middle; word-wrap: break-word; }
     th { background: #FFF3E0; font-weight: 900; color: #000; }
     td.num { color: #555; }
-    td.name { text-align: left; padding-left: 10px; font-weight: 700; color: #000; }
+    td.name { text-align: left; padding-left: 10px; font-weight: 700; color: #000; line-height: 1.2; }
+    td.phone { font-size: ${fontSize-2}pt; letter-spacing: .2px; font-weight: 600; line-height: 1.25; padding: 2px 3px; }
+    td.phone .ph { white-space: nowrap; font-family: 'Menlo','Consolas',monospace; }
+    td.phone .rel { font-style: normal; font-size: .82em; color: #555; margin-right: 1px; font-family: 'Microsoft JhengHei','PingFang TC',sans-serif; }
     td.note { text-align: left; padding-left: 8px; font-size: ${fontSize-1}pt; color: #C93A2A; }
     td.check { color: #aaa; font-size: ${fontSize + 4}pt; font-weight: 400; }
     @media print {
@@ -338,6 +361,7 @@ function printRollCall(campName, session, students) {
     <tr>
       <th style="width:${numWidth}%">No.</th>
       <th style="width:${nameWidth}%">姓名</th>
+      <th style="width:${phoneWidth}%">📞 家長電話</th>
       ${(dates.length > 0 ? dates : ['簽到']).map(d => `<th style="width:${dateWidth}%">${d}</th>`).join('')}
       <th style="width:${noteWidth}%">備註</th>
     </tr>
