@@ -91,6 +91,7 @@ let pilotSearch = '';
 let showLicenseForm = false;
 let selectedPilotId = null;
 let deleteConfirmPilotId = null;
+let publicLicenseMode = false;
 let photoDataUrl = null;
 let timerStatus = 'ready'; // ready | countdown | running | paused | finished
 let secondsLeft = 180;
@@ -1639,7 +1640,7 @@ function renderSpectator() {
   root.innerHTML =
     '<header class="audience-topbar"><div><img src="assets/block-planet-logo.png" alt=""><span><strong>BLOCK PLANET LIVE</strong><small>無人機足球・今日戰況</small></span></div>' +
       '<div class="audience-sync"><i></i><span>' + (lastSpectatorSyncAt ? (spectatorConnectionOk ? '即時連線中' : '背景重試中') : '正在連線') + '</span></div>' +
-      '<button id="spectatorSwitchAccessBtn">切換身份</button></header>' +
+      '<div class="audience-actions"><button class="audience-license-button" id="audienceLicenseDownloadBtn">🎫 下載我的駕照</button><button id="spectatorSwitchAccessBtn">切換身份</button></div></header>' +
     '<main class="audience-page">' +
       (spectatorConnectionOk ? '' : '<div class="spectator-offline-note"><b>家長網路較慢，先顯示最近一次戰況。</b><span>系統正在背景自動重試，不需要重新整理。</span></div>') +
       hero +
@@ -1653,12 +1654,98 @@ function renderSpectator() {
       '</div>' +
       '<footer class="audience-footer"><span>觀眾模式・畫面每幾秒自動更新</span><strong>FLY・SCORE・SHINE</strong></footer>' +
     '</main>';
+  $('audienceLicenseDownloadBtn').addEventListener('click', () => openPublicLicenseLookup());
   $('spectatorSwitchAccessBtn').addEventListener('click', showAccessGate);
+}
+
+function normalizedLicenseNumber(value) {
+  return String(value || '').replace(/[^A-Z0-9]/gi, '').toUpperCase();
+}
+
+function findPublicLicenseMatches(query) {
+  const raw = String(query || '').trim();
+  const licenseKey = normalizedLicenseNumber(raw);
+  const exactLicense = pilots.filter((pilot) => normalizedLicenseNumber(pilot.licenseNo) === licenseKey);
+  if (exactLicense.length) return exactLicense;
+  const nameKey = raw.replace(/\s+/g, '').toLocaleLowerCase('zh-Hant');
+  return pilots.filter((pilot) => String(pilot.name || '').replace(/\s+/g, '').toLocaleLowerCase('zh-Hant') === nameKey);
+}
+
+function closePublicLicenseModal() {
+  publicLicenseMode = false;
+  selectedPilotId = null;
+  deleteConfirmPilotId = null;
+  $('modalRoot').innerHTML = '';
+}
+
+function openPublicLicenseLookup(message = '') {
+  publicLicenseMode = false;
+  selectedPilotId = null;
+  deleteConfirmPilotId = null;
+  const root = $('modalRoot');
+  root.innerHTML =
+    '<div class="modal-backdrop public-license-backdrop" id="publicLicenseBackdrop">' +
+      '<section class="public-license-lookup" role="dialog" aria-modal="true" aria-labelledby="publicLicenseTitle">' +
+        '<button class="modal-close" id="publicLicenseCloseBtn" aria-label="關閉">×</button>' +
+        '<div class="public-license-mascot"><img src="assets/lala.jpg" alt="布拉克星球吉祥物"></div>' +
+        '<div class="public-license-copy"><span>MY PILOT LICENSE</span><h2 id="publicLicenseTitle">下載我的無人機足球駕照</h2>' +
+          '<p>輸入<strong>完整駕照編號</strong>或<strong>駕駛員完整姓名</strong>，找到後可直接預覽、列印或儲存成 PDF。</p>' +
+          '<form id="publicLicenseSearchForm" class="public-license-search">' +
+            '<label for="publicLicenseQuery">我的駕照編號或姓名</label>' +
+            '<div><input id="publicLicenseQuery" required autocomplete="name" placeholder="例：BP-2026-123456 或 王小明"><button type="submit">尋找駕照</button></div>' +
+          '</form>' +
+          '<p class="public-license-error" id="publicLicenseError"' + (message ? '' : ' hidden') + '>' + esc(message) + '</p>' +
+          '<small>只會顯示完全相符的駕照；若有同名駕駛員，請改輸入完整駕照編號。</small>' +
+        '</div>' +
+      '</section>' +
+    '</div>';
+
+  const close = () => closePublicLicenseModal();
+  $('publicLicenseCloseBtn').addEventListener('click', close);
+  $('publicLicenseBackdrop').addEventListener('mousedown', (event) => {
+    if (event.target === event.currentTarget) close();
+  });
+  $('publicLicenseSearchForm').addEventListener('submit', async (event) => {
+    event.preventDefault();
+    const input = $('publicLicenseQuery');
+    const button = event.currentTarget.querySelector('button');
+    const error = $('publicLicenseError');
+    const query = input.value.trim();
+    if (!query) return;
+    button.disabled = true;
+    button.textContent = '尋找中…';
+    error.hidden = true;
+    let matches = findPublicLicenseMatches(query);
+    if (!matches.length && !DEMO) {
+      try {
+        pilots = await apiListPilots();
+        matches = findPublicLicenseMatches(query);
+      } catch (loadError) {
+        error.textContent = '目前連線較慢，請稍後再試一次。';
+        error.hidden = false;
+      }
+    }
+    button.disabled = false;
+    button.textContent = '尋找駕照';
+    if (matches.length === 1) {
+      publicLicenseMode = true;
+      selectedPilotId = matches[0].id;
+      renderModal();
+      return;
+    }
+    error.textContent = matches.length > 1
+      ? '找到同名駕駛員，請改輸入卡片上的完整駕照編號。'
+      : '找不到完全相符的駕照，請確認姓名或駕照編號。';
+    error.hidden = false;
+    input.focus();
+    input.select();
+  });
+  $('publicLicenseQuery').focus();
 }
 
 function renderModal() {
   const root = $('modalRoot');
-  if (accessMode !== 'control') { root.innerHTML = ''; return; }
+  if (accessMode !== 'control' && !publicLicenseMode) { root.innerHTML = ''; return; }
   const pilot = selectedPilotId ? getPilot(selectedPilotId) : null;
   if (!pilot) { deleteConfirmPilotId = null; root.innerHTML = ''; return; }
   const checked = eventState.checkedInIds.includes(pilot.id);
@@ -1670,7 +1757,7 @@ function renderModal() {
     '<div class="license-modal">' +
       '<button class="modal-close" id="modalCloseBtn" aria-label="關閉">×</button>' +
       '<div class="print-card">' +
-        '<div class="license-preview-label"><span>公版駕照</span><strong>標準卡 85.6 × 54 mm • 正反面</strong></div>' +
+        '<div class="license-preview-label"><span>' + (publicLicenseMode ? '我的駕照' : '公版駕照') + '</span><strong>標準卡 85.6 × 54 mm • 正反面</strong></div>' +
         '<div class="license-sides">' +
           '<div class="license-card license-front">' +
             '<div class="license-color-rail"><i></i><i></i><i></i><i></i></div>' +
@@ -1731,7 +1818,11 @@ function renderModal() {
         '</div>' +
       '</div>' +
       '<div class="license-modal-actions' + (confirmingDelete ? ' confirming-delete' : '') + '">' +
-        (confirmingDelete
+        (publicLicenseMode
+          ? '<p><strong>這是你的專屬無人機足球駕照！</strong><br><span>手機可在列印畫面選「分享／儲存到檔案」，電腦可選「另存為 PDF」。</span></p>' +
+            '<button class="outline-button" id="backToPublicLicenseSearchBtn">重新查詢</button>' +
+            '<button class="primary-button compact" id="downloadPublicLicenseBtn">下載／儲存駕照</button>'
+          : confirmingDelete
           ? '<p class="delete-warning"><strong>確定永久刪除「' + esc(pilot.name) + '」？</strong><span>這個動作無法復原；若已加入隊伍，分組與賽程會一併重置。</span></p>' +
             '<button class="outline-button" id="cancelDeletePilotBtn">取消</button>' +
             '<button class="danger-button" id="confirmDeletePilotBtn">確定永久刪除</button>'
@@ -1744,10 +1835,19 @@ function renderModal() {
   '</div>';
 
   $('modalBackdrop').addEventListener('mousedown', (e) => {
-    if (e.target === e.currentTarget) { selectedPilotId = null; deleteConfirmPilotId = null; renderModal(); }
+    if (e.target === e.currentTarget) {
+      if (publicLicenseMode) closePublicLicenseModal();
+      else { selectedPilotId = null; deleteConfirmPilotId = null; renderModal(); }
+    }
   });
-  $('modalCloseBtn').addEventListener('click', () => { selectedPilotId = null; deleteConfirmPilotId = null; renderModal(); });
-  if (confirmingDelete) {
+  $('modalCloseBtn').addEventListener('click', () => {
+    if (publicLicenseMode) closePublicLicenseModal();
+    else { selectedPilotId = null; deleteConfirmPilotId = null; renderModal(); }
+  });
+  if (publicLicenseMode) {
+    $('backToPublicLicenseSearchBtn').addEventListener('click', () => openPublicLicenseLookup());
+    $('downloadPublicLicenseBtn').addEventListener('click', printLicense);
+  } else if (confirmingDelete) {
     $('cancelDeletePilotBtn').addEventListener('click', () => { deleteConfirmPilotId = null; renderModal(); });
     $('confirmDeletePilotBtn').addEventListener('click', () => handleDeletePilot(pilot));
   } else {
@@ -1995,6 +2095,9 @@ function showAccessGate() {
   }
   stopSpectatorPolling();
   accessMode = null;
+  publicLicenseMode = false;
+  selectedPilotId = null;
+  $('modalRoot').innerHTML = '';
   sessionStorage.removeItem('bp-drone-access-mode');
   $('accessGate').hidden = false;
   $('controlApp').hidden = true;
@@ -2005,6 +2108,7 @@ function showAccessGate() {
 }
 function bindAccessEvents() {
   $('chooseSpectatorBtn').addEventListener('click', () => enterAccessMode('spectator'));
+  $('publicLicenseLookupBtn').addEventListener('click', () => openPublicLicenseLookup());
   $('chooseControlBtn').addEventListener('click', () => {
     $('controlLoginForm').hidden = false;
     $('controlLoginError').hidden = true;
@@ -2054,7 +2158,7 @@ function bindEvents() {
   // 動態內容用事件委派
   document.addEventListener('click', (e) => {
     const pilotBtn = e.target.closest('[data-pilot]');
-    if (pilotBtn) { selectedPilotId = pilotBtn.dataset.pilot; deleteConfirmPilotId = null; renderModal(); return; }
+    if (pilotBtn) { publicLicenseMode = false; selectedPilotId = pilotBtn.dataset.pilot; deleteConfirmPilotId = null; renderModal(); return; }
     const checkinBtn = e.target.closest('[data-checkin]');
     if (checkinBtn) { directCheckIn(checkinBtn.dataset.checkin); return; }
     const matchBtn = e.target.closest('[data-open-match]');
