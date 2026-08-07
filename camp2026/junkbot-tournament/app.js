@@ -3,7 +3,7 @@
  */
 'use strict';
 
-const API_URL = 'https://script.google.com/macros/s/AKfycbyn7Rpmmfk0zAgME4TDEy0FYA3cckQZTfQD_6peGTv6HH5TmPc2mOXfNc-Dj9S2HNI/exec';
+const API_URL = 'https://script.google.com/macros/s/AKfycbysTXHi55O_2cTOFqJvWMJdaTfv8inRD0pyBrKaNWisso50dDsevmZUVZhkypO54PcR/exec';
 const CONTROL_PASSWORD = 'block';
 const DEMO = new URLSearchParams(location.search).has('demo');
 const ARENA_BATTLE_TRACK = 'assets/audio/battle-boss-fight-bounce.mp3';
