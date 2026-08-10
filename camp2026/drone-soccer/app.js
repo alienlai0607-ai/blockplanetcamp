@@ -1344,6 +1344,297 @@ function printLicense() {
   setTimeout(cleanup, 1000);
 }
 
+function canvasRoundedPath(ctx, x, y, width, height, radius) {
+  const r = Math.min(radius, width / 2, height / 2);
+  ctx.beginPath();
+  ctx.moveTo(x + r, y);
+  ctx.arcTo(x + width, y, x + width, y + height, r);
+  ctx.arcTo(x + width, y + height, x, y + height, r);
+  ctx.arcTo(x, y + height, x, y, r);
+  ctx.arcTo(x, y, x + width, y, r);
+  ctx.closePath();
+}
+
+function canvasRoundedFill(ctx, x, y, width, height, radius, fillStyle) {
+  ctx.save();
+  canvasRoundedPath(ctx, x, y, width, height, radius);
+  ctx.fillStyle = fillStyle;
+  ctx.fill();
+  ctx.restore();
+}
+
+function canvasLabel(ctx, text, x, y, size, weight, color, align = 'left') {
+  ctx.save();
+  ctx.fillStyle = color;
+  ctx.font = weight + ' ' + size + 'px -apple-system, BlinkMacSystemFont, "PingFang TC", "Noto Sans TC", sans-serif';
+  ctx.textAlign = align;
+  ctx.textBaseline = 'alphabetic';
+  ctx.fillText(String(text || ''), x, y);
+  ctx.restore();
+}
+
+function canvasFitLabel(ctx, text, x, y, maxWidth, startSize, minSize, weight, color) {
+  const value = String(text || '');
+  let size = startSize;
+  ctx.save();
+  do {
+    ctx.font = weight + ' ' + size + 'px -apple-system, BlinkMacSystemFont, "PingFang TC", "Noto Sans TC", sans-serif';
+    if (ctx.measureText(value).width <= maxWidth || size <= minSize) break;
+    size -= 2;
+  } while (size > minSize);
+  ctx.fillStyle = color;
+  ctx.textBaseline = 'alphabetic';
+  ctx.fillText(value, x, y);
+  ctx.restore();
+}
+
+function canvasImageCover(ctx, image, x, y, width, height, radius = 0) {
+  if (!image) return;
+  const scale = Math.max(width / image.naturalWidth, height / image.naturalHeight);
+  const drawWidth = image.naturalWidth * scale;
+  const drawHeight = image.naturalHeight * scale;
+  ctx.save();
+  if (radius) {
+    canvasRoundedPath(ctx, x, y, width, height, radius);
+    ctx.clip();
+  }
+  ctx.drawImage(image, x + (width - drawWidth) / 2, y + (height - drawHeight) / 2, drawWidth, drawHeight);
+  ctx.restore();
+}
+
+function canvasImageContain(ctx, image, x, y, width, height) {
+  if (!image) return;
+  const scale = Math.min(width / image.naturalWidth, height / image.naturalHeight);
+  const drawWidth = image.naturalWidth * scale;
+  const drawHeight = image.naturalHeight * scale;
+  ctx.drawImage(image, x + (width - drawWidth) / 2, y + (height - drawHeight) / 2, drawWidth, drawHeight);
+}
+
+function loadLicenseCanvasImage(src) {
+  return new Promise((resolve, reject) => {
+    if (!src) { resolve(null); return; }
+    const image = new Image();
+    const resolved = new URL(src, window.location.href).href;
+    if (/^https?:/i.test(resolved) && !resolved.startsWith(window.location.origin)) image.crossOrigin = 'anonymous';
+    image.onload = () => resolve(image);
+    image.onerror = () => reject(new Error('無法載入駕照圖片'));
+    image.src = resolved;
+  });
+}
+
+function paintDownloadLicenseFront(ctx, pilot, images, x, y, width, height) {
+  const ink = '#173431';
+  const orange = '#ed5a3e';
+  const yellow = '#ffc841';
+  const paper = ctx.createLinearGradient(x, y, x + width, y + height);
+  paper.addColorStop(0, '#fffdf7');
+  paper.addColorStop(.55, '#fff6d9');
+  paper.addColorStop(1, '#eefaf4');
+  canvasRoundedFill(ctx, x, y, width, height, 50, paper);
+  ctx.save();
+  canvasRoundedPath(ctx, x, y, width, height, 50);
+  ctx.clip();
+  ctx.fillStyle = orange; ctx.fillRect(x, y, width * .39, 18);
+  ctx.fillStyle = yellow; ctx.fillRect(x + width * .39, y, width * .22, 18);
+  ctx.fillStyle = '#57b9e7'; ctx.fillRect(x + width * .61, y, width * .21, 18);
+  ctx.fillStyle = '#54c84f'; ctx.fillRect(x + width * .82, y, width * .18, 18);
+  ctx.strokeStyle = 'rgba(23,52,49,.055)';
+  ctx.lineWidth = 2;
+  for (let gx = x + 80; gx < x + width; gx += 80) { ctx.beginPath(); ctx.moveTo(gx, y); ctx.lineTo(gx, y + height); ctx.stroke(); }
+  for (let gy = y + 80; gy < y + height; gy += 80) { ctx.beginPath(); ctx.moveTo(x, gy); ctx.lineTo(x + width, gy); ctx.stroke(); }
+  const glow = ctx.createRadialGradient(x + width * .86, y + height * .44, 20, x + width * .86, y + height * .44, 260);
+  glow.addColorStop(0, 'rgba(255,200,65,.45)');
+  glow.addColorStop(1, 'rgba(255,200,65,0)');
+  ctx.fillStyle = glow;
+  ctx.fillRect(x + width * .65, y + 130, width * .35, height * .65);
+  ctx.restore();
+
+  canvasImageContain(ctx, images.logo, x + 55, y + 52, 100, 100);
+  canvasLabel(ctx, '布拉克星球競技飛行證', x + 175, y + 104, 49, 900, ink);
+  canvasLabel(ctx, 'BLOCK PLANET • DRONE SOCCER LEAGUE', x + 175, y + 150, 24, 900, orange);
+  canvasRoundedFill(ctx, x + width - 330, y + 60, 260, 65, 23, ink);
+  canvasLabel(ctx, '●  ARENA PILOT', x + width - 200, y + 102, 23, 900, '#ffffff', 'center');
+
+  const photoX = x + 105;
+  const photoY = y + 280;
+  const photoSize = 360;
+  ctx.save();
+  ctx.strokeStyle = orange;
+  ctx.lineWidth = 12;
+  ctx.beginPath();
+  ctx.arc(photoX + photoSize / 2, photoY + photoSize / 2, photoSize / 2 + 17, 0, Math.PI * 2);
+  ctx.stroke();
+  ctx.strokeStyle = 'rgba(23,52,49,.28)';
+  ctx.lineWidth = 5;
+  ctx.beginPath();
+  ctx.ellipse(photoX + photoSize / 2, photoY + photoSize / 2, photoSize / 2 + 38, photoSize / 2 - 40, .72, 0, Math.PI * 2);
+  ctx.stroke();
+  ctx.beginPath();
+  ctx.ellipse(photoX + photoSize / 2, photoY + photoSize / 2, photoSize / 2 + 38, photoSize / 2 - 40, -.72, 0, Math.PI * 2);
+  ctx.stroke();
+  canvasRoundedPath(ctx, photoX, photoY, photoSize, photoSize, photoSize / 2);
+  ctx.clip();
+  if (images.photo) canvasImageCover(ctx, images.photo, photoX, photoY, photoSize, photoSize);
+  else {
+    ctx.fillStyle = '#ffe08b';
+    ctx.fillRect(photoX, photoY, photoSize, photoSize);
+    canvasLabel(ctx, String(pilot.name || '?').slice(0, 1), photoX + photoSize / 2, photoY + 225, 125, 900, ink, 'center');
+  }
+  ctx.restore();
+  canvasRoundedFill(ctx, x + 118, y + 675, 330, 78, 30, orange);
+  canvasLabel(ctx, pilot.level || '銀河級', x + 283, y + 725, 30, 900, '#ffffff', 'center');
+
+  const dataX = x + 535;
+  canvasRoundedFill(ctx, dataX, y + 205, 510, 68, 22, orange);
+  canvasLabel(ctx, 'CALL SIGN / 飛行代號', dataX + 30, y + 248, 21, 900, '#ffffff');
+  canvasFitLabel(ctx, pilot.nickname || ('PILOT ' + String(pilot.licenseNo || '').slice(-3)), dataX + 305, y + 248, 215, 30, 20, 900, '#ffffff');
+  canvasLabel(ctx, 'PILOT NAME / 駕駛員', dataX, y + 330, 25, 900, '#667b76');
+  canvasFitLabel(ctx, pilot.name, dataX, y + 435, width - 610, 88, 52, 900, ink);
+  canvasLabel(ctx, 'REGISTERED DRONE SOCCER PILOT', dataX, y + 485, 25, 900, '#667b76');
+
+  canvasRoundedFill(ctx, dataX, y + 545, width - 610, 175, 26, 'rgba(255,255,255,.88)');
+  ctx.strokeStyle = 'rgba(23,52,49,.14)';
+  ctx.lineWidth = 3;
+  canvasRoundedPath(ctx, dataX, y + 545, width - 610, 175, 26);
+  ctx.stroke();
+  canvasLabel(ctx, 'LICENSE NO. / 駕照編號', dataX + 28, y + 595, 22, 900, '#667b76');
+  canvasFitLabel(ctx, pilot.licenseNo, dataX + 28, y + 670, 610, 43, 30, 900, orange);
+  canvasLabel(ctx, 'DIVISION / 競賽類別', dataX + 700, y + 595, 22, 900, '#667b76');
+  canvasLabel(ctx, 'DRONE SOCCER', dataX + 700, y + 670, 40, 900, ink);
+
+  ctx.strokeStyle = 'rgba(23,52,49,.18)';
+  ctx.lineWidth = 3;
+  ctx.beginPath(); ctx.moveTo(x + 60, y + height - 235); ctx.lineTo(x + width - 60, y + height - 235); ctx.stroke();
+  const issued = new Date(pilot.createdAt);
+  const issuedText = isNaN(issued.getTime()) ? '—' : issued.toLocaleDateString('zh-TW');
+  canvasLabel(ctx, 'ISSUED / 核發日', x + 65, y + height - 165, 23, 900, '#667b76');
+  canvasLabel(ctx, issuedText, x + 65, y + height - 105, 31, 900, ink);
+  canvasLabel(ctx, 'STATUS / 狀態', x + 710, y + height - 165, 23, 900, '#667b76');
+  canvasLabel(ctx, '● ACTIVE', x + 710, y + height - 105, 31, 900, '#45b952');
+  canvasRoundedFill(ctx, x + width - 390, y + height - 180, 320, 74, 30, yellow);
+  canvasLabel(ctx, 'FLY • SCORE • SHINE', x + width - 230, y + height - 133, 25, 900, ink, 'center');
+}
+
+function paintDownloadLicenseBack(ctx, pilot, images, x, y, width, height) {
+  const dark = '#083633';
+  const ink = '#173431';
+  const yellow = '#ffc841';
+  canvasRoundedFill(ctx, x, y, width, height, 50, dark);
+  ctx.save();
+  canvasRoundedPath(ctx, x, y, width, height, 50);
+  ctx.clip();
+  ctx.globalAlpha = .74;
+  canvasImageCover(ctx, images.hero, x, y, width, height);
+  ctx.globalAlpha = 1;
+  const shade = ctx.createLinearGradient(x, y, x + width, y);
+  shade.addColorStop(0, 'rgba(3,45,42,.98)');
+  shade.addColorStop(.52, 'rgba(3,45,42,.82)');
+  shade.addColorStop(1, 'rgba(3,45,42,.24)');
+  ctx.fillStyle = shade;
+  ctx.fillRect(x, y, width, height);
+  ctx.restore();
+
+  canvasImageContain(ctx, images.logo, x + 55, y + 48, 95, 95);
+  canvasLabel(ctx, '布拉克星球無人機足球聯盟', x + 170, y + 98, 42, 900, '#ffffff');
+  canvasLabel(ctx, 'OFFICIAL ARENA ACCESS', x + 170, y + 142, 24, 900, yellow);
+  canvasRoundedFill(ctx, x + width - 315, y + 55, 245, 62, 24, 'rgba(23,52,49,.9)');
+  canvasLabel(ctx, 'NO. ' + String(pilot.licenseNo || '').slice(-6), x + width - 192, y + 95, 23, 900, '#ffffff', 'center');
+
+  canvasRoundedFill(ctx, x + 60, y + 240, 800, 440, 30, 'rgba(2,36,34,.9)');
+  canvasLabel(ctx, 'ARENA FLIGHT CODE / 競技飛行守則', x + 95, y + 305, 24, 900, yellow);
+  const rules = [
+    ['01', 'CHECK｜賽前確認球機、電池與遙控器。'],
+    ['02', 'READY｜聽從裁判指示後才能啟動。'],
+    ['03', 'FAIR PLAY｜安全飛行，勇敢進球。'],
+  ];
+  rules.forEach((rule, index) => {
+    const ruleY = y + 385 + index * 92;
+    ctx.strokeStyle = 'rgba(255,200,65,.55)';
+    ctx.lineWidth = 4;
+    ctx.beginPath(); ctx.arc(x + 125, ruleY - 9, 30, 0, Math.PI * 2); ctx.stroke();
+    canvasLabel(ctx, rule[0], x + 125, ruleY, 20, 900, yellow, 'center');
+    canvasLabel(ctx, rule[1], x + 180, ruleY, 25, 800, '#ffffff');
+  });
+
+  canvasRoundedFill(ctx, x + width - 520, y + 565, 450, 145, 28, 'rgba(7,53,50,.94)');
+  canvasLabel(ctx, 'BLOCK PLANET TEAM', x + width - 485, y + 615, 21, 900, yellow);
+  canvasLabel(ctx, 'FLY TOGETHER', x + width - 485, y + 675, 39, 900, '#ffffff');
+
+  const barcodeX = x + 65;
+  const barcodeY = y + 755;
+  const digits = String(pilot.licenseNo || '').replace(/\D/g, '') || '2026000000';
+  let cursor = barcodeX;
+  for (let index = 0; index < 58; index += 1) {
+    const digit = Number(digits[index % digits.length]);
+    const barWidth = 3 + ((digit + index) % 4) * 2;
+    ctx.fillStyle = index % 3 === 0 ? '#ffffff' : 'rgba(255,255,255,.82)';
+    ctx.fillRect(cursor, barcodeY, barWidth, 95);
+    cursor += barWidth + 7;
+  }
+  canvasLabel(ctx, digits, cursor + 25, barcodeY + 66, 23, 700, 'rgba(255,255,255,.78)');
+  ctx.strokeStyle = 'rgba(255,255,255,.22)';
+  ctx.lineWidth = 2;
+  ctx.beginPath(); ctx.moveTo(x + 60, y + height - 85); ctx.lineTo(x + width - 60, y + height - 85); ctx.stroke();
+  canvasLabel(ctx, '本證為布拉克星球無人機足球公版飛行證', x + 65, y + height - 35, 20, 800, 'rgba(255,255,255,.76)');
+  canvasLabel(ctx, 'DRONE ON • GAME ON', x + width - 70, y + height - 35, 20, 900, yellow, 'right');
+  canvasRoundedFill(ctx, x + width - 160, y + 230, 74, 74, 37, yellow);
+  canvasLabel(ctx, '●', x + width - 123, y + 282, 32, 900, ink, 'center');
+}
+
+async function downloadPublicLicense(pilot) {
+  const button = $('downloadPublicLicenseBtn');
+  const originalText = button.textContent;
+  button.disabled = true;
+  button.textContent = '正在製作正反面圖片…';
+  try {
+    if (document.fonts && document.fonts.ready) await document.fonts.ready;
+    const safeImage = async (src) => {
+      try { return await loadLicenseCanvasImage(src); } catch (error) { return null; }
+    };
+    const [logo, photo, hero] = await Promise.all([
+      safeImage('assets/block-planet-logo.png'),
+      safeImage(portraitFor(pilot)),
+      safeImage('assets/drone-soccer-hero.png'),
+    ]);
+    const canvas = document.createElement('canvas');
+    canvas.width = 1800;
+    canvas.height = 2460;
+    const ctx = canvas.getContext('2d');
+    const sheet = ctx.createLinearGradient(0, 0, canvas.width, canvas.height);
+    sheet.addColorStop(0, '#fffaf0');
+    sheet.addColorStop(1, '#edf9f8');
+    ctx.fillStyle = sheet;
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+    canvasLabel(ctx, 'BLOCK PLANET • MY PILOT LICENSE', 90, 75, 25, 900, '#ed5a3e');
+    canvasLabel(ctx, pilot.name + '｜無人機足球駕照正反面', 90, 125, 35, 900, '#173431');
+    paintDownloadLicenseFront(ctx, pilot, { logo, photo, hero }, 90, 165, 1620, 1022);
+    paintDownloadLicenseBack(ctx, pilot, { logo, photo, hero }, 90, 1270, 1620, 1022);
+    canvasLabel(ctx, '布拉克星球無人機足球聯盟｜可直接儲存、分享或列印', 90, 2382, 24, 800, '#607873');
+    const blob = await new Promise((resolve, reject) => {
+      canvas.toBlob((result) => result ? resolve(result) : reject(new Error('圖片建立失敗')), 'image/png');
+    });
+    const fileName = ('布拉克星球-無人機足球駕照-' + pilot.name + '-' + pilot.licenseNo + '.png')
+      .replace(/[\\/:*?"<>|]/g, '-');
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = fileName;
+    link.style.display = 'none';
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 30000);
+    button.textContent = '已下載正反面 PNG ✓';
+    setTimeout(() => {
+      if (button.isConnected) { button.disabled = false; button.textContent = originalText; }
+    }, 2600);
+  } catch (error) {
+    console.error(error);
+    button.disabled = false;
+    button.textContent = '下載失敗，請再試一次';
+  }
+}
+
 // ===== 畫面切換與渲染 =====
 function switchSection(next) {
   section = next;
@@ -1689,7 +1980,7 @@ function openPublicLicenseLookup(message = '') {
         '<button class="modal-close" id="publicLicenseCloseBtn" aria-label="關閉">×</button>' +
         '<div class="public-license-mascot"><img src="assets/lala.jpg" alt="布拉克星球吉祥物"></div>' +
         '<div class="public-license-copy"><span>MY PILOT LICENSE</span><h2 id="publicLicenseTitle">下載我的無人機足球駕照</h2>' +
-          '<p>輸入<strong>完整駕照編號</strong>或<strong>駕駛員完整姓名</strong>，找到後可直接預覽、列印或儲存成 PDF。</p>' +
+          '<p>輸入<strong>完整駕照編號</strong>或<strong>駕駛員完整姓名</strong>，找到後可直接預覽並下載正反面圖片。</p>' +
           '<form id="publicLicenseSearchForm" class="public-license-search">' +
             '<label for="publicLicenseQuery">我的駕照編號或姓名</label>' +
             '<div><input id="publicLicenseQuery" required autocomplete="name" placeholder="例：BP-2026-123456 或 王小明"><button type="submit">尋找駕照</button></div>' +
@@ -1819,9 +2110,9 @@ function renderModal() {
       '</div>' +
       '<div class="license-modal-actions' + (confirmingDelete ? ' confirming-delete' : '') + '">' +
         (publicLicenseMode
-          ? '<p><strong>這是你的專屬無人機足球駕照！</strong><br><span>手機可在列印畫面選「分享／儲存到檔案」，電腦可選「另存為 PDF」。</span></p>' +
+          ? '<p><strong>這是你的專屬無人機足球駕照！</strong><br><span>按下載會直接儲存正反面 PNG，不會再開啟 Mac 預覽程式。</span></p>' +
             '<button class="outline-button" id="backToPublicLicenseSearchBtn">重新查詢</button>' +
-            '<button class="primary-button compact" id="downloadPublicLicenseBtn">下載／儲存駕照</button>'
+            '<button class="primary-button compact" id="downloadPublicLicenseBtn">直接下載正反面 PNG</button>'
           : confirmingDelete
           ? '<p class="delete-warning"><strong>確定永久刪除「' + esc(pilot.name) + '」？</strong><span>這個動作無法復原；若已加入隊伍，分組與賽程會一併重置。</span></p>' +
             '<button class="outline-button" id="cancelDeletePilotBtn">取消</button>' +
@@ -1846,7 +2137,7 @@ function renderModal() {
   });
   if (publicLicenseMode) {
     $('backToPublicLicenseSearchBtn').addEventListener('click', () => openPublicLicenseLookup());
-    $('downloadPublicLicenseBtn').addEventListener('click', printLicense);
+    $('downloadPublicLicenseBtn').addEventListener('click', () => downloadPublicLicense(pilot));
   } else if (confirmingDelete) {
     $('cancelDeletePilotBtn').addEventListener('click', () => { deleteConfirmPilotId = null; renderModal(); });
     $('confirmDeletePilotBtn').addEventListener('click', () => handleDeletePilot(pilot));
