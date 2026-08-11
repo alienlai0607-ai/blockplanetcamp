@@ -73,6 +73,10 @@ const CLIMAX_MUSIC_CHOICES = [
 
 const EMPTY_STATE = () => ({
   tournamentVersion: 2,
+  eventId: null,
+  eventName: '',
+  eventStartedAt: null,
+  eventArchives: [],
   format: null,
   live: null,
   checkedInIds: [],
@@ -246,6 +250,10 @@ function normalizeEventState(state) {
   return {
     state: {
       tournamentVersion: 2,
+      eventId: typeof incoming.eventId === 'string' ? incoming.eventId : null,
+      eventName: typeof incoming.eventName === 'string' ? incoming.eventName : '',
+      eventStartedAt: typeof incoming.eventStartedAt === 'string' ? incoming.eventStartedAt : null,
+      eventArchives: Array.isArray(incoming.eventArchives) ? incoming.eventArchives.slice(-3) : [],
       format: inferredFormat,
       checkedInIds: Array.isArray(incoming.checkedInIds) ? incoming.checkedInIds : [],
       groups: Array.isArray(incoming.groups) ? incoming.groups : [],
@@ -262,8 +270,49 @@ function eventStateAfterPilotDeletion(state, pilotId) {
   const checkedInIds = state.checkedInIds.filter((id) => id !== pilotId);
   const affectsTournament = state.groups.some((group) => group.pilotIds.includes(pilotId));
   return affectsTournament
-    ? { ...EMPTY_STATE(), checkedInIds }
+    ? {
+        ...EMPTY_STATE(),
+        eventId: state.eventId || null,
+        eventName: state.eventName || '',
+        eventStartedAt: state.eventStartedAt || null,
+        eventArchives: Array.isArray(state.eventArchives) ? state.eventArchives : [],
+        checkedInIds,
+      }
     : { ...state, checkedInIds };
+}
+
+function hasCurrentEventActivity(state = eventState) {
+  return Boolean(
+    state.checkedInIds.length || state.groups.length || state.matches.length || state.activeMatchId || state.championGroupId,
+  );
+}
+
+function currentEventLabel() {
+  return eventState.eventName || (hasCurrentEventActivity() ? '目前比賽場次' : '尚未建立比賽場次');
+}
+
+function compactEventArchive(state) {
+  if (!hasCurrentEventActivity(state)) return null;
+  return {
+    eventId: state.eventId || ('legacy-' + Date.now()),
+    eventName: state.eventName || '上一場比賽',
+    eventStartedAt: state.eventStartedAt || null,
+    endedAt: new Date().toISOString(),
+    checkedInIds: [...state.checkedInIds],
+    groups: state.groups.map((group) => ({
+      id: group.id,
+      name: group.name,
+      pilotIds: [...(group.pilotIds || [])],
+    })),
+    matches: state.matches.filter((match) => match.status === 'complete').map((match) => ({
+      label: match.label,
+      type: match.type,
+      participantGroupIds: [...(match.participantGroupIds || [])],
+      scores: { ...(match.scores || {}) },
+      winnerGroupId: match.winnerGroupId || null,
+    })),
+    championGroupId: state.championGroupId || null,
+  };
 }
 
 function teamStandings(groups, matches) {
@@ -528,14 +577,17 @@ async function commitState(next) {
   eventState = next;
   render();
   setSaving(true);
+  let saved = false;
   try {
     stateSaveQueue = stateSaveQueue.catch(() => {}).then(() => apiSaveState(next));
     await stateSaveQueue;
+    saved = true;
   } catch (error) {
     setNotice(error && error.message ? error.message : '賽事狀態尚未儲存');
   } finally {
     setSaving(false);
   }
+  return saved;
 }
 
 function liveSnapshot(match, status = timerStatus) {
@@ -941,19 +993,19 @@ function handleCheckIn(event) {
     return;
   }
   if (eventState.checkedInIds.includes(pilot.id)) {
-    setNotice(pilot.name + ' 已經完成報到。');
+    setNotice(pilot.name + ' 已經完成本場報到。');
     return;
   }
   commitState({ ...eventState, checkedInIds: [...eventState.checkedInIds, pilot.id] });
   input.value = '';
-  setNotice('歡迎 ' + pilot.name + '，報到完成！');
+  setNotice('歡迎 ' + pilot.name + '，本場報到完成！');
 }
 
 function directCheckIn(pilotId) {
   const pilot = getPilot(pilotId);
   if (!pilot || eventState.checkedInIds.includes(pilot.id)) return;
   commitState({ ...eventState, checkedInIds: [...eventState.checkedInIds, pilot.id] });
-  setNotice(pilot.name + ' 報到完成！');
+  setNotice(pilot.name + ' 本場報到完成！');
 }
 
 async function handleCreatePilot(event) {
@@ -1119,6 +1171,95 @@ function createGroups() {
         ? '採三輪爬升積分賽，每隊固定 3 場；完成本輪後會自動產生下一輪，積分前兩名進總決賽。'
         : '採單組循環賽，依排名前兩名進總決賽。');
   setNotice('已完成 ' + groups.length + ' 支三人隊抽籤；' + scheduleSummary);
+}
+
+function defaultEventName() {
+  const now = new Date();
+  const date = now.toLocaleDateString('zh-TW', { month: 'numeric', day: 'numeric' });
+  return date + ' 無人機足球賽';
+}
+
+function closeNewEventDialog() {
+  $('modalRoot').innerHTML = '';
+}
+
+function openNewEventDialog() {
+  if (timerStatus === 'running' || timerStatus === 'countdown') {
+    setNotice('比賽計時中，請先完成或暫停本場比賽。');
+    return;
+  }
+  publicLicenseMode = false;
+  selectedPilotId = null;
+  deleteConfirmPilotId = null;
+  const activeCount = eventState.checkedInIds.length;
+  const completeCount = eventState.matches.filter((match) => match.status === 'complete').length;
+  const root = $('modalRoot');
+  root.innerHTML =
+    '<div class="modal-backdrop new-event-backdrop" id="newEventBackdrop">' +
+      '<section class="new-event-dialog" role="dialog" aria-modal="true" aria-labelledby="newEventTitle">' +
+        '<button class="modal-close" id="newEventCloseBtn" aria-label="關閉">×</button>' +
+        '<header><img src="assets/block-planet-logo.png" alt=""><div><span>NEXT EVENT • SAFE SEPARATION</span><h2 id="newEventTitle">開啟全新的比賽場次</h2><p>永久駕照與本場參賽名單會分開保存，不會互相混在一起。</p></div></header>' +
+        '<div class="event-separation-map">' +
+          '<article><i>🎫</i><div><small>永久保存</small><strong>歷屆駕照庫</strong><span>' + pilots.length + ' 張駕照繼續提供學生下載</span></div><b>不清除</b></article>' +
+          '<em>→</em>' +
+          '<article><i>🏟️</i><div><small>全新開始</small><strong>下一場比賽</strong><span>重新報到後才會進入分組與賽程</span></div><b>歸零</b></article>' +
+        '</div>' +
+        '<div class="new-event-current"><span>即將封存</span><strong>' + esc(currentEventLabel()) + '</strong><small>' + activeCount + ' 人報到・' + completeCount + ' 場完成</small></div>' +
+        '<label class="new-event-name"><span>新場次名稱</span><input id="newEventNameInput" maxlength="40" value="' + esc(defaultEventName()) + '" placeholder="例：8/11 東橋下午場"></label>' +
+        '<ul><li>保留所有駕照、照片與駕照編號，學生之後仍可查詢下載。</li><li>封存目前已完成結果，再清空本場報到、隊伍、賽程、比分與冠軍。</li><li>下一場只有重新按「本場報到」的學生才會參加抽籤。</li></ul>' +
+        '<footer><button class="outline-button" id="cancelNewEventBtn">取消</button><button class="primary-button" id="confirmNewEventBtn">確認封存並開啟新場次</button></footer>' +
+      '</section>' +
+    '</div>';
+  const close = () => closeNewEventDialog();
+  $('newEventCloseBtn').addEventListener('click', close);
+  $('cancelNewEventBtn').addEventListener('click', close);
+  $('newEventBackdrop').addEventListener('mousedown', (event) => {
+    if (event.target === event.currentTarget) close();
+  });
+  $('confirmNewEventBtn').addEventListener('click', startNewEvent);
+  $('newEventNameInput').focus();
+  $('newEventNameInput').select();
+}
+
+async function startNewEvent() {
+  const input = $('newEventNameInput');
+  const button = $('confirmNewEventBtn');
+  const eventName = input.value.trim();
+  if (!eventName) {
+    input.focus();
+    return;
+  }
+  button.disabled = true;
+  button.textContent = '正在安全切換場次…';
+  const previousState = eventState;
+  const archive = compactEventArchive(eventState);
+  const archives = [...(eventState.eventArchives || [])];
+  if (archive) archives.push(archive);
+  const nextState = {
+    ...EMPTY_STATE(),
+    eventId: uuid(),
+    eventName,
+    eventStartedAt: new Date().toISOString(),
+    eventArchives: archives.slice(-3),
+  };
+  while (JSON.stringify(nextState).length > 42000 && nextState.eventArchives.length) {
+    nextState.eventArchives.shift();
+  }
+  practiceMode = false;
+  victoryDismissed = false;
+  timerStatus = 'ready';
+  secondsLeft = 180;
+  preCount = null;
+  syncTimerLoops();
+  const saved = await commitState(nextState);
+  if (!saved) {
+    eventState = previousState;
+    render();
+    setNotice('新場次尚未建立，原本賽事與駕照都沒有變動，請再試一次。');
+    return;
+  }
+  switchSection('home');
+  setNotice('「' + eventName + '」已開啟。永久駕照全部保留，請重新進行本場報到。');
 }
 
 function openMatch(matchId) {
@@ -1663,6 +1804,14 @@ function renderHome() {
   $('statPilots').textContent = pilots.length;
   $('statCheckedIn').textContent = checked.length;
   $('statMatches').textContent = done;
+  $('currentEventName').textContent = currentEventLabel();
+  $('permanentLicenseCount').textContent = pilots.length;
+  $('eventArchiveCount').textContent = eventState.eventArchives.length
+    ? '已安全封存 ' + eventState.eventArchives.length + ' 場'
+    : '歷屆皆可下載';
+  $('currentEventMeta').textContent = eventState.eventStartedAt
+    ? '開始於 ' + new Date(eventState.eventStartedAt).toLocaleString('zh-TW', { month: 'numeric', day: 'numeric', hour: '2-digit', minute: '2-digit' }) + '・只有本場報到者參賽'
+    : '駕照永久保存・每場名單獨立';
   const nextMatch = eventState.matches.find((m) => m.status === 'pending');
   $('nextMatchLabel').textContent = nextMatch ? nextMatch.label : '等待分組';
 
@@ -1701,7 +1850,7 @@ function renderLicenses() {
           '</button>' +
           '<div class="pilot-meta"><span>' + esc(p.level) + '</span><span>' + (p.matches || 0) + ' 場 / ' + (p.wins || 0) + ' 勝</span></div>' +
           '<button class="' + (checked ? 'checked-button' : 'outline-button') + '" data-checkin="' + esc(p.id) + '"' + (checked ? ' disabled' : '') + '>' +
-            (checked ? '✓ 已報到' : '今日報到') + '</button>' +
+            (checked ? '✓ 本場已報到' : '本場報到') + '</button>' +
         '</article>';
       }).join('')
     : '<div class="empty-state"><img src="assets/lala.jpg" alt=""><h3>還沒有找到駕照</h3><p>建立第一位駕駛員資料後，就可開始報到與分組。</p></div>';
@@ -1929,7 +2078,7 @@ function renderSpectator() {
     : '';
 
   root.innerHTML =
-    '<header class="audience-topbar"><div><img src="assets/block-planet-logo.png" alt=""><span><strong>BLOCK PLANET LIVE</strong><small>無人機足球・今日戰況</small></span></div>' +
+    '<header class="audience-topbar"><div><img src="assets/block-planet-logo.png" alt=""><span><strong>BLOCK PLANET LIVE</strong><small>無人機足球・' + esc(currentEventLabel()) + '</small></span></div>' +
       '<div class="audience-sync"><i></i><span>' + (lastSpectatorSyncAt ? (spectatorConnectionOk ? '即時連線中' : '背景重試中') : '正在連線') + '</span></div>' +
       '<div class="audience-actions"><button class="audience-license-button" id="audienceLicenseDownloadBtn">🎫 下載我的駕照</button><button id="spectatorSwitchAccessBtn">切換身份</button></div></header>' +
     '<main class="audience-page">' +
@@ -2119,7 +2268,7 @@ function renderModal() {
             '<button class="danger-button" id="confirmDeletePilotBtn">確定永久刪除</button>'
           : '<p>列印時請選擇「實際大小 / 100%」，即為標準卡尺寸。</p>' +
             '<button class="danger-button" id="requestDeletePilotBtn">刪除駕照</button>' +
-            '<button class="outline-button" id="modalCheckinBtn"' + (checked ? ' disabled' : '') + '>' + (checked ? '✓ 今日已報到' : '今日報到') + '</button>' +
+            '<button class="outline-button" id="modalCheckinBtn"' + (checked ? ' disabled' : '') + '>' + (checked ? '✓ 本場已報到' : '本場報到') + '</button>' +
             '<button class="primary-button compact" id="printLicenseBtn">列印公版駕照</button>') +
       '</div>' +
     '</div>' +
@@ -2432,6 +2581,7 @@ function bindEvents() {
     showLicenseForm = true;
     switchSection('licenses');
   });
+  $('startNewEventBtn').addEventListener('click', openNewEventDialog);
   $('viewAllPilotsBtn').addEventListener('click', () => switchSection('licenses'));
   $('checkinForm').addEventListener('submit', handleCheckIn);
   $('toggleLicenseFormBtn').addEventListener('click', () => {

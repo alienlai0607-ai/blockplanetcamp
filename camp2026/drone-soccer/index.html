@@ -7,7 +7,7 @@
 <meta name="description" content="布拉克星球無人機足球晉級賽系統：駕照建檔、現場報到、三人組隊、3 對 3 團隊賽與總決賽。">
 <link rel="icon" href="../favicon-32.png">
 <link rel="apple-touch-icon" href="../apple-touch-icon.png">
-<link rel="stylesheet" href="styles.css?v=20260807-direct-license-png">
+<link rel="stylesheet" href="styles.css?v=20260811-event-separation">
 </head>
 <body>
 <section class="access-gate" id="accessGate">
@@ -83,7 +83,7 @@
         </div>
         <div class="hero-stats">
           <div><strong id="statPilots">0</strong><span>駕駛員建檔</span></div>
-          <div><strong id="statCheckedIn">0</strong><span>今日報到</span></div>
+          <div><strong id="statCheckedIn">0</strong><span>本場報到</span></div>
           <div><strong id="statMatches">0</strong><span>完成賽事</span></div>
         </div>
       </div>
@@ -98,12 +98,19 @@
       </div>
     </section>
 
+    <section class="event-session-bar">
+      <div class="event-session-icon">🏟️</div>
+      <div><small>CURRENT EVENT / 目前場次</small><strong id="currentEventName">尚未建立比賽場次</strong><span id="currentEventMeta">駕照永久保存・每場名單獨立</span></div>
+      <div class="event-vault-status"><i>🎫</i><span><b id="permanentLicenseCount">0</b> 張永久駕照<small id="eventArchiveCount">歷屆皆可下載</small></span></div>
+      <button class="new-event-button" id="startNewEventBtn">＋ 開啟下一場</button>
+    </section>
+
     <section class="command-grid">
       <div class="checkin-panel">
         <div class="section-heading">
           <div>
             <span class="kicker">QUICK CHECK-IN</span>
-            <h2>駕照快速報到</h2>
+            <h2>本場駕照快速報到</h2>
           </div>
           <button class="tiny-link" id="viewAllPilotsBtn">查看全部 →</button>
         </div>
@@ -135,7 +142,7 @@
       <div>
         <span class="kicker">PILOT LICENSE</span>
         <h1>駕照中心</h1>
-        <p>拍照建檔後自動產生唯一駕照編號，可直接列印與報到。</p>
+        <p>駕照會永久保留供學生下載；每場比賽重新報到，名單與賽程不會跨場混用。</p>
       </div>
       <button class="primary-button compact" id="toggleLicenseFormBtn">＋ 新增駕照</button>
     </div>
@@ -194,6 +201,6 @@
 <div id="matchScreenRoot"></div>
 <div id="musicSelectorRoot"></div>
 
-<script src="app.js?v=20260807-direct-license-png"></script>
+<script src="app.js?v=20260811-event-separation"></script>
 </body>
 </html>
