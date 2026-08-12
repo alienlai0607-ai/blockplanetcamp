@@ -108,6 +108,8 @@ a { color: inherit; }
   transition: color .2s, background .2s, transform .2s;
 }
 .nav-menu a:hover { background: #fff; color: #d95f48; transform: translateY(-1px); }
+.nav-menu .nav-camp { border: 1px solid rgba(226,96,71,.18); background: var(--coral-soft); color: #b94f3b; }
+.nav-menu .nav-camp:hover { background: #ffdcd3; color: #9f3e2c; }
 .nav-menu .nav-quiz { margin-left: 8px; padding-inline: 18px; background: var(--sun); box-shadow: 0 6px 16px rgba(167, 127, 31, .17); }
 .nav-menu .nav-quiz:hover { background: #ffe27d; color: var(--ink); }
 .menu-toggle {
@@ -491,6 +493,8 @@ footer { padding: 52px 0 30px; background: #fff8dd; }
   .nav-menu { position: fixed; inset: 82px 0 auto; max-height: calc(100vh - 82px); overflow: auto; display: grid; gap: 7px; padding: 18px 20px 28px; border-top: 1px solid var(--line); background: var(--page); opacity: 0; visibility: hidden; transform: translateY(-10px); transition: opacity .2s, transform .2s, visibility .2s; }
   .nav-menu.open { opacity: 1; visibility: visible; transform: none; }
   .nav-menu a { min-height: 50px; justify-content: center; background: #fff; }
+  .nav-menu .nav-camp { min-height: 56px; border: 0; background: var(--coral); color: #fff; box-shadow: 0 8px 18px rgba(226,96,71,.18); }
+  .nav-menu .nav-camp:hover { background: #ef6f56; color: #fff; }
   .nav-menu .nav-quiz { margin: 4px 0 0; }
   .hero-shell { grid-template-columns: 1fr; min-height: 0; }
   .hero-copy { max-width: 770px; padding: 76px 24px 8px; }
