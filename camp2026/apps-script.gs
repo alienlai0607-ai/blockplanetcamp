@@ -1880,10 +1880,14 @@ function junkbotNormalizeCampus(campus) {
 
 function junkbotEmptyState(campus) {
   return {
-    version: 2,
+    version: 5,
     campus: campus,
+    tournament: null,
+    archives: [],
     entries: [],
     matches: [],
+    activeMatchIds: [],
+    lives: {},
     activeMatchId: null,
     championId: null,
     runnerUpId: null,
@@ -1891,6 +1895,47 @@ function junkbotEmptyState(campus) {
     live: null,
     updatedAt: null
   };
+}
+
+function junkbotArchiveSignature(archive) {
+  if (!archive || typeof archive !== 'object') return '';
+  return JSON.stringify({
+    id: String(archive.id || ''),
+    number: Number(archive.number) || 0,
+    title: String(archive.title || ''),
+    status: String(archive.status || ''),
+    createdAt: String(archive.createdAt || ''),
+    archivedAt: String(archive.archivedAt || ''),
+    entries: (Array.isArray(archive.entries) ? archive.entries : []).map(function(item) {
+      return [String(item && item.id || ''), String(item && item.teamName || ''), String(item && item.playerName || ''), String(item && item.videoUrl || '')];
+    }),
+    matches: (Array.isArray(archive.matches) ? archive.matches : []).map(function(item) {
+      return [
+        String(item && item.id || ''),
+        String(item && item.status || ''),
+        String(item && item.resultType || ''),
+        String(item && item.winnerId || ''),
+        String(item && item.loserId || ''),
+        JSON.stringify(item && Array.isArray(item.participantIds) ? item.participantIds : []),
+        String(item && item.reason || ''),
+        String(item && item.completedAt || '')
+      ];
+    }),
+    championId: String(archive.championId || ''),
+    runnerUpId: String(archive.runnerUpId || ''),
+    thirdPlaceId: String(archive.thirdPlaceId || '')
+  });
+}
+
+function junkbotArchiveContainsCompletedMatch(archives, completed) {
+  return (Array.isArray(archives) ? archives : []).some(function(archive) {
+    return (Array.isArray(archive && archive.matches) ? archive.matches : []).some(function(item) {
+      return item
+        && String(item.id || '') === String(completed.id || '')
+        && item.status === 'completed'
+        && String(item.winnerId || '') === String(completed.winnerId || '');
+    });
+  });
 }
 
 function getJunkbotStateSheet() {
@@ -1969,11 +2014,23 @@ function junkbotStateSet(p) {
     const campus = junkbotNormalizeCampus(p.campus);
     const state = p.state;
     if (!state || typeof state !== 'object') return { success: false, error: '賽事資料格式不正確' };
+    state.version = Math.max(5, Number(state.version) || 0);
+    state.archives = Array.isArray(state.archives) ? state.archives : [];
     if (state.draw && state.draw.method === 'random-draw') {
       return { success: false, error: '這是重排前的舊版賽程，請重新整理頁面後再操作' };
     }
     const currentResult = junkbotStateGet(campus);
     const currentState = currentResult && currentResult.state;
+    const currentArchives = currentState && Array.isArray(currentState.archives) ? currentState.archives : [];
+    for (let archiveIndex = 0; archiveIndex < currentArchives.length; archiveIndex++) {
+      const existingArchive = currentArchives[archiveIndex];
+      const incomingArchive = state.archives.find(function(item) {
+        return item && String(item.id || '') === String(existingArchive && existingArchive.id || '');
+      });
+      if (!incomingArchive || junkbotArchiveSignature(incomingArchive) !== junkbotArchiveSignature(existingArchive)) {
+        return { success: false, error: '過往賽事已封存，禁止刪除或修改歷史紀錄' };
+      }
+    }
     const completedMatches = currentState && Array.isArray(currentState.matches)
       ? currentState.matches.filter(function(item) {
           return item && item.status === 'completed' && item.resultType !== 'bye';
@@ -1984,7 +2041,11 @@ function junkbotStateSet(p) {
       const incoming = Array.isArray(state.matches)
         ? state.matches.find(function(item) { return item && item.id === completed.id; })
         : null;
-      if (!incoming || incoming.status !== 'completed' || incoming.winnerId !== completed.winnerId) {
+      const keptInCurrent = incoming
+        && incoming.status === 'completed'
+        && String(incoming.winnerId || '') === String(completed.winnerId || '');
+      const keptInArchive = junkbotArchiveContainsCompletedMatch(state.archives, completed);
+      if (!keptInCurrent && !keptInArchive) {
         return { success: false, error: '已有完成賽事，禁止重設、改判或以舊資料覆寫' };
       }
     }
@@ -2191,7 +2252,7 @@ function junkbotMatchPatch(p) {
       return { success: false, error: '不支援的賽場操作' };
     }
 
-    state.version = Math.max(4, Number(state.version) || 0);
+    state.version = Math.max(5, Number(state.version) || 0);
     state.updatedAt = nowIso;
     junkbotSyncLegacyArenaState(state);
     const saved = junkbotStateSet({

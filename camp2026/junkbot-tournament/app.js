@@ -3,8 +3,9 @@
  */
 'use strict';
 
-const API_URL = 'https://script.google.com/macros/s/AKfycbysTXHi55O_2cTOFqJvWMJdaTfv8inRD0pyBrKaNWisso50dDsevmZUVZhkypO54PcR/exec';
+const API_URL = 'https://script.google.com/macros/s/AKfycbzgP4w_VtsepL0QBLcTu5xjNBKRoLT5-yAcYLgRtbDvSIkZ8oXtVMck9Bt3KU9vwuxG/exec';
 const CONTROL_PASSWORD = 'block';
+const STATE_VERSION = 5;
 const DEMO = new URLSearchParams(location.search).has('demo');
 const ARENA_BATTLE_TRACK = 'assets/audio/battle-boss-fight-bounce.mp3';
 const ARENA_CLIMAX_TRACK = 'assets/audio/climax-final-stand-max.ogg';
@@ -69,10 +70,27 @@ const climaxMusic = new Audio(ARENA_CLIMAX_TRACK);
   track.volume = 1;
 });
 
-function emptyState(campusId) {
+function nextTournamentNumber(archives = []) {
+  return Math.max(0, ...archives.map((item) => Number(item?.number) || 0)) + 1;
+}
+
+function createTournamentMeta(campusId, number) {
+  const tournamentNumber = Math.max(1, Number(number) || 1);
   return {
-    version: 3,
+    id: uid(`tournament-${campusId}`),
+    number: tournamentNumber,
+    title: `第 ${tournamentNumber} 場賽事`,
+    createdAt: new Date().toISOString(),
+  };
+}
+
+function emptyState(campusId, archives = []) {
+  const savedArchives = Array.isArray(archives) ? archives : [];
+  return {
+    version: STATE_VERSION,
     campus: campusId,
+    tournament: createTournamentMeta(campusId, nextTournamentNumber(savedArchives)),
+    archives: savedArchives,
     entries: [],
     matches: [],
     activeMatchIds: [],
@@ -88,9 +106,24 @@ function emptyState(campusId) {
 }
 
 function normalizeState(raw, campusId) {
-  const base = emptyState(campusId);
+  const savedArchives = Array.isArray(raw?.archives) ? raw.archives.filter((item) => item && typeof item === 'object') : [];
+  const base = emptyState(campusId, savedArchives);
   const next = raw && typeof raw === 'object' ? Object.assign(base, raw) : base;
+  next.version = Math.max(STATE_VERSION, Number(next.version) || 0);
   next.campus = campusId;
+  next.archives = savedArchives;
+  if (!next.tournament || typeof next.tournament !== 'object') {
+    next.tournament = createTournamentMeta(campusId, nextTournamentNumber(savedArchives));
+  } else {
+    const tournamentNumber = Math.max(1, Number(next.tournament.number) || nextTournamentNumber(savedArchives));
+    next.tournament = {
+      ...next.tournament,
+      id: next.tournament.id || uid(`tournament-${campusId}`),
+      number: tournamentNumber,
+      title: String(next.tournament.title || `第 ${tournamentNumber} 場賽事`),
+      createdAt: next.tournament.createdAt || next.updatedAt || new Date().toISOString(),
+    };
+  }
   next.entries = Array.isArray(next.entries) ? next.entries : [];
   next.matches = Array.isArray(next.matches) ? next.matches : [];
   next.activeMatchIds = Array.isArray(next.activeMatchIds) ? next.activeMatchIds.filter(Boolean) : [];
@@ -233,6 +266,126 @@ function mainRoundGroups() {
 
 function teamName(id, fallback = '等待晉級') {
   return entry(id)?.teamName || fallback;
+}
+
+function currentTournamentTitle(targetState = state) {
+  const number = Math.max(1, Number(targetState.tournament?.number) || nextTournamentNumber(targetState.archives));
+  return String(targetState.tournament?.title || `第 ${number} 場賽事`);
+}
+
+function tournamentIsComplete(targetState = state) {
+  const played = (targetState.matches || []).filter((item) => item.resultType !== 'bye');
+  return Boolean(targetState.championId && played.length && played.every((item) => item.status === 'completed'));
+}
+
+function archiveTeamName(archive, id, fallback = '—') {
+  return archive?.entries?.find((item) => item.id === id)?.teamName || fallback;
+}
+
+function archivePlayerName(archive, id) {
+  return archive?.entries?.find((item) => item.id === id)?.playerName || '';
+}
+
+function archiveDate(value) {
+  if (!value) return '日期未記錄';
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return '日期未記錄';
+  return new Intl.DateTimeFormat('zh-TW', {
+    timeZone: 'Asia/Taipei',
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+    hour: '2-digit',
+    minute: '2-digit',
+  }).format(date);
+}
+
+function createArchiveSnapshot(targetState = state) {
+  const archivedAt = new Date().toISOString();
+  const tournament = targetState.tournament || createTournamentMeta(targetState.campus || campus, nextTournamentNumber(targetState.archives));
+  return {
+    id: tournament.id || uid(`archive-${targetState.campus || campus}`),
+    number: Math.max(1, Number(tournament.number) || nextTournamentNumber(targetState.archives)),
+    title: currentTournamentTitle(targetState),
+    campus: targetState.campus || campus,
+    status: tournamentIsComplete(targetState) ? 'completed' : 'closed',
+    createdAt: tournament.createdAt || targetState.updatedAt || archivedAt,
+    archivedAt,
+    entries: (targetState.entries || []).map((item) => ({
+      id: item.id,
+      teamName: item.teamName,
+      playerName: item.playerName,
+      videoUrl: item.videoUrl || '',
+      videoName: item.videoName || '',
+    })),
+    matches: (targetState.matches || []).map((item) => ({
+      id: item.id,
+      label: item.label,
+      stage: item.stage,
+      stageLabel: item.stageLabel,
+      roundIndex: item.roundIndex,
+      roundSize: item.roundSize,
+      order: item.order,
+      participantIds: Array.isArray(item.participantIds) ? [...item.participantIds] : [],
+      winnerId: item.winnerId || null,
+      loserId: item.loserId || null,
+      status: item.status,
+      resultType: item.resultType || null,
+      reason: item.reason || '',
+      completedAt: item.completedAt || null,
+    })),
+    championId: targetState.championId || null,
+    runnerUpId: targetState.runnerUpId || null,
+    thirdPlaceId: targetState.thirdPlaceId || null,
+  };
+}
+
+function archivesSection(viewer = 'control') {
+  const archives = [...(state.archives || [])].reverse();
+  if (!archives.length) {
+    return viewer === 'control' ? `
+      <section class="archive-section archive-empty">
+        <div><span class="section-kicker">PAST TOURNAMENTS</span><h2>過往賽事封存</h2><p>完成本場後，按下「封存本場・建立下一場」，歷屆名單與勝負會保留在這裡。</p></div>
+      </section>` : '';
+  }
+  return `
+    <section class="archive-section ${viewer === 'audience' ? 'audience-archives' : ''}">
+      <header>
+        <div><span class="section-kicker">PAST TOURNAMENTS</span><h2>過往賽事</h2><p>已封存 ${archives.length} 場，展開即可查看完整對戰結果。</p></div>
+        <span class="archive-count">${archives.length} 場</span>
+      </header>
+      <div class="archive-list">
+        ${archives.map((archive) => {
+          const playedMatches = (archive.matches || []).filter((item) => item.resultType !== 'bye');
+          const completedCount = playedMatches.filter((item) => item.status === 'completed').length;
+          const championName = archiveTeamName(archive, archive.championId, archive.status === 'completed' ? '冠軍未記錄' : '未完成');
+          return `
+            <details class="archive-card">
+              <summary>
+                <span class="archive-title"><small>${archive.status === 'completed' ? '已完成' : '提前封存'} · ${esc(archiveDate(archive.archivedAt))}</small><strong>${esc(archive.title || '過往賽事')}</strong></span>
+                <span class="archive-champion"><small>冠軍</small><b>${esc(championName)}</b></span>
+                <span class="archive-progress"><b>${completedCount}/${playedMatches.length}</b><small>已完成場次</small></span>
+                <span class="archive-toggle">查看紀錄</span>
+              </summary>
+              <div class="archive-detail">
+                <div class="archive-podium">
+                  <span><small>🥇 冠軍</small><b>${esc(archiveTeamName(archive, archive.championId))}</b><em>${esc(archivePlayerName(archive, archive.championId))}</em></span>
+                  <span><small>🥈 亞軍</small><b>${esc(archiveTeamName(archive, archive.runnerUpId))}</b><em>${esc(archivePlayerName(archive, archive.runnerUpId))}</em></span>
+                  <span><small>🥉 季軍</small><b>${esc(archiveTeamName(archive, archive.thirdPlaceId))}</b><em>${esc(archivePlayerName(archive, archive.thirdPlaceId))}</em></span>
+                </div>
+                <div class="archive-match-list">
+                  ${playedMatches.length ? playedMatches.map((item, index) => `
+                    <div class="archive-match-row">
+                      <span>${String(index + 1).padStart(2, '0')}</span>
+                      <div><small>${esc(matchStageLabel(item))}</small><b>${esc(archiveTeamName(archive, item.participantIds?.[0]))} <i>VS</i> ${esc(archiveTeamName(archive, item.participantIds?.[1]))}</b></div>
+                      <strong class="${item.status === 'completed' ? 'done' : ''}">${item.status === 'completed' ? `勝 ${esc(archiveTeamName(archive, item.winnerId))}` : '未完成'}</strong>
+                    </div>`).join('') : '<div class="hint">本場尚未建立正式賽程。</div>'}
+                </div>
+              </div>
+            </details>`;
+        }).join('')}
+      </div>
+    </section>`;
 }
 
 function showToast(message, error = false) {
@@ -513,9 +666,12 @@ function dashboardView() {
   const pending = state.matches.find((item) => item.status === 'pending' && item.participantIds.filter(Boolean).length === 2 && !activeMatchIds().includes(item.id));
   const next = active[0] || pending;
   const plan = tournamentPlan();
+  const hasTournamentData = Boolean(state.entries.length || state.matches.length);
+  const isComplete = tournamentIsComplete();
+  const nextNumber = nextTournamentNumber([...(state.archives || []), { number: state.tournament?.number }]);
   return `
     <div class="page-heading">
-      <div><span class="kicker">TOURNAMENT CONTROL · ${esc(CAMPUS[campus].short)}</span><h1>${esc(CAMPUS[campus].name)}賽事指揮台</h1><p>一分鐘不停錶，晉級結果由現場評審確認。</p></div>
+      <div><span class="kicker">TOURNAMENT CONTROL · ${esc(CAMPUS[campus].short)}</span><h1>${esc(CAMPUS[campus].name)}賽事指揮台</h1><p>${esc(currentTournamentTitle())}・一分鐘不停錶，晉級結果由現場評審確認。</p></div>
       <button class="outline" data-action="refresh">↻ 更新資料</button>
     </div>
     <div class="dashboard-grid">
@@ -552,6 +708,12 @@ function dashboardView() {
         </ul>
       </aside>
     </div>
+    <section class="tournament-cycle-card ${isComplete ? 'complete' : ''}">
+      <div class="cycle-status"><span>${isComplete ? '本場已完成' : hasTournamentData ? '本場進行中' : '目前場次'}</span><strong>${esc(currentTournamentTitle())}</strong><small>${state.entries.length} 隊・${completed} 場完成・${state.archives?.length || 0} 場已封存</small></div>
+      <div class="cycle-copy"><b>${isComplete ? '冠軍與完整賽果已可封存' : '準備下一場時，先封存目前資料'}</b><p>封存後會建立「第 ${nextNumber} 場賽事」空白工作區；目前名單、影片、賽程與勝負仍可從過往賽事查看。</p></div>
+      <button class="archive-next-button" data-action="archive-tournament" ${!hasTournamentData || active.length ? 'disabled' : ''}>${isComplete ? '封存本場・建立下一場 →' : '封存目前進度・建立下一場 →'}</button>
+    </section>
+    ${archivesSection('control')}
   `;
 }
 
@@ -959,7 +1121,7 @@ function renderAudience() {
           <h2>${esc(teamName(teamA))}</h2><p>${esc(entry(teamA)?.playerName || '')}</p>
         </div>
         <div class="stage-center">
-          <small>${esc(stage)} · ${esc(CAMPUS[campus].short)} LIVE</small>
+          <small>${esc(currentTournamentTitle())} · ${esc(stage)} · ${esc(CAMPUS[campus].short)} LIVE</small>
           <div class="audience-timer" id="audienceTimer">${timerText}</div>
           <strong>${esc(statusText)}</strong>
           <div class="stage-rule">一分鐘不停錶 · 現場評審判定勝負</div>
@@ -968,7 +1130,7 @@ function renderAudience() {
           <button class="team-badge" data-watch-team="${esc(teamB || '')}">B</button>
           <h2>${esc(teamName(teamB))}</h2><p>${esc(entry(teamB)?.playerName || '')}</p>
         </div>` : `
-        <div class="stage-center"><img src="assets/mascot-bengbeng.png" alt="" style="width:180px;height:160px;object-fit:contain"><small>${esc(CAMPUS[campus].name)}</small><div class="audience-timer">--:--</div><strong>${esc(statusText)}</strong></div>
+        <div class="stage-center"><img src="assets/mascot-bengbeng.png" alt="" style="width:180px;height:160px;object-fit:contain"><small>${esc(currentTournamentTitle())} · ${esc(CAMPUS[campus].name)}</small><div class="audience-timer">--:--</div><strong>${esc(statusText)}</strong></div>
       `}
     </section>
     <div class="audience-grid">
@@ -995,6 +1157,7 @@ function renderAudience() {
       </section>
     </div>
     ${state.matches.length ? `<section style="margin-top:32px">${bracketView(false)}</section>` : ''}
+    ${archivesSection('audience')}
   `;
   if (state.matches.length) scheduleBracketConnections();
 }
@@ -1361,6 +1524,43 @@ function resetBracket() {
   state.live = null;
   saveState('賽程已重設，隊伍與影片皆保留');
   renderControl();
+}
+
+async function archiveCurrentTournament() {
+  await syncQueue.catch(() => null);
+  const refreshed = await loadCampusState(true);
+  if (!refreshed) return showToast('無法確認最新資料，本次不建立下一場。', true);
+  if (!state.entries.length && !state.matches.length) return showToast('目前還沒有可封存的名單或賽程。', true);
+  if (activeMatchIds().length) return showToast('還有賽場正在準備或進行，請先完成評審判定。', true);
+
+  const archive = createArchiveSnapshot();
+  const nextArchives = [...(state.archives || []), archive];
+  const nextState = emptyState(campus, nextArchives);
+  const statusWarning = archive.status === 'completed'
+    ? '完整名單、影片、賽程與名次會保留在「過往賽事」。'
+    : '目前賽事尚未完成，系統會以「提前封存」保存現有進度。';
+  if (!confirm(`確定封存「${archive.title}」並建立「${currentTournamentTitle(nextState)}」？\n\n${statusWarning}\n新場次會從空白名單開始。`)) return;
+
+  setSync('saving', '建立下一場');
+  try {
+    const result = await apiPost({
+      action: 'junkbot-state-set',
+      password: CONTROL_PASSWORD,
+      campus,
+      state: nextState,
+    });
+    if (!result.success) throw new Error(result.error || '封存失敗');
+    state = normalizeState(nextState, campus);
+    localStorage.setItem(`bp-junkbot-spectator-cache-${campus}`, JSON.stringify(state));
+    connectionOk = true;
+    controlView = 'dashboard';
+    setSync('', '已儲存');
+    renderControl();
+    showToast(`${archive.title} 已封存，${currentTournamentTitle()}已建立`);
+  } catch (error) {
+    setSync('error', '封存失敗');
+    showToast(`無法建立下一場：${error.message}`, true);
+  }
 }
 
 async function openArena(matchId) {
@@ -1873,6 +2073,7 @@ function bindControlEvents() {
     }
     const action = event.target.closest('[data-action]')?.dataset.action;
     if (action === 'refresh') loadCampusState();
+    if (action === 'archive-tournament') await archiveCurrentTournament();
     if (action === 'import-roster') {
       if (state.matches.length) return showToast('請先重設賽程，才能修改名單。', true);
       const rows = parseRoster($('bulkRoster')?.value);
