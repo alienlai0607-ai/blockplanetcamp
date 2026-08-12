@@ -400,8 +400,41 @@ a { color: inherit; }
 .event-details span::before { content: ""; width: 8px; height: 8px; flex: 0 0 auto; border-radius: 50%; background: var(--sky); }
 .event-card .button { width: 100%; margin-top: auto; }
 
+/* Seasonal camp entry */
+.camp-signup { position: relative; overflow: hidden; padding: 84px 0 28px; background: #fff; }
+.camp-signup-card { position: relative; overflow: hidden; min-height: 430px; display: grid; grid-template-columns: 1.08fr .92fr; align-items: center; border-radius: 38px; background: var(--sun); box-shadow: var(--shadow-md); }
+.camp-signup-card::before { content: ""; position: absolute; width: 420px; height: 420px; left: -280px; bottom: -310px; border: 52px solid rgba(255,255,255,.28); border-radius: 50%; }
+.camp-signup-copy { position: relative; z-index: 3; padding: 55px 24px 55px 58px; }
+.camp-signup-kicker { display: inline-flex; align-items: center; gap: 9px; font-family: Nunito, sans-serif; font-size: 10px; font-weight: 900; letter-spacing: .16em; }
+.camp-signup-kicker i { width: 9px; height: 9px; border-radius: 50%; background: var(--coral); box-shadow: 15px 0 0 -2px #fff, 27px 0 0 -3px var(--sky); }
+.camp-signup-copy h2 { max-width: 650px; margin: 16px 0; color: var(--ink); font-size: clamp(43px, 4.5vw, 61px); line-height: 1.13; letter-spacing: -.055em; }
+.camp-signup-copy h2 span { position: relative; z-index: 0; white-space: nowrap; }
+.camp-signup-copy h2 span::after { content: ""; position: absolute; z-index: -1; left: -5px; right: -8px; bottom: 4px; height: .24em; border-radius: 999px; background: rgba(255,255,255,.75); transform: rotate(-1deg); }
+.camp-signup-copy p { max-width: 610px; margin: 0; color: rgba(36,65,59,.74); font-size: 16px; line-height: 1.8; }
+.camp-signup-button { margin-top: 28px; border: 2px solid var(--ink); background: var(--ink); color: #fff; box-shadow: 0 12px 23px rgba(36,65,59,.18); }
+.camp-signup-button:hover { background: #365951; }
+.camp-signup-copy small { display: block; margin-top: 13px; color: rgba(36,65,59,.64); font-size: 10px; font-weight: 750; }
+.camp-season-board { position: relative; align-self: stretch; min-height: 430px; background: rgba(255,255,255,.2); }
+.camp-season-board::before { content: ""; position: absolute; width: 315px; height: 315px; left: 50%; top: 50%; border: 2px dashed rgba(36,65,59,.2); border-radius: 50%; transform: translate(-50%,-50%) rotate(-8deg); }
+.season-orbit { position: absolute; z-index: 2; width: 184px; height: 184px; display: grid; place-content: center; border: 8px solid #fff; border-radius: 50%; text-align: center; box-shadow: 0 22px 35px rgba(73,66,33,.14); }
+.season-orbit span { font-size: 28px; font-weight: 900; line-height: 1; }
+.season-orbit strong { margin-top: 6px; font-size: 15px; }
+.season-orbit i { margin-top: 7px; font-family: Nunito, sans-serif; font-size: 8px; font-style: normal; font-weight: 900; letter-spacing: .16em; opacity: .55; }
+.orbit-winter { left: 8%; top: 12%; background: var(--sky-soft); transform: rotate(-8deg); }
+.orbit-summer { right: 7%; bottom: 10%; background: var(--coral-soft); transform: rotate(7deg); }
+.season-route { position: absolute; z-index: 3; left: 43%; top: 46%; width: 128px; height: 54px; border-top: 4px dashed rgba(36,65,59,.36); border-radius: 50%; transform: rotate(15deg); }
+.season-route b { position: absolute; width: 9px; height: 9px; border-radius: 50%; background: var(--ink); }
+.season-route b:nth-child(1) { left: 2px; top: -6px; }
+.season-route b:nth-child(2) { left: 58px; top: -13px; background: #fff; }
+.season-route b:nth-child(3) { right: 0; top: 5px; background: var(--coral); }
+.season-star { position: absolute; z-index: 1; color: #fff; font-size: 32px; }
+.star-one { right: 10%; top: 11%; transform: rotate(12deg); }
+.star-two { left: 8%; bottom: 9%; color: var(--ink); font-size: 19px; opacity: .34; }
+.season-planet { position: absolute; width: 54px; height: 54px; right: 10%; top: 27%; border: 12px solid rgba(255,255,255,.72); border-radius: 50%; }
+.season-planet::after { content: ""; position: absolute; width: 70px; left: -20px; top: 13px; border-top: 5px solid rgba(255,255,255,.72); border-radius: 50%; transform: rotate(-18deg); }
+
 /* Contact and footer */
-.contact { overflow: hidden; padding: 112px 0; background: #fff; }
+.contact { overflow: hidden; padding: 84px 0 112px; background: #fff; }
 .contact-card { overflow: hidden; display: grid; grid-template-columns: .86fr 1.14fr; border-radius: 34px; background: var(--ink); color: #fff; box-shadow: var(--shadow-md); }
 .contact-photo { min-height: 545px; position: relative; }
 .contact-photo img { width: 100%; height: 100%; object-fit: cover; }
@@ -478,6 +511,11 @@ footer { padding: 52px 0 30px; background: #fff8dd; }
   .social-card { grid-column: 1 / -1; }
   .event-grid { grid-template-columns: 1fr 1fr; }
   .event-card.main { grid-column: 1 / -1; }
+  .camp-signup-card { grid-template-columns: 1fr; }
+  .camp-signup-copy { padding-right: 48px; }
+  .camp-season-board { min-height: 360px; }
+  .orbit-winter { left: 19%; }
+  .orbit-summer { right: 18%; }
   .contact-photo { min-height: 410px; }
 }
 
@@ -565,7 +603,24 @@ footer { padding: 52px 0 30px; background: #fff8dd; }
   .social-card { display: block; margin-top: 15px; }
   .social-card .button { margin-top: 18px; }
   .event-card { min-height: 350px; padding: 23px; }
-  .contact { padding: 82px 0; }
+  .camp-signup { padding: 52px 0 12px; }
+  .camp-signup-card { min-height: 0; border-radius: 28px; }
+  .camp-signup-copy { padding: 38px 24px 34px; }
+  .camp-signup-copy h2 { font-size: 38px; line-height: 1.18; }
+  .camp-signup-copy h2 span { white-space: normal; }
+  .camp-signup-copy p { font-size: 14px; }
+  .camp-signup-button { width: 100%; margin-top: 22px; }
+  .camp-signup-copy small { line-height: 1.6; }
+  .camp-season-board { min-height: 275px; }
+  .camp-season-board::before { width: 230px; height: 230px; }
+  .season-orbit { width: 138px; height: 138px; border-width: 6px; }
+  .season-orbit span { font-size: 23px; }
+  .season-orbit strong { font-size: 13px; }
+  .orbit-winter { left: 7%; top: 10%; }
+  .orbit-summer { right: 7%; bottom: 9%; }
+  .season-route { left: 36%; top: 45%; width: 105px; }
+  .season-planet { right: 5%; top: 11%; transform: scale(.72); }
+  .contact { padding: 68px 0 82px; }
   .contact-card { border-radius: 28px; }
   .contact-photo { min-height: 310px; }
   .contact-content { padding: 31px 21px 32px; }
