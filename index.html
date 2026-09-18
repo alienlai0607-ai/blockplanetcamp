@@ -19,6 +19,8 @@
   <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@600;700;800;900&family=Noto+Sans+TC:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
   <link rel="preload" as="image" href="assets/hero-xingxing-maker-chubby.webp">
   <link rel="stylesheet" href="assets/site-v4.css?v=20260812-camp-nav">
+  <link rel="stylesheet" href="assets/teacher-tools.css?v=20260918">
+  <script src="assets/teacher-access.js?v=20260918" defer></script>
 </head>
 <body>
   <svg class="icon-sprite" aria-hidden="true">
@@ -50,7 +52,14 @@
         <a href="#achievements">競賽成果</a>
         <a href="#events">最新活動</a>
         <a class="nav-camp" href="camp2026/"><svg class="bp-icon" aria-hidden="true"><use href="#icon-rocket"></use></svg> 寒・暑假營隊</a>
-        <a href="https://xiaodao-taiwan-learning-atlas.alienlai0607.chatgpt.site/entry" title="教師走讀筆記・需登入及通行密碼">小島出發</a>
+        <details class="teacher-tools-menu" id="teacherToolsMenu">
+          <summary>老師工具 <span class="teacher-chevron" aria-hidden="true">⌄</span></summary>
+          <div class="teacher-tools-dropdown">
+            <a href="https://xiaodao-taiwan-learning-atlas.alienlai0607.chatgpt.site/entry" data-teacher-tool><span>小島出發</span><small>教師走讀筆記・需登入</small></a>
+            <a href="teacher-tools/photo-print/" data-teacher-tool><span>照片小幫手</span><small>A4 照片自動排版與列印</small></a>
+            <span class="teacher-tool-lock">老師專用 · 通行密碼保護</span>
+          </div>
+        </details>
         <a href="#contact">聯絡我們</a>
         <a class="nav-quiz" href="quiz.html"><svg class="bp-icon" aria-hidden="true"><use href="#icon-star"></use></svg> 測驗找課</a>
       </nav>
