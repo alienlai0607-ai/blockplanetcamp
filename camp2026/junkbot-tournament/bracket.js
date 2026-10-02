@@ -73,15 +73,15 @@ bracketView = function(control) {
   const current = allRounds.find(round => round.matches.some(item => activeMatchIds().includes(item.id)))
     || allRounds.find(round => round.matches.some(item => item.status !== 'completed')) || rounds.at(-1);
   const selected = allRounds.find(round => round.stage === bracketV2Round) || current;
-  const played = state.matches.filter(item => item.resultType !== 'bye');
+  const played = state.matches.filter(item => item.resultType !== 'bye' && item.sourceMatchIds?.length !== 1);
   const complete = played.filter(item => item.status === 'completed').length;
   const activeCount = activeMatches().length;
   const hasPlayed = complete > 0;
   return `<section class="flow-bracket">
     <div class="flow-heading"><div><span class="kicker">ROAD TO THE CHAMPIONSHIP · ${esc(CAMPUS[campus].short)}</span><h1>晉級之路</h1><p>${esc(currentTournamentTitle())}<span>／</span>${state.entries.length} 支隊伍<span>／</span>已完成 ${complete} / ${played.length} 場${activeCount ? `<span>／</span><b>${activeCount} 場準備或進行中</b>` : ''}</p></div>${flowToolbar()}</div>
     <nav class="flow-rounds" aria-label="選擇比賽輪次">${allRounds.map((round,index) => {
-      const total = round.matches.filter(item=>item.resultType !== 'bye').length;
-      const done = round.matches.filter(item=>item.status==='completed' && item.resultType !== 'bye').length;
+      const total = round.matches.filter(item=>item.resultType !== 'bye' && item.sourceMatchIds?.length !== 1).length;
+      const done = round.matches.filter(item=>item.status==='completed' && item.resultType !== 'bye' && item.sourceMatchIds?.length !== 1).length;
       const live = round.matches.some(item=>activeMatchIds().includes(item.id));
       return `<button data-flow-round="${esc(round.stage)}" aria-pressed="${selected.stage===round.stage}" class="${round.stage === 'bronze' ? 'bronze' : ''}"><span class="flow-step">${round.stage === 'bronze' ? '季' : String(index+1).padStart(2,'0')}</span><span><b>${esc(flowRoundLabel(round))}</b><small>${live ? '賽場已開啟' : done===total && total ? '全部完成' : `${done} / ${total} 場完成`}</small></span>${selected.stage===round.stage ? '<i>目前查看</i>' : ''}</button>`;
     }).join('')}</nav>
@@ -97,7 +97,7 @@ bracketView = function(control) {
       </div>
       ${bronze ? `<section class="flow-bronze"><div><span>獨立支線</span><h3>季軍爭奪戰</h3><p>四強落敗的兩隊在此對決。</p></div>${flowCard(bronze,control)}</section>` : ''}`}
     ${state.championId ? `<div class="flow-champion"><span>🏆 本屆冠軍</span><strong>${esc(teamName(state.championId))}</strong><small>${esc(entry(state.championId)?.playerName || '')}</small></div>` : ''}
-    <details class="flow-draw"><summary>查看抽籤與賽程設定<span>開賽前一次抽定，路線已鎖定</span></summary><div><p>所有對戰及輪空位置均於建立賽程時排定。輪空不會新增虛構對手；比賽結果以現場評審確認為準。</p>${control ? `<button class="outline" data-action="redraw-bracket" ${hasPlayed || activeCount ? 'disabled' : ''}>重新抽籤</button><button class="outline" data-action="reset-bracket" ${hasPlayed || activeCount ? 'disabled' : ''}>重設賽程</button>` : ''}</div></details>
+    <details class="flow-draw"><summary>查看抽籤與賽程設定<span>開賽前一次抽定，路線已鎖定</span></summary><div><p>所有對戰及輪空位置均於建立賽程時排定。輪空不會新增虛構對手；比賽結果以現場評審確認為準。</p><p>${esc(bronzeRule())}</p><p>抽籤時間：${esc(resultTime(state.draw?.createdAt))}${state.draw?.operatorName ? ` · 登錄：${esc(state.draw.operatorName)}` : ''}</p>${control ? `<button class="outline" data-action="redraw-bracket" ${hasPlayed || activeCount ? 'disabled' : ''}>重新抽籤</button><button class="outline" data-action="reset-bracket" ${hasPlayed || activeCount ? 'disabled' : ''}>重設賽程</button>` : ''}</div></details>
   </section>`;
 };
 
@@ -154,7 +154,7 @@ document.addEventListener('click', event => {
 
 if(DEMO && new URLSearchParams(location.search).get('preview')==='bracket') {
   (async()=>{
-    role='control';await enterApp('dongqiao');
+    role='control';await enterApp(EVENT_SCOPE);
     if(!state.entries.length && !state.matches.length){
       const names=['紙箱霸王','螺絲衝鋒隊','瓶蓋飛行家','環保小勇士','齒輪探險家','無敵回收號','星球守護隊','彈跳火箭','鐵罐騎士','創意工程師','旋風陀螺','紙杯小英雄','綠能戰士','太空漫遊者','閃電小隊','夢想實驗室'];
       state.entries=names.map((teamName,i)=>({id:`preview-${i+1}`,teamName,playerName:`演練選手 ${String(i+1).padStart(2,'0')}`,videoUrl:''}));

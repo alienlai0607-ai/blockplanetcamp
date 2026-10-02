@@ -3,116 +3,100 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>2026 廢材機器人大賽｜布拉克星球</title>
-  <meta name="description" content="布拉克星球廢材機器人大賽即時戰況、選廢秀與賽事管理系統。">
+  <title>2026 全國廢材機器人大賽｜布拉克星球</title>
+  <meta name="description" content="2026 全國廢材機器人大賽官方賽事平台。觀看即時戰況、對戰賽程、參賽作品與完整賽果。">
+  <meta name="theme-color" content="#173e36">
   <link rel="icon" href="assets/favicon-32.png">
   <link rel="apple-touch-icon" href="assets/apple-touch-icon.png">
   <link rel="stylesheet" href="styles.css?v=20260812-tournament-archives">
   <link rel="stylesheet" href="competition.css?v=20261002-competition">
   <link rel="stylesheet" href="bracket.css?v=20261002-final">
+  <link rel="stylesheet" href="national.css?v=20261002-national-r2">
 </head>
 <body>
-  <section class="gate" id="gate">
-    <div class="gate-art">
-      <div class="gate-art-grid" aria-hidden="true"></div>
-      <div class="gate-art-copy">
-        <span class="gate-season">2026・布拉克星球</span>
-        <h2><em>廢材小隊</em><br>集合啦！</h2>
-        <p>蹦蹦 × 跳跳<br><b>陪你一起上場大對決</b></p>
+  <section class="gate national-gate" id="gate" aria-label="全國廢材機器人大賽入口">
+    <div class="national-gate-story">
+      <a class="national-host" href="../index.html" aria-label="回布拉克星球營隊官網">
+        <img src="assets/junkbot-logo.png" alt="廢材機器人大賽">
+        <span>布拉克星球<span>BLOCK PLANET</span></span>
+      </a>
+      <div class="national-event-title">
+        <p class="national-kicker">2026 NATIONAL TOURNAMENT</p>
+        <h1><span>全國</span>廢材機器人大賽</h1>
+        <p>創意造機，正式上場。</p>
       </div>
-      <div class="mascot-stage" aria-label="廢材吉祥物蹦蹦與跳跳">
-        <div class="mascot-speech">準備好了嗎？<b>LET'S JUNK!</b></div>
-        <img class="mascot mascot-bengbeng" src="assets/mascot-bengbeng.png" alt="紙箱機器人蹦蹦">
-        <img class="mascot mascot-tiaotiao" src="assets/mascot-tiaotiao.png" alt="瓶子機器人跳跳">
+      <div class="national-mascots" aria-label="賽事吉祥物蹦蹦與跳跳">
+        <img src="assets/mascot-bengbeng.png" alt="紙箱機器人蹦蹦" class="national-mascot-one">
+        <img src="assets/mascot-tiaotiao.png" alt="瓶子機器人跳跳" class="national-mascot-two">
       </div>
-      <div class="scrap-orbit orbit-one" aria-hidden="true">⚙</div>
-      <div class="scrap-orbit orbit-two" aria-hidden="true">✦</div>
-      <div class="scrap-orbit orbit-three" aria-hidden="true">●</div>
-      <div class="gate-track" aria-hidden="true">
-        <span></span><span></span><span></span><span></span><span></span>
+      <div class="national-gate-rules">
+        <div><strong>60<span>秒</span></strong><p>每場限時對決</p></div>
+        <p>單敗淘汰晉級<br>勝負由現場評審判定</p>
       </div>
-      <div class="gate-badges">
-        <span><i>01</i><b>找廢材</b></span>
-        <span><i>02</i><b>動手做</b></span>
-        <span><i>03</i><b>上場戰</b></span>
-      </div>
-      <div class="gate-sticker"><small>每場對決</small><strong>01:00</strong><b>全程不停錶</b></div>
     </div>
-    <div class="gate-panel">
-      <a class="back-link" href="../index.html">← 回營隊官網</a>
-      <img class="gate-logo" src="assets/junkbot-logo.png" alt="廢材機器人大賽">
-      <p class="eyebrow">2026 JUNK ROBOT TOURNAMENT</p>
-      <h1>今天要從哪裡<br>進入廢材競技場？</h1>
-      <p class="gate-lead">觀眾即時看戰況與選廢秀；比賽單位負責名單、倒數與晉級判定。</p>
-
+    <div class="national-gate-access">
+      <div class="national-access-heading">
+        <p class="national-kicker">OFFICIAL EVENT PLATFORM</p>
+        <h2>進入賽事</h2>
+        <p>即時掌握每一場對決，見證冠軍誕生。</p>
+      </div>
       <div class="role-grid" id="roleGrid">
         <button class="role-card audience" data-role="audience">
-          <span class="role-icon">👀</span>
-          <strong>我是觀眾</strong>
-          <small>免密碼・唯讀即時戰況</small>
-          <b>進入觀眾席 →</b>
+          <span class="role-number" aria-hidden="true">01</span>
+          <span class="role-copy"><strong>觀眾入口</strong><small>即時戰況、對戰賽程與參賽作品</small><b>觀看賽事 <span aria-hidden="true">→</span></b></span>
+          <span class="role-access">免登入</span>
         </button>
         <button class="role-card control" data-role="control">
-          <span class="role-icon">🎛️</span>
-          <strong>比賽單位控制</strong>
-          <small>名單、影片、倒數與晉級</small>
-          <b>輸入密碼 →</b>
+          <span class="role-number" aria-hidden="true">02</span>
+          <span class="role-copy"><strong>賽務人員入口</strong><small>參賽名單、場地計時與裁判判定</small><b>工作人員登入 <span aria-hidden="true">→</span></b></span>
+          <span class="role-access">需驗證</span>
         </button>
       </div>
-
       <form class="password-panel" id="passwordPanel" hidden>
-        <label>
-          <span>比賽單位密碼</span>
-          <input id="controlPassword" type="password" autocomplete="current-password" placeholder="請輸入密碼">
-        </label>
-        <button type="submit">確認身份</button>
-        <p id="passwordError" hidden>密碼不正確，請再試一次。</p>
+        <div class="national-login-title"><span class="national-kicker">EVENT STAFF</span><h3>賽務人員登入</h3><p>請使用主辦單位提供的賽務密碼。</p></div>
+        <label for="controlOperator"><span>工作人員姓名／代號</span><input id="controlOperator" name="operator" type="text" maxlength="40" autocomplete="name" placeholder="供裁判判定紀錄使用" required></label>
+        <label for="controlPassword"><span>賽務密碼</span><input id="controlPassword" name="password" type="password" autocomplete="current-password" placeholder="正式賽務密碼" required></label>
+        <p id="passwordError" role="alert" hidden>密碼不正確，請再試一次。</p>
+        <button type="submit">登入賽務控制台 <span aria-hidden="true">→</span></button>
+        <button class="text-button" id="backToRoles" type="button">← 返回身分選擇</button>
       </form>
-
-      <div class="campus-panel" id="campusPanel" hidden>
-        <p><b id="campusPrompt">請選擇觀看校區</b><span>兩邊名單、賽程與影片完全分開</span></p>
-        <div>
-          <button data-campus="dongqiao"><i>東</i><strong>東橋教室</strong><small>Dongqiao Arena</small></button>
-          <button data-campus="north"><i>北</i><strong>北區教室</strong><small>North Arena</small></button>
-        </div>
-        <button class="text-button" id="backToRoles">← 重新選擇身份</button>
-      </div>
+      <div class="national-access-note"><span aria-hidden="true">●</span><p>所有場地共用全國賽程；賽事結果以現場評審最終確認為準。</p></div>
+      <footer class="national-gate-footer"><span>2026 布拉克星球</span><a href="../index.html">回主辦單位官網 ↗</a></footer>
     </div>
   </section>
 
-  <main class="control-app" id="controlApp" hidden>
+  <main class="control-app national-control" id="controlApp" hidden>
     <header class="topbar">
-      <button class="brand" data-view="dashboard">
+      <button class="brand" data-view="dashboard" aria-label="回賽務總覽">
         <img src="assets/junkbot-logo.png" alt="">
-        <span><strong>廢材機器人大賽</strong><small id="controlCampusName">東橋教室</small></span>
+        <span><strong>廢材機器人大賽</strong><small id="controlCampusName">全國賽事</small></span>
       </button>
-      <nav>
-        <button class="active" data-view="dashboard">賽事總覽</button>
-        <button data-view="arenas">多賽場控制</button>
-        <button data-view="teams">選手與選廢秀</button>
-        <button data-view="bracket">淘汰賽程</button>
+      <nav aria-label="賽務功能">
+        <button class="active" data-view="dashboard">賽務總覽</button>
+        <button data-view="arenas">賽場控制</button>
+        <button data-view="teams">參賽名單</button>
+        <button data-view="bracket">對戰賽程</button>
+        <button data-view="records">賽果紀錄</button>
       </nav>
       <div class="top-actions">
-        <span class="sync-status" id="syncStatus"><i></i><b>已連線</b></span>
-        <button class="soft-button" id="switchCampusControl">切換校區</button>
-        <button class="icon-button" id="leaveControl" aria-label="離開控制台">×</button>
+        <span class="sync-status" id="syncStatus"><i></i><b>連線中</b></span>
+        <button class="soft-button" id="leaveControl">登出</button>
       </div>
     </header>
     <section class="control-view" id="controlView"></section>
   </main>
 
   <main class="audience-app" id="audienceApp" hidden>
-    <header class="audience-header">
+    <header class="audience-header national-audience-header">
       <div class="audience-brand">
         <img src="assets/junkbot-logo.png" alt="廢材機器人大賽">
-        <span><b>LIVE ARENA</b><strong id="audienceCampusName">東橋教室</strong></span>
+        <span><b>2026 NATIONAL TOURNAMENT</b><strong id="audienceCampusName">全國賽事</strong></span>
       </div>
       <div class="audience-actions">
-        <span class="live-dot"><i></i> LIVE</span>
+        <span class="live-dot"><i></i> 即時戰況</span>
         <button id="projectionToggle" aria-pressed="false">投影模式</button>
         <button id="audienceFullscreen">全螢幕</button>
-        <button id="switchCampusAudience">切換校區</button>
-        <button id="leaveAudience">離開</button>
+        <button id="leaveAudience">返回入口</button>
       </div>
     </header>
     <section id="audienceView"></section>
@@ -123,7 +107,7 @@
   <div class="toast" id="toast" role="status" aria-live="polite" hidden></div>
 
   <script src="assets/xlsx.full.min.js?v=0.20.3"></script>
-  <script src="app.js?v=20261002-competition"></script>
-  <script src="bracket.js?v=20261002-final"></script>
+  <script src="app.js?v=20261002-national-r2"></script>
+  <script src="bracket.js?v=20261002-national-r1"></script>
 </body>
 </html>

@@ -116,7 +116,9 @@ function doPost(e) {
 
   // 影片寫入 Google Drive 時間較長，不占用整份試算表的全域鎖。
   // 名單與賽程 URL 仍由 junkbot-state-set 另行寫入，避免上傳途中阻塞觀眾讀取。
-  if (action === 'junkbot-video-upload') return respond(junkbotVideoUpload(p));
+  if (action === 'junkbot-video-upload') return respond(junkbotResponse(junkbotNormalizeCampus(p.campus), junkbotVideoUpload(p)));
+  // Authentication is read-only and must not wait behind unrelated spreadsheet writes.
+  if (action === 'junkbot-auth') return respond(junkbotAuth(p));
 
   const lock = LockService.getScriptLock();
   try {
@@ -130,8 +132,8 @@ function doPost(e) {
       case 'drone-pilot-add': return respond(dronePilotAdd(p));
       case 'drone-pilot-delete': return respond(dronePilotDelete(p));
       case 'drone-state-set': return respond(droneStateSet(p.state));
-      case 'junkbot-state-set': return respond(junkbotStateSet(p));
-      case 'junkbot-match-patch': return respond(junkbotMatchPatch(p));
+      case 'junkbot-state-set': return respond(junkbotResponse(junkbotNormalizeCampus(p.campus), junkbotStateSet(p)));
+      case 'junkbot-match-patch': return respond(junkbotResponse(junkbotNormalizeCampus(p.campus), junkbotMatchPatch(p)));
       default: return respond({ success: false, error: '無效的操作' });
     }
   } finally {
@@ -1865,23 +1867,71 @@ function droneStateSet(state) {
 
 // ============================================================
 //  🤖 2026 廢材機器人大賽（camp2026/junkbot-tournament/）
-//  東橋／北區各自一列 JSON；觀眾公開讀取，寫入與影片上傳需密碼 block。
+//  national 為獨立全國賽事；東橋／北區歷史資料保持原 scope，不搬移也不混用。
+//  全國賽事密碼僅由 ScriptProperties.JUNKBOT_NATIONAL_PASSWORD 設定。
 //  選廢秀影片存 Google Drive，賽事 JSON 只保存公開預覽網址。
 // ============================================================
 
 const JUNKBOT_STATE_SHEET = '廢材機器人賽事';
 const JUNKBOT_VIDEO_FOLDER = '2026廢材選廢秀影片';
 const JUNKBOT_CONTROL_PASSWORD = 'block';
+const JUNKBOT_PROTOCOL_VERSION = 2;
 
 function junkbotNormalizeCampus(campus) {
   const value = String(campus || '').toLowerCase().trim();
+  if (value === 'national') return 'national';
   return value === 'north' ? 'north' : 'dongqiao';
+}
+
+function junkbotCampusName(campus) {
+  return campus === 'national' ? '全國廢材機器人大賽' : campus === 'north' ? '北區教室' : '東橋教室';
+}
+
+function junkbotResponse(campus, result) {
+  if (campus !== 'national') return result;
+  const response = Object.assign({}, result, {
+    campus: 'national', scope: 'national', protocolVersion: JUNKBOT_PROTOCOL_VERSION,
+    serverNow: new Date().toISOString(),
+    capabilities: { nationalAuth: true, revisionGuard: true, matchAudit: true }
+  });
+  if (response.state) response.revision = Number(response.state.revision) || 0;
+  return response;
+}
+
+function junkbotWriteAuthorization(p, campus) {
+  if (campus !== 'national') {
+    return String(p.password || '') === JUNKBOT_CONTROL_PASSWORD ? null
+      : { success: false, authorized: false, error: '比賽單位密碼不正確' };
+  }
+  if (Number(p.protocolVersion) !== JUNKBOT_PROTOCOL_VERSION) {
+    return junkbotResponse(campus, { success: false, authorized: false, code: 'PROTOCOL_REQUIRED', error: '請使用全國賽事新版控制台，舊版操作已拒絕' });
+  }
+  const expected = PropertiesService.getScriptProperties().getProperty('JUNKBOT_NATIONAL_PASSWORD');
+  if (!expected || String(expected).trim().length < 12 || expected === JUNKBOT_CONTROL_PASSWORD) {
+    return junkbotResponse(campus, { success: false, authorized: false, code: 'NATIONAL_PASSWORD_NOT_CONFIGURED', error: '全國賽事控制密碼尚未安全設定：請管理員在 Apps Script「專案設定 → 指令碼屬性」新增 JUNKBOT_NATIONAL_PASSWORD，設定至少 12 字元的專用密碼' });
+  }
+  if (String(p.password || '') !== expected) {
+    return junkbotResponse(campus, { success: false, authorized: false, code: 'UNAUTHORIZED', error: '比賽單位密碼不正確' });
+  }
+  return null;
+}
+
+function junkbotAuth(p) {
+  const campus = junkbotNormalizeCampus(p.campus);
+  try {
+    const rejected = junkbotWriteAuthorization(p, campus);
+    if (rejected) return rejected;
+    return junkbotResponse(campus, { success: true, authorized: true, scope: campus, campus: campus });
+  } catch (err) {
+    return junkbotResponse(campus, { success: false, authorized: false, error: '目前無法驗證控制權限，請稍後重試' });
+  }
 }
 
 function junkbotEmptyState(campus) {
   return {
     version: 5,
     campus: campus,
+    revision: 0,
     tournament: null,
     archives: [],
     entries: [],
@@ -1970,7 +2020,7 @@ function junkbotFindCampusRows(sh, campus) {
     }
   }
   if (rows.length) return rows;
-  const campusName = campus === 'north' ? '北區教室' : '東橋教室';
+  const campusName = junkbotCampusName(campus);
   sh.appendRow([campus, campusName, '', '', 1, 1]);
   return [sh.getLastRow()];
 }
@@ -1981,7 +2031,7 @@ function junkbotStateGet(campusValue) {
   try {
     // 觀眾 GET 必須保持純讀取；第一次建立分頁與校區列交給管理端 state-set。
     const sh = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(JUNKBOT_STATE_SHEET);
-    if (!sh || sh.getLastRow() < 2) return { success: true, campus: campus, state: empty };
+    if (!sh || sh.getLastRow() < 2) return junkbotResponse(campus, { success: true, campus: campus, state: empty });
     const values = sh.getRange(2, 1, sh.getLastRow() - 1, 6).getValues();
     const chunks = [];
     values.forEach(function(row) {
@@ -1992,35 +2042,194 @@ function junkbotStateGet(campusValue) {
         payload: String(row[2] || '')
       });
     });
-    if (!chunks.length) return { success: true, campus: campus, state: empty };
+    if (!chunks.length) return junkbotResponse(campus, { success: true, campus: campus, state: empty });
     chunks.sort(function(a, b) { return a.index - b.index; });
     const expectedChunks = chunks[0].total;
+    if (campus === 'national' && (chunks.length !== expectedChunks || chunks.some(function(chunk, index) {
+      return chunk.index !== index + 1 || chunk.total !== expectedChunks;
+    }))) throw new Error('全國賽事資料分段不完整，請稍後重試並聯絡管理員');
     if (chunks.length < expectedChunks) return { success: true, campus: campus, state: empty };
     const payload = chunks.slice(0, expectedChunks).map(function(chunk) { return chunk.payload; }).join('');
-    if (!payload) return { success: true, campus: campus, state: empty };
+    if (!payload) return junkbotResponse(campus, { success: true, campus: campus, state: empty });
     const state = JSON.parse(payload);
+    if (campus === 'national' && (!state || typeof state !== 'object' || Array.isArray(state)
+        || state.campus !== campus || !Array.isArray(state.entries) || !Array.isArray(state.matches)
+        || !Number.isSafeInteger(state.revision) || state.revision < 0)) {
+      throw new Error('全國賽事資料驗證失敗，已停止寫入以保留原始資料');
+    }
     state.campus = campus;
-    return { success: true, campus: campus, state: state };
+    return junkbotResponse(campus, { success: true, campus: campus, state: state });
   } catch (err) {
+    if (campus === 'national') return junkbotResponse(campus, { success: false, code: 'STATE_READ_FAILED', error: '全國賽事資料暫時無法完整讀取，請稍後重試；原始資料未更動' });
     return { success: true, campus: campus, state: empty };
   }
 }
 
-function junkbotStateSet(p, fromMatchPatch) {
-  try {
-    if (String(p.password || '') !== JUNKBOT_CONTROL_PASSWORD) {
-      return { success: false, error: '比賽單位密碼不正確' };
+// Canonical comparison protects every recorded field, including future additions.
+function junkbotCanonical(value) {
+  if (Array.isArray(value)) return '[' + value.map(junkbotCanonical).join(',') + ']';
+  if (value && typeof value === 'object') {
+    return '{' + Object.keys(value).sort().map(function(key) {
+      return JSON.stringify(key) + ':' + junkbotCanonical(value[key]);
+    }).join(',') + '}';
+  }
+  return JSON.stringify(value);
+}
+
+function junkbotNationalStateError(state) {
+  if (!Array.isArray(state.entries) || !Array.isArray(state.matches) || !Array.isArray(state.archives)) return '名單、賽程與封存資料格式不正確';
+  const ids = new Set();
+  const names = new Set();
+  for (let index = 0; index < state.entries.length; index++) {
+    const item = state.entries[index];
+    if (!item || typeof item !== 'object' || typeof item.id !== 'string' || !item.id || ids.has(item.id)) return '隊伍 ID 缺漏或重複';
+    const teamName = String(item.teamName || '').normalize('NFKC').trim().replace(/\s+/g, ' ');
+    const playerName = String(item.playerName || '').normalize('NFKC').trim().replace(/\s+/g, ' ');
+    if (!teamName || teamName.length > 40 || !playerName || playerName.length > 40) return '每隊須填寫隊名與選手姓名，各限 40 字元';
+    if (names.has(teamName.toLowerCase())) return '隊名重複，請使用不同的隊名';
+    if (item.videoUrl && !junkbotValidVideoUrl(item.videoUrl)) return '影片網址必須是有效的 http 或 https 網址，且不超過 2000 字元';
+    item.teamName = teamName;
+    item.playerName = playerName;
+    ids.add(item.id);
+    names.add(teamName.toLowerCase());
+  }
+  const matchIds = new Set();
+  for (let index = 0; index < state.matches.length; index++) {
+    const item = state.matches[index];
+    if (!item || typeof item !== 'object' || typeof item.id !== 'string' || !item.id || matchIds.has(item.id)) return '場次 ID 缺漏或重複';
+    if (!Array.isArray(item.participantIds) || item.participantIds.length !== 2
+        || item.participantIds.some(function(id) { return id !== null && !ids.has(id); })
+        || (item.participantIds[0] && item.participantIds[0] === item.participantIds[1])) return '場次選手名單不正確';
+    if (['pending', 'completed'].indexOf(item.status) < 0) return '場次狀態不正確';
+    if (item.status === 'completed' && item.winnerId && item.participantIds.indexOf(item.winnerId) < 0) return '勝隊不在該場名單中';
+    if (item.resultType === 'bye' && item.participantIds.filter(Boolean).length > 1) return '輪空場次不可包含兩隊';
+    matchIds.add(item.id);
+  }
+  for (let index = 0; index < state.matches.length; index++) {
+    const item = state.matches[index];
+    if (item.nextMatchId && (!matchIds.has(item.nextMatchId) || item.nextMatchId === item.id)) return '晉級目標場次不存在';
+    if (!Array.isArray(item.sourceMatchIds) || item.sourceMatchIds.some(function(id) { return !matchIds.has(id) || id === item.id; })) return '晉級來源場次不存在';
+  }
+  return null;
+}
+
+function junkbotValidVideoUrl(value) {
+  if (typeof value !== 'string' || value.length > 2000 || /[\u0000-\u0020<>"\\]/.test(value)) return false;
+  // Apps Script does not consistently expose the WHATWG URL constructor.
+  // Validate scheme, authority and port directly; reject user-info and ambiguous backslashes.
+  const parts = value.match(/^https?:\/\/([^/?#]+)(?:[/?#].*)?$/i);
+  if (!parts || parts[1].indexOf('@') >= 0) return false;
+  const authority = parts[1].match(/^(\[[0-9a-f:.]+\]|[^:]+)(?::([0-9]+))?$/i);
+  if (!authority || (authority[2] && (Number(authority[2]) < 1 || Number(authority[2]) > 65535))) return false;
+  const host = authority[1];
+  const ipv4 = function(value) {
+    const octets = value.split('.');
+    return octets.length === 4 && octets.every(function(octet) { return /^[0-9]{1,3}$/.test(octet) && Number(octet) <= 255; });
+  };
+  if (host.charAt(0) === '[') {
+    const address = host.slice(1, -1);
+    const halves = address.split('::');
+    if (halves.length > 2) return false;
+    const groups = halves.reduce(function(result, half) { return result.concat(half ? half.split(':') : []); }, []);
+    let size = 0;
+    for (let index = 0; index < groups.length; index++) {
+      if (/^[0-9a-f]{1,4}$/i.test(groups[index])) size += 1;
+      else if (index === groups.length - 1 && ipv4(groups[index])) size += 2;
+      else return false;
     }
-    const campus = junkbotNormalizeCampus(p.campus);
-    const state = p.state;
-    if (!state || typeof state !== 'object') return { success: false, error: '賽事資料格式不正確' };
+    return halves.length === 2 ? size < 8 : size === 8;
+  }
+  if (/^[0-9.]+$/.test(host)) return ipv4(host);
+  return host.length <= 253 && host.split('.').every(function(label) {
+    return label.length > 0 && label.length <= 63 && /^[a-z0-9\u00a1-\uffff](?:[a-z0-9\u00a1-\uffff-]*[a-z0-9\u00a1-\uffff])?$/i.test(label);
+  });
+}
+
+function junkbotNationalFullStateGuard(current, incoming) {
+  const existingArchives = current.archives || [];
+  for (let index = 0; index < existingArchives.length; index++) {
+    const archive = existingArchives[index];
+    const retained = incoming.archives.find(function(item) { return item && item.id === archive.id; });
+    if (!retained || junkbotCanonical(retained) !== junkbotCanonical(archive)) return '過往賽事已封存，禁止修改任何原始紀錄';
+  }
+  const additions = incoming.archives.filter(function(archive) {
+    return !existingArchives.some(function(old) { return old.id === archive.id; });
+  });
+  if (new Set(incoming.archives.map(function(archive) { return archive && archive.id; })).size !== incoming.archives.length) return '封存賽事 ID 重複';
+  const snapshotMatches = function(archive) {
+    return archive && archive.id === (current.tournament && current.tournament.id)
+      && archive.campus === 'national'
+      && junkbotCanonical(archive.entries) === junkbotCanonical(current.entries)
+      && junkbotCanonical(archive.matches) === junkbotCanonical(current.matches)
+      && ['championId', 'runnerUpId', 'thirdPlaceId'].every(function(key) { return (archive[key] || null) === (current[key] || null); });
+  };
+  if (additions.length > 1 || additions.some(function(archive) { return !snapshotMatches(archive); })) return '封存必須完整保留當前賽事名單、賽程與判定紀錄';
+  const archived = additions.length === 1 && snapshotMatches(additions[0]);
+  const resetForArchive = archived && incoming.tournament && incoming.tournament.id !== (current.tournament && current.tournament.id)
+    && incoming.matches.length === 0 && !incoming.championId && !incoming.runnerUpId && !incoming.thirdPlaceId;
+  if (archived && !resetForArchive) return '封存後請建立獨立的新一屆賽事';
+  const hasStarted = (current.matches || []).some(function(item) {
+    return item.openedAt || item.startedAt || (Array.isArray(item.auditLog) && item.auditLog.length)
+      || (item.status === 'completed' && item.resultType !== 'bye');
+  });
+  if (hasStarted && !resetForArchive) {
+    if (junkbotCanonical(incoming.matches) !== junkbotCanonical(current.matches)
+        || junkbotCanonical(incoming.draw) !== junkbotCanonical(current.draw)
+        || junkbotCanonical(incoming.tournament) !== junkbotCanonical(current.tournament)
+        || ['championId', 'runnerUpId', 'thirdPlaceId'].some(function(key) { return (incoming[key] || null) !== (current[key] || null); })) {
+      return '賽事已開場，賽程與勝負只能透過賽場操作更新；不可整份覆寫';
+    }
+    const rosterIdentity = function(entries) {
+      return entries.map(function(item) { return [item.id, item.teamName, item.playerName]; }).sort(function(a, b) { return a[0].localeCompare(b[0]); });
+    };
+    if (junkbotCanonical(rosterIdentity(incoming.entries)) !== junkbotCanonical(rosterIdentity(current.entries))) return '賽事已開場，不能新增、刪除或替換隊伍與選手';
+  }
+  if (!hasStarted || resetForArchive) {
+    if (incoming.championId || incoming.runnerUpId || incoming.thirdPlaceId) return '正式名次必須由賽場判定產生';
+    if (incoming.matches.some(function(item) {
+      return (item.status === 'completed' && item.resultType !== 'bye') || item.openedAt || item.startedAt
+        || (Array.isArray(item.auditLog) && item.auditLog.length) || Number(item.replays || 0) > 0;
+    })) return '正式勝負與開場紀錄必須由賽場操作產生';
+  }
+  if ((incoming.activeMatchIds || []).length || incoming.activeMatchId) return '開啟賽場必須使用賽場操作';
+  if (!resetForArchive && junkbotCanonical(incoming.lives || {}) !== junkbotCanonical(current.lives || {})) return '賽場計時紀錄不能由整份資料儲存改寫';
+  if (!resetForArchive && junkbotCanonical(incoming.live || null) !== junkbotCanonical(current.live || null)) return '即時戰況不能由整份資料儲存改寫';
+  if (resetForArchive && Object.keys(incoming.lives || {}).length) return '新一屆賽事不得沿用舊賽場計時紀錄';
+  if (resetForArchive && incoming.live) return '新一屆賽事不得沿用舊即時戰況';
+  return null;
+}
+
+function junkbotStateSet(p, fromMatchPatch) {
+  const campus = junkbotNormalizeCampus(p.campus);
+  try {
+    const rejected = junkbotWriteAuthorization(p, campus);
+    if (rejected) return rejected;
+    // Clone without a field allowlist: check-in and future metadata survive writes and patches.
+    const state = p.state && JSON.parse(JSON.stringify(p.state));
+    if (!state || typeof state !== 'object' || Array.isArray(state)) return junkbotResponse(campus, { success: false, error: '賽事資料格式不正確' });
+    if (campus === 'national' && state.campus !== campus) return junkbotResponse(campus, { success: false, code: 'SCOPE_MISMATCH', error: '資料 scope 不符，禁止將教室資料寫入全國賽事' });
     state.version = Math.max(5, Number(state.version) || 0);
     state.archives = Array.isArray(state.archives) ? state.archives : [];
     if (state.draw && state.draw.method === 'random-draw') {
       return { success: false, error: '這是重排前的舊版賽程，請重新整理頁面後再操作' };
     }
     const currentResult = junkbotStateGet(campus);
+    if (!currentResult || !currentResult.success) return currentResult || junkbotResponse(campus, { success: false, error: '無法確認目前賽事資料' });
     const currentState = currentResult && currentResult.state;
+    if (campus === 'national') {
+      const revision = Number(currentState.revision) || 0;
+      if (!Number.isSafeInteger(p.expectedRevision) || p.expectedRevision !== revision) {
+        return junkbotResponse(campus, { success: false, code: 'REVISION_CONFLICT', revision: revision, error: '賽事已由其他裝置更新，請重新載入最新資料後再操作；本次資料尚未寫入' });
+      }
+      const validationError = junkbotNationalStateError(state);
+      if (validationError) return junkbotResponse(campus, { success: false, code: 'INVALID_STATE', error: validationError });
+      if (fromMatchPatch !== true) {
+        const protectedError = junkbotNationalFullStateGuard(currentState, state);
+        if (protectedError) return junkbotResponse(campus, { success: false, code: 'STATE_PROTECTED', error: protectedError });
+      }
+      state.revision = revision + 1;
+      state.updatedAt = new Date().toISOString();
+    }
     // Whole-state writes must never erase another arena's preparation or live clock.
     // This optional argument is set only by the internal match-patch function.
     const existingActiveIds = currentState && Array.isArray(currentState.activeMatchIds)
@@ -2074,10 +2283,10 @@ function junkbotStateSet(p, fromMatchPatch) {
     const sh = getJunkbotStateSheet();
     const rows = junkbotFindCampusRows(sh, campus);
     while (rows.length < chunks.length) {
-      sh.appendRow([campus, campus === 'north' ? '北區教室' : '東橋教室', '', '', rows.length + 1, chunks.length]);
+      sh.appendRow([campus, junkbotCampusName(campus), '', '', rows.length + 1, chunks.length]);
       rows.push(sh.getLastRow());
     }
-    const campusName = campus === 'north' ? '北區教室' : '東橋教室';
+    const campusName = junkbotCampusName(campus);
     const now = Utilities.formatDate(new Date(), 'Asia/Taipei', 'yyyy-MM-dd HH:mm:ss');
     chunks.forEach(function(chunk, index) {
       sh.getRange(rows[index], 1, 1, 6).setValues([[campus, campusName, chunk, now, index + 1, chunks.length]]);
@@ -2085,9 +2294,10 @@ function junkbotStateSet(p, fromMatchPatch) {
     rows.slice(chunks.length).forEach(function(row) {
       sh.getRange(row, 1, 1, 6).setValues([[campus, campusName, '', now, '', '']]);
     });
-    return { success: true, ok: true, campus: campus, updatedAt: now, chunks: chunks.length };
+    return junkbotResponse(campus, { success: true, ok: true, campus: campus, updatedAt: now, chunks: chunks.length,
+      ...(campus === 'national' ? { state: state, revision: state.revision } : {}) });
   } catch (err) {
-    return { success: false, error: String(err && err.message || err) };
+    return junkbotResponse(campus, { success: false, error: String(err && err.message || err) });
   }
 }
 
@@ -2144,7 +2354,7 @@ function junkbotPropagateMatch(state, item) {
   }
 }
 
-function junkbotResolveAutomaticMatches(state) {
+function junkbotResolveAutomaticMatches(state, at) {
   let changed = true;
   while (changed) {
     changed = false;
@@ -2167,6 +2377,10 @@ function junkbotResolveAutomaticMatches(state) {
         item.resultType = 'bye';
         item.winnerId = participants[0] || null;
         item.loserId = null;
+        if (state.campus === 'national') {
+          item.completedAt = at || new Date().toISOString();
+          item.auditLog = (Array.isArray(item.auditLog) ? item.auditLog : []).concat([{ op: 'bye', at: item.completedAt, automatic: true }]);
+        }
         junkbotPropagateMatch(state, item);
         changed = true;
       }
@@ -2175,14 +2389,14 @@ function junkbotResolveAutomaticMatches(state) {
 }
 
 function junkbotMatchPatch(p) {
+  const campus = junkbotNormalizeCampus(p.campus);
   try {
-    if (String(p.password || '') !== JUNKBOT_CONTROL_PASSWORD) {
-      return { success: false, error: '比賽單位密碼不正確' };
-    }
-    const campus = junkbotNormalizeCampus(p.campus);
+    const rejected = junkbotWriteAuthorization(p, campus);
+    if (rejected) return rejected;
     const op = String(p.op || '').toLowerCase();
     const matchId = String(p.matchId || '');
     const current = junkbotStateGet(campus);
+    if (!current || !current.success) return current || junkbotResponse(campus, { success: false, error: '無法讀取賽事資料' });
     const state = current && current.state;
     if (!state || !Array.isArray(state.matches)) return { success: false, error: '找不到賽程資料' };
     junkbotEnsureArenaState(state);
@@ -2191,7 +2405,7 @@ function junkbotMatchPatch(p) {
 
     if (item.status === 'completed') {
       if (op === 'complete' && String(p.winnerId || '') === String(item.winnerId || '')) {
-        return { success: true, ok: true, campus: campus, state: state, unchanged: true };
+        return junkbotResponse(campus, { success: true, ok: true, campus: campus, state: state, unchanged: true });
       }
       return { success: false, error: '本場已完成並鎖定，不能重開、重賽或改判' };
     }
@@ -2203,13 +2417,14 @@ function junkbotMatchPatch(p) {
     const nowIso = now.toISOString();
     const existingLive = state.lives[matchId] || null;
     const unchanged = function() {
-      return { success: true, ok: true, campus: campus, state: state, unchanged: true };
+      return junkbotResponse(campus, { success: true, ok: true, campus: campus, state: state, unchanged: true });
     };
     // doPost already holds the script lock: validate and write in the same critical section.
     const activate = function() {
       if (state.activeMatchIds.indexOf(matchId) < 0) state.activeMatchIds.push(matchId);
     };
     if (op === 'open') {
+      if (existingLive && existingLive.status !== 'completed' && state.activeMatchIds.indexOf(matchId) >= 0) return unchanged();
       activate();
       if (!state.lives[matchId] || state.lives[matchId].status === 'completed') {
         state.lives[matchId] = { matchId: matchId, status: 'ready', secondsLeft: 60, updatedAt: nowIso };
@@ -2269,6 +2484,7 @@ function junkbotMatchPatch(p) {
         return { success: false, error: '比賽尚未開始，不能判定勝負' };
       }
       const winnerId = String(p.winnerId || '');
+      if (campus === 'national' && !String(p.reason || '').trim()) return junkbotResponse(campus, { success: false, code: 'REASON_REQUIRED', error: '請填寫評審判定原因' });
       if (item.participantIds.indexOf(winnerId) < 0) return { success: false, error: '晉級隊伍不在本場名單中' };
       item.status = 'completed';
       item.winnerId = winnerId;
@@ -2277,7 +2493,7 @@ function junkbotMatchPatch(p) {
       item.resultType = 'judge';
       item.completedAt = nowIso;
       junkbotPropagateMatch(state, item);
-      junkbotResolveAutomaticMatches(state);
+      junkbotResolveAutomaticMatches(state, nowIso);
       state.activeMatchIds = state.activeMatchIds.filter(function(id) { return id !== matchId; });
       state.lives[matchId] = {
         matchId: matchId,
@@ -2290,25 +2506,45 @@ function junkbotMatchPatch(p) {
       return { success: false, error: '不支援的賽場操作' };
     }
 
+    if (campus === 'national') {
+      const judgeName = String(p.judgeName || '').normalize('NFKC').trim().replace(/\s+/g, ' ').slice(0, 80);
+      const record = { op: op, at: nowIso };
+      // This is an operator-entered display name, never an asserted authenticated identity.
+      if (judgeName) { record.judgeName = judgeName; record.nameSource = 'operator-entered'; }
+      if (op === 'complete') {
+        record.winnerId = item.winnerId;
+        record.reason = item.reason;
+        item.decisionAt = nowIso;
+        if (judgeName) item.judgeName = judgeName;
+      }
+      if (op === 'open' && !item.openedAt) item.openedAt = nowIso;
+      if (op === 'countdown') item.countdownAt = nowIso;
+      if (op === 'start') item.startedAt = nowIso;
+      if (op === 'timeup') item.timeUpAt = nowIso;
+      if (op === 'replay') { item.replayedAt = nowIso; record.replays = item.replays; }
+      item.auditLog = (Array.isArray(item.auditLog) ? item.auditLog : []).concat([record]);
+    }
     state.version = Math.max(5, Number(state.version) || 0);
     state.updatedAt = nowIso;
     junkbotSyncLegacyArenaState(state);
     const saved = junkbotStateSet({
-      password: JUNKBOT_CONTROL_PASSWORD,
+      password: p.password,
       campus: campus,
+      protocolVersion: p.protocolVersion,
+      expectedRevision: state.revision,
       state: state
     }, true);
     if (!saved || !saved.success) return saved || { success: false, error: '儲存失敗' };
-    return { success: true, ok: true, campus: campus, state: state, updatedAt: saved.updatedAt };
+    return junkbotResponse(campus, { success: true, ok: true, campus: campus, state: saved.state || state, updatedAt: saved.updatedAt });
   } catch (err) {
-    return { success: false, error: String(err && err.message || err) };
+    return junkbotResponse(campus, { success: false, error: String(err && err.message || err) });
   }
 }
 
 function junkbotGetVideoFolder(campus) {
   const rootFolders = DriveApp.getFoldersByName(JUNKBOT_VIDEO_FOLDER);
   const root = rootFolders.hasNext() ? rootFolders.next() : DriveApp.createFolder(JUNKBOT_VIDEO_FOLDER);
-  const campusName = campus === 'north' ? '北區教室' : '東橋教室';
+  const campusName = junkbotCampusName(campus);
   const campusFolders = root.getFoldersByName(campusName);
   return campusFolders.hasNext() ? campusFolders.next() : root.createFolder(campusName);
 }
@@ -2321,11 +2557,10 @@ function junkbotSafeFilename(value) {
 }
 
 function junkbotVideoUpload(p) {
+  const campus = junkbotNormalizeCampus(p.campus);
   try {
-    if (String(p.password || '') !== JUNKBOT_CONTROL_PASSWORD) {
-      return { success: false, error: '比賽單位密碼不正確' };
-    }
-    const campus = junkbotNormalizeCampus(p.campus);
+    const rejected = junkbotWriteAuthorization(p, campus);
+    if (rejected) return rejected;
     const teamId = String(p.teamId || '').trim();
     const teamName = String(p.teamName || '').trim();
     const mimeType = String(p.mimeType || 'video/mp4').toLowerCase();
@@ -2347,14 +2582,14 @@ function junkbotVideoUpload(p) {
     } catch (sharingError) {
       // Workspace 管理員若限制公開分享，仍保留檔案並回傳網址，管理者可在 Drive 手動開權限。
     }
-    return {
+    return junkbotResponse(campus, {
       success: true,
       fileId: file.getId(),
       filename: file.getName(),
       url: file.getUrl(),
       previewUrl: 'https://drive.google.com/file/d/' + file.getId() + '/preview'
-    };
+    });
   } catch (err) {
-    return { success: false, error: String(err && err.message || err) };
+    return junkbotResponse(campus, { success: false, error: String(err && err.message || err) });
   }
 }
