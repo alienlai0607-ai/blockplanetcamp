@@ -60,6 +60,16 @@ let focusedArenaMatchId = null;
 let connectionOk = true;
 let pendingRosterRows = [];
 let pendingRosterFileName = '';
+let stateLoadSequence = 0;
+let mutationRevision = 0;
+let pendingMutations = 0;
+const unsavedCampusStates = new Map();
+const pendingMatchOperations = new Map();
+const countdownStarts = new Set();
+const timeUpRetryAfter = new Map();
+let uiOperationPending = false;
+let modalReturnFocus = null;
+let bracketDisplay = window.innerWidth < 760 ? 'list' : 'map';
 
 const battleMusic = new Audio(ARENA_BATTLE_TRACK);
 const climaxMusic = new Audio(ARENA_CLIMAX_TRACK);
@@ -399,27 +409,122 @@ function showToast(message, error = false) {
 }
 
 async function apiGet(campusId) {
+  if (!CAMPUS[campusId]) throw new Error('請先選擇校區');
   if (DEMO) {
     const saved = localStorage.getItem(`bp-junkbot-${campusId}`);
     return { success: true, state: saved ? JSON.parse(saved) : emptyState(campusId) };
   }
   const response = await fetchWithTimeout(`${API_URL}?action=junkbot-state&campus=${encodeURIComponent(campusId)}&_=${Date.now()}`, {}, 12000);
+  if (!response.ok) throw new Error(`讀取失敗（${response.status}）`);
   return response.json();
 }
 
-async function apiPost(payload) {
-  if (DEMO && payload.action === 'junkbot-state-set') {
-    localStorage.setItem(`bp-junkbot-${payload.campus}`, JSON.stringify(payload.state));
-    return { success: true, ok: true };
+function demoMatchPatch(payload) {
+  const saved = localStorage.getItem(`bp-junkbot-${payload.campus}`);
+  const target = normalizeState(saved ? JSON.parse(saved) : emptyState(payload.campus), payload.campus);
+  const item = target.matches.find((candidate) => candidate.id === payload.matchId);
+  const op = payload.op;
+  if (!item) return { success: false, error: '找不到這一場比賽，請更新賽程' };
+  if (item.status === 'completed') {
+    return op === 'complete' && item.winnerId === payload.winnerId
+      ? { success: true, state: target, unchanged: true }
+      : { success: false, error: '本場已完成並鎖定' };
   }
-  if (DEMO && payload.action === 'junkbot-video-upload') {
-    return { success: false, error: '示範模式不會上傳影片，請改用影片網址' };
+  if ((item.participantIds || []).filter(Boolean).length !== 2) return { success: false, error: '本場選手尚未確定' };
+  const live = target.lives[item.id];
+  const now = new Date().toISOString();
+  const activate = () => { if (!target.activeMatchIds.includes(item.id)) target.activeMatchIds.push(item.id); };
+  const fresh = (status, extra = {}) => ({ matchId: item.id, status, secondsLeft: 60, updatedAt: now, ...extra });
+  if (op === 'open') {
+    activate();
+    if (!live) target.lives[item.id] = fresh('ready');
+  } else if (op === 'countdown') {
+    if (!live || !['ready', 'countdown'].includes(live.status)) return { success: false, error: '比賽已開始，不能重設倒數' };
+    activate();
+    if (live.status !== 'countdown') target.lives[item.id] = fresh('countdown', { preCount: 3 });
+  } else if (op === 'start') {
+    if (live?.status === 'running') return { success: true, state: target, unchanged: true };
+    if (live?.status !== 'countdown') return { success: false, error: '請先完成開場倒數' };
+    activate();
+    target.lives[item.id] = fresh('running', { startedAt: now, endsAt: new Date(Date.now() + 60000).toISOString(), preCount: null });
+  } else if (op === 'timeup') {
+    if (live?.status === 'awaiting-decision') return { success: true, state: target, unchanged: true };
+    if (live?.status !== 'running' || new Date(live.endsAt).getTime() > Date.now()) return { success: false, error: '比賽尚未到時' };
+    target.lives[item.id] = fresh('awaiting-decision', { secondsLeft: 0 });
+  } else if (op === 'replay') {
+    if (live?.status !== 'awaiting-decision') return { success: false, error: '請等本場時間到後再登記重賽' };
+    if (Number(item.replays || 0) >= 1) return { success: false, error: '本場已使用過一次重賽' };
+    item.replays = Number(item.replays || 0) + 1;
+    target.lives[item.id] = fresh('ready');
+  } else if (op === 'complete') {
+    if (!['running', 'awaiting-decision'].includes(live?.status)) return { success: false, error: '比賽尚未開始，不能判定勝負' };
+    if (!item.participantIds.includes(payload.winnerId)) return { success: false, error: '晉級隊伍不在本場名單中' };
+    Object.assign(item, { status: 'completed', winnerId: payload.winnerId, loserId: item.participantIds.find((id) => id !== payload.winnerId), reason: payload.reason || '評審依現場狀況判定', resultType: 'judge', completedAt: now });
+    const propagate = (completed) => {
+      if (completed.stage === 'final') { target.championId = completed.winnerId; target.runnerUpId = completed.loserId; return; }
+      if (completed.stage === 'bronze') { target.thirdPlaceId = completed.winnerId; return; }
+      if (Number(completed.roundSize) === 3 && completed.loserId) target.thirdPlaceId = completed.loserId;
+      const next = target.matches.find((candidate) => candidate.id === completed.nextMatchId);
+      if (next) next.participantIds[Number(completed.nextSlot) || 0] = completed.winnerId || null;
+      else {
+        const nextStage = completed.stage === 'r16' ? 'quarter' : completed.stage === 'quarter' ? 'semi' : 'final';
+        const legacyNext = target.matches.find((candidate) => candidate.stage === nextStage && candidate.order === Math.floor(completed.order / 2));
+        if (legacyNext) legacyNext.participantIds[completed.order % 2] = completed.winnerId || null;
+      }
+      if (completed.stage === 'semi' || Number(completed.roundSize) === 4) {
+        const bronze = target.matches.find((candidate) => candidate.stage === 'bronze');
+        if (bronze) bronze.participantIds[Number(completed.order) || 0] = completed.loserId || null;
+      }
+    };
+    propagate(item);
+    let changed = true;
+    while (changed) {
+      changed = false;
+      target.matches.forEach((candidate) => {
+        if (candidate.status !== 'pending') return;
+        const sources = (candidate.sourceMatchIds || []).map((id) => target.matches.find((source) => source.id === id));
+        if (!sources.every((source) => source?.status === 'completed')) return;
+        if (candidate.stage === 'bronze') candidate.participantIds = sources.map((source) => source.loserId || null);
+        const participants = candidate.participantIds.filter(Boolean);
+        if (participants.length < 2) {
+          Object.assign(candidate, { status: 'completed', resultType: 'bye', winnerId: participants[0] || null, loserId: null });
+          propagate(candidate);
+          changed = true;
+        }
+      });
+    }
+    target.activeMatchIds = target.activeMatchIds.filter((id) => id !== item.id);
+    target.lives[item.id] = fresh('completed', { secondsLeft: Math.max(0, Number(payload.secondsLeft) || 0), winnerId: item.winnerId });
+  } else return { success: false, error: '示範模式不支援這項操作' };
+  target.updatedAt = now;
+  syncLegacyArenaState(target);
+  localStorage.setItem(`bp-junkbot-${payload.campus}`, JSON.stringify(target));
+  return { success: true, ok: true, state: target };
+}
+
+async function apiPost(payload) {
+  if (role !== 'control') throw new Error('觀眾模式無法修改賽事');
+  if (!CAMPUS[payload.campus]) throw new Error('請先選擇校區');
+  if (DEMO) {
+    if (payload.action === 'junkbot-state-set') {
+      const stored = localStorage.getItem(`bp-junkbot-${payload.campus}`);
+      const current = stored ? JSON.parse(stored) : null;
+      const ids = [...(current?.activeMatchIds || []), current?.activeMatchId].filter(Boolean);
+      if (ids.some((id) => current.matches?.some((item) => item.id === id && item.status !== 'completed'))) {
+        return { success: false, error: '有賽場準備或進行中，禁止整份資料覆寫' };
+      }
+      localStorage.setItem(`bp-junkbot-${payload.campus}`, JSON.stringify(payload.state));
+      return { success: true, ok: true };
+    }
+    if (payload.action === 'junkbot-match-patch') return demoMatchPatch(payload);
+    return { success: false, error: '示範模式不會連接正式伺服器；影片請改用網址' };
   }
   const response = await fetchWithTimeout(API_URL, {
     method: 'POST',
     headers: { 'Content-Type': 'text/plain;charset=utf-8' },
     body: JSON.stringify(payload),
   }, payload.action === 'junkbot-video-upload' ? 90000 : 30000);
+  if (!response.ok) throw new Error(`連線失敗（${response.status}）`);
   return response.json();
 }
 
@@ -429,7 +534,7 @@ async function fetchWithTimeout(url, options = {}, timeoutMs = 8000) {
   try {
     return await fetch(url, { ...options, signal: controller.signal });
   } catch (error) {
-    if (error && error.name === 'AbortError') throw new Error('連線逾時，系統會自動重試');
+    if (error && error.name === 'AbortError') throw new Error('連線逾時，請確認網路後重試');
     throw error;
   } finally {
     clearTimeout(timer);
@@ -437,26 +542,36 @@ async function fetchWithTimeout(url, options = {}, timeoutMs = 8000) {
 }
 
 async function loadCampusState(silent = false) {
-  if (!campus) return false;
+  const requestedCampus = campus;
+  const requestedRole = role;
+  if (!requestedCampus) return false;
+  if (pendingMutations || unsavedCampusStates.has(requestedCampus)) {
+    if (!silent) showToast(unsavedCampusStates.has(requestedCampus) ? '有尚未同步的資料，請先按「重試儲存」；目前內容已保留在這台裝置。' : '正在同步操作，完成後再更新。', true);
+    return false;
+  }
+  // Background refresh must not replace a roster form or judge dialog in use.
+  if (silent && role === 'control' && ((typeof uiOperationPending !== 'undefined' && uiOperationPending) || controlView === 'teams' || $('modalRoot')?.innerHTML || arenaOpen)) return false;
+  const requestId = ++stateLoadSequence;
+  const revision = mutationRevision;
   try {
     if (!silent) setSync('saving', '讀取中');
-    const result = await apiGet(campus);
+    const result = await apiGet(requestedCampus);
     if (!result.success) throw new Error(result.error || '讀取失敗');
-    state = normalizeState(result.state, campus);
-    localStorage.setItem(`bp-junkbot-spectator-cache-${campus}`, JSON.stringify(state));
+    if (campus !== requestedCampus || role !== requestedRole || requestId !== stateLoadSequence || mutationRevision !== revision || pendingMutations) return false;
+    state = normalizeState(result.state, requestedCampus);
+    localStorage.setItem(`bp-junkbot-spectator-cache-${DEMO ? 'demo-' : ''}${requestedCampus}`, JSON.stringify(state));
     connectionOk = true;
     setSync('', '已連線');
     if (role === 'control') renderControl();
     if (role === 'audience') renderAudience();
     return true;
   } catch (error) {
+    if (campus !== requestedCampus || role !== requestedRole || requestId !== stateLoadSequence || mutationRevision !== revision) return false;
     connectionOk = false;
     setSync('error', '連線失敗');
     if (role === 'audience') {
-      const cached = localStorage.getItem(`bp-junkbot-spectator-cache-${campus}`);
-      if (cached) {
-        try { state = normalizeState(JSON.parse(cached), campus); } catch (cacheError) { /* 保留目前畫面 */ }
-      }
+      const cached = localStorage.getItem(`bp-junkbot-spectator-cache-${DEMO ? 'demo-' : ''}${requestedCampus}`);
+      if (cached) { try { state = normalizeState(JSON.parse(cached), requestedCampus); } catch (cacheError) { /* 保留目前畫面 */ } }
       renderAudience();
     }
     if (!silent) showToast(`無法讀取賽事：${error.message}`, true);
@@ -464,62 +579,117 @@ async function loadCampusState(silent = false) {
   }
 }
 
+function recoverUnsavedCampusDraft(campusId) {
+  if (role !== 'control' || !CAMPUS[campusId]) return false;
+  try {
+    const saved = localStorage.getItem(`bp-junkbot-unsaved-${DEMO ? 'demo-' : ''}${campusId}`);
+    if (!saved) return false;
+    const draft = JSON.parse(saved);
+    if (draft.campus !== campusId || !Array.isArray(draft.entries) || !Array.isArray(draft.matches)) return false;
+    state = normalizeState(draft, campusId);
+    unsavedCampusStates.set(campusId, state);
+    connectionOk = false;
+    setSync('error', '未同步・重試儲存');
+    showToast('已還原這台裝置上次未同步的資料，請確認後重試儲存。', true);
+    return true;
+  } catch (error) {
+    showToast('無法讀取本機未同步資料，請先保留此裝置並聯絡工作人員。', true);
+    return false;
+  }
+}
+
 function saveState(message) {
+  if (role !== 'control' || !campus) return Promise.resolve({ success: false, error: '觀眾模式無法修改賽事' });
+  if (activeMatchIds().length) {
+    showToast('賽場已開啟，請先完成比賽；目前禁止整份名單或賽程儲存。', true);
+    return Promise.resolve({ success: false, error: '賽場進行中，禁止整份資料覆寫' });
+  }
   syncLegacyArenaState();
   state.updatedAt = new Date().toISOString();
   const snapshot = JSON.parse(JSON.stringify(state));
+  const requestedCampus = campus;
+  const revision = ++mutationRevision;
+  pendingMutations += 1;
+  unsavedCampusStates.set(requestedCampus, snapshot);
+  try { localStorage.setItem(`bp-junkbot-unsaved-${DEMO ? 'demo-' : ''}${requestedCampus}`, JSON.stringify(snapshot)); } catch (error) { /* 儲存空間不足不阻擋伺服器同步 */ }
   setSync('saving', '儲存中');
-  syncQueue = syncQueue
-    .catch(() => null)
-    .then(async () => {
-      const result = await apiPost({
-        action: 'junkbot-state-set',
-        password: CONTROL_PASSWORD,
-        campus,
-        state: snapshot,
-      });
-      if (!result.success) throw new Error(result.error || '儲存失敗');
-      localStorage.setItem(`bp-junkbot-spectator-cache-${campus}`, JSON.stringify(snapshot));
+  syncQueue = syncQueue.catch(() => null).then(async () => {
+    const result = await apiPost({ action: 'junkbot-state-set', password: CONTROL_PASSWORD, campus: requestedCampus, state: snapshot });
+    if (!result.success) throw new Error(result.error || '儲存失敗');
+    localStorage.setItem(`bp-junkbot-spectator-cache-${DEMO ? 'demo-' : ''}${requestedCampus}`, JSON.stringify(snapshot));
+    if (unsavedCampusStates.get(requestedCampus) === snapshot) {
+      unsavedCampusStates.delete(requestedCampus);
+      localStorage.removeItem(`bp-junkbot-unsaved-${DEMO ? 'demo-' : ''}${requestedCampus}`);
+    }
+    if (campus === requestedCampus && role === 'control') {
       connectionOk = true;
-      setSync('', '已儲存');
+      if (revision === mutationRevision) setSync('', '已儲存');
       if (message) showToast(message);
-      return result;
-    })
-    .catch((error) => {
-      setSync('error', '儲存失敗');
-      showToast(`儲存失敗：${error.message}`, true);
-    });
+    }
+    return result;
+  }).catch((error) => {
+    if (campus === requestedCampus && role === 'control') {
+      connectionOk = false;
+      setSync('error', '未同步・重試儲存');
+      showToast(`儲存未完成，資料已保留在本機：${error.message}`, true);
+    }
+    return { success: false, error: error.message };
+  }).finally(() => { pendingMutations -= 1; });
   return syncQueue;
 }
 
 function patchMatch(matchId, op, payload = {}, message = '') {
-  if (!matchId) return Promise.reject(new Error('找不到要操作的場次'));
+  if (role !== 'control') return Promise.reject(new Error('觀眾模式無法修改賽事'));
+  if (!campus || !matchId) return Promise.reject(new Error('找不到要操作的場次'));
+  const requestedCampus = campus;
+  const key = `${requestedCampus}:${matchId}:${op}`;
+  if (pendingMatchOperations.has(key)) return pendingMatchOperations.get(key);
+  const revision = ++mutationRevision;
+  pendingMutations += 1;
   setSync('saving', '同步賽場');
-  syncQueue = syncQueue
-    .catch(() => null)
-    .then(async () => {
-      const result = await apiPost({
-        action: 'junkbot-match-patch',
-        password: CONTROL_PASSWORD,
-        campus,
-        matchId,
-        op,
-        ...payload,
-      });
-      if (!result.success) throw new Error(result.error || '賽場同步失敗');
-      state = normalizeState(result.state, campus);
-      localStorage.setItem(`bp-junkbot-spectator-cache-${campus}`, JSON.stringify(state));
+  const operation = syncQueue.catch(() => null).then(async () => {
+    if (unsavedCampusStates.has(requestedCampus)) throw new Error('請先完成尚未同步的名單／賽程儲存');
+    // Read the latest state before start operations so another controller's running clock is preserved.
+    if (['countdown', 'start'].includes(op)) {
+      const latest = await apiGet(requestedCampus);
+      if (!latest.success) throw new Error(latest.error || '無法確認最新賽場狀態');
+      const latestState = normalizeState(latest.state, requestedCampus);
+      const latestItem = latestState.matches.find((item) => item.id === matchId);
+      const latestLive = matchLive(matchId, latestState);
+      if (!latestItem || latestItem.status === 'completed') throw new Error('本場已完成或賽程已更新');
+      if (latestLive?.status === 'running' || latestLive?.status === 'awaiting-decision') {
+        localStorage.setItem(`bp-junkbot-spectator-cache-${DEMO ? 'demo-' : ''}${requestedCampus}`, JSON.stringify(latestState));
+        if (campus === requestedCampus && role === 'control') {
+          state = latestState;
+          connectionOk = true;
+          if (revision === mutationRevision) setSync('', '已同步');
+        }
+        return { success: true, state: latestState, unchanged: true };
+      }
+      if (op === 'start' && latestLive?.status !== 'countdown') throw new Error('請先完成開場倒數');
+    }
+    const result = await apiPost({ action: 'junkbot-match-patch', password: CONTROL_PASSWORD, campus: requestedCampus, matchId, op, ...payload });
+    if (!result.success) throw new Error(result.error || '賽場同步失敗');
+    if (!result.state) throw new Error('伺服器未回傳賽場狀態，請更新後確認');
+    localStorage.setItem(`bp-junkbot-spectator-cache-${DEMO ? 'demo-' : ''}${requestedCampus}`, JSON.stringify(result.state));
+    if (campus === requestedCampus && role === 'control') {
+      state = normalizeState(result.state, requestedCampus);
       connectionOk = true;
-      setSync('', '已同步');
+      if (revision === mutationRevision) setSync('', '已同步');
       if (message) showToast(message);
-      return result;
-    })
-    .catch((error) => {
+    }
+    return result;
+  }).catch((error) => {
+    if (campus === requestedCampus && role === 'control') {
+      connectionOk = false;
       setSync('error', '同步失敗');
       showToast(`賽場同步失敗：${error.message}`, true);
-      throw error;
-    });
-  return syncQueue;
+    }
+    throw error;
+  }).finally(() => { pendingMutations -= 1; pendingMatchOperations.delete(key); });
+  pendingMatchOperations.set(key, operation);
+  syncQueue = operation;
+  return operation;
 }
 
 function setSync(className, text) {
@@ -528,6 +698,17 @@ function setSync(className, text) {
   node.className = `sync-status ${className || ''}`;
   const label = node.querySelector('b');
   if (label) label.textContent = text;
+  const arenaStatus = $('arenaSyncStatus');
+  if (arenaStatus) { arenaStatus.textContent = text; arenaStatus.classList.toggle('error', className === 'error'); }
+  let retry = document.querySelector('[data-retry-save]');
+  if (!retry) {
+    retry = document.createElement('button');
+    retry.className = 'outline retry-save';
+    retry.dataset.retrySave = 'true';
+    retry.textContent = '重試儲存';
+    node.after(retry);
+  }
+  retry.hidden = className !== 'error' || !unsavedCampusStates.has(campus);
 }
 
 function showCampusChooser(nextRole) {
@@ -541,6 +722,7 @@ function showCampusChooser(nextRole) {
 async function enterApp(campusId) {
   campus = campusId;
   state = emptyState(campus);
+  const recoveredDraft = role === 'control' && recoverUnsavedCampusDraft(campus);
   $('gate').hidden = true;
   if (role === 'control') {
     $('controlApp').hidden = false;
@@ -550,7 +732,7 @@ async function enterApp(campusId) {
   } else {
     $('audienceApp').hidden = false;
     $('audienceCampusName').textContent = CAMPUS[campus].name;
-    const cached = localStorage.getItem(`bp-junkbot-spectator-cache-${campus}`);
+    const cached = localStorage.getItem(`bp-junkbot-spectator-cache-${DEMO ? 'demo-' : ''}${campus}`);
     if (cached) {
       try { state = normalizeState(JSON.parse(cached), campus); } catch (error) { /* 使用空白狀態 */ }
     }
@@ -566,10 +748,14 @@ async function enterApp(campusId) {
       if (!arenaOpen && !$('modalRoot')?.innerHTML) loadCampusState(true);
     }, 5000 + Math.floor(Math.random() * 1200));
   }
-  await loadCampusState();
+  if (recoveredDraft) {
+    setSync('error', '已恢復未同步資料');
+    showToast('已恢復上次尚未同步的資料，請確認後按「重試儲存」。', true);
+  } else await loadCampusState();
 }
 
 function leaveApp() {
+  if (uiOperationPending || pendingMutations || unsavedCampusStates.has(campus)) return showToast('資料尚未完成同步，請先完成儲存再離開。', true);
   clearInterval(audienceRefresh);
   clearInterval(clockTicker);
   audienceRefresh = null;
@@ -591,6 +777,7 @@ function leaveApp() {
 }
 
 function openCampusSwitch() {
+  if (uiOperationPending || pendingMutations || unsavedCampusStates.has(campus)) return showToast('資料尚未完成同步，請先完成儲存再切換校區。', true);
   clearInterval(audienceRefresh);
   clearInterval(clockTicker);
   audienceRefresh = null;
@@ -729,8 +916,7 @@ function arenasView() {
   const activeIds = activeMatchIds();
   const active = activeMatches();
   const readyMatches = state.matches.filter((item) =>
-    item.stage !== 'bronze'
-    && item.status === 'pending'
+    item.status === 'pending'
     && item.participantIds.filter(Boolean).length === 2
     && !activeIds.includes(item.id));
   const cards = [
@@ -739,14 +925,14 @@ function arenasView() {
   ].join('');
   return `
     <div class="page-heading arena-page-heading">
-      <div><span class="kicker">MULTI-DEVICE ARENA · ${esc(CAMPUS[campus].short)}</span><h1>多電腦賽場控制</h1><p>每個場地使用自己的電腦，選擇現場這一場後就只控制該場；所有場次會安全同步，不會互相覆蓋。</p></div>
+      <div><span class="kicker">MATCH CONTROL · ${esc(CAMPUS[campus].short)}</span><h1>賽場控制台</h1><p>核對場次與兩隊選手後開場。每場指定一台裁判電腦，其他裝置請使用觀眾模式。</p></div>
       <div class="arena-live-count"><strong>${active.length}</strong><span>場同時進行</span></div>
     </div>
     <section class="multi-arena-guide">
       <b>操作方式</b>
       <span>① 每台電腦只選自己場地正在比的場次</span>
-      <span>② 在全螢幕畫面開始 READY 3・2・1</span>
-      <span>③ 其他電腦可同時開不同場，互不干擾</span>
+      <span>② 核對 A／B 隊，開始 60 秒比賽</span>
+      <span>③ 不同場次可分別開賽，同場由一台操作</span>
       <span>④ 判定後勝負立即鎖定，不能改判</span>
     </section>
     <div class="arena-control-grid">
@@ -901,8 +1087,7 @@ function bracketView(control) {
   const bronzeMatch = stageMatches('bronze')[0];
   const firstRoundPaths = sidePaths.get(rounds[0]?.roundIndex) || { left: [], right: [] };
   const firstSideMatchCount = Math.max(1, firstRoundPaths.left.length, firstRoundPaths.right.length);
-  const matchPitch = sideRounds.length >= 5 ? 205 : sideRounds.length >= 4 ? 188 : 172;
-  const bracketHeight = Math.max(820, firstSideMatchCount * matchPitch);
+  const bracketHeight = Math.max(1000, firstSideMatchCount * 310);
   const bracketDensity = sideRounds.length >= 6 ? 'ultra-compact' : sideRounds.length >= 5 ? 'compact' : '';
   const bracketShape = sideRounds.length > 1 ? 'weighted-rounds' : '';
   const byeTeamIds = Array.isArray(state.draw?.byeTeamIds)
@@ -940,7 +1125,14 @@ function bracketView(control) {
     </div>
     ${podium}
     ${drawSummary}
-    <div class="bracket-scroll">
+    <div class="bracket-toolbar" role="group" aria-label="賽程顯示方式">
+      <div><button data-bracket-display="map" aria-pressed="${bracketDisplay === 'map'}">晉級路線圖</button><button data-bracket-display="list" aria-pressed="${bracketDisplay === 'list'}">依輪次列表</button></div>
+      <span>${bracketDisplay === 'map' ? '左右捲動查看完整路線；點隊名可看選廢秀。' : '由上而下依輪次查看；已完成場次標示勝隊。'}</span>
+    </div>
+    <div class="bracket-round-list" ${bracketDisplay === 'list' ? '' : 'hidden'}>
+      ${[...rounds, ...(bronzeMatch ? [{ label: '季軍賽', matches: [bronzeMatch] }] : [])].map(round => `<section><h3>${esc(round.label)}</h3><div>${round.matches.map(item => matchCard(item, control)).join('')}</div></section>`).join('')}
+    </div>
+    <div class="bracket-scroll" tabindex="0" role="region" aria-label="可左右捲動的完整晉級路線圖" ${bracketDisplay === 'map' ? '' : 'hidden'}>
       <div class="symmetric-bracket ${bracketDensity} ${bracketShape}" style="--board-height:${bracketHeight}px;--side-rounds:${Math.max(1, sideRounds.length)};--inner-rounds:${Math.max(1, sideRounds.length - 1)}">
         <div class="bracket-compass" aria-hidden="true"><span>左側起點</span><b>勝者往中央爬升</b><span>右側起點</span></div>
         <div class="duel-bracket-board ${sideRounds.length ? '' : 'solo-final'}">
@@ -1009,6 +1201,19 @@ function drawBracketConnections() {
   document.querySelectorAll('.duel-bracket-board').forEach((board) => {
     const svg = board.querySelector('.bracket-links');
     if (!svg) return;
+    if (!board.getClientRects().length) return;
+    // Each round distributes pair groups evenly. Size the board from actual text
+    // height so long team/player names cannot collide with adjacent matches.
+    let requiredHeight = 1000;
+    board.querySelectorAll('.bracket-round').forEach((column) => {
+      const groups = [...column.querySelectorAll('.duel-pair')];
+      const groupHeight = Math.max(0, ...groups.map(group => {
+        const cards = [...group.querySelectorAll('.match-card')];
+        return Math.max(0, ...cards.map(card => card.getBoundingClientRect().height + 32)) * cards.length;
+      }));
+      requiredHeight = Math.max(requiredHeight, groupHeight * groups.length + 140);
+    });
+    board.closest('.symmetric-bracket').style.setProperty('--board-height', `${Math.ceil(requiredHeight)}px`);
     const boardRect = board.getBoundingClientRect();
     const cards = new Map(
       [...board.querySelectorAll('[data-match-card]')]
@@ -1066,7 +1271,7 @@ function matchCard(item, control) {
       ? [item.participantIds.find(Boolean) || null]
     : item.participantIds;
   const destination = item.nextMatchId ? match(item.nextMatchId) : null;
-  const routeText = destination ? `勝者 → ${matchDisplayLabel(destination)}` : '勝者進入冠軍席位';
+  const routeText = item.stage === 'bronze' ? '勝者獲得季軍' : destination ? `勝者 → ${matchDisplayLabel(destination)}` : '勝者獲得冠軍';
   return `
     <article class="match-card ${item.status === 'completed' ? 'completed' : ''} ${plannedBye ? 'bye' : ''} ${active ? 'live' : ''}" data-match-card="${esc(item.id)}">
       <small>${esc(matchDisplayLabel(item))}</small>
@@ -1114,6 +1319,7 @@ function renderAudience() {
           </article>`;
         }).join('')}</div>
       </section>` : ''}
+    ${tournamentIsComplete() ? `<section class="champion-stage"><span class="section-kicker">FINAL RESULTS · ${esc(CAMPUS[campus].name)}</span><h1>冠軍誕生</h1><p>${esc(currentTournamentTitle())}・恭喜所有參賽選手完成挑戰！</p><div class="podium">${[[state.championId, '🏆 冠軍'], [state.runnerUpId, '🥈 亞軍'], [state.thirdPlaceId, '🥉 季軍']].filter(([id]) => id).map(([id, label]) => `<div><div><span>${label}</span><strong>${esc(teamName(id))}</strong><p>${esc(entry(id)?.playerName || '')}</p></div></div>`).join('')}</div></section>` : `
     <section class="live-stage ${featured ? '' : 'waiting'} ${seconds <= 10 && liveState === 'running' ? 'final-ten' : ''}" id="audienceStage">
       ${featured ? `
         <div class="stage-team red">
@@ -1133,6 +1339,7 @@ function renderAudience() {
         <div class="stage-center"><img src="assets/mascot-bengbeng.png" alt="" style="width:180px;height:160px;object-fit:contain"><small>${esc(currentTournamentTitle())} · ${esc(CAMPUS[campus].name)}</small><div class="audience-timer">--:--</div><strong>${esc(statusText)}</strong></div>
       `}
     </section>
+    `}
     <div class="audience-grid">
       <section class="audience-panel">
         <span class="section-kicker">TODAY'S BRACKET</span>
@@ -1509,6 +1716,7 @@ async function completeMatch(matchId, winnerId, reason) {
 }
 
 function resetBracket() {
+  if (activeMatchIds().length) return showToast('有賽場已開啟，請先完成判定，不能重設賽程。', true);
   if (state.matches.some((item) => item.status === 'completed' && item.resultType !== 'bye')) {
     return showToast('已有完成賽事，勝負已鎖定，不能重設賽程。', true);
   }
@@ -1527,6 +1735,8 @@ function resetBracket() {
 }
 
 async function archiveCurrentTournament() {
+  if (uiOperationPending) return;
+  const operationCampus = campus;
   await syncQueue.catch(() => null);
   const refreshed = await loadCampusState(true);
   if (!refreshed) return showToast('無法確認最新資料，本次不建立下一場。', true);
@@ -1541,17 +1751,19 @@ async function archiveCurrentTournament() {
     : '目前賽事尚未完成，系統會以「提前封存」保存現有進度。';
   if (!confirm(`確定封存「${archive.title}」並建立「${currentTournamentTitle(nextState)}」？\n\n${statusWarning}\n新場次會從空白名單開始。`)) return;
 
+  uiOperationPending = true;
   setSync('saving', '建立下一場');
   try {
     const result = await apiPost({
       action: 'junkbot-state-set',
       password: CONTROL_PASSWORD,
-      campus,
+      campus: operationCampus,
       state: nextState,
     });
     if (!result.success) throw new Error(result.error || '封存失敗');
+    if (campus !== operationCampus || role !== 'control') return;
     state = normalizeState(nextState, campus);
-    localStorage.setItem(`bp-junkbot-spectator-cache-${campus}`, JSON.stringify(state));
+    localStorage.setItem(`bp-junkbot-spectator-cache-${DEMO ? 'demo-' : ''}${campus}`, JSON.stringify(state));
     connectionOk = true;
     controlView = 'dashboard';
     setSync('', '已儲存');
@@ -1560,10 +1772,11 @@ async function archiveCurrentTournament() {
   } catch (error) {
     setSync('error', '封存失敗');
     showToast(`無法建立下一場：${error.message}`, true);
-  }
+  } finally { uiOperationPending = false; }
 }
 
 async function openArena(matchId) {
+  const openingCampus = campus;
   if (state.matches.length && state.draw?.method !== 'single-draw-full-route') {
     showToast('這是重排前的舊賽程，已禁止開場；請更新到最新賽程。', true);
     controlView = 'bracket';
@@ -1573,6 +1786,7 @@ async function openArena(matchId) {
   const item = match(matchId);
   if (!item || item.status === 'completed' || item.participantIds.filter(Boolean).length !== 2) return;
   await patchMatch(item.id, 'open');
+  if (campus !== openingCampus || role !== 'control') return;
   stopArenaMusic();
   focusedArenaMatchId = item.id;
   arenaOpen = true;
@@ -1613,38 +1827,40 @@ function renderArena() {
     ? '🔥 最終決戰 MAX · 終局音樂'
     : status === 'running'
       ? '🪐 星球彈跳 · 戰鬥音樂'
-      : '無人機足球同款音樂';
+      : '請核對隊伍與選手，確認後開賽';
   $('arenaRoot').innerHTML = `
-    <section class="arena-overlay ${status === 'countdown' ? 'counting' : ''} ${status === 'running' && seconds <= 30 ? 'final-thirty' : ''} ${status === 'running' && seconds <= 10 ? 'final-ten' : ''}" id="arenaOverlay">
+    <section class="arena-overlay ${status === 'countdown' ? 'counting' : ''} ${status === 'running' && seconds <= 30 ? 'final-thirty' : ''} ${status === 'running' && seconds <= 10 ? 'final-ten' : ''}" id="arenaOverlay" aria-label="比賽計時與裁判控制">
       <div class="arena">
         <header class="arena-header">
           <img src="assets/junkbot-logo.png" alt="">
-          <div><small>${esc(matchStageLabel(item))} · ${esc(CAMPUS[campus].name)}</small><strong>${esc(matchDisplayLabel(item))}</strong></div>
+          <div><small>${DEMO ? '演練 · ' : ''}${esc(currentTournamentTitle())} · ${esc(CAMPUS[campus].name)}</small><strong>${esc(matchDisplayLabel(item))}</strong><span class="arena-sync-status" id="arenaSyncStatus">${esc($('syncStatus')?.textContent || '已連線')}</span></div>
           <div class="arena-header-actions">
             <button class="outline audio" data-action="toggle-arena-audio">${arenaAudioEnabled ? '🔊 音樂開啟' : '🔇 音樂關閉'}</button>
-            <button class="outline" data-action="close-arena">離開賽場 ×</button>
+            <button class="outline" data-action="fullscreen">全螢幕</button>
+            <button class="outline" data-action="close-arena" ${status === 'countdown' ? 'disabled' : ''}>返回控制台</button>
           </div>
         </header>
         <div class="arena-main">
           <div class="arena-team red">
-            <div class="team-badge">A</div><h2>${esc(teamName(item.participantIds[0]))}</h2><p>${esc(entry(item.participantIds[0])?.playerName || '')}</p>
+            <div class="team-badge">A</div><h2>${esc(teamName(item.participantIds[0]))}</h2><p>選手｜${esc(entry(item.participantIds[0])?.playerName || '')}</p>
           </div>
           <div class="arena-clock">
-            <small>ONE MINUTE · NO PAUSE</small>
+            <small>60 秒・全程不停錶${item.replays ? '・本場重賽' : ''}</small>
             <div class="timer" id="arenaTimer">${display}</div>
             <div class="state-label" id="arenaStateLabel">${esc(label)}</div>
             <div class="arena-music-status" id="arenaMusicStatus">${esc(musicLabel)}</div>
             <div class="arena-controls">
-              ${status === 'ready' ? `<button class="start" data-action="start-countdown">READY・3・2・1</button>` : ''}
+              ${status === 'ready' ? `<button class="start" data-action="start-countdown">開始比賽 · 60 秒</button>` : ''}
+              ${status === 'countdown' ? `<button data-action="start-countdown" ${typeof countdownStarts !== 'undefined' && countdownStarts.has(item.id) ? 'disabled' : ''}>重新確認開賽</button>` : ''}
               ${status === 'running' || status === 'awaiting-decision' ? `<button data-action="judge-decision">評審判定勝負</button>` : ''}
               ${status === 'awaiting-decision' && item.replays < 1 ? `<button data-action="request-replay">重賽一次</button>` : ''}
             </div>
           </div>
           <div class="arena-team blue">
-            <div class="team-badge">B</div><h2>${esc(teamName(item.participantIds[1]))}</h2><p>${esc(entry(item.participantIds[1])?.playerName || '')}</p>
+            <div class="team-badge">B</div><h2>${esc(teamName(item.participantIds[1]))}</h2><p>選手｜${esc(entry(item.participantIds[1])?.playerName || '')}</p>
           </div>
         </div>
-        <footer class="arena-footer">掉出場外、停止移動超過 10 秒、未離開起始區、惡意觸碰等，依簡章由評審判定。</footer>
+        <footer class="arena-footer">${status === 'running' ? '返回控制台仍持續計時。' : ''} 每場最多重賽一次。勝負由評審依簡章判定，確認後即鎖定。</footer>
         <div class="final-thirty-entry" id="junkFinalThirtyEntry"><span>⚠ MUSIC SWITCH</span><strong>FINAL 30</strong><p>終局音樂啟動・把握最後機會！</p></div>
         <div class="final-ten-entry" id="junkFinalTenEntry"><span>⚠ LAST CHANCE</span><strong>LAST 10</strong><p>最後衝刺・決勝時刻！</p></div>
       </div>
@@ -1653,50 +1869,82 @@ function renderArena() {
 
 async function startCountdown() {
   const matchId = focusedArenaMatchId;
+  const requestedCampus = campus;
   const live = matchLive(matchId);
-  if (!matchId || !live || live.status !== 'ready') return;
-  ensureAudio();
-  warmArenaMusic();
-  startArenaMusic(true);
-  await patchMatch(matchId, 'countdown', { preCount: 3 });
-  readySound();
-  renderArena();
-  for (let number = 3; number >= 1; number -= 1) {
-    const countdownLive = matchLive(matchId);
-    if (countdownLive) countdownLive.preCount = number;
-    countSound(number);
-    renderArena();
-    await new Promise((resolve) => setTimeout(resolve, 900));
+  if (role !== 'control' || !matchId || !live || countdownStarts.has(matchId)) return;
+  if (!['ready', 'countdown'].includes(live.status)) return;
+  if (live.status === 'countdown' && Date.now() - new Date(live.updatedAt).getTime() < 4000) {
+    return showToast('開場倒數進行中，請等待；若畫面未前進，可在 4 秒後重新確認。', true);
   }
-  startSound();
-  await patchMatch(matchId, 'start');
-  timeUpHandledIds.delete(matchId);
-  lastArenaAudioSecond = 60;
-  releaseArenaMusic();
-  renderArena();
+  countdownStarts.add(matchId);
+  const stillHere = () => campus === requestedCampus && role === 'control';
+  try {
+    ensureAudio();
+    warmArenaMusic();
+    startArenaMusic(true);
+    await patchMatch(matchId, 'countdown', { preCount: 3 });
+    if (!stillHere()) return;
+    // A second controller may already have started this match; never restart its clock.
+    if (matchLive(matchId)?.status !== 'countdown') {
+      if (focusedArenaMatchId === matchId) renderArena();
+      return;
+    }
+    readySound();
+    for (let number = 3; number >= 1; number -= 1) {
+      if (!stillHere() || match(matchId)?.status === 'completed' || matchLive(matchId)?.status !== 'countdown') return;
+      const countdownLive = matchLive(matchId);
+      countdownLive.preCount = number;
+      if (focusedArenaMatchId === matchId) { countSound(number); renderArena(); }
+      await new Promise((resolve) => setTimeout(resolve, 1000));
+    }
+    if (!stillHere()) return;
+    const result = await patchMatch(matchId, 'start');
+    if (!stillHere()) return;
+    timeUpHandledIds.delete(matchId);
+    timeUpRetryAfter.delete(matchId);
+    if (focusedArenaMatchId === matchId) {
+      lastArenaAudioSecond = arenaSecondsLeft(matchId);
+      if (!result.unchanged) startSound();
+      releaseArenaMusic();
+      renderArena();
+    }
+  } catch (error) {
+    if (stillHere() && focusedArenaMatchId === matchId) stopArenaMusic();
+  } finally {
+    countdownStarts.delete(matchId);
+    if (stillHere() && focusedArenaMatchId === matchId) renderArena();
+  }
 }
 
 async function handleTimeUp(matchId) {
+  const requestedCampus = campus;
   const live = matchLive(matchId);
-  if (!matchId || timeUpHandledIds.has(matchId) || !live || live.status !== 'running') return;
+  if (role !== 'control' || !matchId || timeUpHandledIds.has(matchId) || !live) return;
+  if (live.status !== 'running' && !live.timeupPending) return;
+  if (live.status === 'running' && arenaSecondsLeft(matchId) > 0) return;
+  if ((timeUpRetryAfter.get(matchId) || 0) > Date.now()) return;
   timeUpHandledIds.add(matchId);
+  const firstAttempt = !live.timeupPending;
   live.status = 'awaiting-decision';
   live.secondsLeft = 0;
-  live.updatedAt = new Date().toISOString();
+  live.timeupPending = true;
   syncLegacyArenaState();
   if (focusedArenaMatchId === matchId) {
     stopArenaMusic();
-    finishSound();
+    if (firstAttempt) finishSound();
+    if (arenaOpen) renderArena();
   }
   try {
     await patchMatch(matchId, 'timeup');
+    timeUpRetryAfter.delete(matchId);
+    if (campus === requestedCampus && role === 'control') {
+      if (arenaOpen && focusedArenaMatchId === matchId) renderArena();
+      if (firstAttempt) showToast('時間到，請評審確認勝負。');
+      renderControl();
+    }
   } catch (error) {
     timeUpHandledIds.delete(matchId);
-  }
-  if (arenaOpen && focusedArenaMatchId === matchId) renderArena();
-  if (role === 'control') {
-    showToast('時間到，請評審確認勝負。');
-    renderControl();
+    timeUpRetryAfter.set(matchId, Date.now() + 5000);
   }
 }
 
@@ -1715,14 +1963,15 @@ function openDecisionModal() {
   const item = focusedArenaMatchId ? match(focusedArenaMatchId) : null;
   if (!item) return;
   openModal(`
-    <div class="modal-head"><div><span class="section-kicker">JUDGE DECISION</span><h2>評審確認哪一隊晉級</h2></div><button data-close-modal>×</button></div>
+    <div class="modal-head"><div><span class="section-kicker">${esc(matchDisplayLabel(item))} · ${esc(CAMPUS[campus].short)}</span><h2>評審確認勝隊</h2></div><button data-close-modal aria-label="關閉判定視窗">×</button></div>
     <div class="modal-body">
-      <label class="field"><span>判定原因</span><select id="decisionReason">${DECISION_REASONS.map((reason) => `<option>${esc(reason)}</option>`).join('')}</select></label>
+      <label class="field"><span>1. 選擇判定原因（必填）</span><select id="decisionReason" required><option value="">請依現場狀況選擇原因</option>${DECISION_REASONS.map((reason) => `<option>${esc(reason)}</option>`).join('')}</select></label>
+      <p class="decision-caption">2. 確認勝隊與選手</p>
       <div class="decision-grid">
-        <button data-winner-id="${esc(item.participantIds[0])}">A 隊晉級<br>${esc(teamName(item.participantIds[0]))}</button>
-        <button data-winner-id="${esc(item.participantIds[1])}">B 隊晉級<br>${esc(teamName(item.participantIds[1]))}</button>
+        <button data-winner-id="${esc(item.participantIds[0])}"><small>A 隊獲勝</small><strong>${esc(teamName(item.participantIds[0]))}</strong><span>${esc(entry(item.participantIds[0])?.playerName || '')}</span></button>
+        <button data-winner-id="${esc(item.participantIds[1])}"><small>B 隊獲勝</small><strong>${esc(teamName(item.participantIds[1]))}</strong><span>${esc(entry(item.participantIds[1])?.playerName || '')}</span></button>
       </div>
-      <p class="hint">按下後會立刻寫入賽程並推進下一輪；評審判定為最終結果。</p>
+      <p class="hint">${matchLive(item.id)?.status === 'running' ? '比賽仍在計時。' : ''} 選擇後會再請您確認；送出成功即鎖定勝負，不能改判。</p>
     </div>`);
 }
 
@@ -1732,12 +1981,11 @@ function startClockTicker() {
     activeMatchIds().forEach((matchId) => {
       const live = matchLive(matchId);
       const seconds = arenaSecondsLeft(matchId);
-      if (live?.status === 'running' && seconds <= 0) {
+      if (role === 'control' && ((live?.status === 'running' && seconds <= 0) || live?.timeupPending)) {
         handleTimeUp(matchId);
-        return;
       }
       document.querySelectorAll(`[data-control-timer="${matchId}"],[data-audience-timer="${matchId}"]`).forEach((timer) => {
-        timer.textContent = live?.status === 'countdown' ? String(live.preCount || 3) : seconds <= 10 && live?.status === 'running' ? String(seconds) : formatTime(seconds);
+        timer.textContent = live?.status === 'countdown' ? String(Math.max(1, 3 - Math.floor((Date.now() - new Date(live.updatedAt).getTime()) / 1000))) : seconds <= 10 && live?.status === 'running' ? String(seconds) : formatTime(seconds);
       });
       if (live?.status === 'running' && arenaOpen && focusedArenaMatchId === matchId) {
         const timer = $('arenaTimer');
@@ -1776,21 +2024,34 @@ function startClockTicker() {
         const timer = matchId === activeMatchIds()[0] ? $('audienceTimer') : null;
         if (timer) timer.textContent = seconds <= 10 ? String(seconds) : formatTime(seconds);
         const stage = $('audienceStage');
-        if (stage && matchId === activeMatchIds()[0]) stage.classList.toggle('final-ten', seconds <= 10);
+        if (stage && matchId === activeMatchIds()[0]) {
+          stage.classList.toggle('final-ten', seconds > 0 && seconds <= 10);
+          if (seconds <= 0) {
+            const label = stage.querySelector('.stage-center > strong');
+            if (label) label.textContent = '時間到・等待評審判定';
+          }
+        }
       }
     });
   }, 200);
 }
 
 function openModal(content, wide = false) {
-  $('modalRoot').innerHTML = `<div class="modal-backdrop"><section class="modal ${wide ? 'wide' : ''}">${content}</section></div>`;
+  if (!$('modalRoot').innerHTML) modalReturnFocus = document.activeElement;
+  $('modalRoot').innerHTML = `<div class="modal-backdrop"><section class="modal ${wide ? 'wide' : ''}" role="dialog" aria-modal="true" aria-label="${content.includes('評審') ? '評審確認勝隊' : '賽事資料'}" tabindex="-1">${content}</section></div>`;
+  document.body.classList.add('modal-open');
+  $('modalRoot').querySelector('select, input:not([type="hidden"]), button, .modal')?.focus();
 }
 
 function closeModal() {
+  if (uiOperationPending) return;
   $('modalRoot').innerHTML = '';
+  document.body.classList.remove('modal-open');
+  if (modalReturnFocus?.isConnected) modalReturnFocus.focus();
 }
 
 function openTeamEditor(teamId) {
+  if (activeMatchIds().length) return showToast('賽場開啟期間暫停編輯，請完成比賽判定後再更新影片。', true);
   const item = entry(teamId);
   if (!item) return;
   openModal(`
@@ -1812,6 +2073,8 @@ function openTeamEditor(teamId) {
 }
 
 async function saveTeamEditor(form) {
+  if (uiOperationPending || activeMatchIds().length) return showToast('請先完成目前賽場操作。', true);
+  const operationCampus = campus;
   const data = new FormData(form);
   const item = entry(data.get('teamId'));
   if (!item) return;
@@ -1820,38 +2083,35 @@ async function saveTeamEditor(form) {
   const url = String(data.get('videoUrl') || '').trim();
   const file = data.get('videoFile');
   if (!teamNameValue || !playerNameValue) return showToast('隊名與選手名字不能空白。', true);
-  if (!state.matches.length) {
-    item.teamName = teamNameValue;
-    item.playerName = playerNameValue;
-  }
-  if (url) {
-    item.videoUrl = url;
-    item.videoName = '外部影片';
-  }
-  if (file && file.size) {
-    if (file.size > 18 * 1024 * 1024) return showToast('影片超過 18MB，請壓縮或改貼 YouTube／Drive 網址。', true);
-    $('uploadProgress').hidden = false;
-    const dataUrl = await fileToDataUrl(file);
-    const result = await apiPost({
-      action: 'junkbot-video-upload',
-      password: CONTROL_PASSWORD,
-      campus,
-      teamId: item.id,
-      teamName: item.teamName,
-      filename: file.name,
-      mimeType: file.type || 'video/mp4',
-      dataUrl,
-    });
-    if (!result.success) {
-      $('uploadProgress').hidden = true;
-      return showToast(`影片上傳失敗：${result.error || '未知錯誤'}`, true);
+  if (url && !/^https?:\/\//i.test(url)) return showToast('影片網址請使用 https:// 或 http:// 開頭。', true);
+  if (file?.size > 18 * 1024 * 1024) return showToast('影片超過 18MB，請壓縮或改貼 YouTube／Drive 網址。', true);
+  const update = { ...item, videoUrl: url, videoName: url ? '外部影片' : '' };
+  if (!state.matches.length) Object.assign(update, { teamName: teamNameValue, playerName: playerNameValue });
+  uiOperationPending = true;
+  form.querySelectorAll('button').forEach(node => { node.disabled = true; });
+  try {
+    if (file && file.size) {
+      $('uploadProgress').hidden = false;
+      const dataUrl = await fileToDataUrl(file);
+      const result = await apiPost({ action: 'junkbot-video-upload', password: CONTROL_PASSWORD, campus: operationCampus,
+        teamId: item.id, teamName: update.teamName, filename: file.name, mimeType: file.type || 'video/mp4', dataUrl });
+      if (!result.success) throw new Error(result.error || '影片上傳失敗');
+      update.videoUrl = result.previewUrl || result.url;
+      update.videoName = file.name;
     }
-    item.videoUrl = result.previewUrl || result.url;
-    item.videoName = file.name;
+    if (campus !== operationCampus || role !== 'control') return;
+    Object.assign(item, update);
+    const result = await saveState('隊伍與選廢秀影片已儲存');
+    if (result?.success) {
+      uiOperationPending = false;
+      closeModal();
+      renderControl();
+    }
+  } finally {
+    uiOperationPending = false;
+    form.querySelectorAll('button').forEach(node => { node.disabled = false; });
+    if ($('uploadProgress')) $('uploadProgress').hidden = true;
   }
-  closeModal();
-  await saveState('隊伍與選廢秀影片已儲存');
-  renderControl();
 }
 
 function fileToDataUrl(file) {
@@ -2188,6 +2448,8 @@ function bindControlEvents() {
 function bindDynamicEvents() {
   $('arenaRoot').addEventListener('click', (event) => {
     const action = event.target.closest('[data-action]')?.dataset.action;
+    if (uiOperationPending || pendingMutations > 0) return;
+    if (action === 'fullscreen') toggleFullscreen();
     if (action === 'close-arena') {
       stopArenaMusic();
       arenaOpen = false;
@@ -2210,19 +2472,29 @@ function bindDynamicEvents() {
     }
     if (action === 'start-countdown') startCountdown().catch(() => renderArena());
     if (action === 'judge-decision') openDecisionModal();
-    if (action === 'request-replay') replayMatch().catch(() => renderArena());
+    if (action === 'request-replay') {
+      uiOperationPending = true;
+      replayMatch().catch(() => renderArena()).finally(() => { uiOperationPending = false; });
+    }
   });
   $('modalRoot').addEventListener('click', async (event) => {
     if (event.target.matches('.modal-backdrop') || event.target.closest('[data-close-modal]')) return closeModal();
     const winner = event.target.closest('[data-winner-id]');
     if (winner) {
-      const reason = $('decisionReason')?.value || DECISION_REASONS.at(-1);
-      if (confirm(`確定由「${teamName(winner.dataset.winnerId)}」晉級？完成後結果會鎖定，不能改判。`)) {
+      if (uiOperationPending) return;
+      const reason = $('decisionReason')?.value;
+      if (!reason) { $('decisionReason')?.reportValidity(); return; }
+      if (confirm(`確認「${teamName(winner.dataset.winnerId)}」獲勝？\n判定原因：${reason}\n\n完成後結果會鎖定，不能改判。`)) {
+        uiOperationPending = true;
+        $('modalRoot').querySelectorAll('button, select').forEach(node => { node.disabled = true; });
         try {
           await completeMatch(focusedArenaMatchId, winner.dataset.winnerId, reason);
         } catch (error) {
-          closeModal();
           renderControl();
+        } finally {
+          uiOperationPending = false;
+          if (arenaOpen) openDecisionModal();
+          else closeModal();
         }
       }
     }
@@ -2238,9 +2510,73 @@ function bindDynamicEvents() {
     const watch = event.target.closest('[data-watch-team]');
     if (watch?.dataset.watchTeam) watchTeam(watch.dataset.watchTeam);
   });
+  document.addEventListener('click', (event) => {
+    const button = event.target.closest('[data-bracket-display]');
+    if (button) {
+      bracketDisplay = button.dataset.bracketDisplay;
+      if (role === 'control') renderControl(); else renderAudience();
+    }
+    if (event.target.closest('[data-retry-save]')) saveState('本機資料已重新儲存');
+  });
+  $('projectionToggle').addEventListener('click', () => {
+    const active = document.body.classList.toggle('projection-mode');
+    $('projectionToggle').setAttribute('aria-pressed', String(active));
+    $('projectionToggle').textContent = active ? '完整資訊' : '投影模式';
+    window.scrollTo(0, 0);
+  });
+  $('audienceFullscreen').addEventListener('click', toggleFullscreen);
+  document.addEventListener('keydown', (event) => {
+    const modal = $('modalRoot').querySelector('.modal');
+    if (!modal) return;
+    if (event.key === 'Escape') { event.preventDefault(); closeModal(); }
+    if (event.key === 'Tab') {
+      const items = [...modal.querySelectorAll('button, input, textarea, select, a[href], [tabindex="0"]')].filter(node => !node.disabled && node.getClientRects().length);
+      const first = items[0], last = items.at(-1);
+      if (event.shiftKey && (document.activeElement === first || !items.includes(document.activeElement))) { event.preventDefault(); last?.focus(); }
+      else if (!event.shiftKey && (document.activeElement === last || !items.includes(document.activeElement))) { event.preventDefault(); first?.focus(); }
+    }
+  });
+}
+
+async function toggleFullscreen() {
+  try {
+    if (document.fullscreenElement) await document.exitFullscreen();
+    else if (document.documentElement.requestFullscreen) await document.documentElement.requestFullscreen();
+    else showToast('此裝置請使用瀏覽器的全螢幕功能。');
+  } catch (error) { showToast('無法切換全螢幕，請使用瀏覽器全螢幕功能。', true); }
 }
 
 initAccess();
 bindControlEvents();
 bindDynamicEvents();
 window.addEventListener('resize', scheduleBracketConnections);
+document.fonts?.ready.then(scheduleBracketConnections);
+window.addEventListener('beforeunload', (event) => {
+  if (role === 'control' && (pendingMutations || uiOperationPending || unsavedCampusStates.has(campus) || activeMatchIds().some(id => ['countdown', 'running'].includes(matchLive(id)?.status)))) {
+    event.preventDefault();
+    event.returnValue = '';
+  }
+});
+if (DEMO) {
+  const banner = document.createElement('div');
+  banner.className = 'demo-banner';
+  banner.textContent = '演練模式 · 資料只保存在這個瀏覽器，不影響正式賽事';
+  document.body.prepend(banner);
+}
+// A local review link opens an isolated demo arena without touching live data.
+if (DEMO && new URLSearchParams(location.search).get('preview') === 'arena') {
+  (async () => {
+    role = 'control';
+    await enterApp('dongqiao');
+    if (!state.entries.length && !state.matches.length) {
+      const names = ['紙箱霸王', '螺絲衝鋒隊', '瓶蓋飛行家', '環保小勇士', '齒輪探險家', '無敵回收號', '星球守護隊', '彈跳火箭', '鐵罐騎士', '創意工程師', '旋風陀螺', '紙杯小英雄', '綠能戰士', '太空漫遊者', '閃電小隊', '夢想實驗室'];
+      state.entries = names.map((teamName, index) => ({ id: `preview-${index + 1}`, teamName, playerName: `演練選手 ${String(index + 1).padStart(2, '0')}`, videoUrl: '' }));
+      createBracket();
+      await syncQueue;
+    }
+    controlView = 'arenas';
+    renderControl();
+    const next = state.matches.find(item => item.status === 'pending' && item.participantIds.filter(Boolean).length === 2);
+    if (next) await openArena(next.id);
+  })().catch(error => showToast(`演練載入失敗：${error.message}`, true));
+}

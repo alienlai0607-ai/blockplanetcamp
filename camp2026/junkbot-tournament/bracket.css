@@ -1,0 +1,126 @@
+/* Competition bracket: round focus and a single direction route. */
+.flow-bracket { --flow-ink:#302c29; --flow-muted:#736c63; --flow-line:#ded8cf; color:var(--flow-ink); }
+.flow-heading { display:flex; align-items:center; justify-content:space-between; gap:24px; margin:0 0 24px; }
+.flow-heading h1 { margin:8px 0 10px; font-size:38px; line-height:1.2; letter-spacing:-.04em; }
+.flow-heading p { margin:0; font-size:14px; color:var(--flow-muted); display:flex; flex-wrap:wrap; gap:8px; }
+.flow-heading p > span { opacity:.4; }
+.flow-heading p > b { color:#b12f26; font-weight:700; }
+.flow-switch { display:flex; gap:3px; padding:4px; background:#ece8e1; border-radius:10px; flex-shrink:0; }
+.flow-switch button { padding:10px 15px; min-height:44px; border:0; border-radius:7px; background:transparent; color:#766f66; font-size:14px; font-weight:700; white-space:nowrap; }
+.flow-switch button[aria-pressed=true] { background:#fff; color:#302c29; box-shadow:0 1px 4px #302c291a; }
+.flow-rounds { display:flex; gap:10px; margin:0 0 28px; overflow-x:auto; padding:2px 2px 8px; scrollbar-width:thin; }
+.flow-rounds > button { flex:1 0 160px; display:flex; align-items:center; gap:12px; text-align:left; padding:17px 14px; color:#736c63; background:#fffdf8; border:1px solid #d8d1c6; border-radius:12px; position:relative; }
+.flow-rounds > button[aria-pressed=true] { border-color:#b92f28; background:#b92f28; color:#fff; }
+.flow-rounds .flow-step { display:grid; place-items:center; width:32px; height:32px; flex-shrink:0; border:1px solid currentColor; border-radius:50%; font-size:12px; font-weight:800; opacity:.75; }
+.flow-rounds b { display:block; font-size:18px; line-height:1.4; font-weight:800; }
+.flow-rounds small { display:block; font-size:12px; margin-top:4px; opacity:.84; }
+.flow-rounds i { position:absolute; font-size:10px; font-style:normal; top:-1px; right:8px; padding:2px 5px; border-radius:0 0 4px 4px; background:#fff; color:#b92f28; }
+.flow-rounds > button.bronze { flex-grow:.8; }
+.flow-focus > header { display:flex; align-items:flex-end; justify-content:space-between; gap:18px; margin-bottom:18px; }
+.flow-focus h2 { font-size:23px; margin:0 0 6px; line-height:1.3; }
+.flow-focus p { margin:0; color:#736c63; font-size:14px; line-height:1.6; }
+.flow-key { display:flex; align-items:center; gap:6px; font-size:12px; color:#736c63; white-space:nowrap; }
+.flow-key i,.flow-status.live i { display:inline-block; width:7px; height:7px; border-radius:50%; background:#bd3d2c; }
+.flow-key b { color:#2f694b; margin-left:12px; }
+.flow-focus-grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(min(100%,255px),1fr)); gap:16px; align-items:stretch; }
+.flow-focus-grid:has(>.flow-match:only-child) { grid-template-columns:minmax(0,560px); }
+.flow-match { min-width:0; background:#fff; border:1px solid #d8d1c6; border-radius:12px; color:#302c29; box-shadow:0 2px 8px #302c2905; display:flex; flex-direction:column; overflow:visible; }
+.flow-match > header { display:flex; align-items:center; justify-content:space-between; gap:8px; padding:12px 14px; border-bottom:1px solid #eee9e1; }
+.flow-match > header > b { font:700 12px ui-monospace,SFMono-Regular,Consolas,monospace; letter-spacing:.04em; }
+.flow-status { display:inline-flex; align-items:center; gap:5px; font-size:11px; line-height:1.5; font-weight:700; color:#726a5f; background:#f2efe9; border-radius:4px; padding:3px 7px; }
+.flow-status.done { color:#32624a; background:#eef6f0; }
+.flow-status.live,.flow-status.judge { color:#a3332a; background:#fce9e4; }
+.flow-status.ready { color:#80611a; background:#fbf3da; }
+.flow-match.live { border-color:#c44636; box-shadow:0 0 0 1px #c44636; }
+.flow-match.judge { border-color:#c44636; }
+.flow-match.wait { background:#fcfbf8; border-style:dashed; }
+.flow-competitors { padding:2px 12px; flex:1; }
+.flow-team { width:100%; min-width:0; min-height:64px; display:flex; align-items:center; gap:10px; padding:12px 2px; text-align:left; border:0; background:transparent; border-radius:0; }
+.flow-team + .flow-team { border-top:1px solid #f0ece6; }
+.flow-team:disabled { opacity:1; cursor:default; }
+.flow-side { width:23px; height:23px; flex-shrink:0; display:grid; place-items:center; background:#fcece7; color:#ad3d2f; border-radius:5px; font:700 11px ui-monospace,monospace; }
+.flow-team:nth-child(2) .flow-side { background:#e9f2fa; color:#236a99; }
+.flow-team-copy { min-width:0; flex:1; }
+.flow-team-copy b { display:block; overflow-wrap:anywhere; word-break:normal; font-size:17px; line-height:1.45; font-weight:750; }
+.flow-team-copy small { display:block; margin-top:4px; color:#81786c; font-size:12px; overflow-wrap:anywhere; line-height:1.5; }
+.flow-team.unresolved b { color:#8e867b; font-size:14px; font-weight:500; }
+.flow-team.winner b { color:#286744; }
+.flow-win { flex-shrink:0; font-size:11px; font-weight:800; color:#2f694b; background:#eaf4ed; border-radius:4px; padding:3px 5px; }
+.flow-bye-note { font-size:12px; line-height:1.6; color:#88784f; padding:8px 2px 14px; }
+.flow-match > footer { display:flex; flex-wrap:wrap; align-items:center; justify-content:space-between; gap:8px; padding:10px 12px; border-top:1px solid #eee9e1; margin-top:auto; }
+.flow-match > footer > span { color:#84796a; font-size:11px; line-height:1.5; overflow-wrap:anywhere; }
+.flow-match > footer > button { border:0; background:#f1ece3; color:#554a3a; padding:8px 10px; min-height:38px; border-radius:7px; font-size:12px; font-weight:700; white-space:nowrap; }
+.flow-match.live > footer > button,.flow-match.judge > footer > button { color:#fff; background:#b92f28; }
+.flow-match > footer > button:hover { background:#ded5c7; }
+.flow-map-caption { display:flex; flex-wrap:wrap; align-items:center; justify-content:space-between; gap:12px; margin-bottom:18px; }
+.flow-map-caption > span { font-size:17px; font-weight:800; }
+.flow-map-caption p { margin:0; font-size:13px; color:#81786c; }
+.flow-scroll { width:100%; max-width:100%; overflow:auto; padding:2px 2px 16px; overscroll-behavior-x:contain; scrollbar-width:thin; }
+.flow-board { position:relative; display:grid; grid-template-columns:repeat(var(--flow-round-count),minmax(0,1fr)); gap:32px; min-width:calc(var(--flow-round-count)*245px + (var(--flow-round-count) - 1)*32px); }
+.flow-board:has(.flow-column:only-of-type) { max-width:420px; }
+.flow-column { min-width:0; position:relative; }
+.flow-column > h3 { margin:0 0 20px; padding:0 0 12px; border-bottom:2px solid #cfc5b6; font-size:16px; line-height:1.5; }
+.flow-column:last-child > h3 { border-color:#bd963e; }
+.flow-nodes { position:relative; min-height:150px; }
+.flow-nodes > .flow-match { position:absolute; left:0; right:0; top:0; z-index:1; }
+.flow-match.compact > header { padding:8px 10px; }
+.flow-match.compact .flow-competitors { padding:0 9px; }
+.flow-match.compact .flow-team { min-height:42px; padding:8px 0; gap:7px; }
+.flow-match.compact .flow-team-copy b { font-size:14px; }
+.flow-match.compact .flow-side { width:20px; height:20px; font-size:10px; }
+.flow-match.compact > footer { padding:8px 9px; gap:5px; }
+.flow-match.compact > footer > button { min-height:30px; font-size:11px; padding:5px 7px; }
+.flow-lines { position:absolute; inset:0; width:100%; height:100%; pointer-events:none; overflow:visible; }
+.flow-lines path { fill:none; stroke:#c4bcae; stroke-width:1.5; stroke-linejoin:round; }
+.flow-lines path.advanced { stroke:#5e886b; stroke-width:2; }
+.flow-bronze { display:grid; grid-template-columns:minmax(0,1fr) minmax(0,420px); align-items:center; gap:24px; padding:22px; margin-top:16px; background:#f3efe5; border-radius:12px; }
+.flow-bronze > div > span { color:#9a772f; font-size:12px; font-weight:800; }
+.flow-bronze h3 { margin:8px 0; font-size:23px; }
+.flow-bronze p { margin:0; font-size:14px; color:#81786c; }
+.flow-champion { display:flex; align-items:center; gap:16px; flex-wrap:wrap; margin-top:24px; padding:22px; background:#fff1c4; border:1px solid #d8bb67; border-radius:12px; }
+.flow-champion > span { font-size:14px; color:#866d28; }
+.flow-champion strong { font-size:24px; overflow-wrap:anywhere; }
+.flow-champion small { color:#866d28; font-size:14px; }
+.flow-draw { border-top:1px solid #ded8cf; margin-top:28px; color:#807567; font-size:13px; }
+.flow-draw summary { padding:18px 0; cursor:pointer; }
+.flow-draw summary > span { display:inline-block; margin-left:16px; font-size:12px; color:#a09689; }
+.flow-draw > div { padding:0 0 18px; line-height:1.6; }
+.flow-draw > div > button { margin-right:8px; font-size:12px; }
+@media(min-width:1500px){ .flow-focus-grid { grid-template-columns:repeat(4,minmax(0,1fr)); } }
+@media(max-width:1000px){
+  .flow-heading { align-items:flex-start; flex-direction:column; gap:18px; }
+  .flow-heading h1 { font-size:32px; }
+  .flow-focus-grid { grid-template-columns:repeat(2,minmax(0,1fr)); }
+}
+@media(max-width:560px){
+  .flow-heading h1 { font-size:29px; }
+  .flow-heading .kicker { font-size:10px; letter-spacing:.1em; }
+  .flow-heading p { font-size:12px; gap:5px; }
+  .flow-switch { width:100%; }
+  .flow-switch button { flex:1; padding:10px 8px; font-size:13px; }
+  .flow-rounds { margin-bottom:20px; }
+  .flow-rounds > button { flex:0 0 152px; padding:15px 10px; gap:9px; }
+  .flow-rounds b { font-size:16px; }
+  .flow-rounds .flow-step { width:27px; height:27px; }
+  .flow-focus > header { align-items:flex-start; flex-direction:column; gap:10px; }
+  .flow-focus h2 { font-size:22px; }
+  .flow-focus p { font-size:13px; }
+  .flow-focus-grid { grid-template-columns:minmax(0,1fr); gap:12px; }
+  .flow-match > header { padding:11px 14px; }
+  .flow-team { min-height:68px; }
+  .flow-team-copy b { font-size:18px; }
+  .flow-team-copy small { font-size:13px; }
+  .flow-match > footer > button { min-height:44px; font-size:13px; }
+  .flow-match > footer > span { font-size:12px; }
+  .flow-bronze { grid-template-columns:minmax(0,1fr); gap:16px; padding:16px; }
+  .flow-map-caption p { font-size:12px; }
+  .flow-draw summary > span { display:block; margin:8px 0 0; }
+}
+@media(pointer:coarse){ .flow-match.compact > footer > button { min-height:44px; } }
+/* The full route is a reading view; round cards carry the referee actions. */
+.flow-match.compact > header { padding:5px 9px; }
+.flow-match.compact .flow-team { min-height:32px; padding:5px 0; }
+.flow-match.compact > footer { padding:5px 9px; min-height:26px; }
+.flow-match.compact .flow-status { padding:2px 5px; }
+.flow-heading .kicker { color:#a3372c; font-size:11px; letter-spacing:.13em; font-weight:800; }
+.flow-team.unresolved b { color:#776e63; }

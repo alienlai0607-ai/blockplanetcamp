@@ -2006,7 +2006,7 @@ function junkbotStateGet(campusValue) {
   }
 }
 
-function junkbotStateSet(p) {
+function junkbotStateSet(p, fromMatchPatch) {
   try {
     if (String(p.password || '') !== JUNKBOT_CONTROL_PASSWORD) {
       return { success: false, error: '比賽單位密碼不正確' };
@@ -2021,6 +2021,19 @@ function junkbotStateSet(p) {
     }
     const currentResult = junkbotStateGet(campus);
     const currentState = currentResult && currentResult.state;
+    // Whole-state writes must never erase another arena's preparation or live clock.
+    // This optional argument is set only by the internal match-patch function.
+    const existingActiveIds = currentState && Array.isArray(currentState.activeMatchIds)
+      ? currentState.activeMatchIds.slice() : [];
+    if (currentState && currentState.activeMatchId) existingActiveIds.push(currentState.activeMatchId);
+    const hasActiveArena = existingActiveIds.some(function(id) {
+      return (currentState.matches || []).some(function(item) {
+        return item && item.id === id && item.status !== 'completed';
+      });
+    });
+    if (fromMatchPatch !== true && hasActiveArena) {
+      return { success: false, error: '有賽場準備或進行中，禁止整份資料覆寫；請先完成比賽' };
+    }
     const currentArchives = currentState && Array.isArray(currentState.archives) ? currentState.archives : [];
     for (let archiveIndex = 0; archiveIndex < currentArchives.length; archiveIndex++) {
       const existingArchive = currentArchives[archiveIndex];
@@ -2188,6 +2201,11 @@ function junkbotMatchPatch(p) {
 
     const now = new Date();
     const nowIso = now.toISOString();
+    const existingLive = state.lives[matchId] || null;
+    const unchanged = function() {
+      return { success: true, ok: true, campus: campus, state: state, unchanged: true };
+    };
+    // doPost already holds the script lock: validate and write in the same critical section.
     const activate = function() {
       if (state.activeMatchIds.indexOf(matchId) < 0) state.activeMatchIds.push(matchId);
     };
@@ -2197,6 +2215,10 @@ function junkbotMatchPatch(p) {
         state.lives[matchId] = { matchId: matchId, status: 'ready', secondsLeft: 60, updatedAt: nowIso };
       }
     } else if (op === 'countdown') {
+      if (existingLive && existingLive.status === 'countdown') return unchanged();
+      if (!existingLive || existingLive.status !== 'ready') {
+        return { success: false, error: '比賽已開始或尚未準備，不能重設倒數' };
+      }
       activate();
       state.lives[matchId] = {
         matchId: matchId,
@@ -2206,6 +2228,10 @@ function junkbotMatchPatch(p) {
         updatedAt: nowIso
       };
     } else if (op === 'start') {
+      if (existingLive && existingLive.status === 'running') return unchanged();
+      if (!existingLive || existingLive.status !== 'countdown') {
+        return { success: false, error: '請先完成開場倒數；已到時的比賽須由評審判定或登記重賽' };
+      }
       activate();
       state.lives[matchId] = {
         matchId: matchId,
@@ -2217,6 +2243,12 @@ function junkbotMatchPatch(p) {
         updatedAt: nowIso
       };
     } else if (op === 'timeup') {
+      if (existingLive && existingLive.status === 'awaiting-decision') return unchanged();
+      if (!existingLive || existingLive.status !== 'running' || !existingLive.endsAt
+          || !Number.isFinite(new Date(existingLive.endsAt).getTime())
+          || new Date(existingLive.endsAt).getTime() > now.getTime()) {
+        return { success: false, error: '比賽尚未到時，不能提前結束計時' };
+      }
       activate();
       state.lives[matchId] = {
         matchId: matchId,
@@ -2225,11 +2257,17 @@ function junkbotMatchPatch(p) {
         updatedAt: nowIso
       };
     } else if (op === 'replay') {
+      if (!existingLive || existingLive.status !== 'awaiting-decision') {
+        return { success: false, error: '請等本場時間到後再登記重賽' };
+      }
       if (Number(item.replays || 0) >= 1) return { success: false, error: '本場已使用過一次重賽' };
       item.replays = Number(item.replays || 0) + 1;
       activate();
       state.lives[matchId] = { matchId: matchId, status: 'ready', secondsLeft: 60, updatedAt: nowIso };
     } else if (op === 'complete') {
+      if (!existingLive || ['running', 'awaiting-decision'].indexOf(existingLive.status) < 0) {
+        return { success: false, error: '比賽尚未開始，不能判定勝負' };
+      }
       const winnerId = String(p.winnerId || '');
       if (item.participantIds.indexOf(winnerId) < 0) return { success: false, error: '晉級隊伍不在本場名單中' };
       item.status = 'completed';
@@ -2259,7 +2297,7 @@ function junkbotMatchPatch(p) {
       password: JUNKBOT_CONTROL_PASSWORD,
       campus: campus,
       state: state
-    });
+    }, true);
     if (!saved || !saved.success) return saved || { success: false, error: '儲存失敗' };
     return { success: true, ok: true, campus: campus, state: state, updatedAt: saved.updatedAt };
   } catch (err) {
