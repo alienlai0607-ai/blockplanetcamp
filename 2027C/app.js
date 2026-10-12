@@ -344,7 +344,7 @@
 
   // The calendar highlights only confirmed dates. No inferred daily timetable.
   const confirmedCalendarDates = [...new Set(data.camps.flatMap(c => c.dates))].sort();
-  let calendarFilter = 'all', selectedDate = confirmedCalendarDates[0];
+  let calendarFilter = 'all', selectedDate = null;
   function campsOnDate(date) { return data.camps.filter(c => c.dates.includes(date) && (calendarFilter === 'all' || c.id === calendarFilter)); }
   function dateLabel(date) { const [y,m,d] = date.split('-').map(Number); const weekday = '日一二三四五六'[new Date(y,m-1,d).getDay()]; return `${m} 月 ${d} 日（${weekday}）`; }
   function calendarDate(key) { const [year, month, day] = key.split('-').map(Number); return new Date(year, month - 1, day); }
@@ -357,7 +357,7 @@
     const camps = campsOnDate(key);
     if (!camps.length) return `<span class="date-cell" data-calendar-day="${key}" aria-label="${esc(dateLabel(key))}">${label}</span>`;
     const dots = camps.map(c => `<i class="${c.id === 'drone' ? 'drone-dot' : ''}"></i>`).join('');
-    return `<button class="date-cell is-event" data-calendar-day="${key}" data-date="${key}" aria-controls="calendarDetail" aria-pressed="${selectedDate === key}" aria-label="${esc(dateLabel(key))}，${esc(camps.map(c=>c.name).join('、'))}"><span>${label}</span><span class="date-dots" aria-hidden="true">${dots}</span></button>`;
+    return `<button class="date-cell is-event" data-calendar-day="${key}" data-date="${key}" aria-controls="calendarDetail" aria-pressed="${selectedDate === key}" aria-label="${esc(dateLabel(key))}，查看${esc(camps.map(c=>c.name).join('、'))}的完整營期"><span>${label}</span><span class="date-dots" aria-hidden="true">${dots}</span></button>`;
   }
   function renderCompactCalendar() {
     const first = calendarDate(confirmedCalendarDates[0]), last = calendarDate(confirmedCalendarDates[confirmedCalendarDates.length - 1]);
@@ -382,17 +382,27 @@
       return `<div class="month"><h3>${month + 1} 月 <small>2027 ${month === 0 ? 'JANUARY' : 'FEBRUARY'}</small></h3><div class="month-grid">${headings}${blanks}${cells}</div></div>`;
     }).join('');
     renderCompactCalendar();
-    $$('[data-date]').forEach(button => button.addEventListener('click', () => { selectedDate = button.dataset.date; $$('[data-date]').forEach(el => el.setAttribute('aria-pressed', String(el.dataset.date === selectedDate))); renderDateDetail(); }));
-    renderDateDetail();
+    $$('[data-date]').forEach(button => button.addEventListener('click', () => { selectedDate = button.dataset.date; $$('[data-date]').forEach(el => el.setAttribute('aria-pressed', String(el.dataset.date === selectedDate))); renderCampSchedule(); }));
+    renderCampSchedule();
   }
-  function renderDateDetail() {
-    const camps = campsOnDate(selectedDate);
-    $('#calendarDetail').innerHTML = `<p>這一天，可以參加</p><h3>${esc(dateLabel(selectedDate))}</h3>${camps.map(c => `<div class="calendar-course"><h4>${esc(c.name)}</h4><p>${esc(c.daysLabel)} · ${esc(c.timeLabel)}${selectedDate === '2027-02-02' && c.id === 'full-term' ? '<br>晚上：孩子的尾牙，家長出席與費用另行統計。' : ''}</p><button data-camp="${c.id}">查看課程與報名 →</button></div>`).join('')}${camps.length > 1 ? '<p class="calendar-note">兩個營隊日期重疊，請先確認孩子的參加安排。</p>' : ''}`;
+  function renderCampSchedule() {
+    // A date is a way to find a camp, never a one-day registration option.
+    const camps = calendarFilter !== 'all'
+      ? data.camps.filter(c => c.id === calendarFilter && c.dates.length)
+      : selectedDate ? campsOnDate(selectedDate) : data.camps.filter(c => c.dates.length);
+    const overlaps = camps.some((camp, index) => camps.slice(index + 1).some(other => camp.dates.some(date => other.dates.includes(date))));
+    $('#calendarDetail').innerHTML = '<p class="calendar-summary-label">完整營隊日期</p>' + camps.map(c => {
+      const periods = c.dateLabel.split('、');
+      const enrolment = c.id === 'full-term' ? '共 9 天，全期報名' : '共 ' + c.days + ' 天，完整營期';
+      const time = c.timeLabel.includes('近期公布') ? '' : '<p class="calendar-program-time">每日 ' + esc(c.timeLabel) + '</p>';
+      const parentEvent = c.parentEvent ? '<p class="calendar-parent-event">' + esc(c.parentEvent.timeLabel) + '：' + esc(c.parentEvent.name) + '，家長出席與費用另行統計。</p>' : '';
+      return '<article class="calendar-course"><h3>' + esc(c.name) + '</h3><p class="calendar-enrolment">' + esc(enrolment) + '</p><ul class="calendar-periods" aria-label="' + esc(c.name) + '完整上課日期">' + periods.map(period => '<li>' + esc(period) + '</li>').join('') + '</ul>' + time + parentEvent + '<button data-camp="' + esc(c.id) + '">查看完整課程與報名 →</button></article>';
+    }).join('') + (overlaps ? '<p class="calendar-note">兩個完整營期部分日期重疊，報名前請確認安排。</p>' : '');
   }
   $$('[data-calendar-filter]').forEach(button => button.addEventListener('click', () => {
     calendarFilter = button.dataset.calendarFilter;
     $$('[data-calendar-filter]').forEach(el => el.setAttribute('aria-pressed', String(el === button)));
-    if (!campsOnDate(selectedDate).length) selectedDate = campById(calendarFilter === 'all' ? 'full-term' : calendarFilter).dates[0];
+    selectedDate = null;
     renderCalendars();
   }));
   renderCalendars();

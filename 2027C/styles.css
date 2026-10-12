@@ -71,3 +71,15 @@ dialog{border:0;max-width:min(850px,calc(100% - 40px));width:100%;padding:0;bord
   #calendar .filter-group button{padding-inline:3px;letter-spacing:0}
   #calendar .filter-group button[data-calendar-filter="drone"]{padding-inline:6px}
 }
+
+/* Calendar results describe complete camp enrolments, not single-day bookings. */
+#calendarDetail .calendar-summary-label{margin:0 0 12px;color:#795b42;font-size:17px;font-weight:650}
+#calendarDetail .calendar-course{padding:17px 0}
+#calendarDetail .calendar-course h3{margin:0 0 8px;font-size:22px;line-height:1.5}
+#calendarDetail .calendar-enrolment{margin:0 0 11px;color:#a3442c;font-size:17px;font-weight:800;line-height:1.6}
+#calendarDetail .calendar-periods{display:flex;flex-wrap:wrap;gap:7px;list-style:none;padding:0;margin:0 0 11px}
+#calendarDetail .calendar-periods li{padding:3px 8px;border-radius:5px;background:#f3e0bc;color:#604632;font-size:16px;font-weight:750;line-height:1.6;white-space:nowrap}
+#calendarDetail .calendar-program-time{margin:7px 0;font-size:17px;line-height:1.7}
+#calendarDetail .calendar-parent-event{margin:8px 0 10px;font-size:16px;line-height:1.75}
+#calendarDetail .calendar-course button{margin-top:6px}
+#calendarDetail>.calendar-note{grid-column:1/-1}
