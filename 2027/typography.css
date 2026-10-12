@@ -1,0 +1,269 @@
+/* Readable type for parents, with the weight of the hand-painted camp characters.
+   Load after the existing styles. All fonts come from the visitor's device. */
+:root{
+  --reading-body:18px;
+  --reading-secondary:15px;
+  --reading-label:14px;
+  --reading-small:12px;
+  --reading-font:ui-rounded,"PingFang TC","Microsoft JhengHei",system-ui,sans-serif;
+}
+body{font-family:var(--reading-font);font-size:var(--reading-body);font-weight:500;line-height:1.85}
+button,input,summary{font-family:inherit}
+h1,h2,h3,h4,b,strong{font-weight:800}
+h1,h2,h3,h4{letter-spacing:-.025em}
+p{font-weight:500}
+.eyebrow,.camp-copy .eyebrow,.camp-intro .eyebrow,.two-day .eyebrow,.section-heading .eyebrow,.contact-section .eyebrow{font-size:var(--reading-label);font-weight:750;line-height:1.65;letter-spacing:.07em}
+.button,.text-link,.text-control,.camp-actions .button,.camp-actions .text-link,.contact-section .button,.dialog-actions .button{font-size:17px;font-weight:750;line-height:1.55}
+.button,.camp-actions .button,.contact-section .button,.dialog-actions .button{min-height:54px;padding:14px 24px;gap:18px}
+.text-link{overflow-wrap:anywhere}
+.text-control,.scene-controls .text-control{min-height:44px}
+.camp-actions{flex-wrap:wrap;gap:14px 22px}
+
+/* Navigation and the first screen retain their own compact hierarchy. */
+.brand span{font-size:22px;font-weight:850;letter-spacing:.01em}
+.brand small{font-size:var(--reading-small);font-weight:750;letter-spacing:.09em}
+.site-header nav,.teacher-menu summary,.nav-toggle{font-size:16px;font-weight:750;line-height:1.5}
+.site-header nav{gap:20px}
+.teacher-menu a{font-size:16px;font-weight:650;line-height:1.6}
+.hero-year{font-size:14px;letter-spacing:.09em;font-weight:800}
+.hero-year span{font-size:25px;font-weight:850}
+.hero-world .hero h1{font-size:clamp(62px,5.1vw,76px);font-weight:900;line-height:1.13;letter-spacing:-.045em}
+.hero-world .hero h1>span{font-size:1.18em;letter-spacing:-.045em}
+.hero-world .hero-options{font-size:22px;font-weight:750;line-height:1.7;letter-spacing:0}
+.hero-world .hero-note{font-size:19px;font-weight:550;line-height:1.85;margin-top:14px;margin-bottom:25px}
+.hero-world .hero .button{font-size:18px;font-weight:800;min-height:56px}
+.hero-world .hero-location{font-size:15px;font-weight:650;line-height:1.7}
+.hero-world .art-note,.hero-world .scroll-cue{font-size:14px;font-weight:650;line-height:1.6;letter-spacing:0}
+.hero-world .art-note{max-width:90%}
+
+/* Course introductions and teaching stories. */
+.camp-intro h2{font-size:36px;font-weight:850;line-height:1.35}
+.camp-choice span{font-size:18px;font-weight:750;line-height:1.55;white-space:normal;overflow-wrap:anywhere;min-width:0}
+.camp-choice small,.intro-note{font-size:var(--reading-secondary);font-weight:550;line-height:1.75}
+.named-camps .camp-choice b{font-size:24px;font-weight:800;line-height:1.4}
+.named-camps .camp-choice span{font-size:15px;font-weight:600;line-height:1.75;white-space:normal;overflow-wrap:anywhere;min-width:0}
+.named-camps .camp-choice small{font-size:15px;font-weight:750;line-height:1.5}
+.named-camps .intro-note{font-size:var(--reading-secondary);font-weight:550;line-height:1.8}
+.camp-copy h2,.drone-section .camp-copy h2{font-size:clamp(44px,4.6vw,60px);font-weight:850;line-height:1.2;letter-spacing:-.035em}
+.lego-section .camp-copy h2{font-size:clamp(42px,4.3vw,56px);font-weight:850;line-height:1.22;letter-spacing:-.035em}
+.english-title{font-size:.63em;font-weight:850;letter-spacing:.025em;line-height:1.4}
+.section-number{font-size:24px;font-weight:750}
+.camp-subtitle{font-size:21px;font-weight:700;line-height:1.7;margin-top:21px}
+.camp-description{font-size:var(--reading-body);font-weight:500;line-height:1.9;margin-top:18px}
+.camp-facts{font-size:var(--reading-secondary);font-weight:600;line-height:1.85;margin-top:25px}
+.simple-features{font-size:var(--reading-secondary);font-weight:600;line-height:1.8;gap:9px 15px}
+.experience-detail{padding-block:20px;min-height:0}
+.experience-count{font-size:var(--reading-small);font-weight:750;line-height:1.7}
+.experience-detail h3{font-size:24px;font-weight:800;line-height:1.45;margin:6px 0 10px}
+.experience-detail p{font-size:var(--reading-body);font-weight:550;line-height:1.85}
+.experience-points,.experience-learning,.learning-points,.story-learning-points{font-size:var(--reading-secondary);font-weight:600;line-height:1.8;gap:7px 13px;margin-top:13px}
+.scene-eyebrow{font-size:17px;font-weight:800;line-height:1.65;letter-spacing:.025em}
+.lamp-label{font-size:15px;font-weight:800;line-height:1.45;white-space:normal;max-width:none;overflow-wrap:anywhere;text-wrap:balance}
+.lamp-number{font-size:12px;font-weight:800;width:21px;height:21px;line-height:21px}
+.scene-controls{display:flex;flex-wrap:wrap;align-items:center;gap:6px 16px;font-size:var(--reading-secondary);font-weight:600;line-height:1.7;padding-top:12px}
+.scene-controls .text-control{font-size:15px;font-weight:750;line-height:1.6;margin-left:auto;padding-inline:0}
+.story-step-caption,.lego-step-caption{min-height:124px;align-items:flex-start;padding-top:10px;padding-bottom:8px;gap:17px}
+.story-step-caption>span,.lego-step-caption>span{font-family:var(--reading-font);font-size:35px;font-style:normal;font-weight:800;line-height:1.25;padding-right:14px}
+.story-step-caption>div,.lego-step-caption>div{min-width:0}
+.story-step-caption b,.lego-step-caption b{font-size:22px;font-weight:800;line-height:1.5}
+.story-step-caption p,.lego-step-caption p{font-size:var(--reading-body);font-weight:500;line-height:1.8;margin-top:7px}
+.story-steps button,.lego-steps button{font-size:15px;font-weight:750;min-width:0;min-height:48px;padding:11px 2px 8px;line-height:1.5;overflow-wrap:anywhere}
+.flight-caption{font-size:var(--reading-secondary);font-weight:550;line-height:1.7}
+.two-day h2{font-size:33px;font-weight:800;line-height:1.35}
+.two-day p:not(.eyebrow),.two-day>.text-link{font-size:var(--reading-body);line-height:1.8}
+.two-day-mark small{font-size:12px;font-weight:750;line-height:1.5;letter-spacing:.1em}
+
+/* Dates and prices are reading content, not fine print. */
+.section-heading h2,.contact-section h2{font-size:44px;font-weight:850;line-height:1.3}
+.section-heading>p{font-size:var(--reading-body);font-weight:500;line-height:1.85}
+.filter-group button{font-size:16px;font-weight:750;min-height:46px;line-height:1.5;padding:9px 17px}
+.calendar-help,.calendar-note,.comparison-heading span{font-size:var(--reading-secondary);font-weight:550;line-height:1.8}
+.month h3{font-size:23px;font-weight:800;line-height:1.5}
+.month h3 small{font-size:14px;font-weight:600;letter-spacing:.06em}
+.weekday{font-size:14px;font-weight:650;line-height:1.7;height:29px}
+.date-cell{font-size:17px;font-weight:600;line-height:1.25;min-height:34px}
+.date-cell.is-event{font-weight:800}
+.calendar-detail>p{font-size:var(--reading-secondary);font-weight:600;line-height:1.8}
+.calendar-detail h3{font-size:27px;font-weight:800;line-height:1.4}
+.calendar-course h4{font-size:20px;font-weight:800;line-height:1.55}
+.calendar-course p{font-size:var(--reading-body);font-weight:500;line-height:1.8;margin-block:10px}
+.calendar-course button{font-size:16px;font-weight:750;line-height:1.6;min-height:42px}
+.comparison-heading h3{font-size:29px;font-weight:800;line-height:1.4}
+.compare-title b{font-size:20px;font-weight:800;line-height:1.6}
+.compare-title span,.compare-price small{font-size:var(--reading-secondary);font-weight:550;line-height:1.75;letter-spacing:0}
+.compare-date{font-size:17px;font-weight:550;line-height:1.85}
+.compare-price{font-size:19px;font-weight:750;line-height:1.7}
+.compare-row>span{min-width:0;overflow-wrap:anywhere}
+
+/* Parent help, classroom details and quiet supporting information. */
+.coupon-section h2{font-size:39px;font-weight:850;line-height:1.35}
+.coupon-section p:not(.eyebrow),.coupon-section .text-link{font-size:var(--reading-body);font-weight:550;line-height:1.85}
+.ticket-art>span{font-size:14px;font-weight:650;line-height:1.65;letter-spacing:.015em}
+.ticket-art b{font-size:20px;font-weight:800;line-height:1.5;white-space:normal}
+.ticket-art>i{font-size:42px;font-weight:800;line-height:1.1}
+.ticket-art small{font-size:12px;font-weight:600;line-height:1.5;letter-spacing:0}
+.faq-categories button{font-size:17px;font-weight:750;line-height:1.6;min-height:46px}
+.faq-list summary{font-size:21px;font-weight:750;line-height:1.7;padding-block:21px}
+.faq-answer{font-size:var(--reading-body);font-weight:500;line-height:1.9;max-width:760px}
+.faq-answer a,.faq-bottom{font-size:16px;font-weight:600;line-height:1.85}
+.classroom h3{font-size:23px;font-weight:800;line-height:1.5}
+.classroom p,.classroom .contact-links{font-size:var(--reading-body);font-weight:550;line-height:1.85}
+.classroom .contact-links{flex-wrap:wrap;gap:9px 25px}
+.classroom a{min-height:44px}
+.contact-visual>span{font-size:15px;font-weight:650;line-height:1.75;letter-spacing:0}
+.footer-top>div,.footer-bottom,.footer-bottom .text-control{font-size:14px;font-weight:600;line-height:1.75}
+.footer-top>div,.footer-bottom{flex-wrap:wrap}
+.mobile-bar a{font-size:16px;font-weight:800;line-height:1.5;min-height:44px;gap:14px}
+.noscript{font-size:16px;font-weight:550;line-height:1.8}
+
+/* Expanded course details use the same readable scale as the main page. */
+.dialog-toolbar{font-size:15px;font-weight:750;line-height:1.55}
+.dialog-toolbar button{font-size:30px;font-weight:600;flex-shrink:0;width:42px;height:42px}
+.dialog-inner h2{font-size:38px;font-weight:850;line-height:1.35;letter-spacing:-.025em}
+.dialog-subtitle{font-size:21px;font-weight:700;line-height:1.65}
+.dialog-description,.dialog-facts div,.activity-list p,.period-list p,.dialog-event p{font-size:var(--reading-body);font-weight:500;line-height:1.85}
+.dialog-facts span,.dialog-note,.dialog-poster figcaption,.period-list small,.poster-details summary{font-size:var(--reading-secondary);font-weight:550;line-height:1.8}
+.dialog-course-main>h3,.dialog-inner>h3{font-size:26px;font-weight:800;line-height:1.45;margin-block:30px 18px}
+.activity-list h4,.period-list h4,.dialog-event h4{font-size:21px;font-weight:800;line-height:1.5}
+.course-story-grid h4,.course-story-grid b{font-size:20px;font-weight:800;line-height:1.5}
+.course-story-grid p{font-size:17px;font-weight:500;line-height:1.85}
+.course-story-grid small,.course-story-grid .story-learning-points{font-size:15px;font-weight:600;line-height:1.8}
+.course-story-grid{row-gap:30px}
+
+@media(max-width:1100px){
+  :root{--reading-body:17px}
+  .site-header nav,.teacher-menu summary{font-size:15px}
+  .site-header nav{gap:14px}
+  .camp-copy h2,.drone-section .camp-copy h2{font-size:48px}
+  .lego-section .camp-copy h2{font-size:45px}
+  .camp-subtitle{font-size:20px}
+  .compare-title b{font-size:18px}.compare-date{font-size:16px}.compare-price{font-size:18px}
+  .coupon-section h2{font-size:34px}
+}
+/* Preserve the tablet composition: all copy stays inside the left 42% column. */
+@media(min-width:701px) and (max-width:1100px){
+  .hero-world .hero h1{font-size:clamp(47px,6.15vw,60px);line-height:1.14;letter-spacing:-.035em}
+  .hero-world .hero h1>span{font-size:1.18em}
+  .hero-world .hero-options{font-size:18px;line-height:1.65;margin-top:18px}
+  .hero-world .hero-note{font-size:17px;line-height:1.8;max-width:100%;margin-block:13px 20px}
+  .hero-world .hero-note .desktop-break{display:none}
+  .hero-world .hero .button{font-size:17px;min-height:52px;padding:13px 19px;gap:17px}
+  .hero-world .hero-location{font-size:14px;line-height:1.7}
+  .hero-world .hero-location span{display:block;border:0;margin:3px 0 0;padding:0}
+  .hero-world .art-note,.hero-world .scroll-cue{font-size:12px;line-height:1.6}
+  .hero-world .art-note{max-width:52%}
+}
+@media(max-width:850px){
+  .brand span{font-size:20px}.brand small{font-size:12px}
+  .site-header nav,.teacher-menu summary,.teacher-menu a,.nav-toggle{font-size:17px}
+  .camp-copy h2,.drone-section .camp-copy h2{font-size:43px}
+  .lego-section .camp-copy h2{font-size:39px}
+  .camp-subtitle{font-size:19px}.camp-intro h2{font-size:33px}
+  .lamp-label{font-size:14px;line-height:1.5}
+  .story-step-caption b,.lego-step-caption b{font-size:20px}
+  .story-step-caption>span,.lego-step-caption>span{font-size:31px}
+  .story-steps button,.lego-steps button{font-size:14px}
+  .scene-controls .text-control{font-size:14px}
+  .two-day h2{font-size:30px}.two-day>.text-link{white-space:normal}
+  .section-heading h2,.contact-section h2{font-size:37px}
+  .calendar-detail h3{font-size:25px}
+  .ticket-art b{font-size:18px}.ticket-art>i{font-size:36px}
+  .faq-list summary{font-size:20px}
+}
+@media(max-width:700px){
+  .hero-world .hero h1{font-size:clamp(47px,8vw,62px);line-height:1.13}
+  .hero-world .hero-options{font-size:19px;line-height:1.7}
+  .hero-world .hero-note{font-size:17px;line-height:1.85;max-width:440px}
+  .hero-world .hero .button{font-size:17px;min-height:54px}
+  .hero-world .hero-location{font-size:14px;line-height:1.8}
+  .hero-world .hero-location span{display:block;border:0;margin:3px 0 0;padding:0}
+  .hero-world .art-note{font-size:14px;line-height:1.6}
+  .hero-world .scroll-cue{font-size:12px;line-height:1.6;white-space:nowrap}
+  .hero-year{font-size:13px}.hero-year span{font-size:23px}
+  .camp-intro h2{font-size:32px}
+  .named-camps .camp-choice b{font-size:22px}
+  .named-camps .camp-choice small{font-size:14px}
+  .camp-copy h2,.drone-section .camp-copy h2{font-size:47px;line-height:1.2}
+  .lego-section .camp-copy h2{font-size:44px;line-height:1.22}
+  .camp-subtitle{font-size:20px}
+  .experience-detail h3{font-size:23px}
+  .story-step-caption,.lego-step-caption{min-height:116px;gap:13px}
+  .story-step-caption>span,.lego-step-caption>span{font-size:32px}
+  .course-story-grid{grid-template-columns:1fr}
+  .section-heading h2,.contact-section h2{font-size:36px}
+  .calendar-course h4{font-size:19px}
+  .compare-title b{font-size:20px}
+  .compare-price{font-size:19px}.compare-date{font-size:17px}
+  .coupon-section h2{font-size:32px}
+  .faq-categories button{font-size:15px;padding:10px 12px}
+  .faq-list summary{font-size:19px}
+  .faq-answer a,.faq-bottom{font-size:15px}
+  .classroom h3{font-size:22px}
+  .footer-top>div{gap:16px 22px}
+  .dialog-inner h2{font-size:32px}.dialog-subtitle{font-size:20px}
+  .dialog-course-main>h3,.dialog-inner>h3{font-size:25px}
+  .dialog-description,.dialog-facts div,.activity-list p,.period-list p,.dialog-event p{font-size:17px}
+}
+@media(max-width:370px){
+  :root{--reading-body:16px;--reading-secondary:14px}
+  .brand span{font-size:18px}.brand small{font-size:12px;letter-spacing:.035em}
+  .hero-world .hero h1{font-size:46px}.hero-world .hero-options{font-size:17px}
+  .hero-world .hero-note{font-size:16px}.hero-world .hero-location{font-size:14px}
+  .camp-intro h2{font-size:29px}
+  .named-camps .camp-choice a:first-child b br{display:block}
+  .camp-copy h2,.drone-section .camp-copy h2{font-size:41px}
+  .lego-section .camp-copy h2{font-size:40px}
+  .camp-subtitle{font-size:19px}
+  .button,.camp-actions .button,.camp-actions .text-link{font-size:16px}
+  .camp-actions .button{padding-inline:19px}
+  .section-heading h2,.contact-section h2{font-size:33px}
+  .two-day h2,.coupon-section h2{font-size:29px}
+  .filter-group button{font-size:15px;padding-inline:13px}
+  .ticket-art{gap:10px}.ticket-art>span{font-size:12px}.ticket-art b{font-size:17px}.ticket-art>i{font-size:32px;padding-left:10px}
+  .dialog-inner h2{font-size:29px}.dialog-toolbar{font-size:14px}
+}
+
+/* Keep the season label clear of foliage and make the camp the primary title. */
+.hero-world .hero{padding-top:clamp(116px,9vw,160px)}
+.hero-world .hero-copy{align-self:start}
+.hero-world .hero-year{display:inline-flex;align-items:center;gap:13px;width:max-content;max-width:100%;margin:0 0 17px;padding:5px 12px 5px 5px;background:#fff8e9;border:1px solid #e8ce9f;border-radius:9px;line-height:1.2;letter-spacing:.06em}
+.hero-world .hero-year>span{font-size:24px;font-weight:900;line-height:1.1;padding:7px 12px;letter-spacing:.07em;transform:rotate(-3deg);box-shadow:none;border-radius:5px 9px 5px 8px}
+.hero-world .hero-year>b{font-size:13px;font-weight:800;line-height:1.4;letter-spacing:.1em;white-space:nowrap}
+.hero-world .hero h1{line-height:1;white-space:normal;letter-spacing:0}
+.hero-world .hero h1>.hero-brand-line{display:block;font-size:clamp(30px,2.6vw,38px);line-height:1.35;font-weight:800;letter-spacing:.04em;color:#73432f;margin-bottom:6px}
+.hero-world .hero h1>.hero-camp-title{display:block;font-size:clamp(96px,8.5vw,130px);line-height:1.06;font-weight:900;letter-spacing:-.035em;color:#af3825}
+.hero-world .hero-options{margin-top:20px}
+@media(min-width:701px) and (max-width:1100px){
+ .hero-world .hero{padding-top:clamp(112px,14vw,154px)}
+ .hero-world .hero-year{gap:9px;padding-right:9px;margin-bottom:14px}
+ .hero-world .hero-year>span{font-size:22px;padding:6px 9px}
+ .hero-world .hero-year>b{font-size:12px;letter-spacing:.07em}
+ .hero-world .hero h1>.hero-brand-line{font-size:clamp(26px,3vw,33px);margin-bottom:5px}
+ .hero-world .hero h1>.hero-camp-title{font-size:clamp(73px,9.7vw,102px)}
+ .hero-world .hero-options{margin-top:16px}
+}
+@media(max-width:700px){
+ .hero-world .hero{padding-top:30px}
+ .hero-world .hero-year{margin-bottom:18px}
+ .hero-world .hero h1>.hero-brand-line{font-size:30px}
+ .hero-world .hero h1>.hero-camp-title{font-size:clamp(82px,21vw,116px);letter-spacing:-.035em}
+}
+@media(max-width:370px){
+ .hero-world .hero h1>.hero-brand-line{font-size:28px}
+ .hero-world .hero-year{gap:10px}
+ .hero-world .hero-year>span{font-size:22px}
+ .hero-world .hero-year>b{font-size:12px}
+}
+@media(min-width:701px) and (max-width:800px){
+ .hero-world .hero{padding-top:100px}
+ .hero-world .hero-year{padding-block:3px;margin-bottom:8px}
+ .hero-world .hero-year>span{padding-block:5px}
+ .hero-world .hero h1>.hero-brand-line{line-height:1.2;margin-bottom:2px}
+ .hero-world .hero-options{margin-top:8px}
+ .hero-world .hero-note{margin-top:8px;line-height:1.75}
+}
+
+/* Keep the next-section cue on its own ground, below the painted hero. */
+.hero-world > .scroll-cue{position:relative;left:auto;right:auto;bottom:auto;transform:none;display:flex;justify-content:center;align-items:center;gap:12px;width:100%;max-width:none;margin:0;padding:16px 22px;border-radius:0;background:#fff8e7;color:#725b40;font-size:16px;font-weight:700;line-height:1.6;white-space:normal;text-align:center;border-top:1px solid #dfcda854}
+.hero-world > .scroll-cue > span{flex:0 0 32px;width:32px;height:44px;background:#fffaf0;border-color:#b69a68;font-size:23px}
+@media(max-width:700px){.hero-world > .scroll-cue{font-size:14px;padding:13px 20px;gap:10px}.hero-world > .scroll-cue > span{flex-basis:28px;width:28px;height:40px}.hero-world .hero{padding-bottom:22px}}

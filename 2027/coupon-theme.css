@@ -1,0 +1,110 @@
+/* A cut-out ticket with a shared main face and tear-off stub. */
+.campaign-voucher{--ticket-split:76%;--ticket-notch:12px;position:relative;isolation:isolate;display:grid;grid-template-columns:minmax(0,76fr) minmax(0,24fr);width:100%;max-width:560px;margin:0;padding:0;color:#703c29;background:#fffaf0;border:2px solid #b94c32;border-radius:7px;box-shadow:inset 0 0 0 5px #fffaf0;transform:rotate(-1.2deg);font-family:ui-rounded,"PingFang TC","Microsoft JhengHei",system-ui,sans-serif;
+ -webkit-mask-image:radial-gradient(circle at left 50%,transparent 0 11px,#000 12px),radial-gradient(circle at right 50%,transparent 0 11px,#000 12px),radial-gradient(circle at var(--ticket-split) top,transparent 0 7px,#000 8px),radial-gradient(circle at var(--ticket-split) bottom,transparent 0 7px,#000 8px);
+ -webkit-mask-composite:source-in;
+ mask-image:radial-gradient(circle at left 50%,transparent 0 11px,#000 12px),radial-gradient(circle at right 50%,transparent 0 11px,#000 12px),radial-gradient(circle at var(--ticket-split) top,transparent 0 7px,#000 8px),radial-gradient(circle at var(--ticket-split) bottom,transparent 0 7px,#000 8px);
+ mask-composite:intersect}
+.campaign-voucher:before,.campaign-voucher:after{content:"";position:absolute;top:50%;width:28px;height:28px;border:2px solid #b94c32;border-radius:50%;transform:translateY(-50%);z-index:3;pointer-events:none}
+.campaign-voucher:before{left:-14px}.campaign-voucher:after{right:-14px}
+.voucher-main{min-width:0;padding:20px 23px 17px;background:repeating-linear-gradient(0deg,#c4954110 0 1px,transparent 1px 5px);position:relative}
+.voucher-main:before{content:"";position:absolute;inset:7px;border:1px solid #e5be7c;border-right:0;border-radius:2px 0 0 2px;pointer-events:none}
+.voucher-brand{display:flex;align-items:center;gap:7px;font-size:14px;font-weight:800;line-height:1.4;letter-spacing:.04em}
+.voucher-brand img{width:24px;height:24px;object-fit:contain;flex-shrink:0}
+.voucher-title{display:block;font-size:34px;font-weight:900;letter-spacing:.01em;line-height:1.3;margin:9px 0 0;color:#a43e2c;white-space:nowrap}
+.voucher-title>span{display:inline-block}
+.voucher-bottom{display:flex;align-items:center;gap:6px;min-width:0;margin-top:1px}
+.voucher-foot{display:flex;flex-direction:column;gap:4px;align-items:flex-start;flex:none;color:#a43e2c;line-height:1.4}
+.voucher-foot b{font-size:30px;font-weight:900;letter-spacing:.025em;line-height:1.1}
+.voucher-foot span{font-size:15px;font-weight:800;white-space:nowrap;letter-spacing:.035em}
+.voucher-scene{position:relative;flex:1;min-width:0;height:142px;display:flex;align-items:center;justify-content:center}
+.voucher-scene>img{display:block;width:100%;height:100%;object-fit:contain;max-width:270px;margin:0}
+.voucher-stub{position:relative;min-width:0;display:flex;flex-direction:column;align-items:center;justify-content:space-between;padding:22px 8px 21px;background:#f7e6bf;border-left:2px dashed #bf7953;box-shadow:inset 7px 0 0 #fff7e7,inset -7px 0 0 #fff7e7;color:#a43e2c}
+.voucher-stub:before,.voucher-stub:after{content:"";position:absolute;left:-10px;width:18px;height:18px;border:1px solid #b94c32;border-radius:50%;pointer-events:none}
+.voucher-stub:before{top:-10px}.voucher-stub:after{bottom:-10px}
+.voucher-edition{font-size:14px;font-weight:900;letter-spacing:.1em;line-height:1.5;white-space:nowrap}
+.voucher-seal{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1px;transform:translateX(-5px);color:#b4432d;line-height:1.25;font-size:14px;font-weight:800}
+.voucher-seal b{font-size:46px;font-weight:900;line-height:1.1;letter-spacing:-.02em}
+.voucher-stub-label{font-size:13px;font-weight:800;letter-spacing:.1em;line-height:1.5;white-space:nowrap}
+.coupon-section.campaign-coupon{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:80px;align-items:center;padding-block:90px 85px}
+.campaign-coupon .coupon-copy{min-width:0}
+.campaign-coupon .coupon-copy h2{margin:14px 0 21px;font-size:clamp(32px,3vw,42px);line-height:1.35}
+.campaign-coupon .coupon-copy .coupon-release{display:inline-flex;align-items:center;gap:9px;padding:4px 12px;border:1px solid #dec499;border-radius:7px;background:#fff3da;font-size:16px;font-weight:750;color:#8e452f;line-height:1.8;margin-bottom:12px}
+.campaign-coupon .coupon-copy p:not(.eyebrow):not(.coupon-release){margin:0 0 23px;font-size:18px;line-height:1.85;color:#795e48;font-weight:550}
+.campaign-coupon .text-link{color:#ad432e;font-size:18px;font-weight:800}
+
+/* Coupon states keep their existing markup and actions. */
+.coupon-page{--cream:#fff8e9;--paper:#fffdf7;--navy:#663a2a;--teal:#b44830;--teal-light:#fff0d5;--ink:#5b3b2c;--muted:#7b604b;--line:#e6cfab;--gold:#e7b75c;--danger:#aa3831;background:var(--cream);color:var(--ink);font-family:ui-rounded,"PingFang TC","Microsoft JhengHei",system-ui,sans-serif;font-weight:550}
+.coupon-page .top-bar{max-width:none;background:#ffe8b4;border-bottom:2px solid #e8ba68;padding-inline:max(32px,calc((100vw - 1120px)/2));color:#8a3829}
+.coupon-page .brand img{background:#fff5d8;border-radius:50%;padding:3px}
+.coupon-page .brand strong{font-size:20px;font-weight:850}
+.coupon-page .brand small{color:#a86743}
+.coupon-page .coupon-layout{grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:64px;max-width:1160px;margin-top:36px;align-items:center}
+.coupon-page .intro{padding-top:0}
+.coupon-page .eyebrow{font-weight:800;color:#a5442e}
+.coupon-page h1{font-size:44px;font-weight:900;line-height:1.3;margin:14px 0 18px;color:#a43e2c;letter-spacing:.015em}
+.coupon-page .intro-copy{font-size:18px;font-weight:550;margin:0 0 27px;line-height:1.85}
+.coupon-page .campaign-voucher{max-width:500px;margin-top:26px}
+.coupon-page .intro-note{display:block;font-size:14px;font-weight:650;margin:22px 0 0;line-height:1.8;letter-spacing:0}
+.coupon-page .card{border:1px solid #e4c493;box-shadow:0 5px 0 #f0dfc0;border-radius:22px;background:#fffdf7}
+.coupon-page .card h2,.coupon-page dialog h2{font-weight:850}
+.coupon-page .state-tag{font-weight:800;border:1px solid #ead1a5}
+.coupon-page .state-icon{border:2px solid #ba4c33;color:#b24830;box-shadow:inset 0 0 0 3px #fffdf7,inset 0 0 0 4px #ba4c33;border-radius:8px;transform:rotate(-5deg);font-weight:850;background:#fff8e9}
+.coupon-page .primary{background:#c64e33;color:#fffdf3;border-radius:30px;font-weight:800}
+.coupon-page .primary:hover{background:#af412b}
+.coupon-page .secondary{border-color:#dfbf94;border-radius:30px}
+.coupon-page .secondary:hover{background:#fff0d5}
+.coupon-page .pending-note,.coupon-page .camp-rules,.coupon-page .timer-box{background:#fff3dd}
+.coupon-page .code-box{background:#fff7e7;border-color:#cb9e6e}
+.coupon-page .phone-field input{border-color:#cda979;background:#fffdf7}
+.coupon-page .toast{background:#6f3d2e}
+.coupon-page dialog::backdrop{background:#513c2f88}
+.coupon-page .site-footer{border-color:#e6cfab}
+@media(max-width:1100px) and (min-width:701px){
+ .coupon-section.campaign-coupon{grid-template-columns:minmax(0,1.25fr) minmax(0,1fr);gap:32px}
+ .campaign-voucher{transform:rotate(-1deg)}
+ .voucher-main{padding:17px 17px 14px}
+ .voucher-brand{font-size:12px}.voucher-brand img{width:21px;height:21px}
+ .voucher-title{font-size:clamp(21px,2.6vw,29px);margin-top:7px}
+ .voucher-scene{height:111px}
+ .voucher-foot b{font-size:24px}.voucher-foot span{font-size:12px}
+ .voucher-stub{padding:17px 6px 16px}
+ .voucher-edition{font-size:11px}.voucher-seal{font-size:12px}.voucher-seal b{font-size:36px}.voucher-stub-label{font-size:11px}
+ .coupon-page .coupon-layout{gap:32px;padding-inline:28px;align-items:start}
+ .coupon-page h1{font-size:36px}
+ .coupon-page .voucher-main{padding-inline:15px}
+ .coupon-page .voucher-title{font-size:clamp(21px,2.5vw,29px)}
+ .coupon-page .voucher-scene{height:105px}
+}
+@media(max-width:700px){
+ .coupon-section.campaign-coupon{grid-template-columns:1fr;gap:32px;padding:58px 4px 55px;justify-items:center}
+ .campaign-voucher{max-width:460px;transform:rotate(-1deg)}
+ .voucher-main{padding:16px 17px 12px}
+ .voucher-brand{font-size:12px;gap:5px}.voucher-brand img{width:20px;height:20px}
+ .voucher-title{font-size:clamp(24px,6.5vw,30px);margin-top:7px;letter-spacing:0}
+ .voucher-scene{height:106px}
+ .voucher-foot{gap:4px}.voucher-foot b{font-size:24px}.voucher-foot span{font-size:12px}
+ .voucher-stub{padding:18px 6px 16px;box-shadow:inset 5px 0 0 #fff7e7,inset -5px 0 0 #fff7e7}
+ .voucher-edition{font-size:11px;letter-spacing:.045em}.voucher-seal{font-size:12px}.voucher-seal b{font-size:36px}.voucher-stub-label{font-size:11px;letter-spacing:.04em}
+ .campaign-coupon .coupon-copy{width:100%;padding:0 4px}
+ .campaign-coupon .coupon-copy h2{font-size:34px;margin:10px 0 17px}
+ .campaign-coupon .coupon-copy p:not(.eyebrow):not(.coupon-release){font-size:17px}
+ .coupon-page .top-bar{padding:19px 20px}
+ .coupon-page .brand strong{font-size:18px}
+ .coupon-page .coupon-layout{display:block;max-width:550px;padding:0 22px;margin:24px auto 45px}
+ .coupon-page .intro{margin-bottom:38px}
+ .coupon-page h1{font-size:37px;max-width:none}
+ .coupon-page .intro-copy{font-size:17px}
+ .coupon-page .campaign-voucher{margin:26px auto 0;max-width:460px}
+ .coupon-page .intro-note{text-align:center}
+}
+@media(max-width:370px){
+ .voucher-main{padding:14px 14px 11px}
+ .voucher-title{font-size:24px;margin-top:6px}
+ .voucher-scene{height:87px}
+ .voucher-foot b{font-size:21px}.voucher-foot span{font-size:12px;letter-spacing:0}
+ .voucher-stub{padding:15px 5px 13px}
+ .voucher-seal b{font-size:32px}
+ .campaign-coupon .coupon-copy h2{font-size:30px}
+ .coupon-page .coupon-layout{padding-inline:18px}
+ .coupon-page h1{font-size:33px}
+}

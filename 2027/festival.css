@@ -1,0 +1,270 @@
+/* 2027C: warm paper, red timber and painted classroom scenes.
+   The illustrations establish a place; decorative elements never float over copy. */
+:root{--paper:#fff8e9;--ink:#543a2f;--muted:#796451;--teal:#a84430;--teal-dark:#853322;--line:#dfcdb0;--blue:#3c657a;--purple:#8d533a;--jade:#f2e6ce;--sky:#f3e9d5;--lavender:#f9e8d9}
+body{background-color:var(--paper);background-image:radial-gradient(#a77d4210 .65px,transparent .7px);background-size:6px 6px}
+::selection{background:#f1cf87}
+.site-header{width:100%;height:88px;padding:0 max(36px,calc((100vw - 1280px)/2));margin:0;background:#963e30;color:#fff7df;border:0;border-bottom:3px solid #d9ac65;box-shadow:inset 0 -7px 0 #7c2d221f}
+.site-header .brand img{background:#fff6dc;border-radius:50%;padding:4px;width:46px;height:46px}
+.site-header .brand small{color:#e8c995}
+.site-header nav>a:hover{color:#ffe0a0}
+.site-header .nav-coupon{color:#fff1cf;border-color:#e6bd79;background:#813227}
+.site-header .nav-coupon:hover{background:#6b291f}
+.teacher-menu summary{color:#f1dabb}
+.teacher-menu>div{color:var(--ink);background:#fff9e9;border-color:#d9bd91;box-shadow:0 12px 35px #4e271622}
+.teacher-menu a:hover{background:#f1e2c9}
+.opening-scene{position:relative;isolation:isolate;overflow:clip;background:#faedce;border-bottom:1px solid #d6ba8c}
+.opening-scene:before{content:'';position:absolute;inset:0;background:url('assets/festival-hall.webp') center center/cover no-repeat;opacity:.66;z-index:-2;pointer-events:none}
+.opening-scene:after{content:'';position:absolute;inset:0;z-index:-1;pointer-events:none;background:linear-gradient(90deg,#fff4dc6b 0%,#fff5de78 37%,#fff5de00 65%)}
+.hero{min-height:635px;padding-top:56px;padding-bottom:70px;grid-template-columns:47% 53%}
+.hero-copy{padding:0 0 0 10px}
+.hero-year{color:#8f3f2a}
+.hero-year span{color:#fff3d7;background:#a74b33;box-shadow:2px 3px 0 #d5b577}
+.hero h1{color:#813426;text-shadow:0 1px 0 #fff6de}
+.title-spark{color:#ae8438}
+.hero-options{color:#63432d;margin-top:24px}
+.hero-options b{color:#ab8a5c}
+.hero-note{color:#755f44}
+.hero-location{color:#6f5940}
+.hero-location span{border-color:#b89d72}
+.hero-scene{position:relative;width:117%;max-width:none;flex:none;margin:58px 0 0 -7px;isolation:isolate}
+.hero-scene .hero-illustration{width:100%;max-width:100%;margin:0;position:relative;z-index:1}
+.art-note{color:#684e31;bottom:10px;right:22px;font-size:12px;background:#fff5dfaa;padding:2px 12px;border-radius:12px}
+.scroll-cue{color:#725b40;bottom:14px;letter-spacing:.03em}
+.scroll-cue>span{border-color:#ad905f;background:#fff7e9a6}
+.camp-intro{padding-top:43px;padding-bottom:32px;margin-bottom:0;border-bottom:0}
+.camp-choice b{color:#a24731}
+.culture-chapter{position:relative;isolation:isolate;overflow:clip;border-top:1px solid #d7bc8d80}
+.culture-chapter:before{content:'';position:absolute;inset:0;pointer-events:none;z-index:-1;background-image:radial-gradient(#976c3814 .75px,transparent .8px);background-size:5px 5px;opacity:.48}
+.chapter-jade{background-color:#fbf0d7}
+.chapter-sky{background-color:#f5e8d4}
+.chapter-lilac{background-color:#fff3df}
+.culture-chapter .camp-section{padding-block:75px;min-height:660px;gap:64px}
+.culture-chapter .camp-copy{position:relative;z-index:2}
+.camp-copy h2{color:#853b2c}
+.chapter-jade .eyebrow{color:#416675}
+.section-number{color:#ab773f;border-color:#cba574}
+.camp-facts{color:#78593d}
+.simple-features li{border-color:#d6ba8d}
+.scene-controls{border-color:#ccb594;color:#775e46;display:flex;position:relative;inset:auto;padding-top:7px}
+.scene-controls .text-control{color:#8d412e}
+.scene-eyebrow{font-size:13px;font-weight:750;text-align:center;letter-spacing:.14em;color:#7b633f;margin-bottom:15px}
+/* Each round show lamp contains the lesson it introduces. No hanging spotlights. */
+.lights-visual{height:auto;padding:0;align-self:center}
+.lamp-rack{position:relative;inset:auto;width:100%;height:auto;display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:11px;perspective:none;margin:0;align-items:start;z-index:2}
+.lamp,.lamp:nth-child(n){height:auto;max-width:none;margin:0;border:0;border-radius:0;background:none;transform:none;display:flex;flex-direction:column;align-items:center;padding:0;min-width:0}
+.lamp-orb{display:block;overflow:hidden;width:100%;max-width:none;aspect-ratio:1;height:auto;margin:0;border:3px solid #a6936a;border-radius:50%;background:#e3d3ac;box-shadow:inset 0 0 0 3px #fff5d7;transition:border-color .5s,box-shadow .5s,background .5s}
+.lamp-picture{display:block;position:absolute;inset:0;background-image:none;background-size:100% 100%;background-position:center;background-repeat:no-repeat;filter:saturate(.4);opacity:.6;transition:filter .6s,opacity .6s}
+.lamp-number{position:absolute;right:3px;bottom:1px;font-size:9px;font-weight:800;color:#765336;background:#fff7dfdb;border-radius:50%;width:17px;height:17px;line-height:17px}
+.lamp-label{font-size:13px;font-weight:800;line-height:1.55;white-space:nowrap;margin-top:9px;color:#79613d;letter-spacing:0}
+.lamp.is-lit .lamp-orb{background:#fff5bc;border-color:#bc964c;box-shadow:inset 0 0 0 2px #fffce3,0 0 18px #e0b34348}
+.lamp.is-lit .lamp-picture{filter:none;opacity:1}
+.lamp[aria-pressed=true] .lamp-orb{border-color:#56816a;background:#fcffd9;box-shadow:0 0 0 3px #afc992,0 0 25px #efd06a9c,inset 0 0 0 3px #fffbe5}
+.lamp[aria-pressed=true] .lamp-label{color:#385d45}
+.lamp:hover .lamp-orb{transform:translateY(-2px)}
+.lamp:focus-visible{outline-offset:5px;border-radius:50% 50% 4px 4px}
+.story-frame{width:100%;aspect-ratio:1;background-size:100% 100%;background-repeat:no-repeat;position:relative;pointer-events:none}
+.culture-frame,.drone-frame,.lego-frame,.lego-story-frame,.sprite-drone{background-image:none}
+.culture-frame,.drone-frame,.lego-frame,.lego-story-frame{background-size:100% 100%;background-position:center}
+.story-assets-drone-duel .dragon-sprite{background-image:url('assets/drone-sprites.webp');background-size:300% 100%;background-position:50% 0}
+.story-assets-drone-duel .monkey-sprite{background-image:url('assets/drone-monkey.webp?v=scope-restore-20261013');background-size:100% 100%;background-position:center}
+.scene-paused .frame-enter{animation:none!important;opacity:1;transform:none}
+#lightsFrame{margin:-9px auto -26px;max-width:480px;background-position:center}
+.story-frame.frame-enter{animation:frame-enter .65s var(--ease) both}
+.lights-visual>.scene-controls{position:relative;inset:auto}
+.experience-detail{border-color:#a9b777;min-height:185px;padding-left:19px;margin-top:23px}
+.experience-detail h3{color:#426046}
+.experience-detail p{max-width:none}
+.experience-learning,.learning-points{display:flex;flex-wrap:wrap;gap:5px 11px;padding:0;list-style:none;margin:11px 0 0;color:#816137;font-size:12px;font-weight:650;line-height:1.6}
+.experience-learning li:before,.learning-points li:before{content:'·';margin-right:5px;color:#a87e3b}
+/* Flight choreography reserves the upper court for drones and the sideline for pupils. */
+.drone-visual{height:auto;margin:0}
+.drone-stage{position:relative;aspect-ratio:1;isolation:isolate;margin:-20px 0 -12px}
+.drone-stage>.story-frame{position:absolute;inset:0}
+.drone-arena{display:none;position:absolute;inset:0;isolation:isolate}
+.duel-active .drone-arena{display:block}
+.duel-active #droneFrame{visibility:hidden}
+.arena-background{position:absolute;width:105%;max-width:none;left:-2.5%;top:8%;height:70%;object-fit:contain;z-index:0}
+.drone-arena .drone-pilot{position:absolute;left:8%;bottom:0;top:auto;width:60%;height:auto;z-index:4;background:none;animation:none!important}
+.drone-arena .dragon-flight{width:27%;top:26%;right:14%;left:auto;z-index:2;transform:rotate(4deg)}
+.drone-arena .monkey-flight{width:24%;top:15%;left:16%;right:auto;z-index:3;transform:rotate(-7deg)}
+.duel-active.is-playing .dragon-flight{animation:court-dragon 7s ease-in-out infinite}
+.duel-active.is-playing .monkey-flight{animation:court-monkey 7s ease-in-out infinite}
+@keyframes court-dragon{0%,100%{transform:translate(0,0) rotate(4deg)}35%{transform:translate(-38%,10%) rotate(-10deg)}70%{transform:translate(-3%,-12%) rotate(5deg)}}
+@keyframes court-monkey{0%,100%{transform:translate(0,0) rotate(-7deg)}35%{transform:translate(25%,-7%) rotate(8deg)}70%{transform:translate(45%,28%) rotate(-4deg)}}
+.story-step-caption,.lego-step-caption{display:flex;align-items:center;gap:16px;position:relative;min-height:88px;padding:0 5px}
+.story-step-caption>span,.lego-step-caption>span{font-family:Georgia,serif;font-style:italic;font-size:34px;color:#ab7841;border-right:1px solid #d2b692;padding-right:15px;line-height:1.2;flex-shrink:0}
+.story-step-caption b,.lego-step-caption b{font-size:18px;line-height:1.5;color:#70452e}
+.story-step-caption p,.lego-step-caption p{font-size:14px;color:#796451;line-height:1.8;margin-top:4px}
+.story-steps,.lego-steps{display:flex;justify-content:space-between;gap:7px;margin:13px 0 14px}
+.story-steps button,.lego-steps button{position:relative;flex:1;padding:10px 0 5px;border-top:3px solid #d9c4a4;text-align:center;font-size:12px;color:#82684c;font-weight:700;min-height:42px;line-height:1.5}
+.story-steps button[aria-pressed=true],.lego-steps button[aria-pressed=true]{border-top-color:#a7442e;color:#963b26}
+.story-steps button.is-complete,.lego-steps button.is-complete{border-top-color:#b89260;color:#80603c}
+.story-steps button:hover,.lego-steps button:hover{color:#963b26;background:#e8d0a733}
+.drone-visual>.scene-controls{position:relative;inset:auto}
+.lego-visual{padding:0}
+.lego-wash{display:none}
+.lego-frame{margin:-22px 0 -20px;}
+.lego-visual .scene-controls{border-color:#ccb594}
+/* Information has a quieter paper treatment after the illustrated chapters. */
+.two-day{margin-block:40px 64px}
+.two-day-mark{color:#b38449}
+.schedule-section{background:#f2e6d0;border-block:1px solid #dfcba8}
+.filter-group button{border-color:#cdb795}
+.date-cell{color:#88745e}.date-cell.is-event{background:#e8d2a5}.date-cell[aria-pressed=true]{background:#a34831;color:white}
+.date-dots i.drone-dot{background:#50768c}
+.calendar-detail,.calendar-course,.comparison-list,.compare-row{border-color:#d3bfa0}
+.compare-row:hover{background:#ead4af70}.compare-arrow{color:#9e713f}
+.ticket-art{background:#a74130;color:#fff3d6;border:2px solid #d5aa64;box-shadow:7px 8px 0 #e9cf9e}
+.ticket-art:before{border-right-color:#d5aa64}.ticket-art:after{border-left-color:#d5aa64}.ticket-art>i{border-color:#e2c080}
+.faq-categories button[aria-pressed=true]{background:#efdec0}.faq-list summary:after{color:#a17745}
+.contact-section{background:#f0dfbf;border-block:1px solid #dac095}
+.contact-visual img{border-radius:10px 70px 10px 10px;border:4px solid #fff4de}
+.site-footer{border-color:#dbc7a5}
+.mobile-bar{background:#fff4dfea;border-color:#d5bb91}.mobile-bar a{border-color:#cbb086}
+/* The poster and the illustrated learning sequence are both visible in course details. */
+dialog{width:min(1040px,calc(100% - 40px));background:#fff9ec;color:var(--ink);border-color:#d3b687}
+.dialog-toolbar{background:#963e30;color:#fff1d0;border-color:#b96f45}
+.dialog-toolbar button{color:#fff1d0}
+.dialog-inner{padding:32px 38px 38px}
+.dialog-inner h2{color:#813729}
+.dialog-course-layout{display:grid;grid-template-columns:minmax(0,1.6fr) minmax(200px,1fr);gap:28px;align-items:start}
+.dialog-course-main{min-width:0}
+.dialog-poster{margin:0;position:sticky;top:75px}
+.dialog-poster img{width:100%;height:auto;border:5px solid #fff;border-radius:5px;box-shadow:0 5px 20px #6e432b15}
+.dialog-poster figcaption{font-size:12px;color:var(--muted);text-align:center;margin-top:10px}
+.dialog-poster a{display:block}
+.course-story-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:24px 19px;margin-block:22px 30px}
+.course-story-grid figure{margin:0;min-width:0}
+.course-story-grid .story-frame{margin:-8px 0 -9px;background-size:100% 100%}
+.course-story-grid img.story-frame{display:block;width:100%;height:auto;aspect-ratio:1;object-fit:contain;background:none}
+.course-story-grid figcaption{padding:0 6px}
+.course-story-grid h4,.course-story-grid b{font-size:16px;line-height:1.6;color:#7e442a;display:block}
+.course-story-grid p{font-size:13px;line-height:1.9;color:var(--muted);margin-top:6px}
+.course-story-grid small{font-size:12px;line-height:1.8;color:#836230;display:block;margin-top:7px}
+.dialog-facts{border-color:#ddc8a7}.dialog-event{background:#f4e5c9;border-color:#dac19a}
+@media(min-width:1500px){.hero{min-height:690px}.hero-scene{width:121%}.opening-scene:before{background-size:100% 100%}}
+@media(max-width:1100px){
+ .site-header{padding-inline:25px}.hero{min-height:590px;padding-top:45px}.hero-scene{width:118%;margin-left:0}.art-note{bottom:14px;right:0}
+ .culture-chapter .camp-section{gap:36px;padding-block:64px;min-height:600px}
+ .lamp-rack{gap:8px}.lamp-label{font-size:11px}.lamp-orb{border-width:3px}
+ .experience-detail{min-height:188px}.story-step-caption b,.lego-step-caption b{font-size:17px}.story-step-caption p,.lego-step-caption p{font-size:13px}
+ .story-steps button,.lego-steps button{font-size:11px}
+}
+@media(max-width:850px){
+ .site-header{height:80px}.site-header nav{top:80px;left:20px;right:20px;background:#fff5df;color:#653c28;border-color:#d9b478}
+ .site-header nav>a:hover{color:#a4472c}.teacher-menu summary{color:#653c28}.teacher-menu>div{background:#efdfbf}.site-header .nav-coupon{color:#fff0cd}
+ .hero{min-height:535px;padding-top:35px}.hero-copy{padding-left:0}.hero-scene{width:118%;margin-top:80px}
+ .hero h1{font-size:49px}.art-note{font-size:10px;bottom:23px}
+ .culture-chapter .camp-section{gap:28px;padding-block:57px;min-height:560px}
+ .lamp-rack{gap:6px}.lamp-label{font-size:10px;white-space:normal;max-width:40px}.lamp-number{font-size:8px;width:14px;height:14px;line-height:14px}
+ .scene-eyebrow{font-size:11px}.scene-controls{display:flex;font-size:10px}.scene-controls .text-control{font-size:11px;margin-left:0}
+ .experience-detail{min-height:220px}.experience-learning,.learning-points{font-size:11px;gap:4px 8px}
+ .story-step-caption,.lego-step-caption{gap:10px;min-height:105px}.story-step-caption b,.lego-step-caption b{font-size:16px}.story-step-caption p,.lego-step-caption p{font-size:12px}
+ .story-step-caption>span,.lego-step-caption>span{font-size:28px;padding-right:10px}.story-steps button,.lego-steps button{font-size:10px}
+ .dialog-course-layout{grid-template-columns:minmax(0,1.4fr) minmax(180px,1fr);gap:20px}.course-story-grid{grid-template-columns:1fr}
+}
+@media(max-width:600px){
+ .site-header{height:76px;padding-inline:20px}.site-header .brand img{width:38px;height:38px}.site-header nav{top:76px;left:12px;right:12px}
+ .opening-scene:before{background-size:auto 370px;background-position:64% bottom;opacity:.68}
+ .opening-scene:after{background:linear-gradient(180deg,#fff4da 0%,#fff4da 44%,#fff4da00 67%)}
+ .hero{grid-template-columns:1fr;padding:35px 20px 55px;min-height:0;overflow:visible}.hero-copy{padding:0 7px}.hero h1{font-size:55px}
+ .hero-year{margin-bottom:19px}.hero-year span{font-size:20px}.hero-options{margin-top:20px}
+ .hero-art{margin-top:7px;height:auto;min-height:270px;aspect-ratio:1.25;align-self:auto}
+ .hero-scene{margin:28px 0 0;width:110%;}.art-note{bottom:-1px;right:8%;font-size:10px}.scroll-cue{bottom:7px;font-size:9px}
+ .camp-intro{padding-block:35px 30px}.camp-choice{gap:8px}.camp-choice span{font-size:11px}
+ .culture-chapter .camp-section{padding-block:43px;min-height:0;gap:17px}
+ .lamp-rack{gap:9px}.lamp-label{font-size:11px;max-width:none;white-space:nowrap}.lamp-orb{border-width:3px}
+ .scene-eyebrow{font-size:12px}.lights-visual{height:auto;margin-top:8px!important;padding:0}
+ #lightsFrame{margin:-9px auto -20px;max-width:460px}
+ .experience-detail{min-height:160px;padding:14px 0 14px 17px}.experience-learning,.learning-points{font-size:12px;gap:5px 10px}
+ .drone-visual{height:auto;margin-top:8px}.drone-stage{margin:-9px 0 -8px}
+ .drone-arena .drone-pilot{width:60%;left:8%;bottom:0}.drone-arena .dragon-flight{width:27%;top:26%;right:14%}.drone-arena .monkey-flight{width:24%;top:15%;left:16%}
+ .story-step-caption,.lego-step-caption{min-height:90px;padding:0 5px;gap:13px}.story-step-caption b,.lego-step-caption b{font-size:17px}.story-step-caption p,.lego-step-caption p{font-size:13px}
+ .story-steps button,.lego-steps button{font-size:11px}.lego-frame{margin:-14px 0 -17px}.lego-visual{margin-top:0}
+ .scene-controls{display:flex;font-size:11px}.scene-controls .text-control{font-size:12px;min-height:42px}
+ .two-day{margin-block:30px 45px}.dialog-inner{padding:25px 21px 30px}
+ dialog{max-width:calc(100% - 18px);width:calc(100% - 18px)}.dialog-course-layout{grid-template-columns:1fr;gap:25px}.dialog-poster{position:static;max-width:410px;margin-inline:auto}
+ .course-story-grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:20px 10px;margin-block:20px}.course-story-grid h4,.course-story-grid b{font-size:14px}.course-story-grid p{font-size:12px}.course-story-grid small{font-size:11px}
+}
+@media(max-width:370px){.hero h1{font-size:48px}.hero-art{min-height:240px}.hero-options{font-size:14px}.lamp-rack{gap:6px}.lamp-label{font-size:10px}.scene-controls{font-size:10px}.scene-controls .text-control{font-size:11px}.story-steps button,.lego-steps button{font-size:10px}.course-story-grid{grid-template-columns:1fr}}
+.experience-points,.story-learning-points{display:flex;flex-wrap:wrap;gap:5px 10px;list-style:none;padding:0;margin-top:11px;color:#816137;font-size:12px;font-weight:650;line-height:1.7}
+.experience-points li:before,.story-learning-points li:before{content:'·';margin-right:5px;color:#a87e3b}
+.course-story-grid .lego-frame{margin:-8px 0 -9px}
+@media(max-width:600px){.dialog-poster{order:-1}.dialog-subtitle{margin-bottom:22px}.dialog-poster img{max-height:510px;width:auto;max-width:100%;margin-inline:auto}}
+/* The lamp thumbnail reads clearly before its larger scene is revealed. */
+.lamp-picture{transform:scale(1.22);transform-origin:center}
+/* The backdrop begins behind the illustration on a narrow screen. */
+@media(max-width:600px){.hero-location{position:relative;z-index:3;display:inline-block;background:#fff4dccc;padding:2px 5px;margin-left:-5px;border-radius:4px}}
+/* A bright welcome: cream gold leaves the mascots and coral accents in focus. */
+.site-header{background:#ffe8b4;color:#8a3829;border-bottom:2px solid #e8ba68;box-shadow:inset 0 -6px 0 #f3d89455}
+.site-header .brand img{background:#fff5d8}
+.site-header .brand small{color:#aa643c}
+.site-header nav>a:hover{color:#cb5338}
+.site-header .nav-coupon{background:#d95e42;color:#fff9e9;border-color:#d95e42}
+.site-header .nav-coupon:hover{background:#bf4931;color:#fff9e9}
+.teacher-menu summary{color:#874a31}
+.nav-toggle{color:#8a3829}
+.contact-section{background:#fff9f0;border-color:#ead9c4}
+.contact-section .classroom{border-color:#ead9c4}
+.contact-section .button{background:#c64e33;color:#fffdf3}
+.contact-section .button:hover{background:#af412b}
+@media(max-width:850px){.site-header nav{background:#fff4d7}.site-header .nav-coupon{color:#fff9e9}}
+.site-header .nav-coupon,.hero .button{background:#c64e33;border-color:#c64e33;color:#fffdf3}
+.site-header .nav-coupon:hover,.hero .button:hover{background:#af412b;border-color:#af412b}
+.contact-visual{padding:0;align-self:center}
+.contact-visual img{width:100%;height:auto;aspect-ratio:1.5;object-fit:contain;border:0;border-radius:0;background:transparent;filter:none}
+.contact-visual>span{color:#795640;text-align:center;margin-top:13px;transform:none;font-size:13px;letter-spacing:.02em}
+@media(max-width:600px){.contact-visual>span{font-size:12px;margin-top:8px}.contact-grid{gap:28px}}
+/* A single painted camp world shares one perspective and ground plane. */
+.opening-scene.hero-world{background:#fff8e7}
+.opening-scene.hero-world:before,.opening-scene.hero-world:after{display:none}
+.hero-world .hero{width:100%;max-width:none;min-height:clamp(570px,50vw,800px);grid-template-columns:44% 56%;padding:48px max(48px,calc((100vw - 1240px)/2)) 66px}
+.hero-world .hero-copy{padding:0;max-width:480px}
+.hero-world .hero-art,.hero-world .hero-scene{position:static;isolation:auto;margin:0;width:auto;max-width:none;align-self:stretch}
+.hero-world .hero-scene .hero-illustration{position:absolute;inset:0;width:100%;height:100%;max-width:none;object-fit:cover;margin:0;z-index:-1}
+.hero-world .hero h1{color:#a23826}
+.hero-world .hero-note{max-width:440px}
+.hero-world .art-note{right:5%;bottom:30px;background:#fff9e2e3;transform:none}
+.hero-world .scroll-cue{left:24%;bottom:15px;background:#fff8e8ee;border-radius:28px;padding:5px 14px 5px 6px}
+.hero-world .hero-location{display:block;width:max-content;max-width:100%;background:#fff8e8ee;border-radius:5px;padding:5px 8px;margin-left:-8px;color:#73573b}
+@media(max-width:1100px){.hero-world .hero{padding-inline:32px;grid-template-columns:43% 57%;min-height:580px}.hero-world .hero-copy{max-width:390px}.hero-world .hero-note{max-width:330px}}
+@media(min-width:601px) and (max-width:850px){.hero-world .hero{padding-inline:30px;min-height:560px;grid-template-columns:42% 58%}.hero-world .hero h1{font-size:44px}.hero-world .hero-options{font-size:14px}.hero-world .hero-note{font-size:13px;max-width:280px}.hero-world .art-note{font-size:10px;right:4%;bottom:43px}.hero-world .scroll-cue{left:50%;font-size:10px}}
+@media(min-width:701px) and (max-width:1100px){
+ .hero-world .hero{column-gap:0;grid-template-columns:minmax(0,42fr) minmax(0,58fr);padding-block:38px 75px;min-height:max(512px,66.6667vw)}
+ .hero-world .hero:before{content:'';position:absolute;inset:0;z-index:0;pointer-events:none;background:linear-gradient(90deg,#fff8e785,#fff8e73d 28%,transparent 43%)}
+ .hero-world .hero-art,.hero-world .hero-scene{position:static;display:block;isolation:auto;width:auto;height:auto;min-height:0;aspect-ratio:auto;overflow:visible;mask-image:none}
+ .hero-world .hero-scene .hero-illustration{inset:0 0 auto;bottom:auto;width:100%;height:auto;max-width:none;object-fit:contain;z-index:-1;mask-image:linear-gradient(180deg,#000 95%,transparent)}
+ .hero-world .art-note{position:absolute;right:4%;bottom:24px;display:block;width:max-content;max-width:52%;margin:0;font-size:10px;background:#fff9e2e8;padding:5px 10px}
+ .hero-world .hero-location{background:#fff8e8e6;padding:5px 8px;margin-left:-8px}
+ .hero-world .scroll-cue{left:24%;bottom:12px;background:#fff8e8ee;font-size:10px}
+}
+@media(max-width:700px){
+ .hero-world .hero{min-height:0;grid-template-columns:1fr;padding:32px 20px 47px;background:#fff8e7}
+ .hero-world .hero-copy{max-width:none;padding-inline:7px}.hero-world .hero h1{font-size:55px}
+ .hero-world .hero-note{font-size:15px;max-width:340px}.hero-world .hero-options{font-size:16px}
+ .hero-world .hero-art{position:relative;display:block;aspect-ratio:auto;height:auto;min-height:0;width:calc(100% + 40px);margin:17px -20px 0}
+ .hero-world .hero-scene{position:relative;isolation:isolate;overflow:hidden;width:100%;aspect-ratio:1.28}
+ .hero-world .hero-scene .hero-illustration{position:absolute;top:0;bottom:auto;left:auto;right:0;width:156.25%;height:100%;max-width:none;object-fit:contain;z-index:0;mask-image:linear-gradient(180deg,transparent,#000 4%,#000 99%,transparent)}
+ .hero-world .art-note{position:relative;right:auto;bottom:auto;display:block;width:max-content;max-width:90%;margin:5px auto 0;font-size:11px;padding:3px 10px}
+ .hero-world .scroll-cue{left:50%;bottom:8px;font-size:10px;background:transparent;padding:0}
+ .hero-world .hero-location{background:transparent;margin-left:0;padding:0}
+}
+@media(max-width:370px){.hero-world .hero h1{font-size:48px}.hero-world .hero-options{font-size:14px}}
+/* Course names and outcomes make the program overview actionable. */
+.named-camps{grid-template-columns:minmax(0,.85fr) minmax(0,1.6fr);gap:28px 40px;align-items:center}
+.named-camps .camp-choice{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:24px;margin:0;align-items:stretch}
+.named-camps .camp-choice a{display:flex;flex-direction:column;align-items:flex-start;justify-content:flex-start;gap:6px;min-width:0;border-left:2px solid #dbbf8d;padding-left:17px}
+.named-camps .camp-choice small{display:block;font-size:14px;font-weight:650;color:#8b6240;margin:0;line-height:1.5}
+.named-camps .camp-choice b{font-size:22px;color:#963e2b;line-height:1.35;letter-spacing:0}
+.named-camps .camp-choice span{font-size:14px;line-height:1.7;font-weight:550;color:#735b44}
+.named-camps .intro-note{font-size:14px;grid-column:1/-1;line-height:1.8}
+.named-camps .intro-note a{color:#9d402c;text-decoration:underline;text-underline-offset:4px;margin-left:10px}
+@media(max-width:1100px){.named-camps{grid-template-columns:1fr;gap:22px}.named-camps .intro-note{justify-self:start}}
+@media(max-width:600px){
+ .named-camps .camp-choice{grid-template-columns:1fr;gap:0;width:100%}
+ .named-camps .camp-choice a{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:4px 12px;border-left:0;border-bottom:1px solid #e2ceb0;padding:16px 0}
+ .named-camps .camp-choice small{grid-column:2;grid-row:1/3;align-self:center;font-size:13px}
+ .named-camps .camp-choice b{grid-column:1;font-size:20px}.named-camps .camp-choice b br{display:none}
+ .named-camps .camp-choice span{grid-column:1;font-size:14px}
+ .named-camps .intro-note a{display:block;margin-left:0}
+}
