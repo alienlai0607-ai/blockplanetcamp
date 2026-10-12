@@ -1907,8 +1907,10 @@ function junkbotWriteAuthorization(p, campus) {
     return junkbotResponse(campus, { success: false, authorized: false, code: 'PROTOCOL_REQUIRED', error: '請使用全國賽事新版控制台，舊版操作已拒絕' });
   }
   const expected = PropertiesService.getScriptProperties().getProperty('JUNKBOT_NATIONAL_PASSWORD');
-  if (!expected || String(expected).trim().length < 12 || expected === JUNKBOT_CONTROL_PASSWORD) {
-    return junkbotResponse(campus, { success: false, authorized: false, code: 'NATIONAL_PASSWORD_NOT_CONFIGURED', error: '全國賽事控制密碼尚未安全設定：請管理員在 Apps Script「專案設定 → 指令碼屬性」新增 JUNKBOT_NATIONAL_PASSWORD，設定至少 12 字元的專用密碼' });
+  // The organizer may explicitly select the existing staff passcode in this property.
+  // A missing property never falls back to the legacy passcode.
+  if (!expected || (String(expected).trim().length < 12 && expected !== JUNKBOT_CONTROL_PASSWORD)) {
+    return junkbotResponse(campus, { success: false, authorized: false, code: 'NATIONAL_PASSWORD_NOT_CONFIGURED', error: '全國賽事控制密碼尚未設定：請管理員在 Apps Script「專案設定 → 指令碼屬性」設定 JUNKBOT_NATIONAL_PASSWORD，使用主辦單位指定的賽務通行碼或至少 12 字元的自訂密碼' });
   }
   if (String(p.password || '') !== expected) {
     return junkbotResponse(campus, { success: false, authorized: false, code: 'UNAUTHORIZED', error: '比賽單位密碼不正確' });
