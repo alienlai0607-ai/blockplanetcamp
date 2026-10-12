@@ -67,7 +67,7 @@ body{background-color:var(--paper);background-image:radial-gradient(#a77d4210 .6
 .story-assets-lights .culture-frame,.story-assets-lights .lamp-picture{background-image:url('assets/culture-story.webp?v=acting-20261013')}
 .drone-frame,.lego-frame,.lego-story-frame{background-size:100% 100%;background-position:center}
 .story-assets-drone-duel .dragon-sprite{background-image:url('assets/drone-sprites.webp');background-size:300% 100%;background-position:50% 0}
-.story-assets-drone-duel .monkey-sprite{background-image:url('assets/drone-monkey.webp?v=acting-20261013');background-size:100% 100%;background-position:center}
+.story-assets-drone-duel .monkey-sprite{background-image:url('assets/drone-monkey.webp?v=scope-restore-20261013');background-size:100% 100%;background-position:center}
 .scene-paused .frame-enter{animation:none!important;opacity:1;transform:none}
 #lightsFrame{margin:-9px auto -26px;max-width:480px;background-position:0 100%}
 .story-frame.frame-enter{animation:frame-enter .65s var(--ease) both}
