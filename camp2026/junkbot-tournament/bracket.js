@@ -2,8 +2,64 @@
 'use strict';
 const originalBracketView = bracketView;
 const originalBracketDraw = drawBracketConnections;
-let bracketV2Mode = 'round';
+let bracketV2Mode = 'map';
 let bracketV2Round = null;
+let flowCompletedExpanded = false;
+let flowProgressEventKey = null;
+let flowProgressFrontierKey = null;
+
+// A round leaves the live route only after every result, including byes, is final.
+// Keep this helper independent from the UI so the same rule can be checked in QA.
+function flowProgressState(rounds, activeIds = []) {
+  const groups = Array.isArray(rounds) ? rounds : [];
+  const active = new Set(activeIds);
+  const main = groups.filter(round => round.stage !== 'bronze');
+  const finished = round => round.matches.length > 0 && round.matches.every(item => item.status === 'completed' && !active.has(item.id));
+  const completedPrefix = [];
+  for (const round of main) {
+    if (!finished(round)) break;
+    completedPrefix.push(round);
+  }
+  // The final remains an anchor when the main route is finished, even if bronze
+  // is still waiting for a decision on its separate branch.
+  const hiddenRounds = completedPrefix.slice(0, Math.max(0, main.length - 1));
+  const hidden = new Set(hiddenRounds);
+  const current = main.find(round => !finished(round))
+    || groups.find(round => round.stage === 'bronze' && !finished(round))
+    || main.at(-1) || groups.at(-1) || null;
+  return {
+    current,
+    currentIndex: groups.indexOf(current),
+    completedPrefix,
+    hiddenRounds,
+    visibleRounds: groups.filter(round => !hidden.has(round)),
+    allComplete: groups.length > 0 && groups.every(finished)
+  };
+}
+function flowResetProgressScroll() {
+  window.flowProgressScrollReset = (Number(window.flowProgressScrollReset) || 0) + 1;
+}
+function flowProgressIdentity() {
+  return `${campus}|${state.draw?.createdAt || ''}|${state.matches.map(item => item.id).sort().join(',')}`;
+}
+function flowSyncProgressView(progress) {
+  const identity = flowProgressIdentity();
+  if (flowProgressEventKey !== identity) {
+    if (flowProgressEventKey !== null) flowResetProgressScroll();
+    bracketV2Round = null;
+    flowCompletedExpanded = false;
+    flowProgressEventKey = identity;
+    flowProgressFrontierKey = null;
+  }
+  const frontier = progress.visibleRounds.filter(round => round.stage !== 'bronze').map(round => round.stage).join(',');
+  if (flowProgressFrontierKey !== null && flowProgressFrontierKey !== frontier && bracketV2Mode === 'map' && !flowCompletedExpanded) flowResetProgressScroll();
+  flowProgressFrontierKey = frontier;
+}
+function flowRoundCount(round) {
+  const played = round.matches.filter(item => item.resultType !== 'bye' && item.sourceMatchIds?.length !== 1);
+  return { total: played.length, done: played.filter(item => item.status === 'completed').length };
+}
+
 
 function flowRoundLabel(round) {
   if (round.stage === 'final') return '冠亞軍賽';
@@ -66,36 +122,58 @@ function flowToolbar() {
   </div>`;
 }
 bracketView = function(control) {
-  if (!state.matches.length) return originalBracketView(control);
+  if (!state.matches.length) {
+    flowProgressEventKey = null;
+    flowProgressFrontierKey = null;
+    flowCompletedExpanded = false;
+    bracketV2Round = null;
+    return originalBracketView(control);
+  }
   const rounds = flowOrderedRounds(mainRoundGroups());
   const bronze = stageMatches('bronze')[0];
   const allRounds = [...rounds, ...(bronze ? [{ stage: 'bronze', label: '季軍賽', matches: [bronze] }] : [])];
-  const current = allRounds.find(round => round.matches.some(item => activeMatchIds().includes(item.id)))
-    || allRounds.find(round => round.matches.some(item => item.status !== 'completed')) || rounds.at(-1);
+  const progress = flowProgressState(allRounds, activeMatchIds());
+  flowSyncProgressView(progress);
+  const current = progress.current;
   const selected = allRounds.find(round => round.stage === bracketV2Round) || current;
+  const visibleRounds = flowCompletedExpanded ? allRounds : progress.visibleRounds;
+  const mapRounds = visibleRounds.filter(round => round.stage !== 'bronze');
   const played = state.matches.filter(item => item.resultType !== 'bye' && item.sourceMatchIds?.length !== 1);
   const complete = played.filter(item => item.status === 'completed').length;
   const activeCount = activeMatches().length;
   const hasPlayed = complete > 0;
-  return `<section class="flow-bracket">
+  const currentCount = flowRoundCount(current);
+  const following = bracketV2Mode === 'map' && !flowCompletedExpanded;
+  const viewingPast = bracketV2Mode === 'round' && selected.stage !== current.stage;
+  return `<section class="flow-bracket" data-flow-frontier="${esc(current.stage)}" data-flow-following="${following}" data-flow-scroll-token="${Number(window.flowProgressScrollReset) || 0}">
     <div class="flow-heading"><div><span class="kicker">ROAD TO THE CHAMPIONSHIP · ${esc(CAMPUS[campus].short)}</span><h1>晉級之路</h1><p>${esc(currentTournamentTitle())}<span>／</span>${state.entries.length} 支隊伍<span>／</span>已完成 ${complete} / ${played.length} 場${activeCount ? `<span>／</span><b>${activeCount} 場準備或進行中</b>` : ''}</p></div>${flowToolbar()}</div>
-    <nav class="flow-rounds" aria-label="選擇比賽輪次">${allRounds.map((round,index) => {
-      const total = round.matches.filter(item=>item.resultType !== 'bye' && item.sourceMatchIds?.length !== 1).length;
-      const done = round.matches.filter(item=>item.status==='completed' && item.resultType !== 'bye' && item.sourceMatchIds?.length !== 1).length;
-      const live = round.matches.some(item=>activeMatchIds().includes(item.id));
-      return `<button data-flow-round="${esc(round.stage)}" aria-pressed="${selected.stage===round.stage}" class="${round.stage === 'bronze' ? 'bronze' : ''}"><span class="flow-step">${round.stage === 'bronze' ? '季' : String(index+1).padStart(2,'0')}</span><span><b>${esc(flowRoundLabel(round))}</b><small>${live ? '賽場已開啟' : done===total && total ? '全部完成' : `${done} / ${total} 場完成`}</small></span>${selected.stage===round.stage ? '<i>目前查看</i>' : ''}</button>`;
+    <div class="flow-progress-summary" role="status" aria-live="polite" aria-atomic="true">
+      <div><span class="flow-progress-dot" aria-hidden="true"></span><span class="flow-progress-label">${progress.allComplete ? '賽事已完成' : '目前進度'}</span><strong>${esc(flowRoundLabel(current))}</strong><span class="flow-progress-count">${progress.allComplete ? `全部 ${played.length} 場已完成` : `${currentCount.done} / ${currentCount.total} 場完成`}</span></div>
+      ${viewingPast || flowCompletedExpanded ? '<button data-flow-current>回到目前進度 <span aria-hidden="true">→</span></button>' : '<small>完成的輪次自動收起，隨時可展開</small>'}
+    </div>
+    ${progress.hiddenRounds.length ? `<aside class="flow-history" aria-label="已完成的比賽輪次">
+      <div class="flow-history-heading"><span><b>${flowCompletedExpanded ? '已展開' : '已收合'} ${progress.hiddenRounds.length} 輪</b><small>點選輪次查看全部賽果</small></span><button data-flow-history aria-expanded="${flowCompletedExpanded}" aria-controls="flow-bracket-route">${flowCompletedExpanded ? '收起已完成輪次' : '展開已完成輪次'} <span aria-hidden="true">${flowCompletedExpanded ? '−' : '+'}</span></button></div>
+      <div class="flow-history-rounds">${progress.hiddenRounds.map(round => { const count = flowRoundCount(round); return `<button data-flow-round="${esc(round.stage)}" aria-pressed="${bracketV2Mode === 'round' && selected.stage === round.stage}"><span aria-hidden="true">✓</span> ${esc(flowRoundLabel(round))}<small>${count.total} 場賽果</small></button>`; }).join('')}</div>
+    </aside>` : ''}
+    <nav class="flow-rounds" aria-label="選擇比賽輪次">${visibleRounds.map(round => {
+      const index = allRounds.indexOf(round);
+      const { total, done } = flowRoundCount(round);
+      const live = round.matches.some(item => activeMatchIds().includes(item.id));
+      const isCurrent = current.stage === round.stage;
+      const isSelected = bracketV2Mode === 'round' && selected.stage === round.stage;
+      return `<button data-flow-round="${esc(round.stage)}" aria-pressed="${isSelected}" ${isCurrent ? 'aria-current="step"' : ''} class="${round.stage === 'bronze' ? 'bronze' : ''} ${isCurrent ? 'flow-current-round' : ''}"><span class="flow-step">${round.stage === 'bronze' ? '季' : String(index + 1).padStart(2, '0')}</span><span><b>${esc(flowRoundLabel(round))}</b><small>${live ? '賽場已開啟' : done === total && total ? '全部完成' : `${done} / ${total} 場完成`}</small></span>${isCurrent ? `<i>${progress.allComplete ? '最終結果' : '目前進度'}</i>` : isSelected ? '<i>目前查看</i>' : ''}</button>`;
     }).join('')}</nav>
-    ${bracketV2Mode === 'round' ? `
-      <section class="flow-focus"><header><div><h2>${esc(flowRoundLabel(selected))}</h2><p>${selected.stage === 'bronze' ? '四強落敗的兩隊爭奪季軍。' : selected.stage === 'final' ? '最後一場對決，決定冠軍與亞軍。' : '核對場號、隊伍與選手；每張卡下方標示晉級去向。'}</p></div><span class="flow-key"><i></i> 比賽中 <b>勝</b> 已晉級</span></header>
+    <div id="flow-bracket-route">${bracketV2Mode === 'round' ? `
+      <section class="flow-focus"><header><div><h2>${esc(flowRoundLabel(selected))}${viewingPast ? '<span class="flow-viewing-label">目前查看</span>' : ''}</h2><p>${selected.stage === 'bronze' ? '四強落敗的兩隊爭奪季軍。' : selected.stage === 'final' ? '最後一場對決，決定冠軍與亞軍。' : '核對場號、隊伍與選手；每張卡下方標示晉級去向。'}</p></div><span class="flow-key"><i></i> 比賽中 <b>勝</b> 已晉級</span></header>
       <div class="flow-focus-grid">${[...selected.matches].sort((a,b)=>a.order-b.order).map(item=>flowCard(item,control)).join('')}</div></section>` : `
-      <div class="flow-map-caption"><span>由左向右晉級 → 冠軍</span><p>連線依實際對戰配對；點上方輪次可放大查看該輪。</p></div>
-      <div class="flow-scroll" tabindex="0" role="region" aria-label="完整晉級圖，可在圖內左右捲動">
-        <div class="flow-board" style="--flow-round-count:${rounds.length}">
+      <div class="flow-map-caption"><span>${following && progress.hiddenRounds.length ? `${esc(flowRoundLabel(mapRounds[0]))} → 冠軍` : '由左向右晉級 → 冠軍'}</span><p>${following && progress.hiddenRounds.length ? '已完成的前段輪次已收起；上方可展開或查看各輪賽果。' : '連線依實際對戰配對；點上方輪次可放大查看該輪。'}</p></div>
+      <div class="flow-scroll" id="flow-complete-map" tabindex="0" role="region" aria-label="${following && progress.hiddenRounds.length ? '目前進度晉級圖，已完成輪次可展開' : '完整晉級圖，可在圖內左右捲動'}">
+        <div class="flow-board" style="--flow-round-count:${mapRounds.length}">
           <svg class="flow-lines" aria-hidden="true"></svg>
-          ${rounds.map(round=>`<section class="flow-column"><h3>${esc(flowRoundLabel(round))}</h3><div class="flow-nodes">${round.matches.map(item=>flowCard(item,control,true)).join('')}</div></section>`).join('')}
+          ${mapRounds.map(round=>`<section class="flow-column ${current.stage === round.stage ? 'flow-current-column' : ''}" data-flow-stage="${esc(round.stage)}"><h3>${esc(flowRoundLabel(round))}${current.stage === round.stage ? `<span>${progress.allComplete ? '結果' : '目前'}</span>` : ''}</h3><div class="flow-nodes">${round.matches.map(item=>flowCard(item,control,true)).join('')}</div></section>`).join('')}
         </div>
       </div>
-      ${bronze ? `<section class="flow-bronze"><div><span>獨立支線</span><h3>季軍爭奪戰</h3><p>四強落敗的兩隊在此對決。</p></div>${flowCard(bronze,control)}</section>` : ''}`}
+      ${bronze ? `<section class="flow-bronze"><div><span>獨立支線${current.stage === 'bronze' ? ' · 目前進度' : ''}</span><h3>季軍爭奪戰</h3><p>四強落敗的兩隊在此對決。</p></div>${flowCard(bronze,control)}</section>` : ''}`}</div>
     ${state.championId ? `<div class="flow-champion"><span>🏆 本屆冠軍</span><strong>${esc(teamName(state.championId))}</strong><small>${esc(entry(state.championId)?.playerName || '')}</small></div>` : ''}
     <details class="flow-draw"><summary>查看抽籤與賽程設定<span>開賽前一次抽定，路線已鎖定</span></summary><div><p>所有對戰及輪空位置均於建立賽程時排定。輪空不會新增虛構對手；比賽結果以現場評審確認為準。</p><p>${esc(bronzeRule())}</p><p>抽籤時間：${esc(resultTime(state.draw?.createdAt))}${state.draw?.operatorName ? ` · 登錄：${esc(state.draw.operatorName)}` : ''}</p>${control ? `<button class="outline" data-action="redraw-bracket" ${hasPlayed || activeCount ? 'disabled' : ''}>重新抽籤</button><button class="outline" data-action="reset-bracket" ${hasPlayed || activeCount ? 'disabled' : ''}>重設賽程</button>` : ''}</div></details>
   </section>`;
@@ -107,25 +185,43 @@ function drawFlowConnections() {
     const columns = [...board.querySelectorAll('.flow-column')];
     const cards = [...board.querySelectorAll('[data-flow-match]')];
     const byId = new Map(cards.map(card => [card.dataset.flowMatch, card]));
+    const heights = new Map(cards.map(card => [card.dataset.flowMatch, card.getBoundingClientRect().height]));
+    const gap = Number.parseFloat(getComputedStyle(board).getPropertyValue('--flow-row-gap')) || 8;
     const positions = new Map();
-    const maxHeight = Math.max(90,...cards.map(card=>card.getBoundingClientRect().height));
-    const pitch = maxHeight + 24;
-    let height = 0;
-    columns.forEach((column,index) => {
+    // Pack complete source branches using their measured heights. A long team name
+    // expands only its own branch, while every parent stays centered on its sources.
+    const layoutBranch = (id, visiting = new Set()) => {
+      const ownHeight = heights.get(id) || 0;
+      const sourceIds = (match(id)?.sourceMatchIds || []).filter(source => byId.has(source) && !visiting.has(source));
+      const branch = new Map();
+      const centers = [];
       let bottom = 0;
-      [...column.querySelectorAll('[data-flow-match]')].forEach((card,order) => {
-        const item = match(card.dataset.flowMatch);
-        const sourceCenters = (item.sourceMatchIds || []).map(id=>positions.get(id)).filter(value=>Number.isFinite(value));
-        const center = sourceCenters.length ? sourceCenters.reduce((sum,value)=>sum+value,0)/sourceCenters.length : order*pitch+maxHeight/2;
-        const cardHeight = card.getBoundingClientRect().height;
-        const top = Math.max(0, center-cardHeight/2, bottom);
-        card.style.top = `${top}px`;
-        positions.set(item.id,top+cardHeight/2);
-        bottom = top+cardHeight+24;
-        height = Math.max(height,bottom);
+      sourceIds.forEach(source => {
+        const child = layoutBranch(source, new Set([...visiting, id]));
+        child.positions.forEach((center, childId) => branch.set(childId, center + bottom));
+        centers.push(branch.get(source));
+        bottom += child.height + gap;
       });
+      const center = centers.length ? centers.reduce((sum, value) => sum + value, 0) / centers.length : ownHeight / 2;
+      const shift = Math.max(0, ownHeight / 2 - center);
+      branch.forEach((value, childId) => branch.set(childId, value + shift));
+      branch.set(id, center + shift);
+      return { positions: branch, height: Math.max(bottom ? bottom - gap : 0, center + ownHeight / 2) + shift };
+    };
+    let height = 0;
+    const roots = cards.filter(card => !byId.has(match(card.dataset.flowMatch)?.nextMatchId));
+    [...roots, ...cards].forEach(card => {
+      const id = card.dataset.flowMatch;
+      if (positions.has(id)) return;
+      const branch = layoutBranch(id);
+      branch.positions.forEach((center, childId) => positions.set(childId, center + height));
+      height += branch.height + gap;
     });
-    columns.forEach(column=>{column.querySelector('.flow-nodes').style.height=`${Math.max(150,height)}px`;});
+    cards.forEach(card => {
+      const id = card.dataset.flowMatch;
+      card.style.top = `${positions.get(id) - heights.get(id) / 2}px`;
+    });
+    columns.forEach(column=>{column.querySelector('.flow-nodes').style.height=`${Math.max(72,height - gap)}px`;});
     const boardRect=board.getBoundingClientRect();
     const lines=[];
     state.matches.filter(item=>item.stage!=='bronze'&&item.nextMatchId).forEach(item=>{
@@ -145,13 +241,32 @@ scheduleBracketConnections = function() {
 window.addEventListener('resize', scheduleBracketConnections);
 document.addEventListener('visibilitychange', () => { if (!document.hidden) scheduleBracketConnections(); });
 document.addEventListener('click', event => {
-  const mode=event.target.closest('[data-flow-mode]'),round=event.target.closest('[data-flow-round]');
-  if(!mode&&!round)return;
-  if(mode && ['round', 'map'].includes(mode.dataset.flowMode))bracketV2Mode=mode.dataset.flowMode;
-  if(round){bracketV2Round=round.dataset.flowRound;bracketV2Mode='round';}
-  if(role==='control')renderControl();else renderAudience();
+  const mode = event.target.closest('[data-flow-mode]');
+  const round = event.target.closest('[data-flow-round]');
+  const history = event.target.closest('[data-flow-history]');
+  const current = event.target.closest('[data-flow-current]');
+  if (!mode && !round && !history && !current) return;
+  if (mode && ['round', 'map'].includes(mode.dataset.flowMode)) {
+    bracketV2Mode = mode.dataset.flowMode;
+    if (bracketV2Mode === 'round') { bracketV2Round = null; flowCompletedExpanded = false; }
+  }
+  if (round) { bracketV2Round = round.dataset.flowRound; bracketV2Mode = 'round'; flowCompletedExpanded = false; }
+  if (history) {
+    flowCompletedExpanded = !flowCompletedExpanded;
+    bracketV2Mode = 'map';
+    bracketV2Round = null;
+    flowResetProgressScroll();
+  }
+  if (current) {
+    flowCompletedExpanded = false;
+    bracketV2Round = null;
+    bracketV2Mode = 'map';
+    flowResetProgressScroll();
+  }
+  if (role === 'control') renderControl(); else renderAudience();
 });
 
+document.addEventListener('DOMContentLoaded', () => {
 if(DEMO && new URLSearchParams(location.search).get('preview')==='bracket') {
   (async()=>{
     role='control';await enterApp(EVENT_SCOPE);
@@ -163,3 +278,5 @@ if(DEMO && new URLSearchParams(location.search).get('preview')==='bracket') {
     controlView='bracket';renderControl();
   })().catch(error=>showToast(error.message,true));
 }
+
+});

@@ -1,0 +1,120 @@
+/* Clear, compact workspaces: only the assigned judge's work is presented. */
+.judge-role-strip { display:flex; align-items:center; flex-wrap:wrap; gap:10px 18px; padding:10px clamp(18px,3vw,48px); background:#edf7fc; border-bottom:1px solid #c9dfe9; color:#21495d; }
+.judge-role-strip[hidden] { display:none; }
+.judge-role-strip > div { display:flex; align-items:center; flex-wrap:wrap; gap:8px 12px; }
+.judge-role-strip > div > strong { font-size:14px; }
+.judge-role-strip > div > span:not(.judge-identity-dot) { color:#57707e; font-size:12px; }
+.judge-role-strip nav { display:flex; flex-wrap:wrap; gap:8px; }
+.judge-role-strip :is(a,button) { display:inline-flex; align-items:center; justify-content:center; gap:8px; min-height:38px; padding:7px 13px; border:1px solid #b6d3e2; border-radius:7px; color:#155c83; background:#fff; text-decoration:none; font-size:14px; font-weight:750; }
+.judge-role-strip :is(a,button):hover { background:#ddf0fa; border-color:#81b3cf; }
+.judge-role-strip :is(a,button) small { color:#5c7481; font-size:11px; font-weight:500; }
+.judge-role-strip > :is(a,button):last-child { margin-left:auto; font-size:12px; }
+.judge-identity-dot { display:grid; place-items:center; width:30px; height:30px; border-radius:8px; color:#fff; background:#196b96; font-weight:800; }
+.judge-desk-mode .national-control .topbar nav { display:none; }
+.judge-desk-mode .national-control .topbar .brand { cursor:default; }
+.judge-desk-mode .national-control .topbar { position:relative; }
+.judge-desk-mode .national-control .control-view:not(.bracket-layout) { width:100%; max-width:1160px; padding:22px clamp(16px,3vw,32px) 48px; margin-inline:auto; }
+.judge-desk { color:#203f50; min-width:0; }
+.judge-desk-heading { display:flex; justify-content:space-between; align-items:center; gap:16px; margin-bottom:15px; }
+.judge-eyebrow { color:#527487; font-size:11px; font-weight:800; letter-spacing:.08em; }
+.judge-desk-heading h1 { margin:3px 0 4px; color:#173e54; font-size:30px; line-height:1.3; }
+.judge-desk-heading p { margin:0; color:#5d7280; font-size:13px; }
+.judge-desk-heading button { flex-shrink:0; min-height:40px; font-size:13px; }
+.judge-summary { position:relative; display:flex; flex-wrap:wrap; gap:10px 26px; padding:13px 16px 17px; border:1px solid #d4e2e9; border-radius:9px; background:#fff; overflow:hidden; font-size:13px; color:#5c7180; }
+.judge-summary b { color:#1e5775; font-size:20px; font-variant-numeric:tabular-nums; }
+.judge-progress { position:absolute; inset:auto 0 0; height:4px; background:#e7f0f5; }
+.judge-progress i { display:block; height:100%; background:#2c8cb2; }
+.judge-next { display:grid; grid-template-columns:minmax(130px,.8fr) minmax(220px,1.4fr) auto; align-items:center; gap:16px; margin:17px 0 22px; padding:18px 20px; border:1px solid #9dcce1; border-left:5px solid #2486b1; border-radius:10px; background:#edf8ff; }
+.judge-next.is-active { background:#fff8e5; border-color:#e3c47b; border-left-color:#b68020; }
+.judge-next-meta { display:flex; flex-direction:column; gap:5px; }
+.judge-next-meta > span { color:#476f87; font-size:11px; font-weight:800; }
+.judge-next-meta > b { font-size:16px; }
+.judge-next-meta > small { font-size:12px; color:#597382; }
+.judge-next-teams { display:grid; grid-template-columns:minmax(0,1fr) 25px minmax(0,1fr); gap:10px; text-align:center; align-items:center; }
+.judge-next-teams strong { font-size:22px; overflow-wrap:anywhere; }
+.judge-next-teams > span { color:#73909f; font-size:12px; font-weight:700; }
+.judge-next > button { min-height:44px; font-size:13px; white-space:nowrap; }
+.judge-queue > header { display:flex; align-items:center; gap:12px; justify-content:space-between; margin-bottom:9px; }
+.judge-queue h2 { margin:0; font-size:17px; }
+.judge-queue header > span { color:#69818e; font-size:12px; }
+.judge-match-list { border:1px solid #d8e3e9; border-radius:9px; overflow:hidden; background:#fff; }
+.judge-match-row { display:grid; grid-template-columns:130px minmax(0,1fr) 136px; align-items:center; gap:14px; min-height:62px; padding:9px 15px; border-bottom:1px solid #e5ecf0; }
+.judge-match-row:last-child { border-bottom:0; }
+.judge-match-label { display:flex; flex-direction:column; align-items:flex-start; gap:3px; min-width:0; }
+.judge-match-label b { font-size:13px; font-variant-numeric:tabular-nums; }
+.judge-match-label small { color:#67808e; font-size:11px; }
+.judge-match-teams { display:grid; grid-template-columns:minmax(0,1fr) 24px minmax(0,1fr); align-items:center; gap:10px; min-width:0; text-align:center; }
+.judge-match-teams > span { min-width:0; overflow-wrap:anywhere; font-size:15px; font-weight:750; }
+.judge-match-teams > i { color:#8295a0; font-style:normal; font-size:10px; }
+.judge-match-teams .is-winner { color:#216b4c; }
+.judge-match-action { display:flex; justify-content:flex-end; align-items:center; min-width:0; }
+.judge-row-button { min-height:36px; padding:7px 12px; border:1px solid #b9d2df; border-radius:6px; color:#205b7a; background:#f4faff; font-size:12px; font-weight:750; white-space:nowrap; }
+.judge-row-button:hover:not(:disabled) { background:#dff1fb; border-color:#80b8d4; }
+.judge-row-button:disabled { color:#81919a; background:#f3f5f6; border-color:#e0e6e9; cursor:not-allowed; opacity:1; }
+.judge-result { color:#26734f; font-size:12px; font-weight:750; text-align:right; overflow-wrap:anywhere; }
+.judge-wait { color:#728692; font-size:11px; text-align:right; }
+.judge-fold { margin-top:13px; border:1px solid #d7e2e9; border-radius:9px; background:#fff; overflow:hidden; }
+.judge-fold > summary { padding:13px 16px; cursor:pointer; font-size:14px; font-weight:750; color:#435f70; }
+.judge-fold > summary span { margin-left:8px; color:#6c8491; font-size:12px; font-weight:500; }
+.judge-fold[open] > summary { border-bottom:1px solid #dce6ec; }
+.judge-fold > .judge-match-list { border:0; border-radius:0; }
+.judge-quiet { margin:0; padding:16px; color:#7b8d97; font-size:13px; }
+.judge-desk-note { color:#728491; font-size:12px; line-height:1.7; margin:18px 0 0; }
+.judge-desk-empty { margin:17px 0 22px; padding:24px; border:1px solid #d5e4ec; border-radius:9px; background:#f0f8fc; }
+.judge-desk-empty h2 { margin:0 0 8px; font-size:20px; color:#355e73; }
+.judge-desk-empty p { margin:0; font-size:13px; color:#6d8491; }
+.judge-extra-active { margin-bottom:18px; border:1px solid #e3c47b; border-radius:8px; background:#fff9eb; }
+.judge-extra-active > p { margin:12px 15px 0; font-size:12px; }
+.judge-chooser { max-width:860px; margin:28px auto; text-align:center; }
+.judge-chooser h1 { margin:8px 0 12px; color:#173e54; font-size:30px; }
+.judge-chooser > p { color:#617986; font-size:14px; line-height:1.7; }
+.judge-chooser-grid { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:15px; margin:28px 0 23px; }
+.judge-chooser-grid button { display:flex; flex-direction:column; gap:12px; padding:25px 20px; border:1px solid #bbd6e5; border-radius:11px; background:#f1f9fe; color:#195978; text-decoration:none; }
+.judge-chooser-grid button:hover { border-color:#66a7ca; background:#e1f2fc; }
+.judge-chooser-grid button > span { font-size:22px; font-weight:800; }
+.judge-chooser-grid strong { font-size:18px; }
+.judge-chooser-grid small { color:#607f90; font-size:12px; }
+.judge-admin-entry { display:inline-flex; min-height:44px; align-items:center; padding:10px 17px; border:1px solid #c9d9e2; border-radius:7px; background:#fff; color:#385b70; text-decoration:none; font-size:14px; font-weight:750; }
+.judge-role-strip :is(a,button):focus-visible,.judge-row-button:focus-visible,.judge-fold summary:focus-visible,.judge-chooser :is(a,button):focus-visible { outline:3px solid #f2bf46; outline-offset:3px; }
+@media(max-width:720px) {
+  .judge-role-strip { gap:9px; padding:10px 16px; }
+  .judge-role-strip > div { gap:7px; }
+  .judge-role-strip nav { order:3; width:100%; display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:6px; }
+  .judge-role-strip nav :is(a,button) { min-width:0; padding:8px 5px; font-size:13px; gap:5px; min-height:44px; }
+  .judge-role-strip nav :is(a,button) small { font-size:10px; }
+  .judge-role-strip > :is(a,button):last-child { min-height:38px; padding:6px 9px; }
+  .judge-desk-mode .national-control .topbar { padding:10px 16px; gap:10px; }
+  .judge-desk-mode .national-control .topbar .brand img { width:75px; }
+  .judge-desk-mode .national-control .topbar .brand strong { font-size:12px; }
+  .judge-desk-mode .national-control .topbar .top-actions { gap:7px; }
+  .judge-desk-mode .national-control .topbar #leaveControl { display:inline-flex; min-height:44px; padding:8px 12px; }
+  .judge-desk-heading { gap:10px; }
+  .judge-desk-heading h1 { font-size:26px; }
+  .judge-desk-heading p { font-size:12px; }
+  .judge-summary { gap:7px 14px; padding:12px 12px 15px; font-size:11px; }
+  .judge-summary b { font-size:18px; }
+  .judge-next { grid-template-columns:minmax(0,1fr); gap:13px; padding:15px; margin:14px 0 19px; }
+  .judge-next-meta { flex-direction:row; flex-wrap:wrap; align-items:center; gap:5px 10px; }
+  .judge-next-meta > span { width:100%; }
+  .judge-next-meta > small { margin-left:auto; }
+  .judge-next-teams { padding:4px 0; }
+  .judge-next-teams strong { font-size:24px; }
+  .judge-next > button { width:100%; }
+  .judge-match-row { grid-template-columns:minmax(0,1fr) 112px; gap:7px 8px; padding:10px 12px; }
+  .judge-match-label { grid-column:1 / -1; flex-direction:row; align-items:center; justify-content:space-between; }
+  .judge-match-teams { gap:4px; grid-template-columns:minmax(0,1fr) 19px minmax(0,1fr); }
+  .judge-match-teams > span { font-size:14px; }
+  .judge-row-button { min-height:44px; padding:8px 10px; }
+  .judge-queue header > span { font-size:11px; }
+  .judge-fold > summary { min-height:44px; }
+  .judge-chooser { margin:12px auto; }
+  .judge-chooser-grid { grid-template-columns:minmax(0,1fr); gap:10px; margin:22px 0; }
+  .judge-chooser-grid button { display:grid; grid-template-columns:1fr auto; align-items:center; gap:7px; padding:19px; text-align:left; }
+  .judge-chooser-grid small { grid-column:1 / -1; }
+}
+
+.judge-chooser-grid button { cursor:pointer; font:inherit; min-width:0; }
+.judge-chooser-grid button:disabled { cursor:wait; opacity:.55; }
+.judge-role-strip button { cursor:pointer; font-family:inherit; }
+.judge-admin-entry { cursor:pointer; font-family:inherit; }
+.judge-connection-note { color:#88651a; font-size:13px; }

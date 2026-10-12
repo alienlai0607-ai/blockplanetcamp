@@ -1,0 +1,24 @@
+.audience-progress-links { display:flex; align-items:center; justify-content:space-between; gap:12px; margin:0 0 14px; font-size:12px; color:#526b7c; }
+.audience-progress-links > span { font-weight:750; }
+.audience-progress-links a,.audience-return-progress a { color:#1c6388; font-weight:700; text-decoration:underline; text-underline-offset:3px; }
+#audienceView > .audience-bracket { margin-top:0; margin-bottom:24px; }
+.audience-return-progress { display:flex; justify-content:flex-end; margin:18px 0 10px; font-size:13px; }
+.audience-score-link { color:#1c6388; font-size:12px; white-space:nowrap; text-underline-offset:3px; }
+.audience-sync > span { margin-left:auto; }
+#audienceView { padding-top:18px; }
+.audience-bracket .flow-heading { margin-bottom:12px; }
+.audience-bracket .flow-heading .kicker { display:none; }
+.audience-bracket .flow-heading h1 { font-size:26px; margin:0 0 5px; }
+.audience-bracket .flow-heading p { font-size:12px; }
+.audience-bracket .flow-progress-summary { padding:9px 12px; margin-bottom:10px; }
+.audience-bracket .flow-rounds { margin-bottom:12px; }
+.audience-bracket .flow-map-caption { margin-bottom:8px; }
+@media(min-width:1001px) {
+  .audience-bracket .flow-heading > div:first-child { display:flex; align-items:center; flex-wrap:wrap; gap:8px 15px; }
+  .audience-bracket .flow-heading h1 { margin:0; }
+}
+#audienceProgress,#audienceScores,#audienceStage { scroll-margin-top:20px; }
+@media(max-width:560px) {
+  .audience-sync > span { margin-left:0; }
+  .audience-progress-links { margin-bottom:12px; }
+}

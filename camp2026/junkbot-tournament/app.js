@@ -523,7 +523,7 @@ function demoMatchPatch(payload) {
 async function apiPost(payload) {
   if (role !== 'control') throw new Error('觀眾模式無法修改賽事');
   if (payload.campus !== EVENT_SCOPE) throw new Error('賽事資料來源不符');
-  payload = { ...payload, protocolVersion: NATIONAL_PROTOCOL, judgeName: operatorName || (DEMO ? '演練賽務' : '') };
+  payload = { ...payload, protocolVersion: NATIONAL_PROTOCOL, judgeName: typeof judgeAuditName === 'function' ? judgeAuditName() : (operatorName || (DEMO ? '演練賽務' : '')) };
   if (!DEMO && payload.action !== 'junkbot-auth' && !nationalReady) {
     const readiness = await apiGet(EVENT_SCOPE);
     if (!readiness.success) throw new Error(readiness.error || '全國賽事後端尚未啟用');
@@ -838,11 +838,13 @@ function initAccess() {
   $('passwordPanel').addEventListener('submit', async (event) => {
     event.preventDefault();
     const button = event.target.querySelector('[type="submit"]');
+    if (button.disabled) return;
     operatorName = String($('controlOperator')?.value || '').trim();
     controlPassword = $('controlPassword').value;
     if (!operatorName) { $('controlOperator')?.reportValidity(); return; }
     button.disabled = true;
     button.textContent = '驗證中…';
+    $('backToRoles').disabled = true;
     try {
       if (!DEMO) {
         const result = await apiPost({ action: 'junkbot-auth', campus: EVENT_SCOPE, password: controlPassword });
@@ -855,7 +857,7 @@ function initAccess() {
       controlPassword = '';
       $('passwordError').textContent = error.message;
       $('passwordError').hidden = false;
-    } finally { button.disabled = false; button.textContent = '進入賽務控制台'; }
+    } finally { button.disabled = false; $('backToRoles').disabled = false; button.textContent = '驗證並選擇工作身分'; }
   });
   $('backToRoles').addEventListener('click', () => {
     role = null; controlPassword = ''; operatorName = '';
@@ -2615,7 +2617,7 @@ bindDynamicEvents();
 window.addEventListener('resize', scheduleBracketConnections);
 document.fonts?.ready.then(scheduleBracketConnections);
 window.addEventListener('beforeunload', (event) => {
-  if (role === 'control' && (pendingMutations || uiOperationPending || unsavedCampusStates.has(campus) || activeMatchIds().some(id => ['countdown', 'running'].includes(matchLive(id)?.status)))) {
+  if (role === 'control' && (pendingMutations || uiOperationPending || unsavedCampusStates.has(campus) || activeMatchIds().some(id => (typeof judgeCanHandleMatch !== 'function' || judgeCanHandleMatch(id)) && ['countdown', 'running'].includes(matchLive(id)?.status)))) {
     event.preventDefault();
     event.returnValue = '';
   }
@@ -2626,6 +2628,7 @@ if (DEMO) {
   banner.textContent = '演練模式 · 資料只保存在這個瀏覽器，不影響正式賽事';
   document.body.prepend(banner);
 }
+document.addEventListener('DOMContentLoaded', () => {
 // A local review link opens an isolated demo arena without touching live data.
 if (DEMO && new URLSearchParams(location.search).get('preview') === 'arena') {
   (async () => {
@@ -2657,3 +2660,5 @@ if (DEMO && ['dashboard','teams','records'].includes(new URLSearchParams(locatio
     controlView=new URLSearchParams(location.search).get('preview'); renderControl();
   })().catch(error=>showToast(error.message,true));
 }
+
+});

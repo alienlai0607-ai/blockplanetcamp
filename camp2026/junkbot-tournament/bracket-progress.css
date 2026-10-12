@@ -1,0 +1,46 @@
+/* Finished rounds can be recalled without occupying the live advancement route. */
+.flow-progress-summary { display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:8px 18px; margin:0 0 12px; padding:12px 14px; border:1px solid #b7d5e6; border-radius:8px; background:#eef7fc; color:#245a78; }
+.flow-progress-summary > div { display:flex; flex-wrap:wrap; align-items:center; gap:6px 10px; min-width:0; }
+.flow-progress-dot { width:8px; height:8px; flex-shrink:0; border-radius:50%; background:#2079a8; }
+.flow-progress-label { font-size:12px; font-weight:700; }
+.flow-progress-summary strong { font-size:17px; line-height:1.4; }
+.flow-progress-count { color:#496979; font-size:12px; }
+.flow-progress-summary > small { font-size:12px; color:#54717f; }
+.flow-progress-summary > button { padding:6px 9px; min-height:36px; color:#1c6287; border:1px solid #b3d1e2; border-radius:6px; background:#fff; font-size:12px; font-weight:700; white-space:normal; }
+.flow-history { margin:0 0 12px; padding:10px 12px; border:1px solid #dce5e8; border-radius:8px; background:#f7f9f9; }
+.flow-history-heading { display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:8px 12px; }
+.flow-history-heading > span { display:flex; align-items:baseline; flex-wrap:wrap; gap:5px 10px; }
+.flow-history-heading b { font-size:12px; color:#54675e; }
+.flow-history-heading small { font-size:11px; color:#718077; }
+.flow-history-heading > button { display:inline-flex; align-items:center; gap:10px; padding:6px 9px; min-height:36px; background:#fff; border:1px solid #c5d5cf; border-radius:6px; color:#365f4f; font-size:12px; font-weight:700; }
+.flow-history-heading > button > span { font-size:17px; line-height:1; }
+.flow-history-rounds { display:flex; flex-wrap:wrap; gap:5px; margin-top:8px; }
+.flow-history-rounds > button { display:flex; align-items:center; flex-wrap:wrap; gap:4px 6px; min-height:34px; padding:6px 8px; border:1px solid #d6e1db; border-radius:5px; background:#fff; color:#496757; font-size:12px; }
+.flow-history-rounds > button > small { color:#76837b; font-size:10px; }
+.flow-history-rounds > button[aria-pressed=true] { border-color:#2079a8; color:#145d84; background:#eef7fc; }
+.flow-rounds > button.flow-current-round:not([aria-pressed=true]) { border-color:#84b8d5; background:#f0f8fc; color:#245a78; }
+.flow-rounds > button.flow-current-round > i { background:#2079a8; color:#fff; }
+.flow-column.flow-current-column > h3 { display:flex; align-items:center; justify-content:space-between; gap:6px; border-color:#2079a8; color:#245a78; }
+.flow-column > h3 > span { font-size:10px; line-height:1.4; font-weight:600; padding:2px 5px; border-radius:4px; background:#e8f3fa; }
+.flow-viewing-label { display:inline-block; vertical-align:middle; margin-left:8px; padding:3px 6px; border:1px solid #d7e1e6; border-radius:4px; color:#6d7a80; font-size:10px; font-weight:500; }
+.flow-history button:hover, .flow-progress-summary > button:hover { border-color:#6e9caf; background:#f1f8fc; }
+@media(max-width:560px) {
+  .flow-progress-summary { padding:10px 11px; gap:8px; }
+  .flow-progress-summary strong { font-size:16px; }
+  .flow-progress-summary > small { font-size:11px; }
+  .flow-history-heading { align-items:flex-start; }
+  .flow-history-heading > span { flex:1 1 120px; }
+  .flow-history-heading > button { min-height:40px; }
+  .flow-history-rounds > button { min-height:40px; }
+}
+@media(pointer:coarse) { .flow-history button,.flow-progress-summary > button { min-height:44px; } }
+
+/* Keep the history handle as a slim left-to-right strip, rather than another panel. */
+@media(min-width:721px) {
+  .flow-history { display:flex; align-items:center; flex-wrap:wrap; gap:8px 12px; padding:8px 10px; }
+  .flow-history-heading { display:contents; }
+  .flow-history-heading > span { order:0; }
+  .flow-history-heading > span small { display:none; }
+  .flow-history-heading > button { order:2; margin-left:auto; }
+  .flow-history-rounds { order:1; margin:0; }
+}
