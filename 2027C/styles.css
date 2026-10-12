@@ -45,3 +45,29 @@ dialog{border:0;max-width:min(850px,calc(100% - 40px));width:100%;padding:0;bord
   .lights-section .camp-facts{grid-row:7;margin:5px 4px}
   .lights-section .camp-actions{grid-row:8;margin:0 4px}
 }
+
+/* One continuous, cross-month calendar on phones; desktop keeps both months. */
+#calendar .calendar-compact{display:none}
+@media(max-width:700px){
+  #calendar.schedule-section{padding:36px 0 40px}
+  #calendar .section-heading{display:block;margin-bottom:20px}
+  #calendar .section-heading>p{margin-top:12px}
+  #calendar .calendar-toolbar{gap:10px;margin-bottom:18px}
+  #calendar .filter-group{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px;width:100%}
+  #calendar .filter-group button{min-width:0;min-height:46px;padding:8px 6px;font-size:15px;line-height:1.5}
+  #calendar .calendar-layout{grid-template-columns:minmax(0,1fr);gap:20px}
+  #calendar .calendars{display:none}
+  #calendar .calendar-compact{display:block;width:calc(100% + 16px);margin-inline:-8px}
+  #calendar .compact-calendar-heading{margin:0 8px 12px}
+  #calendar .compact-calendar-heading h3{margin:0;font-size:22px;line-height:1.4}
+  #calendar .compact-calendar-heading p{margin:3px 0 0;font-size:16px;line-height:1.5}
+  #calendar .compact-calendar-grid{grid-template-columns:repeat(7,minmax(0,1fr));gap:3px 2px}
+  #calendar .compact-calendar-grid .weekday{font-size:14px;height:27px}
+  #calendar .compact-calendar-grid .date-cell{aspect-ratio:auto;min-height:46px;font-size:16px;line-height:1.25;border-radius:10px}
+  #calendar .compact-calendar-grid .date-dots{margin-top:2px}
+  #calendar .calendar-detail{display:block;border-left:0;padding:18px 0 0}
+}
+@media(max-width:370px){
+  #calendar .filter-group button{padding-inline:3px;letter-spacing:0}
+  #calendar .filter-group button[data-calendar-filter="drone"]{padding-inline:6px}
+}

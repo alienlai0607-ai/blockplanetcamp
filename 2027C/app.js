@@ -52,8 +52,9 @@
   const readyScenes = new Set();
   const sceneAssetRequests = new Map();
   const imageRequests = new Map();
-  const singleFrames = { drone: $('#droneFrame'), lego: $('#legoFrame') };
-  const storyImage = (name, index) => 'assets/' + name + '-frame-' + String(index + 1).padStart(2, '0') + '.webp' + (name === 'drone' ? '?v=scope-restore-20261013' : '');
+  const singleFrames = { lights: $('#lightsFrame'), drone: $('#droneFrame'), lego: $('#legoFrame') };
+  const storyImage = (name, index) => 'assets/' + (name === 'lights' ? 'culture' : name) + '-frame-' + String(index + 1).padStart(2, '0') + '.webp' + (name === 'lights' ? '?v=home-lights-20261013' : name === 'drone' ? '?v=scope-restore-20261013' : '');
+  const cultureThumbnail = index => 'assets/culture-thumb-' + String(index + 1).padStart(2, '0') + '.webp?v=home-lights-20261013';
   const duelAssets = ['assets/drone-sprites.webp', 'assets/drone-monkey.webp?v=scope-restore-20261013', 'assets/drone-arena.webp', 'assets/drone-students.webp'];
   let duelRequest;
   function preloadImage(src) {
@@ -87,6 +88,13 @@
     return duelRequest;
   }
   function preloadNextFrame(name, index) {
+    if (name === 'lights') {
+      // The lamp sequence follows the poster, not the numbered image files.
+      const current = experiences.findIndex(item => cultureFrame(item) === index);
+      const next = experiences[(current + 1) % experiences.length];
+      if (next) preloadImage(storyImage(name, cultureFrame(next)));
+      return;
+    }
     const next = (index + 1) % (name === 'drone' ? 4 : 6);
     if (name === 'drone' && next === 3) prepareDuelAssets();
     else preloadImage(storyImage(name, next));
@@ -120,20 +128,22 @@
     return request;
   };
   function prepareSceneAssets(name) {
-    if (name !== 'lights' && !singleFrames[name]) return Promise.resolve();
+    if (!singleFrames[name]) return Promise.resolve();
     if (!sceneAssetRequests.has(name)) {
-      const request = name === 'lights'
-        ? preloadImage('assets/culture-story.webp?v=acting-20261013').then(() => sceneReady(name))
-        : loadCurrentFrame(name);
+      if (name === 'lights') {
+        $$('.lamp-picture[data-thumb-src]').forEach(picture => {
+          picture.style.backgroundImage = 'url("' + picture.dataset.thumbSrc + '")';
+        });
+      }
+      const request = loadCurrentFrame(name);
       sceneAssetRequests.set(name, request);
     }
     return sceneAssetRequests.get(name);
   }
-  const framePosition = index => `${(index % 3) * 50}% ${index > 2 ? 100 : 0}%`;
   function setStoryFrame(frame, index, alt) {
     if (!frame) return;
     const name = frame.closest('[data-motion-scene]')?.dataset.motionScene;
-    frame.style.backgroundPosition = singleFrames[name] ? 'center' : framePosition(index);
+    frame.style.backgroundPosition = 'center';
     frame.dataset.frameIndex = String(index);
     frame.setAttribute('role', 'img');
     frame.setAttribute('aria-label', alt);
@@ -205,7 +215,7 @@
   const cultureFrameById = { village: 3, puppet: 2, craft: 0, journey: 1, banquet: 4 };
   const cultureFrame = item => item.frameIndex ?? cultureFrameById[item.id] ?? 0;
   const litLamps = new Set();
-  $('#lampRack').innerHTML = experiences.map((item, i) => '<button class="lamp" data-lamp="' + i + '" aria-pressed="' + (i === 0) + '" aria-controls="experienceDetail lightsFrame" aria-label="第' + (i + 1) + '燈：' + esc(item.name) + '"><span class="lamp-orb"><span class="lamp-picture" style="background-position:' + framePosition(cultureFrame(item)) + '" aria-hidden="true"></span><span class="lamp-number" aria-hidden="true">' + String(i + 1).padStart(2, '0') + '</span></span><span class="lamp-label">' + esc(item.name) + '</span></button>').join('');
+  $('#lampRack').innerHTML = experiences.map((item, i) => '<button class="lamp" data-lamp="' + i + '" aria-pressed="' + (i === 0) + '" aria-controls="experienceDetail lightsFrame" aria-label="第' + (i + 1) + '燈：' + esc(item.name) + '"><span class="lamp-orb"><span class="lamp-picture" data-thumb-src="' + cultureThumbnail(cultureFrame(item)) + '" aria-hidden="true"></span><span class="lamp-number" aria-hidden="true">' + String(i + 1).padStart(2, '0') + '</span></span><span class="lamp-label">' + esc(item.name) + '</span></button>').join('');
   function selectLamp(index, speak = false) {
     const item = experiences[index];
     litLamps.add(index);
@@ -333,9 +343,33 @@
 
 
   // The calendar highlights only confirmed dates. No inferred daily timetable.
-  let calendarFilter = 'all', selectedDate = '2027-01-21';
+  const confirmedCalendarDates = [...new Set(data.camps.flatMap(c => c.dates))].sort();
+  let calendarFilter = 'all', selectedDate = confirmedCalendarDates[0];
   function campsOnDate(date) { return data.camps.filter(c => c.dates.includes(date) && (calendarFilter === 'all' || c.id === calendarFilter)); }
   function dateLabel(date) { const [y,m,d] = date.split('-').map(Number); const weekday = '日一二三四五六'[new Date(y,m-1,d).getDay()]; return `${m} 月 ${d} 日（${weekday}）`; }
+  function calendarDate(key) { const [year, month, day] = key.split('-').map(Number); return new Date(year, month - 1, day); }
+  function calendarKey(date) { return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`; }
+  const calendarRangeStart = calendarDate(confirmedCalendarDates[0]);
+  const calendarRangeEnd = calendarDate(confirmedCalendarDates[confirmedCalendarDates.length - 1]);
+  calendarRangeStart.setDate(calendarRangeStart.getDate() - calendarRangeStart.getDay());
+  calendarRangeEnd.setDate(calendarRangeEnd.getDate() + 6 - calendarRangeEnd.getDay());
+  function calendarDay(key, label) {
+    const camps = campsOnDate(key);
+    if (!camps.length) return `<span class="date-cell" data-calendar-day="${key}" aria-label="${esc(dateLabel(key))}">${label}</span>`;
+    const dots = camps.map(c => `<i class="${c.id === 'drone' ? 'drone-dot' : ''}"></i>`).join('');
+    return `<button class="date-cell is-event" data-calendar-day="${key}" data-date="${key}" aria-controls="calendarDetail" aria-pressed="${selectedDate === key}" aria-label="${esc(dateLabel(key))}，${esc(camps.map(c=>c.name).join('、'))}"><span>${label}</span><span class="date-dots" aria-hidden="true">${dots}</span></button>`;
+  }
+  function renderCompactCalendar() {
+    const first = calendarDate(confirmedCalendarDates[0]), last = calendarDate(confirmedCalendarDates[confirmedCalendarDates.length - 1]);
+    const rangeLabel = `${first.getFullYear()} · ${first.getMonth() + 1}/${first.getDate()}–${last.getMonth() + 1}/${last.getDate()}`;
+    const headings = '日一二三四五六'.split('').map(day => `<span class="weekday">${day}</span>`).join('');
+    const cells = [];
+    // The complete published range stays fixed when a family switches camp filters.
+    for (let date = new Date(calendarRangeStart); date <= calendarRangeEnd; date.setDate(date.getDate() + 1)) {
+      cells.push(calendarDay(calendarKey(date), `${date.getMonth() + 1}/${date.getDate()}`));
+    }
+    $('#calendarCompact').innerHTML = `<div class="compact-calendar-heading"><h3>寒假三週總覽</h3><p>${rangeLabel}</p></div><div class="month-grid compact-calendar-grid">${headings}${cells.join('')}</div>`;
+  }
   function renderCalendars() {
     $('#calendarGrid').innerHTML = [0, 1].map(month => {
       const start = new Date(2027, month, 1).getDay(), count = new Date(2027, month + 1, 0).getDate();
@@ -343,13 +377,11 @@
       const blanks = '<span aria-hidden="true"></span>'.repeat(start);
       const cells = Array.from({length: count}, (_, n) => {
         const day = n + 1, key = `2027-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
-        const camps = campsOnDate(key);
-        if (!camps.length) return `<span class="date-cell">${day}</span>`;
-        const dots = camps.map(c => `<i class="${c.id === 'drone' ? 'drone-dot' : ''}"></i>`).join('');
-        return `<button class="date-cell is-event" data-date="${key}" aria-pressed="${selectedDate === key}" aria-label="${esc(dateLabel(key))}，${esc(camps.map(c=>c.name).join('、'))}"><span>${day}</span><span class="date-dots" aria-hidden="true">${dots}</span></button>`;
+        return calendarDay(key, day);
       }).join('');
       return `<div class="month"><h3>${month + 1} 月 <small>2027 ${month === 0 ? 'JANUARY' : 'FEBRUARY'}</small></h3><div class="month-grid">${headings}${blanks}${cells}</div></div>`;
     }).join('');
+    renderCompactCalendar();
     $$('[data-date]').forEach(button => button.addEventListener('click', () => { selectedDate = button.dataset.date; $$('[data-date]').forEach(el => el.setAttribute('aria-pressed', String(el.dataset.date === selectedDate))); renderDateDetail(); }));
     renderDateDetail();
   }
@@ -364,7 +396,6 @@
     renderCalendars();
   }));
   renderCalendars();
-  $('#comparisonList').innerHTML = data.camps.map(c => `<button class="compare-row" data-camp="${c.id}"><span class="compare-title"><span>${esc(c.daysLabel)}</span><b>${esc(c.name)}</b></span><span class="compare-date">${esc(c.dateLabel)}</span><span class="compare-price">${esc(c.priceLabel)}${c.pricing ? '<small>11/30 前報名／原價 NT$15,000</small>' : '<small>適合年齡與教室請洽詢</small>'}</span><span class="compare-arrow" aria-hidden="true">↗</span></button>`).join('');
 
   const campDialog = $('#campDialog');
   let lastDialogTrigger = null;
@@ -392,10 +423,10 @@
   }
   function renderStoryGallery(story) {
     return '<div class="course-story-grid">' + story.map((stage, index) => {
-      const name = stage.className === 'drone-frame' ? 'drone' : stage.className === 'lego-frame' ? 'lego' : null;
+      const name = stage.className === 'culture-frame' ? 'lights' : stage.className === 'drone-frame' ? 'drone' : stage.className === 'lego-frame' ? 'lego' : null;
       const visual = name
         ? '<img class="story-frame ' + esc(stage.className) + '" src="' + storyImage(name, stage.frame) + '" alt="' + esc(stage.alt) + '" width="1254" height="1254" loading="lazy" decoding="async" data-frame-index="' + stage.frame + '">'
-        : '<div class="story-frame ' + esc(stage.className) + '" role="img" aria-label="' + esc(stage.alt) + '" data-frame-index="' + stage.frame + '" style="background-position:' + framePosition(stage.frame) + '"></div>';
+        : '<div class="story-frame ' + esc(stage.className) + '" role="img" aria-label="' + esc(stage.alt) + '" data-frame-index="' + stage.frame + '"></div>';
       return '<figure>' + visual + '<figcaption><span class="story-step">' + String(index + 1).padStart(2, '0') + '</span><h4>' + esc(stage.title) + '</h4><p>' + esc(stage.text) + '</p>' + learningList(stage.learningPoints, 'story-learning-points') + '</figcaption></figure>';
     }).join('') + '</div>';
   }
@@ -410,8 +441,9 @@
       ? '<h3>孩子會怎麼參與？</h3>' + renderStoryGallery(story)
       : c.activities.length ? '<h3>孩子會經歷什麼？</h3><div class="activity-list">' + c.activities.map(a => '<div><h4>' + esc(a.title) + '</h4><p>' + esc(a.description) + '</p></div>').join('') + '</div>' : '';
     const poster = c.poster ? '<figure class="dialog-poster"><a href="' + esc(c.poster) + '" ' + ext + ' aria-label="開啟' + esc(c.name) + '完整海報"><img src="' + esc(c.poster) + '" alt="' + esc(c.name) + '完整課程海報" decoding="async"></a><figcaption>點開查看完整海報 ↗</figcaption></figure>' : '';
+    const couponEntry = '<a href="coupon.html" class="camp-coupon-entry"><img class="camp-coupon-entry__logo" src="assets/brand-logo.png" width="32" height="32" alt="" loading="lazy" decoding="async"><span class="camp-coupon-entry__copy"><strong>冬令營優惠券</strong><span>10/15 開放・限量 60 張</span></span><span class="camp-coupon-entry__cta">查看領券資訊 <span aria-hidden="true">↗</span></span></a>';
     const actions = '<div class="dialog-actions"><a href="' + esc(c.registration.url) + '" ' + ext + ' class="button">' + esc(c.registration.label) + ' <span aria-hidden="true">↗</span></a>' + (id === 'full-term' ? '<a href="' + esc(data.links.line) + '" ' + ext + ' class="text-link">先問問教室 ↗</a>' : '') + '</div><p class="dialog-note">' + esc(c.priceNote) + '<br>' + esc(c.registration.note) + (id === 'full-term' ? '<br>全期營超過 18:30 接回：延托費 NT$190／小時，未滿一小時以一小時計，請事先告知老師。' : '') + '</p><p class="dialog-note">' + esc(data.campaign.relationship) + '</p>';
-    $('#dialogContent').innerHTML = '<div class="dialog-inner"><p class="eyebrow">' + esc(c.daysLabel) + '</p><h2 id="dialogTitle">' + esc(c.name) + '</h2><p class="dialog-subtitle">' + esc(c.subtitle) + '</p><div class="dialog-course-layout"><div class="dialog-course-main"><p class="dialog-description">' + esc(c.description) + '</p><div class="dialog-facts">' + facts.map(([label, value]) => '<div><span>' + esc(label) + '</span>' + esc(value) + '</div>').join('') + '</div>' + activities + fullTermExtras + actions + '</div>' + poster + '</div></div>';
+    $('#dialogContent').innerHTML = '<div class="dialog-inner"><p class="eyebrow">' + esc(c.daysLabel) + '</p><h2 id="dialogTitle">' + esc(c.name) + '</h2><p class="dialog-subtitle">' + esc(c.subtitle) + '</p><div class="dialog-course-layout"><div class="dialog-course-main"><p class="dialog-description">' + esc(c.description) + '</p><div class="dialog-facts">' + facts.map(([label, value]) => '<div><span>' + esc(label) + '</span>' + esc(value) + '</div>').join('') + '</div>' + activities + fullTermExtras + couponEntry + actions + '</div>' + poster + '</div></div>';
     dialogIsOpen = true; syncScenePlayback();
     if (!campDialog.open) {
       pageOverflowBeforeDialog = document.body.style.overflow;
