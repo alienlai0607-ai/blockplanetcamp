@@ -400,6 +400,7 @@
   const campDialog = $('#campDialog');
   let lastDialogTrigger = null;
   let pageOverflowBeforeDialog = '';
+  let courseStoryController = null;
   function courseStory(camp) {
     if (camp.id === 'full-term') {
       return experiences.map(item => ({
@@ -407,34 +408,89 @@
         frame: cultureFrame(item), className: 'culture-frame',
         alt: '大聖老師與小橘人學員參與' + item.name + '的活動場景'
       })).concat([{
-        title: '孩子的尾牙，一起分享成果', text: '把探索、手藝與排練，化為孩子共同策劃的辦桌盛會。',
+        title: '辦桌成果分享', text: '一起策劃辦桌，分享文化探索與手作成果。',
         learningPoints: ['呈現文化探索與合作成果', '家長參與及費用另行統計'],
         frame: 5, className: 'culture-frame', alt: '大聖老師陪伴小橘人學員圍坐圓桌，開心分享共同完成的辦桌成果'
       }]);
     }
     if (camp.id === 'drone') {
-      return droneStages.map(stage => ({ ...stage, className: 'drone-frame' })).concat([
-        { title: '遇到問題，一起找原因', text: '練習問題判斷，認識無人機的基礎維修與維護。', learningPoints: ['問題判斷與排障', '基礎維修與維護'], frame: 4, className: 'drone-frame', alt: '老師與小橘人學員圍著工作桌，觀察無人機零件並練習檢查維護' },
-        { title: '把創作與飛行經驗分享出去', text: '回顧文化造型創作、操控練習與團隊任務中的收穫。', learningPoints: ['分享文化造型創作', '回顧飛行與團隊體驗'], frame: 5, className: 'drone-frame', alt: '小橘人學員與老師一起展示祥龍與大聖無人機造型與設計作品' }
+      const titles = ['設計無人機造型', '練習飛行操控', '規劃路線與障礙接力', '組隊進行飛行對決'];
+      return droneStages.map((stage, index) => ({ ...stage, title: titles[index], className: 'drone-frame' })).concat([
+        { title: '認識檢查與維修', text: '練習問題判斷，認識無人機的基礎維修與維護。', learningPoints: ['問題判斷與排障', '基礎維修與維護'], frame: 4, className: 'drone-frame', alt: '老師與小橘人學員圍著工作桌，觀察無人機零件並練習檢查維護' },
+        { title: '分享設計與飛行成果', text: '回顧文化造型創作、操控練習與團隊任務中的收穫。', learningPoints: ['分享文化造型創作', '回顧飛行與團隊體驗'], frame: 5, className: 'drone-frame', alt: '小橘人學員與老師一起展示祥龍與大聖無人機造型與設計作品' }
       ]);
     }
     if (camp.id === 'lego') return legoStages.map((stage, index) => ({ ...stage, frame: index, className: 'lego-frame' }));
     return [];
   }
   function renderStoryGallery(story) {
-    return '<div class="course-story-grid">' + story.map((stage, index) => {
-      const name = stage.className === 'culture-frame' ? 'lights' : stage.className === 'drone-frame' ? 'drone' : stage.className === 'lego-frame' ? 'lego' : null;
-      const visual = name
-        ? '<img class="story-frame ' + esc(stage.className) + '" src="' + storyImage(name, stage.frame) + '" alt="' + esc(stage.alt) + '" width="1254" height="1254" loading="lazy" decoding="async" data-frame-index="' + stage.frame + '">'
-        : '<div class="story-frame ' + esc(stage.className) + '" role="img" aria-label="' + esc(stage.alt) + '" data-frame-index="' + stage.frame + '"></div>';
-      return '<figure>' + visual + '<figcaption><span class="story-step">' + String(index + 1).padStart(2, '0') + '</span><h4>' + esc(stage.title) + '</h4><p>' + esc(stage.text) + '</p>' + learningList(stage.learningPoints, 'story-learning-points') + '</figcaption></figure>';
-    }).join('') + '</div>';
+    if (!story.length) return '';
+    const first = story[0];
+    return '<div class="course-story-carousel" role="region" aria-roledescription="輪播" aria-label="孩子的活動體驗" tabindex="0" data-story-active="0"><figure class="course-story-slide" id="courseStorySlide"><img class="course-story-image" src="' + courseStoryImage(first) + '" alt="' + esc(first.alt) + '" width="1254" height="1254" loading="eager" decoding="async" draggable="false" data-frame-index="' + first.frame + '"><figcaption><h4>' + esc(first.title) + '</h4><p>' + esc(first.text) + '</p></figcaption></figure><div class="course-story-controls"><button type="button" data-story-prev aria-label="上一個活動" aria-controls="courseStorySlide"><span aria-hidden="true">←</span></button><div class="course-story-dots">' + story.map((stage, index) => '<button type="button" class="course-story-dot" data-story-index="' + index + '" aria-label="查看' + esc(stage.title) + '" aria-controls="courseStorySlide" aria-pressed="' + (index === 0) + '"></button>').join('') + '</div><button type="button" data-story-next aria-label="下一個活動" aria-controls="courseStorySlide"><span aria-hidden="true">→</span></button></div><p class="course-story-status sr-only" aria-live="polite" aria-atomic="true"></p></div>';
+  }
+  function courseStoryImage(stage) {
+    const name = stage.className === 'culture-frame' ? 'lights' : stage.className === 'drone-frame' ? 'drone' : 'lego';
+    return storyImage(name, stage.frame);
+  }
+  function mountCourseStory(story) {
+    courseStoryController?.abort();
+    courseStoryController = null;
+    const carousel = $('.course-story-carousel', campDialog);
+    if (!carousel || !story.length) return;
+    const controller = new AbortController();
+    courseStoryController = controller;
+    const { signal } = controller;
+    const slide = $('.course-story-slide', carousel), image = $('.course-story-image', carousel);
+    const title = $('figcaption h4', slide), caption = $('figcaption p', slide), status = $('.course-story-status', carousel);
+    let requestedIndex = 0, requestToken = 0, pointerStart = null;
+    async function show(index, speak = true) {
+      requestedIndex = (index + story.length) % story.length;
+      const nextIndex = requestedIndex, stage = story[nextIndex], token = ++requestToken;
+      carousel.setAttribute('aria-busy', 'true');
+      const loaded = await preloadImage(courseStoryImage(stage));
+      if (signal.aborted || token !== requestToken || !campDialog.open) return;
+      carousel.setAttribute('aria-busy', 'false');
+      if (!loaded) { status.textContent = '圖片暫時無法載入，請再選一次活動。'; return; }
+      // Keep the image and its caption together until the chosen image is decoded.
+      image.src = courseStoryImage(stage);
+      image.alt = stage.alt;
+      image.dataset.frameIndex = String(stage.frame);
+      title.textContent = stage.title;
+      caption.textContent = stage.text;
+      carousel.dataset.storyActive = String(nextIndex);
+      $$('[data-story-index]', carousel).forEach(dot => dot.setAttribute('aria-pressed', String(Number(dot.dataset.storyIndex) === nextIndex)));
+      if (speak) status.textContent = stage.title + '，第 ' + (nextIndex + 1) + ' 張，共 ' + story.length + ' 張。';
+      preloadImage(courseStoryImage(story[(nextIndex + 1) % story.length]));
+    }
+    $('[data-story-prev]', carousel).addEventListener('click', () => show(requestedIndex - 1), { signal });
+    $('[data-story-next]', carousel).addEventListener('click', () => show(requestedIndex + 1), { signal });
+    $$('[data-story-index]', carousel).forEach(dot => dot.addEventListener('click', () => show(Number(dot.dataset.storyIndex)), { signal }));
+    carousel.addEventListener('keydown', event => {
+      if (event.key !== 'ArrowLeft' && event.key !== 'ArrowRight') return;
+      event.preventDefault();
+      show(requestedIndex + (event.key === 'ArrowRight' ? 1 : -1));
+    }, { signal });
+    slide.addEventListener('pointerdown', event => {
+      if (!event.isPrimary || (event.pointerType !== 'touch' && event.pointerType !== 'pen')) return;
+      pointerStart = { id: event.pointerId, x: event.clientX, y: event.clientY };
+      slide.setPointerCapture(event.pointerId);
+    }, { signal });
+    slide.addEventListener('pointerup', event => {
+      if (!pointerStart || pointerStart.id !== event.pointerId) return;
+      const dx = event.clientX - pointerStart.x, dy = event.clientY - pointerStart.y;
+      pointerStart = null;
+      if (Math.abs(dx) >= 44 && Math.abs(dx) > Math.abs(dy) * 1.3) show(requestedIndex + (dx < 0 ? 1 : -1));
+    }, { signal });
+    slide.addEventListener('pointercancel', () => { pointerStart = null; }, { signal });
+    show(0, false);
   }
   function openCamp(id, trigger) {
     const c = campById(id); if (!c) return;
-    if (id === 'full-term') prepareSceneAssets('lights');
     lastDialogTrigger = trigger;
-    const facts = [['課程日期', c.dateLabel], ['適合對象', c.ageLabel], ['每日時間', c.timeLabel], ['上課教室', c.classroomLabel], ['課程費用', c.priceLabel], ['接送安排', c.pickupLabel]];
+    const facts = id === 'full-term'
+      ? [['dates', '課程日期', c.dateLabel], ['age', '適合對象', c.ageLabel], ['time', '每日時間', c.timeLabel], ['classroom', '上課教室', c.classroomLabel], ['price', '課程費用', c.priceLabel]]
+      : [['dates', '課程日期', c.dateLabel], ['price', '課程費用', c.priceLabel]];
+    const factsMarkup = '<div class="dialog-facts">' + facts.map(([key, label, value]) => '<div data-fact="' + key + '"><span>' + esc(label) + '</span>' + esc(value) + (key === 'price' && c.pricing ? '<p class="dialog-price-note">' + esc(c.priceNote).replace('，原價', '，<br>原價') + '</p>' : '') + '</div>').join('') + '</div>' + (id === 'full-term' ? '' : '<p class="dialog-unknown-note">年齡、上課時段與教室將另行公布。</p>');
     const fullTermExtras = id === 'full-term' ? '<h3>9 天的文化旅程</h3><ul class="period-list">' + data.itinerary.periods.map(p => '<li><small>' + esc(p.dateLabel) + ' · ' + p.days + ' 天</small><h4>' + esc(p.title) + '</h4><p>' + esc(p.description) + '</p></li>').join('') + '</ul><p class="dialog-note">' + esc(data.itinerary.note) + '</p><div class="dialog-event"><h4>2/2 晚上，邀請爸媽來作客。</h4><p>' + esc(c.parentEvent.description) + '<br>' + esc(c.parentEvent.note) + '</p></div>' : '';
     const story = courseStory(c);
     const activities = story.length
@@ -442,14 +498,18 @@
       : c.activities.length ? '<h3>孩子會經歷什麼？</h3><div class="activity-list">' + c.activities.map(a => '<div><h4>' + esc(a.title) + '</h4><p>' + esc(a.description) + '</p></div>').join('') + '</div>' : '';
     const poster = c.poster ? '<figure class="dialog-poster"><a href="' + esc(c.poster) + '" ' + ext + ' aria-label="開啟' + esc(c.name) + '完整海報"><img src="' + esc(c.poster) + '" alt="' + esc(c.name) + '完整課程海報" decoding="async"></a><figcaption>點開查看完整海報 ↗</figcaption></figure>' : '';
     const couponEntry = '<a href="coupon.html" class="camp-coupon-entry"><img class="camp-coupon-entry__logo" src="assets/brand-logo.png" width="32" height="32" alt="" loading="lazy" decoding="async"><span class="camp-coupon-entry__copy"><strong>冬令營優惠券</strong><span>10/15 開放・限量 60 張</span></span><span class="camp-coupon-entry__cta">查看領券資訊 <span aria-hidden="true">↗</span></span></a>';
-    const actions = '<div class="dialog-actions"><a href="' + esc(c.registration.url) + '" ' + ext + ' class="button">' + esc(c.registration.label) + ' <span aria-hidden="true">↗</span></a>' + (id === 'full-term' ? '<a href="' + esc(data.links.line) + '" ' + ext + ' class="text-link">先問問教室 ↗</a>' : '') + '</div><p class="dialog-note">' + esc(c.priceNote) + '<br>' + esc(c.registration.note) + (id === 'full-term' ? '<br>全期營超過 18:30 接回：延托費 NT$190／小時，未滿一小時以一小時計，請事先告知老師。' : '') + '</p><p class="dialog-note">' + esc(data.campaign.relationship) + '</p>';
-    $('#dialogContent').innerHTML = '<div class="dialog-inner"><p class="eyebrow">' + esc(c.daysLabel) + '</p><h2 id="dialogTitle">' + esc(c.name) + '</h2><p class="dialog-subtitle">' + esc(c.subtitle) + '</p><div class="dialog-course-layout"><div class="dialog-course-main"><p class="dialog-description">' + esc(c.description) + '</p><div class="dialog-facts">' + facts.map(([label, value]) => '<div><span>' + esc(label) + '</span>' + esc(value) + '</div>').join('') + '</div>' + activities + fullTermExtras + couponEntry + actions + '</div>' + poster + '</div></div>';
+    const actions = '<div class="dialog-actions"><a href="' + esc(c.registration.url) + '" ' + ext + ' class="button">' + esc(c.registration.label) + ' <span aria-hidden="true">↗</span></a></div>';
+    const care = c.extendedCare;
+    const pickupNotes = id === 'full-term' ? '<p>接送安排：' + esc(c.pickupLabel) + '。</p>' + (care ? '<p>超過 ' + esc(care.startsAfter) + ' 接回：延托費 NT$' + esc(care.ratePerHour) + '／小時，' + esc(care.rounding) + '。' + esc(care.notice) + '</p>' : '') : '';
+    const registrationNotes = '<details class="dialog-registration-notes"><summary>報名與接送說明</summary><div>' + pickupNotes + '<p>' + esc(c.registration.note) + '</p><p>' + esc(data.campaign.relationship) + '</p></div></details>';
+    $('#dialogContent').innerHTML = '<div class="dialog-inner"><p class="eyebrow">' + esc(c.daysLabel) + '</p><h2 id="dialogTitle">' + esc(c.name) + '</h2><p class="dialog-subtitle">' + esc(c.subtitle) + '</p><div class="dialog-course-layout"><div class="dialog-course-main"><p class="dialog-description">' + esc(c.description) + '</p>' + factsMarkup + activities + fullTermExtras + actions + couponEntry + registrationNotes + '</div>' + poster + '</div></div>';
     dialogIsOpen = true; syncScenePlayback();
     if (!campDialog.open) {
       pageOverflowBeforeDialog = document.body.style.overflow;
       campDialog.showModal();
     }
     campDialog.scrollTop = 0; document.body.style.overflow = 'hidden'; $('#dialogClose').focus();
+    mountCourseStory(story);
   }
   document.addEventListener('click', event => { const trigger = event.target.closest('[data-camp]'); if (trigger) openCamp(trigger.dataset.camp, trigger); });
   $('#dialogClose').addEventListener('click', () => campDialog.close());
@@ -459,6 +519,8 @@
     if (event.clientX < r.left || event.clientX > r.right || event.clientY < r.top || event.clientY > r.bottom) campDialog.close();
   });
   campDialog.addEventListener('close', () => {
+    courseStoryController?.abort();
+    courseStoryController = null;
     document.body.style.overflow = pageOverflowBeforeDialog;
     dialogIsOpen = false; syncScenePlayback();
     lastDialogTrigger?.focus();

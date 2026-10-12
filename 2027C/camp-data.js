@@ -169,7 +169,7 @@ window.CAMP_DATA = {
       },
       registration: {
         kind: "form",
-        label: "報名 9 日全期營",
+        label: "立即報名",
         url: "https://docs.google.com/forms/d/e/1FAIpQLSfqclQFsLtNujPctIfk_elu3umDNIWr1W6C1MSIs5wc3BIVFg/viewform",
         note: "此表單僅適用五燈獎全期營。"
       },
@@ -205,7 +205,7 @@ window.CAMP_DATA = {
         { title: "排障與維修", description: "練習問題判斷，認識基礎維修與維護。" }
       ],
       outcome: "文化造型創作、飛行操控與團隊任務的完整體驗。",
-      registration: { kind: "inquiry", label: "LINE 洽詢飛行營", url: "https://lin.ee/zFqqFzQ", note: "向教室了解年齡、費用與開課安排。" },
+      registration: { kind: "inquiry", label: "LINE 報名", url: "https://lin.ee/zFqqFzQ", note: "向教室了解年齡、費用與開課安排。" },
       sourceIds: ["drone-poster", "user-confirmed-scope"],
       status: "additional-details-upcoming"
     },
@@ -238,7 +238,7 @@ window.CAMP_DATA = {
         { title: "盒組發行", description: "設計包裝，完成屬於自己的原創盒組。" }
       ],
       outcome: "從發想到圖解、包裝的原創盒組設計成果。",
-      registration: { kind: "inquiry", label: "LINE 洽詢玩具設計營", url: "https://lin.ee/zFqqFzQ", note: "向教室了解開課日期、年齡與費用。" },
+      registration: { kind: "inquiry", label: "LINE 報名", url: "https://lin.ee/zFqqFzQ", note: "向教室了解開課日期、年齡與費用。" },
       sourceIds: ["lego-poster", "user-confirmed-scope"],
       status: "additional-details-upcoming"
     },
@@ -453,7 +453,7 @@ window.CAMP_DATA = {
     },
     {
       id: "registration", label: "報名與費用", items: [
-        { question: "全期營怎麼報名？", answer: "點選「報名 9 日全期營」可前往五燈獎專屬 Google 表單，閱讀課程、費用及報名說明。特色營請由各營的 LINE 洽詢入口聯絡教室。", action: { label: "前往全期營報名表", url: "https://docs.google.com/forms/d/e/1FAIpQLSfqclQFsLtNujPctIfk_elu3umDNIWr1W6C1MSIs5wc3BIVFg/viewform" }, sourceIds: ["full-term-form"] },
+        { question: "全期營怎麼報名？", answer: "點選「立即報名」可前往五燈獎專屬 Google 表單，閱讀課程、費用及報名說明。特色營可由各營的「LINE 報名」入口聯繫。", action: { label: "前往全期營報名表", url: "https://docs.google.com/forms/d/e/1FAIpQLSfqclQFsLtNujPctIfk_elu3umDNIWr1W6C1MSIs5wc3BIVFg/viewform" }, sourceIds: ["full-term-form"] },
         { question: "全期營費用是多少？", answer: "五燈獎全期營 11/30 前報名享早鳥價 NT$12,000／人，原價 NT$15,000／人。這是 9 日全期營的費用；各特色營的費用將另行公布。", sourceIds: ["full-term-form"] },
         { question: "如果課程日期重疊，可以一起報名嗎？", answer: "飛行營 1/25–1/29 與全期營第二週日期重疊。請先向教室確認孩子的參加安排，再選擇適合的方案。", sourceIds: ["full-term-form", "drone-poster"] },
         { question: "想請假、取消或更換梯次，可以怎麼處理？", answer: "請透過 LINE 提供所報名的營隊、教室及希望調整的日期，由教室說明該方案的處理方式。付款前也可以先詢問相關規則。", sourceIds: [] },

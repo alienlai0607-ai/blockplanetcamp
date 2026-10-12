@@ -1,4 +1,4 @@
-/* A compact ticket entry shared by camp scenes and course dialogs. */
+/* A secondary ticket entry beside course actions and inside course dialogs. */
 .camp-coupon-entry {
   position:relative;
   display:grid;
@@ -83,4 +83,15 @@
 }
 @media (prefers-reduced-motion:reduce) {
   .camp-coupon-entry { transition:none; }
+}
+
+/* Keep the offer with the course decision, outside animation playback controls. */
+.camp-copy>.camp-coupon-entry { margin:24px 0 0; }
+@media (max-width:600px) {
+  .camp-copy>.camp-coupon-entry { margin-top:20px; }
+  .lights-section .camp-copy>.camp-coupon-entry {
+    grid-row:9;
+    width:calc(100% - 8px);
+    margin:5px 4px 0;
+  }
 }
