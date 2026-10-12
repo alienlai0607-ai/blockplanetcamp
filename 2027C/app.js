@@ -53,8 +53,8 @@
   const sceneAssetRequests = new Map();
   const imageRequests = new Map();
   const singleFrames = { drone: $('#droneFrame'), lego: $('#legoFrame') };
-  const storyImage = (name, index) => 'assets/' + name + '-frame-' + String(index + 1).padStart(2, '0') + '.webp';
-  const duelAssets = ['assets/drone-sprites.webp', 'assets/drone-monkey.webp', 'assets/drone-arena.webp', 'assets/drone-students.webp'];
+  const storyImage = (name, index) => 'assets/' + name + '-frame-' + String(index + 1).padStart(2, '0') + '.webp' + (name === 'drone' ? '?v=acting-20261013' : '');
+  const duelAssets = ['assets/drone-sprites.webp', 'assets/drone-monkey.webp?v=acting-20261013', 'assets/drone-arena.webp', 'assets/drone-students.webp'];
   let duelRequest;
   function preloadImage(src) {
     if (!imageRequests.has(src)) {
@@ -123,7 +123,7 @@
     if (name !== 'lights' && !singleFrames[name]) return Promise.resolve();
     if (!sceneAssetRequests.has(name)) {
       const request = name === 'lights'
-        ? preloadImage('assets/culture-story.webp').then(() => sceneReady(name))
+        ? preloadImage('assets/culture-story.webp?v=acting-20261013').then(() => sceneReady(name))
         : loadCurrentFrame(name);
       sceneAssetRequests.set(name, request);
     }
