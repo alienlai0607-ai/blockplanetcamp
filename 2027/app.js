@@ -208,7 +208,7 @@
     }
     button?.addEventListener('click', toggle);
     render(0, false);
-    return { sync, select };
+    return { sync, select, step: direction => select((index + direction + count) % count, true) };
   }
 
   const experiences = data.cultureExperiences.items;
@@ -302,6 +302,10 @@
     button: $('#legoReplay'), playLabel: '播放製作過程', pauseLabel: '暫停製作過程'
   });
   $$('[data-lego-step]').forEach(button => button.addEventListener('click', () => sequences.lego.select(Number(button.dataset.legoStep), true)));
+
+  $$('[data-scene-step]').forEach(button => button.addEventListener('click', () => {
+    sequences[button.dataset.sceneStep]?.step(Number(button.dataset.direction));
+  }));
 
   function syncScenePlayback() { Object.values(sequences).forEach(sequence => sequence.sync()); }
   function syncMotion() {

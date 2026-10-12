@@ -1,0 +1,107 @@
+/* Mobile course stories: one illustration, a short caption and quiet navigation. */
+.mobile-scene-arrow { display:none; }
+@media (max-width:700px) {
+  .culture-chapter .section-number,
+  .culture-chapter .lamp-number,
+  .culture-chapter .experience-count,
+  #droneStepNumber,
+  #legoStepNumber,
+  .two-day-mark { display:none; }
+
+  .culture-chapter .camp-section {
+    display:grid;
+    grid-template-columns:minmax(0,1fr);
+    gap:16px;
+    padding-block:44px 48px;
+    min-height:0;
+  }
+  .culture-chapter .camp-section .camp-copy { display:contents; }
+  .culture-chapter .camp-section .camp-copy>.eyebrow { grid-row:1;margin:0;font-size:15px; }
+  .culture-chapter .camp-section .camp-copy>h2 { grid-row:2;margin:0; }
+  .culture-chapter .camp-section .camp-copy>.camp-subtitle { grid-row:3;margin:0;line-height:1.65; }
+  .culture-chapter .camp-section .camp-copy>.camp-description {
+    grid-row:4;margin:0;font-size:17px;line-height:1.85;
+  }
+  .culture-chapter .camp-description br { display:none; }
+  .culture-chapter .camp-section .camp-copy>.simple-features { display:none; }
+  .culture-chapter .camp-section>.camp-visual { grid-row:5;margin:4px 0 0!important;padding:0;min-width:0; }
+  .culture-chapter .camp-section .camp-copy>.camp-facts { grid-row:6;margin:0;line-height:1.8; }
+  .culture-chapter .camp-section .camp-copy>.camp-actions { grid-row:7;margin:0; }
+  .culture-chapter .camp-section .camp-copy>.camp-coupon-entry { grid-row:8;margin:8px 0 0;width:100%; }
+  #full-term .camp-copy>.experience-detail {
+    grid-row:6;
+    min-height:0;
+    margin:0;
+    padding:0;
+    border:0;
+    background:none;
+  }
+  #full-term .experience-detail h3 { margin:0 0 7px;font-size:22px;line-height:1.5; }
+  #full-term .experience-detail p { margin:0;max-width:none;font-size:17px;line-height:1.85; }
+  #full-term .experience-points { display:none; }
+  #full-term .camp-copy>.camp-facts { grid-row:7; }
+  #full-term .camp-copy>.camp-actions { grid-row:8; }
+  #full-term .camp-copy>.camp-coupon-entry { grid-row:9; }
+
+  .culture-chapter .story-step-caption,
+  .culture-chapter .lego-step-caption {
+    display:block;
+    min-height:102px;
+    padding:12px 0 0;
+    margin:0;
+    border:0;
+    background:none;
+  }
+  .culture-chapter .story-step-caption b,
+  .culture-chapter .lego-step-caption b { font-size:22px;line-height:1.5; }
+  .culture-chapter .story-step-caption p,
+  .culture-chapter .lego-step-caption p { font-size:17px;line-height:1.85;margin:6px 0 0; }
+  .culture-chapter .drone-stage,
+  .culture-chapter .lego-frame { margin:0; }
+  .culture-chapter .story-steps,
+  .culture-chapter .lego-steps,
+  .culture-chapter .scene-controls>span { display:none; }
+  .culture-chapter .scene-controls {
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    gap:10px;
+    margin:10px 0 0;
+    padding:0;
+    border:0;
+  }
+  .culture-chapter .scene-controls .text-control {
+    flex:0 1 auto;
+    margin:0;
+    padding:8px 6px;
+    min-height:44px;
+    font-size:14px;
+    line-height:1.5;
+  }
+  .culture-chapter .mobile-scene-arrow {
+    display:grid;
+    place-items:center;
+    flex:0 0 44px;
+    width:44px;
+    height:44px;
+    padding:0;
+    border:0;
+    border-radius:50%;
+    background:transparent;
+    color:#964932;
+    font-size:27px;
+    line-height:1;
+  }
+  .mobile-scene-arrow:focus-visible { outline:2px solid #a54930;outline-offset:2px; }
+  .mobile-scene-arrow:hover { background:#f2dfbd; }
+  .two-day { grid-template-columns:minmax(0,1fr);gap:16px;padding-inline:0; }
+  .two-day>.text-link { grid-column:1; }
+  #campDialog .course-story-dots { display:none; }
+  #campDialog .course-story-controls {
+    display:flex;
+    justify-content:space-between;
+    padding-top:4px;
+    border:0;
+  }
+  #campDialog .course-story-slide figcaption { min-height:112px; }
+}
