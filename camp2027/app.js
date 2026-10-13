@@ -52,6 +52,7 @@
   const readyScenes = new Set();
   const sceneAssetRequests = new Map();
   const imageRequests = new Map();
+  const frameRevisions = new Map();
   const singleFrames = { lights: $('#lightsFrame'), drone: $('#droneFrame'), lego: $('#legoFrame') };
   const storyImage = (name, index) => 'assets/' + (name === 'lights' ? 'culture' : name) + '-frame-' + String(index + 1).padStart(2, '0') + '.webp' + (name === 'lights' ? (index === 4 ? '?v=banquet-float-20261013' : '?v=home-lights-20261013') : name === 'lego' || (name === 'drone' && index === 0) ? '?v=creative-journey-20261013' : '?v=scope-restore-20261013');
   const cultureThumbnail = index => 'assets/culture-thumb-' + String(index + 1).padStart(2, '0') + '.webp?v=' + (index === 4 ? 'banquet-float-20261013' : 'home-lights-20261013');
@@ -83,8 +84,11 @@
     }
   }
   function prepareDuelAssets() {
-    if (!duelRequest) duelRequest = Promise.all(duelAssets.map(preloadImage)).then(() => {
-      document.body.classList.add('story-assets-drone-duel');
+    if (!duelRequest) duelRequest = Promise.all(duelAssets.map(src => preloadImage(src))).then(results => {
+      const loaded = results.every(Boolean);
+      if (loaded) document.body.classList.add('story-assets-drone-duel');
+      else duelRequest = undefined;
+      return loaded;
     });
     return duelRequest;
   }
@@ -100,34 +104,51 @@
     if (name === 'drone' && next === 3) prepareDuelAssets();
     else preloadImage(storyImage(name, next));
   }
-  async function showSingleFrame(name, index) {
+  function finishFrameLoad(name, revision, loaded) {
+    if (frameRevisions.get(name) !== revision) return false;
+    const frame = singleFrames[name];
+    frame.dataset.loadState = loaded ? 'ready' : 'error';
+    frame.setAttribute('aria-busy', 'false');
+    if (!loaded) {
+      sequences[name]?.pause();
+      if (visibleScenes.has(name)) announce('圖片暫時無法載入，請再點選一次。');
+    }
+    return loaded;
+  }
+  async function showSingleFrame(name, index, revision) {
     const frame = singleFrames[name], src = storyImage(name, index);
-    readyScenes.delete(name);
-    sequences[name]?.sync();
-    await preloadImage(src, 'high');
-    // A slower earlier request must not overwrite a newer manual selection.
-    if (frame.dataset.frameIndex !== String(index)) return;
+    const loaded = await preloadImage(src, 'high');
+    // Every selection has its own revision, including returning to the same lamp.
+    if (!finishFrameLoad(name, revision, loaded)) return false;
     frame.style.backgroundImage = 'url("' + src + '")';
     frame.dataset.loadedFrameIndex = String(index);
     animateStoryFrame(frame);
     sceneReady(name);
+    return true;
   }
-  async function showDuel() {
-    readyScenes.delete('drone');
-    sequences.drone?.sync();
-    await prepareDuelAssets();
-    if ($('#droneFrame').dataset.frameIndex !== '3') return;
+  async function showDuel(revision) {
+    const loaded = await prepareDuelAssets();
+    if (!finishFrameLoad('drone', revision, loaded)) return false;
     scenes.drone.classList.add('duel-active');
+    $('#droneFrame').dataset.loadedFrameIndex = '3';
     $('#droneFrame').setAttribute('aria-hidden', 'true');
     $('.drone-arena', scenes.drone).setAttribute('aria-hidden', 'false');
     sceneReady('drone');
+    return true;
   }
   function loadCurrentFrame(name) {
-    const index = Number(singleFrames[name].dataset.frameIndex || 0);
-    const request = name === 'drone' && index === 3 ? showDuel() : showSingleFrame(name, index);
+    const frame = singleFrames[name], index = Number(frame.dataset.frameIndex || 0);
+    const revision = (frameRevisions.get(name) || 0) + 1;
+    frameRevisions.set(name, revision);
+    frame.dataset.loadState = 'loading';
+    frame.setAttribute('aria-busy', 'true');
+    frame.classList.remove('frame-enter');
+    readyScenes.delete(name);
+    sequences[name]?.sync();
+    const request = name === 'drone' && index === 3 ? showDuel(revision) : showSingleFrame(name, index, revision);
     // Give the visible illustration the connection before warming the next one.
-    request.then(() => {
-      if (singleFrames[name].dataset.frameIndex === String(index)) preloadNextFrame(name, index);
+    request.then(loaded => {
+      if (loaded && frameRevisions.get(name) === revision) preloadNextFrame(name, index);
     });
     return request;
   };
@@ -179,9 +200,10 @@
       // Keep is-playing when paused so CSS animations retain their current position.
       scene?.classList.toggle('scene-paused', !playing);
       if (button) {
-        const label = motionPaused ? '動態效果已暫停' : playing ? pauseLabel : playLabel;
-        button.innerHTML = esc(label) + ' <span aria-hidden="true">' + (playing ? 'Ⅱ' : '▷') + '</span>';
-        button.setAttribute('aria-pressed', String(playing));
+        const playbackRequested = wantsPlayback && !motionPaused;
+        const label = motionPaused ? '動態效果已暫停' : playbackRequested ? pauseLabel : playLabel;
+        button.innerHTML = esc(label) + ' <span aria-hidden="true">' + (playbackRequested ? 'Ⅱ' : '▷') + '</span>';
+        button.setAttribute('aria-pressed', String(playbackRequested));
       }
       if (!playing) return;
       deadline = performance.now() + remaining;
@@ -196,6 +218,8 @@
       }, remaining);
     }
     function select(next, speak = false) {
+      // A manual choice stays selected until the visitor explicitly presses play.
+      wantsPlayback = false;
       stopTimer(false);
       index = Math.max(0, Math.min(count - 1, next));
       remaining = Math.max(5000, duration(index));
@@ -208,11 +232,12 @@
         return;
       }
       wantsPlayback = !wantsPlayback;
+      if (wantsPlayback && singleFrames[name].dataset.loadState === 'error') loadCurrentFrame(name);
       sync();
     }
     button?.addEventListener('click', toggle);
     render(0, false);
-    return { sync, select, step: direction => select((index + direction + count) % count, true) };
+    return { sync, select, pause: () => { wantsPlayback = false; sync(); }, step: direction => select((index + direction + count) % count, true) };
   }
 
   const experiences = data.cultureExperiences.items;
@@ -230,14 +255,7 @@
     });
     setStoryFrame($('#lightsFrame'), cultureFrame(item), '大聖老師與小橘人學員參與' + item.name + '的活動場景');
     $('#experienceDetail').innerHTML = '<span class="experience-count">' + String(index + 1).padStart(2, '0') + ' / ' + String(experiences.length).padStart(2, '0') + '</span><h3>' + esc(item.name) + '</h3><p>' + esc(item.description) + '</p>' + learningList(item.learningPoints || item.bullets);
-    if (speak) {
-      announce(item.name + '。' + item.description);
-      const detail = $('#experienceDetail');
-      const rect = detail.getBoundingClientRect();
-      if (matchMedia('(max-width:600px)').matches && (rect.bottom > innerHeight - 76 || rect.top < 0)) {
-        detail.scrollIntoView({ block: 'nearest', behavior: motionPaused ? 'auto' : 'smooth' });
-      }
-    }
+    if (speak) announce(item.name + '。' + item.description);
   }
   sequences.lights = createSequence({
     name: 'lights', count: experiences.length, dwell: 5000, render: selectLamp,
@@ -256,8 +274,8 @@
   if ($('#droneSteps')) $('#droneSteps').innerHTML = droneStages.map((stage, i) => '<button data-drone-step="' + i + '" aria-pressed="' + (i === 0) + '" aria-controls="droneFrame droneStepTitle droneStepText" aria-label="第' + (i + 1) + '步：' + esc(stage.title) + '">' + esc(stage.label) + '</button>').join('');
   function setDroneStep(index, speak = false) {
     const stage = droneStages[index], duel = index === 3;
-    // Keep the previous illustration visible until a newly selected duel is decoded.
-    if (!duel) scenes.drone.classList.remove('duel-active');
+    // Use the frame's loading state until the selected illustration is ready.
+    scenes.drone.classList.remove('duel-active');
     const frame = $('#droneFrame');
     setStoryFrame(frame, stage.frame, stage.alt);
     const duelVisible = duel && scenes.drone.classList.contains('duel-active');
