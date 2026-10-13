@@ -57,11 +57,12 @@
   const cultureThumbnail = index => 'assets/culture-thumb-' + String(index + 1).padStart(2, '0') + '.webp?v=' + (index === 4 ? 'banquet-float-20261013' : 'home-lights-20261013');
   const duelAssets = ['assets/drone-sprites.webp', 'assets/drone-monkey.webp?v=scope-restore-20261013', 'assets/drone-arena.webp', 'assets/drone-students.webp'];
   let duelRequest;
-  function preloadImage(src) {
+  function preloadImage(src, priority = 'low') {
     if (!imageRequests.has(src)) {
       const request = new Promise(resolve => {
         const image = new Image();
         image.decoding = 'async';
+        image.fetchPriority = priority;
         image.onload = () => image.decode ? image.decode().catch(() => {}).then(() => resolve(true)) : resolve(true);
         image.onerror = () => { imageRequests.delete(src); resolve(false); };
         image.src = src;
@@ -103,7 +104,7 @@
     const frame = singleFrames[name], src = storyImage(name, index);
     readyScenes.delete(name);
     sequences[name]?.sync();
-    await preloadImage(src);
+    await preloadImage(src, 'high');
     // A slower earlier request must not overwrite a newer manual selection.
     if (frame.dataset.frameIndex !== String(index)) return;
     frame.style.backgroundImage = 'url("' + src + '")';
@@ -124,7 +125,10 @@
   function loadCurrentFrame(name) {
     const index = Number(singleFrames[name].dataset.frameIndex || 0);
     const request = name === 'drone' && index === 3 ? showDuel() : showSingleFrame(name, index);
-    preloadNextFrame(name, index);
+    // Give the visible illustration the connection before warming the next one.
+    request.then(() => {
+      if (singleFrames[name].dataset.frameIndex === String(index)) preloadNextFrame(name, index);
+    });
     return request;
   };
   function prepareSceneAssets(name) {
@@ -330,7 +334,7 @@
       if (!entry.isIntersecting) return;
       prepareSceneAssets(entry.target.dataset.motionScene);
       assetObserver.unobserve(entry.target);
-    }), { rootMargin: '800px 0px', threshold: 0 });
+    }), { rootMargin: matchMedia('(max-width:700px)').matches ? '400px 0px' : '800px 0px', threshold: 0 });
     const playbackObserver = new IntersectionObserver(entries => entries.forEach(entry => {
       const name = entry.target.dataset.motionScene;
       if (entry.isIntersecting) {
@@ -339,7 +343,16 @@
       } else visibleScenes.delete(name);
       sequences[name]?.sync();
     }), { threshold: 0 });
-    Object.values(scenes).forEach(scene => { assetObserver.observe(scene); playbackObserver.observe(scene); });
+    Object.values(scenes).forEach(scene => playbackObserver.observe(scene));
+    // On entry, the hero gets first use of the connection. A directly visible
+    // story still loads immediately through playbackObserver (including anchors).
+    const observeUpcomingScenes = () => Object.values(scenes).forEach(scene => assetObserver.observe(scene));
+    const heroImage = $('.hero-illustration');
+    if (!heroImage || heroImage.complete) observeUpcomingScenes();
+    else {
+      heroImage.addEventListener('load', observeUpcomingScenes, { once: true });
+      heroImage.addEventListener('error', observeUpcomingScenes, { once: true });
+    }
   } else {
     Object.keys(scenes).forEach(name => { visibleScenes.add(name); prepareSceneAssets(name); });
   }
