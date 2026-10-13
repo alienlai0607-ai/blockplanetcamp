@@ -528,7 +528,8 @@
   });
 
 
-  $('#faqCategories').innerHTML = data.faqGroups.map((group, i) => `<button data-faq="${esc(group.id)}" aria-pressed="${i === 0}" aria-controls="faqList">${esc(group.label)}</button>`).join('');
+  const faqShortLabels = { choosing: '選營隊', 'daily-life': '營隊生活', registration: '報名費用', coupon: '優惠券' };
+  $('#faqCategories').innerHTML = data.faqGroups.map((group, i) => `<button data-faq="${esc(group.id)}" aria-pressed="${i === 0}" aria-controls="faqList"><span class="faq-label-full">${esc(group.label)}</span><span class="faq-label-short">${esc(faqShortLabels[group.id] || group.label)}</span></button>`).join('');
   function renderFaq(id) {
     const group = data.faqGroups.find(g => g.id === id);
     $('#faqList').innerHTML = group.items.map(item => `<details><summary>${esc(item.question)}</summary><div class="faq-answer"><p>${esc(item.answer)}</p>${item.action ? `<a href="${esc(item.action.url)}" ${item.action.url.startsWith('https:') ? ext : ''}>${esc(item.action.label)} ↗</a>` : ''}</div></details>`).join('');

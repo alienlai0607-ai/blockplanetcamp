@@ -97,3 +97,54 @@
   .two-day { grid-template-columns:minmax(0,1fr);gap:16px;padding-inline:0; }
   .two-day>.text-link { grid-column:1; }
 }
+
+/* Keep FAQ choices together on phones without shortening the desktop copy. */
+#faq .faq-label-short,
+#faq .faq-intro-short { display:none; }
+@media (max-width:700px) {
+  #faq.faq-section { padding-block:24px 36px; }
+  #faq .section-heading { display:block;margin-bottom:16px; }
+  #faq .section-heading .eyebrow { display:none; }
+  #faq .section-heading h2 { margin:0;font-size:28px;line-height:1.3; }
+  #faq .section-heading>p { margin:8px 0 0;font-size:16px;line-height:1.6; }
+  #faq .faq-label-full,
+  #faq .faq-intro-full { display:none; }
+  #faq .faq-label-short,
+  #faq .faq-intro-short { display:inline; }
+
+  #faq .faq-layout { display:block; }
+  #faq .faq-categories {
+    display:grid;
+    grid-template-columns:repeat(4,minmax(0,1fr));
+    gap:4px;
+    margin:0 0 12px;
+    align-items:stretch;
+  }
+  #faq .faq-categories button {
+    width:100%;
+    min-width:0;
+    min-height:44px;
+    padding:8px 3px;
+    border:1px solid var(--line);
+    border-radius:6px;
+    font-size:14px;
+    font-weight:750;
+    line-height:1.5;
+    letter-spacing:0;
+    text-align:center;
+    white-space:nowrap;
+  }
+  #faq .faq-categories button[aria-pressed=true]:after { content:none; }
+  #faq .faq-list summary {
+    min-height:56px;
+    padding:15px 30px 15px 0;
+    font-size:16px;
+    line-height:1.6;
+  }
+  #faq .faq-list summary:after { top:50%;right:4px;transform:translateY(-50%);font-size:22px; }
+  #faq .faq-answer { padding:0 4px 16px 0;font-size:16px;line-height:1.75; }
+  #faq .faq-answer p { margin:0; }
+  #faq .faq-answer a { margin-top:8px;font-size:16px;line-height:1.75; }
+  #faq .faq-bottom { margin-top:16px;font-size:16px;line-height:1.75;text-align:left; }
+  #faq .faq-bottom a { margin-left:3px; }
+}
