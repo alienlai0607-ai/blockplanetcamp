@@ -96,12 +96,4 @@
   .mobile-scene-arrow:hover { background:#f2dfbd; }
   .two-day { grid-template-columns:minmax(0,1fr);gap:16px;padding-inline:0; }
   .two-day>.text-link { grid-column:1; }
-  #campDialog .course-story-dots { display:none; }
-  #campDialog .course-story-controls {
-    display:flex;
-    justify-content:space-between;
-    padding-top:4px;
-    border:0;
-  }
-  #campDialog .course-story-slide figcaption { min-height:112px; }
 }

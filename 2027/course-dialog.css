@@ -1,202 +1,259 @@
-/* Course-dialog-only reading and single-scene carousel layout. */
-#campDialog .dialog-course-main { min-width:0; }
-#campDialog .dialog-description { font-size:17px;line-height:1.8; }
-#campDialog .dialog-facts {
-  display:grid;
-  grid-template-columns:repeat(2,minmax(0,1fr));
-  gap:15px 22px;
-  margin:20px 0 15px;
-  padding:19px 0;
-  border-block:1px solid #e4d3b8;
-}
-#campDialog .dialog-facts>div {
-  min-width:0;
-  font-size:17px;
-  font-weight:650;
-  line-height:1.7;
-  overflow-wrap:anywhere;
-}
-#campDialog .dialog-facts>div[data-fact="dates"] { grid-column:1/-1; }
-#campDialog .dialog-facts>div>span {
-  display:block;
-  margin-bottom:3px;
-  color:#826650;
-  font-size:14px;
-  font-weight:650;
-  line-height:1.5;
-}
-#campDialog .dialog-price-note {
-  display:block;
-  margin:5px 0 0;
-  color:#80644d;
-  font-size:15px;
-  font-weight:550;
-  line-height:1.7;
-}
-#campDialog .dialog-unknown-note {
-  margin:12px 0 19px;
-  padding-left:12px;
-  border-left:2px solid #d0ad78;
-  color:#785b40;
-  font-size:16px;
-  font-weight:550;
-  line-height:1.75;
-}
-#campDialog .dialog-course-main>h3 { margin:28px 0 12px; }
-#campDialog .course-story-carousel {
-  width:100%;
-  min-width:0;
-  margin:10px 0 28px;
-  padding:0;
-  color:#744a34;
+/* Poster-first course journals. Every rule is scoped to the course dialog. */
+#campDialog {
+  width:min(920px,calc(100% - 32px));
+  max-width:calc(100% - 32px);
+  max-height:94dvh;
   border-radius:12px;
+  background:#fffaf2;
 }
-#campDialog .course-story-slide {
-  display:block;
-  min-width:0;
+#campDialog .dialog-toolbar { padding:12px 24px; }
+#campDialog .dialog-inner { padding:18px 40px 44px; }
+#campDialog .dialog-poster {
+  position:static;
+  order:initial;
+  width:100%;
+  max-width:none;
   margin:0;
-  touch-action:pan-y pinch-zoom;
 }
-#campDialog .course-story-image {
+#campDialog .dialog-poster a { display:block; }
+#campDialog .dialog-poster img {
   display:block;
-  width:min(100%,370px);
-  height:auto;
-  aspect-ratio:1;
+  width:100%;
+  max-width:100%;
+  height:64dvh;
+  max-height:740px;
+  margin:0 auto;
   object-fit:contain;
   object-position:center;
-  margin:0 auto;
-  background:none;
   border:0;
   border-radius:0;
-  filter:none;
-  touch-action:pan-y pinch-zoom;
-  user-select:none;
-  -webkit-user-drag:none;
+  box-shadow:none;
 }
-#campDialog .course-story-slide figcaption {
-  min-height:120px;
-  padding:14px 0 4px;
-}
-#campDialog .course-story-slide h4 {
-  margin:0;
-  color:#8b412d;
-  font-size:24px;
-  font-weight:850;
-  line-height:1.4;
-  letter-spacing:0;
-  overflow-wrap:anywhere;
-}
-#campDialog .course-story-slide p {
-  margin:8px 0 0;
-  color:#725c48;
+#campDialog .dialog-poster figcaption {
+  margin:9px 0 0;
+  color:#795d45;
   font-size:17px;
   font-weight:550;
-  line-height:1.75;
-  overflow-wrap:anywhere;
+  line-height:1.6;
+  text-align:center;
 }
-#campDialog .course-story-controls {
-  display:grid;
-  grid-template-columns:44px minmax(0,1fr) 44px;
-  align-items:center;
-  gap:4px;
+#campDialog .dialog-poster a:focus-visible {
+  outline:3px solid #af5c3b;
+  outline-offset:5px;
+}
+#campDialog .dialog-course-main {
   width:100%;
-  max-width:400px;
-  margin:2px auto 0;
-  padding-top:10px;
-  border-top:1px solid #e6d6bd;
-}
-#campDialog .course-story-controls>[data-story-prev],
-#campDialog .course-story-controls>[data-story-next] {
-  display:grid;
-  place-items:center;
-  width:44px;
-  height:44px;
-  min-width:44px;
-  min-height:44px;
-  padding:0;
-  border:1px solid #d5b78f;
-  border-radius:50%;
-  background:#fff5e3;
-  color:#a3462e;
-  font-size:25px;
-  font-weight:750;
-  line-height:1;
-}
-#campDialog .course-story-controls>[data-story-prev]:hover,
-#campDialog .course-story-controls>[data-story-next]:hover { background:#fce9c9;border-color:#b97955; }
-#campDialog .course-story-dots {
-  display:flex;
-  align-items:center;
-  justify-content:center;
-  width:100%;
+  max-width:680px;
   min-width:0;
-  gap:0;
+  margin:40px auto 0;
 }
-#campDialog .course-story-dot {
-  position:relative;
-  display:grid;
-  place-items:center;
-  flex:1 1 0;
-  width:44px;
-  max-width:44px;
-  min-width:0;
-  height:44px;
-  padding:0;
-  border:0;
-  border-radius:7px;
-  background:transparent;
-}
-#campDialog .course-story-dot:before {
-  content:"";
-  display:block;
-  width:8px;
-  height:8px;
-  border:1px solid #b9956b;
-  border-radius:50%;
-  background:#e6d4b5;
-}
-#campDialog .course-story-dot[aria-pressed="true"]:before {
-  width:11px;
-  height:11px;
-  border-color:#ac4d33;
-  background:#b94a32;
-}
-#campDialog .course-story-dot:hover:before { border-color:#ac4d33; }
-#campDialog .course-story-controls button:focus-visible,
-#campDialog .course-story-carousel:focus-visible { outline:3px solid #af5c3b;outline-offset:3px; }
-#campDialog .period-list { margin:20px 0 22px; }
-#campDialog .period-list li+li { margin-top:24px; }
-#campDialog .dialog-event { margin:24px 0 28px;padding:20px;border-radius:10px; }
-#campDialog .dialog-event h4 { margin-bottom:8px; }
-#campDialog .dialog-actions { margin-top:26px; }
-#campDialog .dialog-registration-notes {
-  margin:22px 0 0;
-  padding:0;
-  border-block:1px solid #e0cbae;
-  color:#75553e;
-}
-#campDialog .dialog-registration-notes>summary {
-  min-height:50px;
-  padding:12px 2px;
-  cursor:pointer;
-  color:#88482f;
+#campDialog .course-journal--text .dialog-course-main { margin-top:8px; }
+#campDialog .course-introduction .eyebrow {
+  margin:0 0 10px;
   font-size:17px;
   font-weight:750;
   line-height:1.6;
+  letter-spacing:.04em;
 }
+#campDialog .dialog-inner h2 {
+  margin:0;
+  color:#873f2d;
+  font-size:clamp(30px,4vw,40px);
+  font-weight:850;
+  line-height:1.4;
+  letter-spacing:-.02em;
+  overflow-wrap:anywhere;
+}
+#campDialog .dialog-subtitle {
+  margin:14px 0 18px;
+  color:#79543d;
+  font-size:21px;
+  font-weight:700;
+  line-height:1.7;
+}
+#campDialog .dialog-description,
+#campDialog .course-chapter>p,
+#campDialog .period-list p,
+#campDialog .dialog-event p,
+#campDialog .dialog-note {
+  margin:0;
+  color:#705742;
+  font-size:18px;
+  font-weight:550;
+  line-height:1.9;
+  overflow-wrap:anywhere;
+}
+#campDialog .course-editorial,
+#campDialog .course-journey,
+#campDialog .course-registration { margin-top:38px; }
+#campDialog .course-chapter+.course-chapter { margin-top:28px; }
+#campDialog .course-chapter-heading {
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:20px;
+  margin-bottom:10px;
+}
+#campDialog .course-journal h3 {
+  margin:0 0 14px;
+  color:#87442f;
+  font-size:26px;
+  font-weight:800;
+  line-height:1.5;
+  overflow-wrap:anywhere;
+}
+#campDialog .course-chapter-heading h3 { margin:0; }
+#campDialog .course-doodle {
+  display:block;
+  flex:0 0 76px;
+  width:76px;
+  height:76px;
+  object-fit:contain;
+  margin:0;
+  border:0;
+  border-radius:0;
+  filter:none;
+}
+#campDialog .course-experience-list {
+  display:grid;
+  gap:14px;
+  margin:14px 0 0;
+  padding:0;
+  list-style:none;
+}
+#campDialog .course-experience-list li {
+  display:grid;
+  grid-template-columns:132px minmax(0,1fr);
+  gap:12px;
+  color:#705742;
+  font-size:18px;
+  font-weight:550;
+  line-height:1.8;
+}
+#campDialog .course-experience-list strong { color:#83503a;font-weight:750; }
+#campDialog .period-list {
+  margin:20px 0;
+  padding:0;
+  list-style:none;
+  border:0;
+}
+#campDialog .period-list li { margin:0; }
+#campDialog .period-list li+li { margin-top:26px; }
+#campDialog .period-list li:before { content:none; }
+#campDialog .period-list small {
+  color:#977040;
+  font-size:17px;
+  font-weight:700;
+  line-height:1.7;
+}
+#campDialog .period-list h4,
+#campDialog .dialog-event h4 {
+  margin:6px 0;
+  color:#80503a;
+  font-size:21px;
+  font-weight:800;
+  line-height:1.6;
+}
+#campDialog .dialog-note { margin-top:16px;font-size:17px; }
+#campDialog .dialog-event {
+  margin:28px 0 0;
+  padding:2px 0 2px 18px;
+  border:0;
+  border-left:2px solid #c89265;
+  border-radius:0;
+  background:none;
+}
+#campDialog .dialog-event h4 { margin-top:0; }
+#campDialog .course-registration {
+  padding-top:30px;
+  border-top:1px solid #e5d6c1;
+}
+#campDialog .dialog-facts {
+  display:grid;
+  grid-template-columns:repeat(2,minmax(0,1fr));
+  gap:20px 28px;
+  margin:18px 0 16px;
+  padding:0;
+  border:0;
+}
+#campDialog .dialog-facts>div {
+  min-width:0;
+  font-size:18px;
+  font-weight:650;
+  line-height:1.8;
+  overflow-wrap:anywhere;
+}
+#campDialog .dialog-facts>div[data-fact="dates"],
+#campDialog .dialog-facts>div[data-fact="price"] { grid-column:1/-1; }
+#campDialog .dialog-facts>div>span {
+  display:block;
+  margin-bottom:3px;
+  color:#8b6c51;
+  font-size:17px;
+  font-weight:650;
+  line-height:1.6;
+}
+#campDialog .dialog-price-note,
+#campDialog .dialog-unknown-note,
 #campDialog .dialog-registration-notes>div>p {
-  margin:0 0 13px;
-  color:#725c48;
-  font-size:16px;
-  line-height:1.75;
+  margin:6px 0 0;
+  color:#785e47;
+  font-size:17px;
+  font-weight:550;
+  line-height:1.8;
 }
-#campDialog .dialog-registration-notes>div { padding:0 2px 6px; }
+#campDialog .dialog-unknown-note { margin:14px 0 0;padding:0;border:0; }
+#campDialog .dialog-actions { gap:16px;margin-top:25px; }
+#campDialog .dialog-actions .button { min-height:54px;font-size:18px; }
+#campDialog .camp-coupon-entry__copy>span,
+#campDialog .camp-coupon-entry__cta { font-size:17px; }
+#campDialog .dialog-registration-notes {
+  margin:24px 0 0;
+  padding:0;
+  border:0;
+  border-top:1px solid #e4d3bc;
+}
+#campDialog .dialog-registration-notes>summary {
+  min-height:52px;
+  padding:13px 2px;
+  cursor:pointer;
+  color:#87472f;
+  font-size:18px;
+  font-weight:750;
+  line-height:1.6;
+}
+#campDialog .dialog-registration-notes>div { padding-bottom:4px; }
+#campDialog .dialog-registration-notes>div>p { margin:0 0 12px; }
 @media (max-width:700px) {
-  #campDialog .dialog-poster { order:0; }
-  #campDialog .dialog-facts { column-gap:14px;row-gap:14px;margin-top:18px;padding-block:17px; }
-  #campDialog .dialog-facts>div[data-fact="price"] { grid-column:1/-1; }
-  #campDialog .course-story-image { width:min(100%,360px); }
-  #campDialog .course-story-slide figcaption { min-height:132px;padding-top:12px; }
-  #campDialog .course-story-controls { margin-top:0; }
-  #campDialog .dialog-event { padding:17px;margin-block:22px; }
+  #campDialog { width:calc(100% - 18px);max-width:calc(100% - 18px);border-radius:10px; }
+  #campDialog .dialog-toolbar { padding:10px 16px;font-size:15px; }
+  #campDialog .dialog-inner { padding:12px 20px 32px; }
+  #campDialog .dialog-poster img { height:60dvh;max-height:none; }
+  #campDialog .dialog-poster figcaption { margin-top:8px; }
+  #campDialog .dialog-course-main { margin-top:30px; }
+  #campDialog .dialog-inner h2 { font-size:30px; }
+  #campDialog .dialog-subtitle { font-size:20px;margin-block:12px 16px; }
+  #campDialog .dialog-description,
+  #campDialog .course-chapter>p,
+  #campDialog .course-experience-list li,
+  #campDialog .period-list p,
+  #campDialog .dialog-event p,
+  #campDialog .dialog-facts>div { font-size:17px; }
+  #campDialog .course-editorial,
+  #campDialog .course-journey,
+  #campDialog .course-registration { margin-top:30px; }
+  #campDialog .course-journal h3 { font-size:24px; }
+  #campDialog .course-chapter-heading { gap:14px; }
+  #campDialog .course-doodle { flex-basis:70px;width:70px;height:70px; }
+  #campDialog .course-experience-list { gap:16px; }
+  #campDialog .course-experience-list li { display:block; }
+  #campDialog .course-experience-list strong { display:block;margin-bottom:2px; }
+  #campDialog .period-list h4,
+  #campDialog .dialog-event h4 { font-size:20px; }
+  #campDialog .dialog-facts { gap:18px;margin-top:14px; }
+  #campDialog .dialog-actions .button { width:100%;justify-content:center; }
+}
+@media (max-width:380px) {
+  #campDialog .dialog-inner { padding-inline:16px; }
+  #campDialog .dialog-facts { grid-template-columns:minmax(0,1fr); }
 }

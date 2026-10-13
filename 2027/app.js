@@ -53,7 +53,7 @@
   const sceneAssetRequests = new Map();
   const imageRequests = new Map();
   const singleFrames = { lights: $('#lightsFrame'), drone: $('#droneFrame'), lego: $('#legoFrame') };
-  const storyImage = (name, index) => 'assets/' + (name === 'lights' ? 'culture' : name) + '-frame-' + String(index + 1).padStart(2, '0') + '.webp' + (name === 'lights' ? '?v=home-lights-20261013' : name === 'drone' ? '?v=scope-restore-20261013' : '');
+  const storyImage = (name, index) => 'assets/' + (name === 'lights' ? 'culture' : name) + '-frame-' + String(index + 1).padStart(2, '0') + '.webp' + (name === 'lights' ? '?v=home-lights-20261013' : name === 'lego' || (name === 'drone' && index === 0) ? '?v=creative-journey-20261013' : '?v=scope-restore-20261013');
   const cultureThumbnail = index => 'assets/culture-thumb-' + String(index + 1).padStart(2, '0') + '.webp?v=home-lights-20261013';
   const duelAssets = ['assets/drone-sprites.webp', 'assets/drone-monkey.webp?v=scope-restore-20261013', 'assets/drone-arena.webp', 'assets/drone-students.webp'];
   let duelRequest;
@@ -243,7 +243,7 @@
   $$('[data-lamp]').forEach(button => button.addEventListener('click', () => sequences.lights.select(Number(button.dataset.lamp), true)));
 
   const droneStages = [
-    { label: '文化造型', title: '讓神話角色準備起飛', text: '從中華神話找靈感，設計自己的無人機造型。', frame: 0, alt: '小橘人學員與老師一起在工作桌設計祥龍與大聖無人機造型', learningPoints: ['文化故事與造型發想', '設計自己的無人機造型'] },
+    { label: '文化造型', title: '從故事裡，畫出第一個想法', text: '觀察神話裡的龍與雲紋，先畫草稿、比較造型，再決定想怎麼做。', frame: 0, alt: '小橘人學員讀神龍繪本，在紙上畫不同的無人機造型草稿，老師陪伴討論與修改', learningPoints: ['文化故事與造型發想', '設計自己的無人機造型'] },
     { label: '操控練習', title: '從穩穩起飛開始', text: '認識飛行原理與平衡，和老師一起練習基礎操控。', frame: 1, alt: '小橘人學員實際操作遙控器，老師在旁引導祥龍無人機的飛行', learningPoints: ['認識飛行原理與平衡', '練習基礎操控'] },
     { label: '路線挑戰', title: '和夥伴想好下一步', text: '一起觀察目標、規劃路線，合作挑戰障礙接力。', frame: 2, alt: '小橘人學員一起查看路線圖，操控大聖造型無人機穿越目標', learningPoints: ['規劃飛行路線', '障礙接力與團隊策略'] },
     { label: '團隊對決', title: '祥龍與大聖，合作迎戰！', text: '小橘人學員操控祥龍與大聖無人機，把練習帶進團隊競賽。', frame: 3, alt: '小橘人學員在老師指導下操控祥龍與大聖球籠無人機，在球場合作競賽', learningPoints: ['把操控練習用在團隊任務', '溝通合作與競賽策略'] }
@@ -277,12 +277,12 @@
   $$('[data-drone-step]').forEach(button => button.addEventListener('click', () => sequences.drone.select(Number(button.dataset.droneStep), true)));
 
   const legoStages = [
-    { label: '發想', title: '從故事找靈感', text: '觀察文化的形狀，把想像裝進腦袋。', alt: '小橘人學員和黃色紅髮、炭灰藍髮黃眼鏡兩位老師一起觀察故事書與祥龍模型', learningPoints: ['從中華故事找靈感', '觀察與文化發想'] },
-    { label: '畫稿', title: '把點子畫下來', text: '一筆一畫，讓自己的原創設計成形。', alt: '小橘人學員在草稿本畫祥龍玩具，黃色紅髮與炭灰藍髮老師在旁指導', learningPoints: ['畫出自己的原創設計', '把想法轉為設計草圖'] },
-    { label: '3D設計', title: '讓設計立體起來', text: '使用 3D 軟體，把草圖變成立體作品。', alt: '小橘人學員操作滑鼠與鍵盤，兩位老師引導建立祥龍的3D積木模型', learningPoints: ['使用 3D 設計軟體', '把草圖轉成 3D 作品'] },
-    { label: '圖解', title: '把做法分享出去', text: '製作步驟圖與說明書，讓別人也能看懂。', alt: '小橘人學員閱讀印出的積木組裝圖解，黃色紅髮與炭灰藍髮老師在旁協助', learningPoints: ['製作組裝步驟圖', '整理作品說明書'] },
-    { label: '包裝', title: '設計自己的盒組', text: '圖解、模型與包裝，慢慢成為完整作品。', alt: '小橘人學員使用膠帶準備包裝，兩位老師引導製作原創祥龍玩具盒', learningPoints: ['設計作品包裝', '整合圖解、模型與盒組'] },
-    { label: '完成！', title: '這是我設計的！', text: '捧著自己的原創盒組，開心分享創作成果。', alt: '小橘人學員展示完成的祥龍積木玩具與原創盒組，黃色紅髮與炭灰藍髮黃眼鏡兩位老師一起鼓勵', learningPoints: ['完成自己的原創盒組', '分享創作成果'] }
+    { label: '發想', title: '故事裡，藏著什麼點子？', text: '一起翻故事、看龍的形狀，記下好奇的細節。玩具還沒有答案，想像才剛開始。', alt: '紅髮老師和三位圓滾滾小橘人閱讀神龍山水繪本，一位學員拿筆記錄靈感，還沒有完成玩具', learningPoints: ['從中華故事找靈感', '觀察與文化發想'] },
+    { label: '畫稿', title: '先畫下來，再改一改', text: '輪子要多大？龍頭放哪裡？畫幾種草稿，擦掉、再試，慢慢找到自己的設計。', alt: '小橘人學員比較不同輪子與龍頭的鉛筆草稿，動手畫圖和擦改，老師在旁引導', learningPoints: ['畫出自己的原創設計', '把想法轉為設計草圖'] },
+    { label: '3D設計', title: '讓草稿慢慢立體起來', text: '在 3D 軟體裡逐步搭建、調整零件，讓紙上的想法一點一點成形。', alt: '小橘人操作滑鼠，夥伴拿草稿比對，灰身藍髮眼鏡老師協助調整螢幕上尚未完成的積木模型', learningPoints: ['使用 3D 設計軟體', '把草圖轉成 3D 作品'] },
+    { label: '圖解', title: '照著圖解，試著組一次', text: '把做法整理成步驟圖，和夥伴邊看邊試，發現問題就一起調整。', alt: '兩位小橘人合作閱讀自己整理的步驟圖並安裝輪軸，龍頭與部分輪子還在工作板上等待組裝', learningPoints: ['製作組裝步驟圖', '整理作品說明書'] },
+    { label: '包裝', title: '親手做好作品的家', text: '畫盒面、折紙盒、貼膠帶，連包裝都留下自己的創意與手作痕跡。', alt: '小橘人攤開牛皮紙盒片，親手畫圖案與貼膠帶，紅髮老師協助折盒，作品在旁準備裝入', learningPoints: ['設計作品包裝', '整合圖解、模型與盒組'] },
+    { label: '完成！', title: '這是我設計的！', text: '從第一筆草稿到親手完成的盒組，開心舉起作品，把自己的創作故事說給大家聽。', alt: '三位圓橘學員開心舉起完成的龍車、抱著自製盒組和展示草稿，灰身藍髮老師在旁鼓掌', learningPoints: ['完成自己的原創盒組', '分享創作成果'] }
   ];
   $('#legoSteps').innerHTML = legoStages.map((stage, i) => '<button data-lego-step="' + i + '" aria-pressed="' + (i === 0) + '" aria-controls="legoFrame legoStepTitle legoStepText" aria-label="第' + (i + 1) + '步：' + esc(stage.title) + '">' + esc(stage.label) + '</button>').join('');
   function setLegoStep(index, speak = false) {
@@ -414,90 +414,35 @@
   const campDialog = $('#campDialog');
   let lastDialogTrigger = null;
   let pageOverflowBeforeDialog = '';
-  let courseStoryController = null;
-  function courseStory(camp) {
+
+  function renderCourseJournal(camp) {
+    const doodles = {
+      'full-term': 'assets/course-doodle-culture.webp',
+      drone: 'assets/course-doodle-drone.webp',
+      lego: 'assets/course-doodle-lego.webp'
+    };
+    const doodle = doodles[camp.id]
+      ? '<img class="course-doodle" src="' + doodles[camp.id] + '" alt="" aria-hidden="true" width="76" height="76" loading="lazy" decoding="async">'
+      : '';
     if (camp.id === 'full-term') {
-      return experiences.map(item => ({
-        title: item.name, text: item.description, learningPoints: item.learningPoints || item.bullets,
-        frame: cultureFrame(item), className: 'culture-frame',
-        alt: '大聖老師與小橘人學員參與' + item.name + '的活動場景'
-      })).concat([{
-        title: '辦桌成果分享', text: '一起策劃辦桌，分享文化探索與手作成果。',
-        learningPoints: ['呈現文化探索與合作成果', '家長參與及費用另行統計'],
-        frame: 5, className: 'culture-frame', alt: '大聖老師陪伴小橘人學員圍坐圓桌，開心分享共同完成的辦桌成果'
-      }]);
+      return '<section class="course-editorial" aria-labelledby="courseExperienceTitle"><div class="course-chapter-heading"><h3 id="courseExperienceTitle">五種體驗，一起玩文化</h3>' + doodle + '</div><ul class="course-experience-list">' + camp.activities.map(activity => '<li><strong>' + esc(activity.title) + '</strong><span>' + esc(activity.description) + '</span></li>').join('') + '</ul></section>';
     }
-    if (camp.id === 'drone') {
-      const titles = ['設計無人機造型', '練習飛行操控', '規劃路線與障礙接力', '組隊進行飛行對決'];
-      return droneStages.map((stage, index) => ({ ...stage, title: titles[index], className: 'drone-frame' })).concat([
-        { title: '認識檢查與維修', text: '練習問題判斷，認識無人機的基礎維修與維護。', learningPoints: ['問題判斷與排障', '基礎維修與維護'], frame: 4, className: 'drone-frame', alt: '老師與小橘人學員圍著工作桌，觀察無人機零件並練習檢查維護' },
-        { title: '分享設計與飛行成果', text: '回顧文化造型創作、操控練習與團隊任務中的收穫。', learningPoints: ['分享文化造型創作', '回顧飛行與團隊體驗'], frame: 5, className: 'drone-frame', alt: '小橘人學員與老師一起展示祥龍與大聖無人機造型與設計作品' }
-      ]);
-    }
-    if (camp.id === 'lego') return legoStages.map((stage, index) => ({ ...stage, frame: index, className: 'lego-frame' }));
-    return [];
+    const chapters = {
+      drone: [
+        { title: '把神話變成飛行造型', text: '從中華神話找靈感，設計自己的無人機造型，把文化故事帶進飛行任務。' },
+        { title: '認識原理，練習操控', text: '認識飛行原理與平衡，練習基礎操控，再和夥伴規劃路線、挑戰障礙接力。' },
+        { title: '合作挑戰，也學會維護', text: '在團隊任務中練習合作與問題判斷，認識基礎維修與維護，回顧設計與飛行的收穫。' }
+      ],
+      lego: [
+        { title: '從故事畫出自己的點子', text: '從中華故事出發，把想像畫成原創設計，找到自己想做的玩具。' },
+        { title: '把想法拼成 3D 作品', text: '使用 3D 軟體建立作品，讓紙上的點子成為看得見的立體設計。' },
+        { title: '完成說明書與原創盒組', text: '製作組裝步驟圖與說明書，再設計包裝，完成從發想到盒組的創作過程。' }
+      ]
+    }[camp.id] || [];
+    if (!chapters.length) return '';
+    return '<section class="course-editorial" aria-label="課程介紹">' + chapters.map((chapter, index) => '<div class="course-chapter"><div class="course-chapter-heading"><h3>' + esc(chapter.title) + '</h3>' + (index === 0 ? doodle : '') + '</div><p>' + esc(chapter.text) + '</p></div>').join('') + '</section>';
   }
-  function renderStoryGallery(story) {
-    if (!story.length) return '';
-    const first = story[0];
-    return '<div class="course-story-carousel" role="region" aria-roledescription="輪播" aria-label="孩子的活動體驗" tabindex="0" data-story-active="0"><figure class="course-story-slide" id="courseStorySlide"><img class="course-story-image" src="' + courseStoryImage(first) + '" alt="' + esc(first.alt) + '" width="1254" height="1254" loading="eager" decoding="async" draggable="false" data-frame-index="' + first.frame + '"><figcaption><h4>' + esc(first.title) + '</h4><p>' + esc(first.text) + '</p></figcaption></figure><div class="course-story-controls"><button type="button" data-story-prev aria-label="上一個活動" aria-controls="courseStorySlide"><span aria-hidden="true">←</span></button><div class="course-story-dots">' + story.map((stage, index) => '<button type="button" class="course-story-dot" data-story-index="' + index + '" aria-label="查看' + esc(stage.title) + '" aria-controls="courseStorySlide" aria-pressed="' + (index === 0) + '"></button>').join('') + '</div><button type="button" data-story-next aria-label="下一個活動" aria-controls="courseStorySlide"><span aria-hidden="true">→</span></button></div><p class="course-story-status sr-only" aria-live="polite" aria-atomic="true"></p></div>';
-  }
-  function courseStoryImage(stage) {
-    const name = stage.className === 'culture-frame' ? 'lights' : stage.className === 'drone-frame' ? 'drone' : 'lego';
-    return storyImage(name, stage.frame);
-  }
-  function mountCourseStory(story) {
-    courseStoryController?.abort();
-    courseStoryController = null;
-    const carousel = $('.course-story-carousel', campDialog);
-    if (!carousel || !story.length) return;
-    const controller = new AbortController();
-    courseStoryController = controller;
-    const { signal } = controller;
-    const slide = $('.course-story-slide', carousel), image = $('.course-story-image', carousel);
-    const title = $('figcaption h4', slide), caption = $('figcaption p', slide), status = $('.course-story-status', carousel);
-    let requestedIndex = 0, requestToken = 0, pointerStart = null;
-    async function show(index, speak = true) {
-      requestedIndex = (index + story.length) % story.length;
-      const nextIndex = requestedIndex, stage = story[nextIndex], token = ++requestToken;
-      carousel.setAttribute('aria-busy', 'true');
-      const loaded = await preloadImage(courseStoryImage(stage));
-      if (signal.aborted || token !== requestToken || !campDialog.open) return;
-      carousel.setAttribute('aria-busy', 'false');
-      if (!loaded) { status.textContent = '圖片暫時無法載入，請再選一次活動。'; return; }
-      // Keep the image and its caption together until the chosen image is decoded.
-      image.src = courseStoryImage(stage);
-      image.alt = stage.alt;
-      image.dataset.frameIndex = String(stage.frame);
-      title.textContent = stage.title;
-      caption.textContent = stage.text;
-      carousel.dataset.storyActive = String(nextIndex);
-      $$('[data-story-index]', carousel).forEach(dot => dot.setAttribute('aria-pressed', String(Number(dot.dataset.storyIndex) === nextIndex)));
-      if (speak) status.textContent = stage.title + '，第 ' + (nextIndex + 1) + ' 張，共 ' + story.length + ' 張。';
-      preloadImage(courseStoryImage(story[(nextIndex + 1) % story.length]));
-    }
-    $('[data-story-prev]', carousel).addEventListener('click', () => show(requestedIndex - 1), { signal });
-    $('[data-story-next]', carousel).addEventListener('click', () => show(requestedIndex + 1), { signal });
-    $$('[data-story-index]', carousel).forEach(dot => dot.addEventListener('click', () => show(Number(dot.dataset.storyIndex)), { signal }));
-    carousel.addEventListener('keydown', event => {
-      if (event.key !== 'ArrowLeft' && event.key !== 'ArrowRight') return;
-      event.preventDefault();
-      show(requestedIndex + (event.key === 'ArrowRight' ? 1 : -1));
-    }, { signal });
-    slide.addEventListener('pointerdown', event => {
-      if (!event.isPrimary || (event.pointerType !== 'touch' && event.pointerType !== 'pen')) return;
-      pointerStart = { id: event.pointerId, x: event.clientX, y: event.clientY };
-      slide.setPointerCapture(event.pointerId);
-    }, { signal });
-    slide.addEventListener('pointerup', event => {
-      if (!pointerStart || pointerStart.id !== event.pointerId) return;
-      const dx = event.clientX - pointerStart.x, dy = event.clientY - pointerStart.y;
-      pointerStart = null;
-      if (Math.abs(dx) >= 44 && Math.abs(dx) > Math.abs(dy) * 1.3) show(requestedIndex + (dx < 0 ? 1 : -1));
-    }, { signal });
-    slide.addEventListener('pointercancel', () => { pointerStart = null; }, { signal });
-    show(0, false);
-  }
+
   function openCamp(id, trigger) {
     const c = campById(id); if (!c) return;
     lastDialogTrigger = trigger;
@@ -505,25 +450,21 @@
       ? [['dates', '課程日期', c.dateLabel], ['age', '適合對象', c.ageLabel], ['time', '每日時間', c.timeLabel], ['classroom', '上課教室', c.classroomLabel], ['price', '課程費用', c.priceLabel]]
       : [['dates', '課程日期', c.dateLabel], ['price', '課程費用', c.priceLabel]];
     const factsMarkup = '<div class="dialog-facts">' + facts.map(([key, label, value]) => '<div data-fact="' + key + '"><span>' + esc(label) + '</span>' + esc(value) + (key === 'price' && c.pricing ? '<p class="dialog-price-note">' + esc(c.priceNote).replace('，原價', '，<br>原價') + '</p>' : '') + '</div>').join('') + '</div>' + (id === 'full-term' ? '' : '<p class="dialog-unknown-note">年齡、上課時段與教室將另行公布。</p>');
-    const fullTermExtras = id === 'full-term' ? '<h3>9 天的文化旅程</h3><ul class="period-list">' + data.itinerary.periods.map(p => '<li><small>' + esc(p.dateLabel) + ' · ' + p.days + ' 天</small><h4>' + esc(p.title) + '</h4><p>' + esc(p.description) + '</p></li>').join('') + '</ul><p class="dialog-note">' + esc(data.itinerary.note) + '</p><div class="dialog-event"><h4>2/2 晚上，邀請爸媽來作客。</h4><p>' + esc(c.parentEvent.description) + '<br>' + esc(c.parentEvent.note) + '</p></div>' : '';
-    const story = courseStory(c);
-    const activities = story.length
-      ? '<h3>孩子會怎麼參與？</h3>' + renderStoryGallery(story)
-      : c.activities.length ? '<h3>孩子會經歷什麼？</h3><div class="activity-list">' + c.activities.map(a => '<div><h4>' + esc(a.title) + '</h4><p>' + esc(a.description) + '</p></div>').join('') + '</div>' : '';
-    const poster = c.poster ? '<figure class="dialog-poster"><a href="' + esc(c.poster) + '" ' + ext + ' aria-label="開啟' + esc(c.name) + '完整海報"><img src="' + esc(c.poster) + '" alt="' + esc(c.name) + '完整課程海報" decoding="async"></a><figcaption>點開查看完整海報 ↗</figcaption></figure>' : '';
+    const fullTermExtras = id === 'full-term' ? '<section class="course-journey" aria-labelledby="courseJourneyTitle"><h3 id="courseJourneyTitle">9 天的文化旅程</h3><ul class="period-list">' + data.itinerary.periods.map(p => '<li><small>' + esc(p.dateLabel) + ' · ' + p.days + ' 天</small><h4>' + esc(p.title) + '</h4><p>' + esc(p.description) + '</p></li>').join('') + '</ul><p class="dialog-note">' + esc(data.itinerary.note) + '</p><div class="dialog-event"><h4>2/2 晚上，邀請爸媽來作客。</h4><p>' + esc(c.parentEvent.description) + '<br>' + esc(c.parentEvent.note) + '</p></div></section>' : '';
+    const poster = c.poster ? '<figure class="dialog-poster"><a href="' + esc(c.poster) + '" ' + ext + ' aria-label="開啟' + esc(c.name) + '完整海報"><img src="' + esc(c.poster) + '" alt="' + esc(c.name) + '完整課程海報" loading="eager" fetchpriority="high" decoding="async"></a><figcaption>點開查看完整海報 <span aria-hidden="true">↗</span></figcaption></figure>' : '';
     const couponEntry = '<a href="coupon.html" class="camp-coupon-entry"><img class="camp-coupon-entry__logo" src="assets/brand-logo.png" width="32" height="32" alt="" loading="lazy" decoding="async"><span class="camp-coupon-entry__copy"><strong>冬令營優惠券</strong><span>10/15 開放・限量 60 張</span></span><span class="camp-coupon-entry__cta">查看領券資訊 <span aria-hidden="true">↗</span></span></a>';
     const actions = '<div class="dialog-actions"><a href="' + esc(c.registration.url) + '" ' + ext + ' class="button">' + esc(c.registration.label) + ' <span aria-hidden="true">↗</span></a></div>';
     const care = c.extendedCare;
     const pickupNotes = id === 'full-term' ? '<p>接送安排：' + esc(c.pickupLabel) + '。</p>' + (care ? '<p>超過 ' + esc(care.startsAfter) + ' 接回：延托費 NT$' + esc(care.ratePerHour) + '／小時，' + esc(care.rounding) + '。' + esc(care.notice) + '</p>' : '') : '';
     const registrationNotes = '<details class="dialog-registration-notes"><summary>報名與接送說明</summary><div>' + pickupNotes + '<p>' + esc(c.registration.note) + '</p><p>' + esc(data.campaign.relationship) + '</p></div></details>';
-    $('#dialogContent').innerHTML = '<div class="dialog-inner"><p class="eyebrow">' + esc(c.daysLabel) + '</p><h2 id="dialogTitle">' + esc(c.name) + '</h2><p class="dialog-subtitle">' + esc(c.subtitle) + '</p><div class="dialog-course-layout"><div class="dialog-course-main"><p class="dialog-description">' + esc(c.description) + '</p>' + factsMarkup + activities + fullTermExtras + actions + couponEntry + registrationNotes + '</div>' + poster + '</div></div>';
+    const registration = '<section class="course-registration" aria-labelledby="courseRegistrationTitle"><h3 id="courseRegistrationTitle">日期與報名</h3>' + factsMarkup + actions + couponEntry + registrationNotes + '</section>';
+    $('#dialogContent').innerHTML = '<div class="dialog-inner course-journal' + (poster ? '' : ' course-journal--text') + '">' + poster + '<article class="dialog-course-main"><header class="course-introduction"><p class="eyebrow">' + esc(c.daysLabel) + '</p><h2 id="dialogTitle">' + esc(c.name) + '</h2><p class="dialog-subtitle">' + esc(c.subtitle) + '</p><p class="dialog-description">' + esc(c.description) + '</p></header>' + renderCourseJournal(c) + fullTermExtras + registration + '</article></div>';
     dialogIsOpen = true; syncScenePlayback();
     if (!campDialog.open) {
       pageOverflowBeforeDialog = document.body.style.overflow;
       campDialog.showModal();
     }
-    campDialog.scrollTop = 0; document.body.style.overflow = 'hidden'; $('#dialogClose').focus();
-    mountCourseStory(story);
+    campDialog.scrollTop = 0; document.body.style.overflow = 'hidden'; $('#dialogClose').focus({ preventScroll: true });
   }
   document.addEventListener('click', event => { const trigger = event.target.closest('[data-camp]'); if (trigger) openCamp(trigger.dataset.camp, trigger); });
   $('#dialogClose').addEventListener('click', () => campDialog.close());
@@ -533,11 +474,9 @@
     if (event.clientX < r.left || event.clientX > r.right || event.clientY < r.top || event.clientY > r.bottom) campDialog.close();
   });
   campDialog.addEventListener('close', () => {
-    courseStoryController?.abort();
-    courseStoryController = null;
     document.body.style.overflow = pageOverflowBeforeDialog;
     dialogIsOpen = false; syncScenePlayback();
-    lastDialogTrigger?.focus();
+    lastDialogTrigger?.focus({ preventScroll: true });
   });
 
 
