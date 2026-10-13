@@ -11,7 +11,7 @@ window.CAMPAIGN_COUPON = Object.freeze({
   initialPoolSize: 60, // 使用者已確認；僅為活動公告，實際剩餘量仍讀API
   legacyApiUrl: 'https://script.google.com/macros/s/AKfycbzgP4w_VtsepL0QBLcTu5xjNBKRoLT5-yAcYLgRtbDvSIkZ8oXtVMck9Bt3KU9vwuxG/exec', // 保留來源：camp2026/coupon.html，不呼叫此暑期池
   apiUrl: '', // 年度部署完成後由實作者填入產生的URL；不要求家長/使用者提供工程資訊
-  publicCouponUrl: 'https://blockplanetcamp.com/2027/coupon.html', // 對外優惠券網址；活動代號與儲存資料維持原設定
+  publicCouponUrl: 'https://blockplanetcamp.com/camp2027/coupon.html', // 對外優惠券網址；活動代號與儲存資料維持原設定
   discountLabel: '95 折', // 保留既有優惠規則；2027活動確認後才對外顯示
   validMinutes: 60,
   eligibleCamps: [], // 必填2027可使用的營隊名稱；不能複製2026清單
