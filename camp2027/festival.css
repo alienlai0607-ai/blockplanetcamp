@@ -68,7 +68,7 @@ body{background-color:var(--paper);background-image:radial-gradient(#a77d4210 .6
 .story-assets-drone-duel .dragon-sprite{background-image:url('assets/drone-sprites.webp');background-size:300% 100%;background-position:50% 0}
 .story-assets-drone-duel .monkey-sprite{background-image:url('assets/drone-monkey.webp?v=scope-restore-20261013');background-size:100% 100%;background-position:center}
 .scene-paused .frame-enter{animation:none!important;opacity:1;transform:none}
-#lightsFrame{margin:-9px auto -26px;max-width:480px;background-position:center}
+#lightsFrame{margin:-9px auto 12px;max-width:480px;background-position:center}
 .story-frame.frame-enter{animation:frame-enter .65s var(--ease) both}
 .lights-visual>.scene-controls{position:relative;inset:auto}
 .experience-detail{border-color:#a9b777;min-height:185px;padding-left:19px;margin-top:23px}
@@ -175,7 +175,7 @@ dialog{width:min(1040px,calc(100% - 40px));background:#fff9ec;color:var(--ink);b
  .culture-chapter .camp-section{padding-block:43px;min-height:0;gap:17px}
  .lamp-rack{gap:9px}.lamp-label{font-size:11px;max-width:none;white-space:nowrap}.lamp-orb{border-width:3px}
  .scene-eyebrow{font-size:12px}.lights-visual{height:auto;margin-top:8px!important;padding:0}
- #lightsFrame{margin:-9px auto -20px;max-width:460px}
+ #lightsFrame{margin:-9px auto 12px;max-width:460px}
  .experience-detail{min-height:160px;padding:14px 0 14px 17px}.experience-learning,.learning-points{font-size:12px;gap:5px 10px}
  .drone-visual{height:auto;margin-top:8px}.drone-stage{margin:-9px 0 -8px}
  .drone-arena .drone-pilot{width:60%;left:8%;bottom:0}.drone-arena .dragon-flight{width:27%;top:26%;right:14%}.drone-arena .monkey-flight{width:24%;top:15%;left:16%}
