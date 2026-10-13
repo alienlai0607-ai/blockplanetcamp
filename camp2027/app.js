@@ -53,8 +53,8 @@
   const sceneAssetRequests = new Map();
   const imageRequests = new Map();
   const singleFrames = { lights: $('#lightsFrame'), drone: $('#droneFrame'), lego: $('#legoFrame') };
-  const storyImage = (name, index) => 'assets/' + (name === 'lights' ? 'culture' : name) + '-frame-' + String(index + 1).padStart(2, '0') + '.webp' + (name === 'lights' ? '?v=home-lights-20261013' : name === 'lego' || (name === 'drone' && index === 0) ? '?v=creative-journey-20261013' : '?v=scope-restore-20261013');
-  const cultureThumbnail = index => 'assets/culture-thumb-' + String(index + 1).padStart(2, '0') + '.webp?v=home-lights-20261013';
+  const storyImage = (name, index) => 'assets/' + (name === 'lights' ? 'culture' : name) + '-frame-' + String(index + 1).padStart(2, '0') + '.webp' + (name === 'lights' ? (index === 4 ? '?v=banquet-float-20261013' : '?v=home-lights-20261013') : name === 'lego' || (name === 'drone' && index === 0) ? '?v=creative-journey-20261013' : '?v=scope-restore-20261013');
+  const cultureThumbnail = index => 'assets/culture-thumb-' + String(index + 1).padStart(2, '0') + '.webp?v=' + (index === 4 ? 'banquet-float-20261013' : 'home-lights-20261013');
   const duelAssets = ['assets/drone-sprites.webp', 'assets/drone-monkey.webp?v=scope-restore-20261013', 'assets/drone-arena.webp', 'assets/drone-students.webp'];
   let duelRequest;
   function preloadImage(src) {
