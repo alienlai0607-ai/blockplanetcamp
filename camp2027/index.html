@@ -29,8 +29,9 @@
   <link rel="stylesheet" href="course-dialog.css?v=creative-journey-20261013">
   <link rel="stylesheet" href="mobile-camp.css?v=creative-journey-20261013">
   <link rel="stylesheet" href="camp-choice.css?v=camp-choice-20261013">
+  <link rel="stylesheet" href="calendar-panel.css?v=calendar-panel-20261013">
   <script src="camp-data.js?v=course-dialog-20261013" defer></script>
-  <script src="app.js?v=creative-journey-20261013" defer></script>
+  <script src="app.js?v=calendar-panel-20261013" defer></script>
 </head>
 <body>
   <a class="skip-link" href="#main">跳至主要內容</a>
@@ -189,7 +190,7 @@
     <section class="schedule-section section-anchor" id="calendar" aria-labelledby="scheduleTitle"><div class="page-width">
       <div class="section-heading"><div><p class="eyebrow">MAKE ROOM FOR ADVENTURE</p><h2 id="scheduleTitle">把精彩，排進寒假。</h2></div><p>選擇營隊，查看完整上課日期。<br>9 日全期營須完整報名；各特色營獨立報名。</p></div>
       <div class="calendar-toolbar"><div class="filter-group" role="group" aria-label="篩選營隊日期"><button data-calendar-filter="all" aria-pressed="true">全部營隊</button><button data-calendar-filter="full-term" aria-pressed="false">9 日全期營</button><button data-calendar-filter="drone" aria-pressed="false">祥龍飛行派對</button></div><span class="calendar-help">點日期，查看包含該日的完整營期</span></div>
-      <div class="calendar-layout"><div class="calendars" id="calendarGrid"></div><div class="calendar-compact" id="calendarCompact" role="group" aria-label="寒假三週總覽"></div><aside id="calendarDetail" class="calendar-detail" aria-live="polite"></aside></div>
+      <div class="calendar-layout"><div class="calendars" id="calendarGrid"></div><div class="calendar-compact" id="calendarCompact" role="group" aria-label="寒假三週總覽"></div><aside id="calendarDetail" class="calendar-detail" aria-label="完整營隊日期"><p class="calendar-summary-label">完整營隊日期</p><div id="calendarProgramPicker" class="calendar-program-picker" role="group" aria-label="選擇要查看完整營期的營隊"></div><div id="calendarProgram" aria-live="polite" aria-atomic="true"></div><p id="calendarOverlapNote" class="calendar-note" hidden>兩個營期部分日期重疊，報名前請確認安排。</p></aside></div>
       <p class="calendar-note">LEGO IDEAS 與 2 日特色營的日期將另行公布。</p>
     </div></section>
 

@@ -1,0 +1,108 @@
+/* One complete camp at a time; switching details never stretches the calendars. */
+#calendar .calendar-layout,
+#calendar .calendars { align-items:start; }
+#calendar #calendarDetail {
+  display:block;
+  padding:22px 24px;
+  border:1px solid #d9bd94;
+  border-radius:16px;
+  background:#fff9ec;
+  align-self:start;
+}
+#calendarDetail .calendar-summary-label {
+  margin:0 0 14px;
+  font-size:16px;
+  line-height:1.5;
+  color:#806345;
+}
+#calendarDetail .calendar-program-picker {
+  display:flex;
+  gap:5px;
+  padding:4px;
+  margin:0 0 20px;
+  border-radius:10px;
+  background:#efe2ca;
+}
+#calendarDetail .calendar-program-picker[hidden],
+#calendarDetail .calendar-note[hidden] { display:none; }
+#calendarDetail .calendar-program-picker button {
+  flex:1;
+  min-width:0;
+  min-height:44px;
+  padding:8px 7px;
+  border:1px solid transparent;
+  border-radius:7px;
+  color:#74573f;
+  font-size:16px;
+  font-weight:750;
+  line-height:1.45;
+}
+#calendarDetail .calendar-program-picker button[aria-pressed=true] {
+  background:#fffaf0;
+  border-color:#d4b185;
+  color:#a34831;
+}
+#calendarDetail .calendar-program-picker button:focus-visible {
+  outline:2px solid #a34831;
+  outline-offset:2px;
+}
+#calendarDetail .calendar-course { border:0;padding:0; }
+#calendarDetail .calendar-course h3 {
+  margin:0 0 8px;
+  font-size:24px;
+  font-weight:800;
+  line-height:1.45;
+  color:#65432f;
+}
+#calendarDetail .calendar-course .calendar-enrolment {
+  margin:0 0 15px;
+  color:#a34831;
+  font-size:17px;
+  font-weight:750;
+  line-height:1.6;
+}
+#calendarDetail .calendar-periods { gap:6px;margin:0 0 10px; }
+#calendarDetail .calendar-periods li {
+  padding:3px 7px;
+  background:#f2e3c7;
+  font-size:16px;
+  line-height:1.6;
+}
+#calendarDetail .calendar-course .calendar-program-time {
+  margin:0;
+  color:#806345;
+  font-size:16px;
+  line-height:1.6;
+}
+#calendarDetail .calendar-course>button {
+  display:inline-flex;
+  align-items:center;
+  gap:10px;
+  min-height:44px;
+  padding:5px 0;
+  margin-top:14px;
+  border-bottom:1px solid #be8b66;
+  color:#a34831;
+  font-size:17px;
+  font-weight:750;
+  line-height:1.5;
+  text-align:left;
+}
+#calendarDetail #calendarOverlapNote {
+  margin:16px 0 0;
+  padding-top:12px;
+  border-top:1px solid #e8d8c0;
+  color:#806345;
+  font-size:14px;
+  line-height:1.7;
+  font-weight:500;
+}
+@media(max-width:850px) {
+  #calendar #calendarDetail { padding:20px; }
+  #calendarDetail .calendar-program-picker { max-width:430px;margin-bottom:16px; }
+}
+@media(max-width:400px) {
+  #calendar #calendarDetail { padding:18px 16px; }
+  #calendarDetail .calendar-course h3 { font-size:22px; }
+  #calendarDetail .calendar-program-picker button { font-size:15px; }
+}
