@@ -41,7 +41,7 @@ window.CAMP_DATA = {
     { name: "老師專區", label: "老師專區", url: "https://teacher.blockplanetcamp.com/", requiresExistingTeacherGate: true },
     { name: "系統", label: "系統", url: "https://blockplanetcamp.com/camp2026/weclass.html" },
     { name: "行政", label: "行政", url: "https://blockplanetcamp.com/camp2026/weclass.html?role=admin" },
-    { name: "後台", label: "後台", url: "https://blockplanetcamp.com/camp2026/admin.html" },
+    { name: "總後台", label: "總後台", url: "https://blockplanetcamp.com/camp2027/admin.html" },
     { name: "寶可夢卡牌大賽", label: "寶可夢卡牌大賽", url: "https://blockplanetcamp.com/camp2026/pokemon/index.html" },
     { name: "無人機足球晉級賽", label: "無人機足球晉級賽", url: "https://blockplanetcamp.com/camp2026/drone-soccer/index.html" },
     { name: "廢材機器人淘汰賽", label: "廢材機器人淘汰賽", url: "https://blockplanetcamp.com/camp2026/junkbot-tournament/index.html" }

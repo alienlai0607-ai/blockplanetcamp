@@ -1,0 +1,65 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="robots" content="noindex,nofollow,noarchive">
+  <meta name="referrer" content="no-referrer">
+  <title>2027 冬令營｜管理入口</title>
+  <link rel="icon" href="assets/brand-logo.png">
+  <style>
+    [hidden]{display:none!important}.gate-label{display:block;font-weight:750;margin-bottom:8px}.gate-input{width:100%;min-height:50px;padding:10px 12px;border:1px solid #aebbb6;border-radius:9px;font:inherit;margin-bottom:14px}.gate-submit{width:100%;border:0;cursor:pointer;font:inherit}.gate-message{min-height:1.8em;color:#a13b2f;font-size:15px;margin:10px 0}.gate-input:focus-visible,.gate-submit:focus-visible{outline:3px solid #ce8e29;outline-offset:3px}
+    *{box-sizing:border-box}body{margin:0;background:#f7f4ed;color:#263b40;font:17px/1.8 system-ui,-apple-system,"Noto Sans TC",sans-serif}main{width:min(640px,100%);margin:8vh auto;padding:24px}.brand{display:flex;align-items:center;gap:12px;color:inherit;text-decoration:none;font-size:16px;font-weight:700}.brand img{width:42px;height:42px}.card{margin-top:28px;padding:clamp(24px,5vw,42px);border:1px solid #deded4;border-radius:20px;background:#fffefb}.eyebrow{font-size:13px;letter-spacing:.12em;color:#ab463b;font-weight:750;margin:0 0 8px}h1{font-size:clamp(27px,6vw,34px);line-height:1.4;margin:0 0 16px}p{margin:0 0 18px}.muted{color:#637273}.button{display:flex;justify-content:center;align-items:center;min-height:52px;padding:12px 18px;border-radius:10px;background:#246d67;color:white;text-decoration:none;font-weight:750;text-align:center}.button:hover{background:#195851}a:focus-visible{outline:3px solid #ce8e29;outline-offset:4px}.help{padding:18px;margin-top:22px;border-radius:10px;background:#edf2ec;font-size:15px}.help p:last-child{margin-bottom:0}.history{border-top:1px solid #deded4;padding-top:20px;margin-top:24px;font-size:15px}.history a,.back{color:#246d67}.back{display:inline-block;margin-top:22px;font-size:15px}small{display:block;color:#637273;font-size:14px;margin-top:7px}@media(max-width:400px){main{margin-top:24px;padding:16px}.card{padding:24px 20px}.brand{font-size:15px}}
+  </style>
+</head>
+<body>
+  <main>
+    <a class="brand" href="index.html"><img src="assets/brand-logo.png" width="42" height="42" alt=""><span>布拉克星球・2027 冬令營</span></a>
+    <section class="card" aria-labelledby="title">
+      <p class="eyebrow">2027 WINTER CAMP</p>
+      <h1 id="title">2027 冬令營總後台</h1>
+      <form id="entry-gate">
+        <p class="muted">請輸入老師通行密碼，再使用管理者 Google 帳號進入總後台。</p>
+        <label class="gate-label" for="entry-password">老師通行密碼</label>
+        <input id="entry-password" class="gate-input" type="password" autocomplete="current-password" required aria-describedby="entry-feedback">
+        <button class="button gate-submit" type="submit">繼續進入總後台</button>
+        <p id="entry-feedback" class="gate-message" role="alert"></p>
+      </form>
+      <div id="private-admin-entry" hidden>
+      <p class="muted">報名名單、優惠券、教具訂單、報價單與營隊收支，都從這裡管理。</p>
+      <a id="private-admin-link" class="button" href="https://script.google.com/macros/s/AKfycbw3MKitF3UtV_Tq5DTSacAbuy9B7NptPwVYh244PInDHhMbuPhedlh-OY0pPQzdyCTz/exec?action=admin" target="_blank" rel="noopener noreferrer">使用 Google 帳號進入後台 ↗</a>
+      <div class="help"><p><strong>目前僅管理者帳號可進入。</strong></p><p>請使用建立此後台的 Google 帳號登入。若看到「無法存取」，請切換至管理者帳號後再開啟。</p></div>
+      </div>
+    </section>
+    <a class="back" href="index.html">← 返回 2027 冬令營首頁</a>
+  </main>
+  <script>
+    (() => {
+      'use strict';
+      // A familiar navigation gate only. The Google backend authorizes every request.
+      const key = 'bp_admin_2027_entry_unlocked_v1';
+      const form = document.getElementById('entry-gate');
+      const input = document.getElementById('entry-password');
+      const feedback = document.getElementById('entry-feedback');
+      function unlock(focusLink) {
+        form.hidden = true;
+        document.getElementById('private-admin-entry').hidden = false;
+        input.value = '';
+        if (focusLink) document.getElementById('private-admin-link').focus();
+      }
+      try { if (sessionStorage.getItem(key) === '1') unlock(false); } catch {}
+      form.addEventListener('submit', event => {
+        event.preventDefault();
+        if (input.value.trim().toUpperCase() !== 'BLOCK') {
+          feedback.textContent = '通行密碼不正確，請再試一次。';
+          input.select();
+          return;
+        }
+        try { sessionStorage.setItem(key, '1'); } catch {}
+        feedback.textContent = '';
+        unlock(true);
+      });
+    })();
+  </script>
+</body>
+</html>
