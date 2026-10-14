@@ -51,27 +51,13 @@
   const visibleScenes = new Set();
   const readyScenes = new Set();
   const sceneAssetRequests = new Map();
-  const imageRequests = new Map();
   const frameRevisions = new Map();
+  const frameContent = new Map();
   const singleFrames = { lights: $('#lightsFrame'), drone: $('#droneFrame'), lego: $('#legoFrame') };
   const storyImage = (name, index) => 'assets/' + (name === 'lights' ? 'culture' : name) + '-frame-' + String(index + 1).padStart(2, '0') + '.webp' + (name === 'lights' ? (index === 4 ? '?v=banquet-float-20261013' : '?v=home-lights-20261013') : name === 'lego' || (name === 'drone' && index === 0) ? '?v=creative-journey-20261013' : '?v=scope-restore-20261013');
   const cultureThumbnail = index => 'assets/culture-thumb-' + String(index + 1).padStart(2, '0') + '.webp?v=' + (index === 4 ? 'banquet-float-20261013' : 'home-lights-20261013');
   const duelAssets = ['assets/drone-sprites.webp', 'assets/drone-monkey.webp?v=scope-restore-20261013', 'assets/drone-arena.webp', 'assets/drone-students.webp'];
-  let duelRequest;
-  function preloadImage(src, priority = 'low') {
-    if (!imageRequests.has(src)) {
-      const request = new Promise(resolve => {
-        const image = new Image();
-        image.decoding = 'async';
-        image.fetchPriority = priority;
-        image.onload = () => image.decode ? image.decode().catch(() => {}).then(() => resolve(true)) : resolve(true);
-        image.onerror = () => { imageRequests.delete(src); resolve(false); };
-        image.src = src;
-      });
-      imageRequests.set(src, request);
-    }
-    return imageRequests.get(src);
-  }
+  const preloadImage = window.CampImages.preload;
   function sceneReady(name) {
     document.body.classList.add('story-assets-' + name);
     readyScenes.add(name);
@@ -83,14 +69,19 @@
       void frame.offsetWidth; frame.classList.add('frame-enter');
     }
   }
-  function prepareDuelAssets() {
-    if (!duelRequest) duelRequest = Promise.all(duelAssets.map(src => preloadImage(src))).then(results => {
+  function prepareDuelAssets(priority = 'low') {
+    const requests = duelAssets.map(src => preloadImage(src, priority));
+    return Promise.all(requests).then(results => {
       const loaded = results.every(Boolean);
-      if (loaded) document.body.classList.add('story-assets-drone-duel');
-      else duelRequest = undefined;
+      if (loaded) {
+        $('.dragon-sprite', scenes.drone).style.backgroundImage = 'url("' + window.CampImages.source(duelAssets[0]) + '")';
+        $('.monkey-sprite', scenes.drone).style.backgroundImage = 'url("' + window.CampImages.source(duelAssets[1]) + '")';
+        $('.arena-background', scenes.drone).src = window.CampImages.source(duelAssets[2]);
+        $('.drone-pilot', scenes.drone).src = window.CampImages.source(duelAssets[3]);
+        document.body.classList.add('story-assets-drone-duel');
+      }
       return loaded;
     });
-    return duelRequest;
   }
   function preloadNextFrame(name, index) {
     if (name === 'lights') {
@@ -104,10 +95,17 @@
     if (name === 'drone' && next === 3) prepareDuelAssets();
     else preloadImage(storyImage(name, next));
   }
+  function warmSceneFrames(name) {
+    if (navigator.connection?.saveData) return;
+    const count = name === 'lights' ? 5 : name === 'drone' ? 3 : 6;
+    for (let index = 0; index < count; index++) preloadImage(storyImage(name, index));
+    if (name === 'drone') prepareDuelAssets();
+  }
   function finishFrameLoad(name, revision, loaded) {
     if (frameRevisions.get(name) !== revision) return false;
     const frame = singleFrames[name];
     frame.dataset.loadState = loaded ? 'ready' : 'error';
+    scenes[name].dataset.loadState = frame.dataset.loadState;
     frame.setAttribute('aria-busy', 'false');
     if (!loaded) {
       sequences[name]?.pause();
@@ -120,19 +118,28 @@
     const loaded = await preloadImage(src, 'high');
     // Every selection has its own revision, including returning to the same lamp.
     if (!finishFrameLoad(name, revision, loaded)) return false;
-    frame.style.backgroundImage = 'url("' + src + '")';
+    frame.style.backgroundImage = 'url("' + window.CampImages.source(src) + '")';
     frame.dataset.loadedFrameIndex = String(index);
+    frame.setAttribute('aria-label', frameContent.get(name)?.alt || '');
+    frameContent.get(name)?.render?.();
+    if (name === 'drone') {
+      scenes.drone.classList.remove('duel-active');
+      frame.setAttribute('aria-hidden', 'false');
+      $('.drone-arena', scenes.drone).setAttribute('aria-hidden', 'true');
+    }
     animateStoryFrame(frame);
     sceneReady(name);
     return true;
   }
   async function showDuel(revision) {
-    const loaded = await prepareDuelAssets();
+    const loaded = await prepareDuelAssets('high');
     if (!finishFrameLoad('drone', revision, loaded)) return false;
     scenes.drone.classList.add('duel-active');
     $('#droneFrame').dataset.loadedFrameIndex = '3';
     $('#droneFrame').setAttribute('aria-hidden', 'true');
     $('.drone-arena', scenes.drone).setAttribute('aria-hidden', 'false');
+    $('.drone-arena', scenes.drone).setAttribute('aria-label', frameContent.get('drone')?.alt || '');
+    frameContent.get('drone')?.render?.();
     sceneReady('drone');
     return true;
   }
@@ -141,6 +148,7 @@
     const revision = (frameRevisions.get(name) || 0) + 1;
     frameRevisions.set(name, revision);
     frame.dataset.loadState = 'loading';
+    scenes[name].dataset.loadState = 'loading';
     frame.setAttribute('aria-busy', 'true');
     frame.classList.remove('frame-enter');
     readyScenes.delete(name);
@@ -148,30 +156,39 @@
     const request = name === 'drone' && index === 3 ? showDuel(revision) : showSingleFrame(name, index, revision);
     // Give the visible illustration the connection before warming the next one.
     request.then(loaded => {
-      if (loaded && frameRevisions.get(name) === revision) preloadNextFrame(name, index);
+      if (loaded && frameRevisions.get(name) === revision) {
+        preloadNextFrame(name, index);
+        warmSceneFrames(name);
+      }
     });
     return request;
   };
   function prepareSceneAssets(name) {
     if (!singleFrames[name]) return Promise.resolve();
     if (!sceneAssetRequests.has(name)) {
+      const request = loadCurrentFrame(name);
       if (name === 'lights') {
         $$('.lamp-picture[data-thumb-src]').forEach(picture => {
-          picture.style.backgroundImage = 'url("' + picture.dataset.thumbSrc + '")';
+          preloadImage(picture.dataset.thumbSrc).then(loaded => {
+            if (loaded) picture.style.backgroundImage = 'url("' + picture.dataset.thumbSrc + '")';
+          });
         });
       }
-      const request = loadCurrentFrame(name);
       sceneAssetRequests.set(name, request);
     }
     return sceneAssetRequests.get(name);
   }
-  function setStoryFrame(frame, index, alt) {
+  function setStoryFrame(frame, index, alt, render) {
     if (!frame) return;
     const name = frame.closest('[data-motion-scene]')?.dataset.motionScene;
     frame.style.backgroundPosition = 'center';
     frame.dataset.frameIndex = String(index);
     frame.setAttribute('role', 'img');
-    frame.setAttribute('aria-label', alt);
+    frameContent.set(name, { alt, render });
+    if (frame.dataset.loadedFrameIndex === undefined) {
+      frame.setAttribute('aria-label', alt);
+      render?.();
+    }
     if (singleFrames[name]) {
       if (sceneAssetRequests.has(name)) loadCurrentFrame(name);
     } else animateStoryFrame(frame);
@@ -253,8 +270,9 @@
       el.classList.toggle('is-lit', litLamps.has(i));
       el.classList.toggle('is-selected', index === i);
     });
-    setStoryFrame($('#lightsFrame'), cultureFrame(item), '大聖老師與小橘人學員參與' + item.name + '的活動場景');
-    $('#experienceDetail').innerHTML = '<span class="experience-count">' + String(index + 1).padStart(2, '0') + ' / ' + String(experiences.length).padStart(2, '0') + '</span><h3>' + esc(item.name) + '</h3><p>' + esc(item.description) + '</p>' + learningList(item.learningPoints || item.bullets);
+    setStoryFrame($('#lightsFrame'), cultureFrame(item), '大聖老師與小橘人學員參與' + item.name + '的活動場景', () => {
+      $('#experienceDetail').innerHTML = '<span class="experience-count">' + String(index + 1).padStart(2, '0') + ' / ' + String(experiences.length).padStart(2, '0') + '</span><h3>' + esc(item.name) + '</h3><p>' + esc(item.description) + '</p>' + learningList(item.learningPoints || item.bullets);
+    });
     if (speak) announce(item.name + '。' + item.description);
   }
   sequences.lights = createSequence({
@@ -273,19 +291,16 @@
   $('#droneSteps')?.replaceChildren();
   if ($('#droneSteps')) $('#droneSteps').innerHTML = droneStages.map((stage, i) => '<button data-drone-step="' + i + '" aria-pressed="' + (i === 0) + '" aria-controls="droneFrame droneStepTitle droneStepText" aria-label="第' + (i + 1) + '步：' + esc(stage.title) + '">' + esc(stage.label) + '</button>').join('');
   function setDroneStep(index, speak = false) {
-    const stage = droneStages[index], duel = index === 3;
-    // Use the frame's loading state until the selected illustration is ready.
-    scenes.drone.classList.remove('duel-active');
+    const stage = droneStages[index];
+    // Keep the displayed scene and its caption together until the next is decoded.
     const frame = $('#droneFrame');
-    setStoryFrame(frame, stage.frame, stage.alt);
-    const duelVisible = duel && scenes.drone.classList.contains('duel-active');
-    if (frame) frame.setAttribute('aria-hidden', String(duelVisible));
-    const arena = $('.drone-arena', scenes.drone);
-    if (arena) { arena.setAttribute('aria-hidden', String(!duelVisible)); arena.setAttribute('role', 'img'); arena.setAttribute('aria-label', stage.alt); }
-    if ($('#droneStepNumber')) $('#droneStepNumber').textContent = String(index + 1).padStart(2, '0');
-    if ($('#droneStepTitle')) $('#droneStepTitle').textContent = stage.title;
-    if ($('#droneStepText')) $('#droneStepText').textContent = stage.text;
-    if ($('#flightCaption')) $('#flightCaption').textContent = stage.text;
+    setStoryFrame(frame, stage.frame, stage.alt, () => {
+      if ($('#droneStepNumber')) $('#droneStepNumber').textContent = String(index + 1).padStart(2, '0');
+      if ($('#droneStepTitle')) $('#droneStepTitle').textContent = stage.title;
+      if ($('#droneStepText')) $('#droneStepText').textContent = stage.text;
+      if ($('#flightCaption')) $('#flightCaption').textContent = stage.text;
+    });
+    $('.drone-arena', scenes.drone).setAttribute('role', 'img');
     $$('[data-drone-step]').forEach((button, i) => {
       button.setAttribute('aria-pressed', String(index === i));
       button.classList.toggle('is-complete', i < index);
@@ -309,10 +324,11 @@
   $('#legoSteps').innerHTML = legoStages.map((stage, i) => '<button data-lego-step="' + i + '" aria-pressed="' + (i === 0) + '" aria-controls="legoFrame legoStepTitle legoStepText" aria-label="第' + (i + 1) + '步：' + esc(stage.title) + '">' + esc(stage.label) + '</button>').join('');
   function setLegoStep(index, speak = false) {
     const stage = legoStages[index];
-    setStoryFrame($('#legoFrame'), index, stage.alt);
-    $('#legoStepNumber').textContent = String(index + 1).padStart(2, '0');
-    $('#legoStepTitle').textContent = stage.title;
-    $('#legoStepText').textContent = stage.text;
+    setStoryFrame($('#legoFrame'), index, stage.alt, () => {
+      $('#legoStepNumber').textContent = String(index + 1).padStart(2, '0');
+      $('#legoStepTitle').textContent = stage.title;
+      $('#legoStepText').textContent = stage.text;
+    });
     $$('[data-lego-step]').forEach((button, i) => {
       button.setAttribute('aria-pressed', String(index === i));
       button.classList.toggle('is-complete', i < index);
@@ -352,7 +368,7 @@
       if (!entry.isIntersecting) return;
       prepareSceneAssets(entry.target.dataset.motionScene);
       assetObserver.unobserve(entry.target);
-    }), { rootMargin: matchMedia('(max-width:700px)').matches ? '400px 0px' : '800px 0px', threshold: 0 });
+    }), { rootMargin: '1200px 0px', threshold: 0 });
     const playbackObserver = new IntersectionObserver(entries => entries.forEach(entry => {
       const name = entry.target.dataset.motionScene;
       if (entry.isIntersecting) {
@@ -364,7 +380,13 @@
     Object.values(scenes).forEach(scene => playbackObserver.observe(scene));
     // On entry, the hero gets first use of the connection. A directly visible
     // story still loads immediately through playbackObserver (including anchors).
-    const observeUpcomingScenes = () => Object.values(scenes).forEach(scene => assetObserver.observe(scene));
+    const observeUpcomingScenes = () => {
+      Object.values(scenes).forEach(scene => assetObserver.observe(scene));
+      // First illustrations are small and warm in a two-request queue after hero.
+      if (!navigator.connection?.saveData) {
+        Object.keys(singleFrames).forEach(name => preloadImage(storyImage(name, Number(singleFrames[name].dataset.frameIndex || 0))));
+      }
+    };
     const heroImage = $('.hero-illustration');
     if (!heroImage || heroImage.complete) observeUpcomingScenes();
     else {
@@ -499,7 +521,7 @@
       : [['dates', '課程日期', c.dateLabel], ['price', '課程費用', c.priceLabel]];
     const factsMarkup = '<div class="dialog-facts">' + facts.map(([key, label, value]) => '<div data-fact="' + key + '"><span>' + esc(label) + '</span>' + esc(value) + (key === 'price' && c.pricing ? '<p class="dialog-price-note">' + esc(c.priceNote).replace('，原價', '，<br>原價') + '</p>' : '') + '</div>').join('') + '</div>' + (id === 'full-term' ? '' : '<p class="dialog-unknown-note">年齡、上課時段與教室將另行公布。</p>');
     const fullTermExtras = id === 'full-term' ? '<section class="course-journey" aria-labelledby="courseJourneyTitle"><h3 id="courseJourneyTitle">9 天的文化旅程</h3><ul class="period-list">' + data.itinerary.periods.map(p => '<li><small>' + esc(p.dateLabel) + ' · ' + p.days + ' 天</small><h4>' + esc(p.title) + '</h4><p>' + esc(p.description) + '</p></li>').join('') + '</ul><p class="dialog-note">' + esc(data.itinerary.note) + '</p><div class="dialog-event"><h4>2/2 晚上，邀請爸媽來作客。</h4><p>' + esc(c.parentEvent.description) + '<br>' + esc(c.parentEvent.note) + '</p></div></section>' : '';
-    const poster = c.poster ? '<figure class="dialog-poster"><a href="' + esc(c.poster) + '" ' + ext + ' aria-label="開啟' + esc(c.name) + '完整海報"><img src="' + esc(c.poster) + '" alt="' + esc(c.name) + '完整課程海報" loading="eager" fetchpriority="high" decoding="async"></a><figcaption>點開查看完整海報 <span aria-hidden="true">↗</span></figcaption></figure>' : '';
+    const poster = c.poster ? '<figure class="dialog-poster"><a href="' + esc(c.poster) + '" ' + ext + ' aria-label="開啟' + esc(c.name) + '完整海報"><picture><source type="image/avif" srcset="' + esc(c.poster.replace(/\.webp$/, '.avif')) + '"><img src="' + esc(c.poster) + '" alt="' + esc(c.name) + '完整課程海報" loading="eager" fetchpriority="high" decoding="async"></picture></a><figcaption>點開查看完整海報 <span aria-hidden="true">↗</span></figcaption></figure>' : '';
     const couponEntry = '<a href="coupon.html" class="camp-coupon-entry"><img class="camp-coupon-entry__logo" src="assets/brand-logo.png" width="32" height="32" alt="" loading="lazy" decoding="async"><span class="camp-coupon-entry__copy"><strong>冬令營優惠券</strong><span>10/16 19:30 開放・限量 60 張</span></span><span class="camp-coupon-entry__cta">查看領券資訊 <span aria-hidden="true">↗</span></span></a>';
     const actions = '<div class="dialog-actions"><a href="' + esc(c.registration.url) + '" ' + ext + ' class="button">' + esc(c.registration.label) + ' <span aria-hidden="true">↗</span></a></div>';
     const care = c.extendedCare;

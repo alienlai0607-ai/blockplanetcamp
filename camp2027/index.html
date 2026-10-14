@@ -20,9 +20,10 @@
   <link rel="preload" as="image" type="image/avif" href="assets/hero-camp-world-mobile.avif?v=mobile-speed-20261013" media="(max-width:700px)" fetchpriority="high">
   <link rel="preload" as="image" href="assets/hero-camp-world-brush.webp?v=home-lights-20261013" media="(min-width:1101px)" fetchpriority="high">
   <link rel="preload" as="image" href="assets/hero-camp-world-tablet-brush.webp?v=home-lights-20261013" media="(min-width:701px) and (max-width:1100px)" fetchpriority="high">
-  <link rel="stylesheet" href="campaign.css?v=mobile-compact-20261013">
+  <link rel="stylesheet" href="campaign.css?v=image-speed-20261014">
   <script src="camp-data.js?v=admin-entry-20261013" defer></script>
-  <script src="app.js?v=20261013-coupon3" defer></script>
+  <script src="image-loader.js?v=image-speed-20261014" defer></script>
+  <script src="app.js?v=image-speed-20261014" defer></script>
 </head>
 <body>
   <a class="skip-link" href="#main">跳至主要內容</a>
@@ -140,10 +141,10 @@
         <div class="drone-stage">
           <div id="droneFrame" class="story-frame drone-frame" role="img" aria-label="小橘人學員依照中華故事設計祥龍與大聖球籠無人機"></div>
           <div class="drone-arena" aria-label="學員分工操控祥龍與大聖，在有防護網的場地進行飛行對決">
-            <img class="arena-background" src="assets/drone-arena.webp" width="1536" height="1024" alt="" loading="lazy">
+            <img class="arena-background" width="1536" height="1024" alt="" decoding="async">
             <div class="dragon-flight"><div class="sprite-drone dragon-sprite" role="img" aria-label="祥龍造型球籠無人機"></div></div>
             <div class="monkey-flight"><div class="sprite-drone monkey-sprite" role="img" aria-label="孫悟空造型球籠無人機"></div></div>
-            <img class="drone-pilot" src="assets/drone-students.webp" width="1254" height="1254" alt="兩名小橘人分別操作遙控器、觀察路線，藍身綠髮老師在旁指導" loading="lazy">
+            <img class="drone-pilot" width="1254" height="1254" alt="兩名小橘人分別操作遙控器、觀察路線，藍身綠髮老師在旁指導" decoding="async">
           </div>
         </div>
         <div class="story-step-caption"><span id="droneStepNumber">01</span><div><b id="droneStepTitle">為飛行角色做造型</b><p id="droneStepText">從中華故事取材，設計自己的球籠無人機。</p></div></div>
@@ -192,7 +193,7 @@
           <strong class="voucher-title"><span>冬令營</span><span>優惠券</span></strong>
           <div class="voucher-bottom">
             <div class="voucher-foot"><b>10.16</b><span>19:30 開放領取</span></div>
-            <div class="voucher-scene"><img src="assets/coupon-learners.webp" width="1536" height="1024" alt="" loading="lazy"></div>
+            <div class="voucher-scene"><picture><source media="(max-width:700px)" type="image/avif" srcset="assets/coupon-learners-mobile.avif"><source type="image/avif" srcset="assets/coupon-learners.avif"><source media="(max-width:700px)" srcset="assets/coupon-learners-mobile.webp"><img src="assets/coupon-learners.webp" width="1536" height="1024" alt="" loading="lazy" decoding="async"></picture></div>
           </div>
         </div>
         <div class="voucher-stub"><span class="voucher-edition">2027</span><span class="voucher-seal"><span>限量</span><b>60</b><span>張</span></span><span class="voucher-stub-label">冬令營</span></div>
@@ -200,10 +201,10 @@
 
     <section id="faq" class="faq-section page-width section-anchor" aria-labelledby="faqTitle"><div class="section-heading"><div><p class="eyebrow">A LITTLE HELP FOR PARENTS</p><h2 id="faqTitle">家長 Q&A</h2></div><p><span class="faq-intro-full">想知道的，先幫你整理好了。<br>還有問題，隨時到 LINE 找我們。</span><span class="faq-intro-short">點選分類，找到想知道的事。</span></p></div><div class="faq-layout"><div id="faqCategories" class="faq-categories" role="group" aria-label="常見問題分類"></div><div id="faqList" class="faq-list"></div></div><p class="faq-bottom">孩子有特別的需求，或不知道怎麼選？<a href="https://lin.ee/zFqqFzQ" target="_blank" rel="noopener">和我們聊聊 ↗</a></p></section>
 
-    <section id="contact" class="contact-section section-anchor" aria-labelledby="contactTitle"><div class="page-width contact-grid"><div class="contact-visual"><img src="assets/contact-welcome-brush.webp?v=scope-restore-20261013" alt="大聖與四位小橘人學員在年節教室門口歡迎你，分享戲偶和祥龍積木作品" width="1536" height="1024" loading="lazy"><span>在布拉克星球，一起長出大大的想像。</span></div><div><p class="eyebrow">COME PLAY WITH US</p><h2 id="contactTitle">在台南，<br>等孩子來玩。</h2><div class="classrooms" id="classrooms"></div><a href="https://lin.ee/zFqqFzQ" target="_blank" rel="noopener" class="button">LINE 聯絡教室 <svg aria-hidden="true"><use href="#arrow"/></svg></a></div></div></section>
+    <section id="contact" class="contact-section section-anchor" aria-labelledby="contactTitle"><div class="page-width contact-grid"><div class="contact-visual"><picture><source media="(max-width:700px)" type="image/avif" srcset="assets/contact-welcome-brush-mobile.avif"><source type="image/avif" srcset="assets/contact-welcome-brush.avif"><source media="(max-width:700px)" srcset="assets/contact-welcome-brush-mobile.webp"><img src="assets/contact-welcome-brush.webp?v=scope-restore-20261013" alt="大聖與四位小橘人學員在年節教室門口歡迎你，分享戲偶和祥龍積木作品" width="1536" height="1024" loading="lazy" decoding="async"></picture><span>在布拉克星球，一起長出大大的想像。</span></div><div><p class="eyebrow">COME PLAY WITH US</p><h2 id="contactTitle">在台南，<br>等孩子來玩。</h2><div class="classrooms" id="classrooms"></div><a href="https://lin.ee/zFqqFzQ" target="_blank" rel="noopener" class="button">LINE 聯絡教室 <svg aria-hidden="true"><use href="#arrow"/></svg></a></div></div></section>
   </main>
   <footer class="site-footer page-width"><div class="footer-top"><a class="brand" href="#top"><img src="assets/brand-logo.png" width="42" height="42" alt=""><span>布拉克星球<small>BLOCK PLANET</small></span></a><div><a href="https://www.facebook.com/blockplanet" target="_blank" rel="noopener">Facebook ↗</a><a href="https://www.instagram.com/blockplanet_2021" target="_blank" rel="noopener">Instagram ↗</a><a href="https://lin.ee/zFqqFzQ" target="_blank" rel="noopener">LINE ↗</a></div></div><div class="footer-bottom"><span>© 2027 布拉克星球 · 冬令營</span><button id="motionToggle" class="text-control" aria-pressed="false">暫停頁面動畫 <span aria-hidden="true">Ⅱ</span></button><a href="#top">回到頂端 ↑</a></div></footer>
-  <div class="mobile-bar"><a href="#calendar">日期與費用</a><a href="https://lin.ee/zFqqFzQ" target="_blank" rel="noopener">LINE 洽詢 <span aria-hidden="true">↗</span></a></div>
+  <div class="mobile-bar"><a href="#camps">開始報名</a><a href="https://lin.ee/zFqqFzQ" target="_blank" rel="noopener">LINE 洽詢 <span aria-hidden="true">↗</span></a></div>
   <dialog id="campDialog" aria-labelledby="dialogTitle"><div class="dialog-toolbar"><span>2027 布拉克星球冬令營</span><button id="dialogClose" aria-label="關閉課程介紹">×</button></div><div id="dialogContent"></div></dialog>
   <div id="announcer" class="sr-only" role="status" aria-live="polite"></div>
   <noscript><p class="noscript">開啟 JavaScript 可以觀看營隊動畫與完整課程資訊。你也可以直接<a href="https://lin.ee/zFqqFzQ">聯絡 LINE</a>，或<a href="https://docs.google.com/forms/d/e/1FAIpQLSfqclQFsLtNujPctIfk_elu3umDNIWr1W6C1MSIs5wc3BIVFg/viewform">查看全期營報名表</a>。</p></noscript>

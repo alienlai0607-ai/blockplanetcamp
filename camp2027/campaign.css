@@ -277,6 +277,11 @@ body{background-color:var(--paper);background-image:radial-gradient(#a77d4210 .6
 #lightsFrame[data-load-state="loading"]::after,#droneFrame[data-load-state="loading"]::after,#legoFrame[data-load-state="loading"]::after,
 #lightsFrame[data-load-state="error"]::after,#droneFrame[data-load-state="error"]::after,#legoFrame[data-load-state="error"]::after{content:"圖片載入中…";position:absolute;inset:0;z-index:1;display:grid;place-content:center;padding:24px;background:var(--paper,#fff8e8);color:var(--ink,#583e31);font-size:clamp(16px,2vw,20px);font-weight:700;text-align:center}
 #lightsFrame[data-load-state="error"]::after,#droneFrame[data-load-state="error"]::after,#legoFrame[data-load-state="error"]::after{content:"圖片暫時無法載入，請再點選一次。"}
+:is(#lightsFrame,#droneFrame,#legoFrame)[data-loaded-frame-index][data-load-state="loading"]::after,
+:is(#lightsFrame,#droneFrame,#legoFrame)[data-loaded-frame-index][data-load-state="error"]::after{inset:auto 12px 12px auto;padding:8px 13px;border-radius:20px;background:#fff8e8ed;font-size:14px;box-shadow:0 2px 12px #583e3114}
+#lightsFrame[data-loaded-frame-index][data-load-state="loading"]::after,#droneFrame[data-loaded-frame-index][data-load-state="loading"]::after,#legoFrame[data-loaded-frame-index][data-load-state="loading"]::after{content:"正在切換…"}
+.duel-active[data-load-state="loading"] .drone-stage::after,.duel-active[data-load-state="error"] .drone-stage::after{content:"正在切換…";position:absolute;inset:auto 12px 12px auto;z-index:10;padding:8px 13px;border-radius:20px;background:#fff8e8ed;color:var(--ink);font-size:14px;font-weight:700}
+.duel-active[data-load-state="error"] .drone-stage::after{content:"圖片暫時無法載入，請再點選一次。"}
 .story-assets-drone-duel .dragon-sprite{background-image:url('assets/drone-sprites.webp');background-size:300% 100%;background-position:50% 0}
 .story-assets-drone-duel .monkey-sprite{background-image:url('assets/drone-monkey.webp?v=scope-restore-20261013');background-size:100% 100%;background-position:center}
 .scene-paused .frame-enter{animation:none!important;opacity:1;transform:none}
@@ -772,7 +777,7 @@ p{font-weight:500}
 .voucher-foot b{font-size:30px;font-weight:900;letter-spacing:.025em;line-height:1.1}
 .voucher-foot span{font-size:15px;font-weight:800;white-space:nowrap;letter-spacing:.035em}
 .voucher-scene{position:relative;flex:1;min-width:0;height:142px;display:flex;align-items:center;justify-content:center}
-.voucher-scene>img{display:block;width:100%;height:100%;object-fit:contain;max-width:270px;margin:0}
+.voucher-scene img{display:block;width:100%;height:100%;object-fit:contain;max-width:270px;margin:0}
 .voucher-stub{position:relative;min-width:0;display:flex;flex-direction:column;align-items:center;justify-content:space-between;padding:22px 8px 21px;background:#f7e6bf;border-left:2px dashed #bf7953;box-shadow:inset 7px 0 0 #fff7e7,inset -7px 0 0 #fff7e7;color:#a43e2c}
 .voucher-stub:before,.voucher-stub:after{content:"";position:absolute;left:-10px;width:18px;height:18px;border:1px solid #b94c32;border-radius:50%;pointer-events:none}
 .voucher-stub:before{top:-10px}.voucher-stub:after{bottom:-10px}
@@ -1757,3 +1762,7 @@ p{font-weight:500}
   #calendarDetail .calendar-course h3 { font-size:22px; }
   #calendarDetail .calendar-program-picker button { font-size:15px; }
 }
+
+/* Native responsive sources retain the existing illustration layout. */
+.voucher-scene picture{display:contents}
+.contact-visual picture{display:block}
