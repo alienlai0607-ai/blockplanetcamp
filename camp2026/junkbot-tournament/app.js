@@ -70,6 +70,7 @@ let connectionOk = false;
 let pendingRosterRows = [];
 let pendingRosterFileName = '';
 let stateLoadSequence = 0;
+let stateLoadInFlight = 0;
 let mutationRevision = 0;
 let pendingMutations = 0;
 const unsavedCampusStates = new Map();
@@ -627,7 +628,10 @@ async function loadCampusState(silent = false) {
   }
   // Background refresh must not replace a roster form or judge dialog in use.
   if (silent && role === 'control' && ((typeof uiOperationPending !== 'undefined' && uiOperationPending) || controlView === 'teams' || $('modalRoot')?.innerHTML || arenaOpen)) return false;
+  // A slow foreground read must not be superseded by every background poll.
+  if (silent && stateLoadInFlight) return false;
   const requestId = ++stateLoadSequence;
+  stateLoadInFlight = requestId;
   const revision = mutationRevision;
   try {
     if (!silent) setSync('saving', '讀取中');
@@ -657,6 +661,8 @@ async function loadCampusState(silent = false) {
     }
     if (!silent) showToast(`無法讀取賽事：${error.message}`, true);
     return false;
+  } finally {
+    if (stateLoadInFlight === requestId) stateLoadInFlight = 0;
   }
 }
 
