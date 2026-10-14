@@ -2,7 +2,7 @@
 
 (() => {
   const esc = (value) => String(value ?? '').replace(/[&<>"']/g, (char) => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[char]));
-  const state = { data:null, options:{}, venue:'A', groups:{A:'A1',B:'B1',C:'C1'}, view:'full', query:'', selectedTeam:null, expanded:new Set(), roleKey:null, composing:false };
+  const state = { data:null, options:{}, venue:'A', groups:{A:'A1',B:'B1',C:'C1'}, view:'full', query:'', selectedTeam:null, expanded:new Set(), expandedGroups:new Set(), roleKey:null, composing:false };
   let teams = new Map(), matches = new Map(), groups = new Map();
   const bindings = new WeakMap();
   const venueName = (venue) => venue === 'MAIN' ? '主舞台' : `場地 ${venue}`;
@@ -102,7 +102,7 @@
     return `<div class="view-switch" role="group" aria-label="切換賽程顯示"><button type="button" data-view="current" aria-pressed="${state.view === 'current'}">本輪對戰</button><button type="button" data-view="full" aria-pressed="${state.view === 'full'}">完整晉級圖</button></div>`;
   }
 
-  function renderGroupBracket(group) {
+  function renderGroupBracket(group, options = {}) {
     const all = group.matchIds.map((id) => matches.get(id)).filter(Boolean);
     const qualifier = all.find((match) => match.roundIndex === 0);
     const qualificationRow = 1 + 2 * all.filter((match) => match.roundIndex === 1).findIndex((match) => match.id === qualifier?.nextMatchId);
@@ -123,9 +123,9 @@
       const roundMatches = all.filter((match) => match.roundIndex === config.round);
       if (roundMatches.length && roundMatches.every(completed)) hiddenCount++; else break;
     }
-    const expanded = state.expanded.has(group.id);
+    const expanded = Boolean(options.showCompleted) || state.expanded.has(group.id);
     const visible = configs.slice(expanded ? 0 : hiddenCount);
-    const history = hiddenCount ? `<div class="completed-rounds"><span>${configs.slice(0,hiddenCount).map((round) => round.title).join('、')}已完成</span><button type="button" data-toggle-history="${esc(group.id)}" aria-expanded="${expanded}">${expanded ? '收起已完成輪次' : `展開已完成 ${hiddenCount} 輪`}</button></div>` : '';
+    const history = hiddenCount && !options.showCompleted ? `<div class="completed-rounds"><span>${configs.slice(0,hiddenCount).map((round) => round.title).join('、')}已完成</span><button type="button" data-toggle-history="${esc(group.id)}" aria-expanded="${expanded}">${expanded ? '收起已完成輪次' : `展開已完成 ${hiddenCount} 輪`}</button></div>` : '';
     const columns = visible.map((config,columnIndex) => {
       const roundMatches = all.filter((match) => match.roundIndex === config.round);
       const cards = roundMatches.map((match,index) => {
@@ -137,7 +137,7 @@
       const direct = !eight && config.round === 0 ? `<div class="round-note ${notePosition}"><strong>其餘 7 隊直接進入組內八強</strong>資格賽勝隊加入右側淘汰賽。<div class="note-team-tags">${group.teamIds.filter((id) => !(group.qualifierTeamIds || []).includes(id)).map((id) => teams.get(id)).sort((a,b) => a.teamNumber-b.teamNumber).map((team) => `<span>${esc(team.teamNumber)} 號</span>`).join('')}</div></div>` : '';
       return `<section class="bracket-round"><div class="round-title"><strong>${config.title}</strong><span>${config.sub}</span></div><div class="round-body">${cards}${direct}</div></section>`;
     }).join('');
-    return `${history}<div class="bracket-scroll" tabindex="0" role="region" aria-label="${esc(group.id)} 組晉級圖，可橫向捲動"><div class="bracket-track columns-${visible.length}">${columns}</div></div>${visible.length > 1 ? '<p class="bracket-hint">← 左右滑動晉級圖，查看後續輪次 →</p>' : ''}`;
+    return `${history}<div class="bracket-scroll" data-bracket-group="${esc(group.id)}" tabindex="0" role="region" aria-label="${esc(group.id)} 組晉級圖，可橫向捲動"><div class="bracket-track columns-${visible.length}">${columns}</div></div>${visible.length > 1 ? '<p class="bracket-hint">← 左右滑動晉級圖，查看後續輪次 →</p>' : ''}`;
   }
 
   function renderCurrentGroup(group) {
@@ -216,14 +216,34 @@
     return {slot:match?.slots[index],index};
   }
 
+  function groupAdvanceText(group) {
+    const mainMatch = mainMatchForGroup(group), opponent = mainOpponentForGroup(group,mainMatch);
+    return mainMatch ? `前往主舞台 ${esc(code(mainMatch))}，對上 <strong>${esc(slotLabel(opponent.slot,mainMatch,opponent.index))}</strong>` : '前往主舞台；九組冠軍到齊後，現場抽籤決定位置與對手。';
+  }
+
+  function renderVenueGroupOverview(group) {
+    const all = group.matchIds.map(id => matches.get(id)).filter(Boolean);
+    const done = all.filter(completed).length, finished = done === all.length && all.length > 0;
+    const expanded = state.expandedGroups.has(group.id);
+    const final = matches.get(group.winnerMatchId), winner = finished ? teams.get(final?.winnerId) : null;
+    const active = all.find(match => !completed(match) && ['ready','countdown','running','paused','awaiting-decision'].includes(match.liveStatus));
+    const next = active || all.filter(match => !completed(match) && match.slots.every((slot,index) => resolvedId(slot,match,index))).sort((a,b) => a.venueOrder-b.venueOrder)[0];
+    const phase = finished ? '組冠軍已產生' : active ? `${statusLabel(active)} · ${code(active)}` : next ? `下一場 ${code(next)}` : '等待前場結果';
+    const champion = winner ? `<strong>${esc(label(winner))}</strong>` : `<strong>${esc(group.id)} 組冠軍</strong>`;
+    return `<section class="venue-overview-group${finished ? ' is-finished' : ''}" data-overview-group="${esc(group.id)}" aria-labelledby="overview-group-${esc(group.id)}"><header class="overview-group-header"><div class="overview-group-title"><h4 id="overview-group-${esc(group.id)}">${esc(group.id)} 組</h4><span>已完成 <b>${done} / ${all.length}</b> 場</span><span class="overview-group-phase${active ? ' is-live' : ''}">${esc(phase)}</span></div><div class="overview-group-actions">${finished ? `<button type="button" data-toggle-group="${esc(group.id)}" aria-expanded="${expanded}" aria-controls="overview-board-${esc(group.id)}">${expanded ? '收起已完成對戰' : `展開全部 ${all.length} 場`}</button>` : ''}<button type="button" data-group="${esc(group.id)}">單看 ${esc(group.id)} 組 →</button></div></header><div class="overview-group-board" id="overview-board-${esc(group.id)}" ${finished && !expanded ? 'hidden' : ''}>${finished && !expanded ? '' : state.view === 'full' || finished ? renderGroupBracket(group,{showCompleted:finished && expanded}) : renderCurrentGroup(group)}</div><div class="overview-group-advance"><span class="overview-champion-label">${winner ? '晉級' : '冠軍出口'}</span><span>${champion} · ${groupAdvanceText(group)}</span></div></section>`;
+  }
+
   function renderVenue() {
     if (state.venue === 'MAIN') return renderMain();
     const {assigned,count,queue} = venueStats(state.venue);
-    const group = groups.get(state.groups[state.venue]) || assigned[0];
+    const selected = state.groups[state.venue], showOverview = nineGroups() && selected === 'ALL';
+    const group = groups.get(selected) || assigned[0];
     if (!group) return '<p class="loading">此場地尚未排入分組。</p>';
-    const eight = groupIsEight(group), mainMatch = mainMatchForGroup(group), opponent = mainOpponentForGroup(group,mainMatch);
-    const advance = mainMatch ? `前往主舞台 ${esc(code(mainMatch))}，對上 <strong>${esc(slotLabel(opponent.slot,mainMatch,opponent.index))}</strong>` : '前往主舞台；九組冠軍到齊後，現場抽籤決定位置與對手。';
-    return `<div class="venue-intro"><div><h3>${venueName(state.venue)} · 評審 ${state.venue}</h3><p>分組賽固定在此場地。${assigned.length} 個分組各取 1 隊，共 ${assigned.length} 隊前往主舞台。</p></div><span class="venue-chip">${count} 隊 / ${queue.length} 場</span>${printButton(state.venue)}</div><div class="group-tabs" role="tablist" aria-label="${venueName(state.venue)} 分組">${assigned.map((item) => `<button type="button" class="group-tab" role="tab" data-group="${esc(item.id)}" aria-selected="${item.id === group.id}" aria-controls="venue-group-panel" id="venue-group-tab-${esc(item.id)}" tabindex="${item.id === group.id ? 0 : -1}">${esc(item.id)} 組<small>${item.teamIds.length} 隊取 1</small></button>`).join('')}</div><div class="group-panel" id="venue-group-panel" role="tabpanel" aria-labelledby="venue-group-tab-${esc(group.id)}"><div class="group-heading"><div><h3>${esc(group.id)} 組 · 晉級路線</h3><p>${eight ? '8 隊公平起跑 · 無輪空 · 連勝 3 場上主舞台' : '原隊號保留 · 資格賽 1 場 ＋ 組內淘汰 7 場'}</p></div>${viewSwitch()}</div>${state.view === 'full' ? renderGroupBracket(group) : renderCurrentGroup(group)}<div class="advance-note"><span aria-hidden="true">↗</span><span><strong>${esc(group.id)} 組勝隊</strong> ${advance}</span></div>${renderRoster(group)}</div>${renderQueue(state.venue)}`;
+    const eight = groupIsEight(group);
+    const tabs = `<div class="group-tabs" role="tablist" aria-label="${venueName(state.venue)} 分組">${nineGroups() ? `<button type="button" class="group-tab" role="tab" data-group="ALL" aria-selected="${showOverview}" aria-controls="venue-group-panel" id="venue-group-tab-ALL" tabindex="${showOverview ? 0 : -1}">場地全覽<small>三組一起看</small></button>` : ''}${assigned.map((item) => `<button type="button" class="group-tab" role="tab" data-group="${esc(item.id)}" aria-selected="${!showOverview && item.id === group.id}" aria-controls="venue-group-panel" id="venue-group-tab-${esc(item.id)}" tabindex="${!showOverview && item.id === group.id ? 0 : -1}">${esc(item.id)} 組<small>${item.teamIds.length} 隊取 1</small></button>`).join('')}</div>`;
+    const heading = showOverview ? `<div class="group-heading"><div><h3>${venueName(state.venue)} · 三組即時晉級圖</h3><p>${assigned.map(item => esc(item.id)).join('、')} 各 8 隊取 1 · 判定後同步更新 · 已完成組別自動收折</p></div>${viewSwitch()}</div>` : `<div class="group-heading"><div><h3>${esc(group.id)} 組 · 晉級路線</h3><p>${eight ? '8 隊公平起跑 · 無輪空 · 連勝 3 場上主舞台' : '原隊號保留 · 資格賽 1 場 ＋ 組內淘汰 7 場'}</p></div>${viewSwitch()}</div>`;
+    const content = showOverview ? `<div class="venue-group-overview">${assigned.map(renderVenueGroupOverview).join('')}</div>` : `${state.view === 'full' ? renderGroupBracket(group) : renderCurrentGroup(group)}<div class="advance-note"><span aria-hidden="true">↗</span><span><strong>${esc(group.id)} 組勝隊</strong> ${groupAdvanceText(group)}</span></div>${renderRoster(group)}`;
+    return `<div class="venue-intro"><div><h3>${venueName(state.venue)} · 評審 ${state.venue}</h3><p>分組賽固定在此場地。${assigned.length} 個分組各取 1 隊，共 ${assigned.length} 隊前往主舞台。</p></div><span class="venue-chip">${count} 隊 / ${queue.length} 場</span>${printButton(state.venue)}</div>${tabs}<div class="group-panel${showOverview ? ' is-venue-overview' : ''}" id="venue-group-panel" role="tabpanel" aria-labelledby="venue-group-tab-${showOverview ? 'ALL' : esc(group.id)}">${heading}${content}</div>${renderQueue(state.venue)}`;
   }
 
   function teamDetail(id) {
@@ -255,8 +275,13 @@
     if (!data || !Array.isArray(data.groups) || !Array.isArray(data.teams) || !Array.isArray(data.matches)) return '<div class="venue-tournament"><p class="loading">場地賽程尚未建立。</p></div>';
     state.data = data; state.options = options;
     teams = new Map(data.teams.map((team) => [team.id,team])); matches = new Map(data.matches.map((match) => [match.id,match])); groups = new Map(data.groups.map((group) => [group.id,group]));
-    const roleKey = `${Boolean(options.control)}:${options.judgeId || ''}`;
-    if (state.roleKey !== roleKey) { state.roleKey = roleKey; if (['A','B','C'].includes(options.judgeId)) state.venue = options.judgeId; }
+    const roleKey = `${Boolean(options.control)}:${options.judgeId || ''}:${nineGroups() ? 'nine' : 'legacy'}`;
+    if (state.roleKey !== roleKey) {
+      state.roleKey = roleKey;
+      if (['A','B','C'].includes(options.judgeId)) state.venue = options.judgeId;
+      else state.venue = 'A';
+      state.groups = nineGroups() && !options.judgeId ? {A:'ALL',B:'ALL',C:'ALL'} : {A:'A1',B:'B1',C:'C1'};
+    }
     const results = searchResults();
     return `<section class="venue-tournament" aria-label="三場地相撲機器人賽程"><div class="section-title"><div><p class="eyebrow">SUMO TOURNAMENT</p><h2>三場地對戰賽程</h2></div>${options.control && !['A','B','C'].includes(options.judgeId) ? '<button type="button" class="venue-print" data-print="ALL">▤ 賽務列印・全部場地</button>' : '<span class="static-label">分組賽固定場地<br>組冠軍前往主舞台</span>'}</div>${overview()}<section class="team-search-section" aria-labelledby="venue-search-title"><div class="search-heading"><h3 id="venue-search-title">查詢隊伍與對手</h3><span>保留原隊號，缺號不遞補</span></div><label class="search-box"><span class="search-icon" aria-hidden="true">⌕</span><input type="search" id="venue-team-search" data-team-search value="${esc(state.query)}" aria-label="輸入隊號、隊名或選手姓名" placeholder="輸入隊號、隊名或選手姓名" autocomplete="off"></label><div class="search-results" aria-live="polite">${results}</div></section><section class="competition"><div class="venue-tabs" role="tablist" aria-label="選擇比賽場地">${['A','B','C','MAIN'].map((venue) => `<button type="button" role="tab" class="venue-tab" data-venue="${venue}" id="venue-tab-${venue}" aria-selected="${state.venue === venue}" aria-controls="venue-content" tabindex="${state.venue === venue ? 0 : -1}">${venueName(venue)}<small>${venue === 'MAIN' ? (nineGroups() ? '九組冠軍 · 現場抽籤' : '八強起集中比賽') : `${venueStats(venue).count} 隊 · ${venueStats(venue).assigned.length} ${nineGroups() ? '席主舞台' : '席八強'}`}</small></button>`).join('')}</div><div id="venue-content" class="venue-content" role="tabpanel" aria-labelledby="venue-tab-${state.venue}">${renderVenue()}</div></section></section>`;
   }
@@ -266,10 +291,10 @@
     const input = container.querySelector('[data-team-search]');
     const focused = document.activeElement === input;
     const selection = focused ? input.selectionStart : null;
-    const scroll = container.querySelector('.bracket-scroll')?.scrollLeft || 0;
+    const scrollPositions = [...container.querySelectorAll('.bracket-scroll')].map(area => [area.dataset.bracketGroup || 'MAIN',area.scrollLeft]);
     const next = document.createElement('div'); next.innerHTML = render(state.data,state.options);
     const replacement = next.firstElementChild; container.replaceWith(replacement);
-    const scrollArea = replacement.querySelector('.bracket-scroll'); if (scrollArea) scrollArea.scrollLeft = scroll;
+    for (const area of replacement.querySelectorAll('.bracket-scroll')) area.scrollLeft = scrollPositions.find(([id]) => id === (area.dataset.bracketGroup || 'MAIN'))?.[1] || 0;
     if (focusSelector) replacement.querySelector(focusSelector)?.focus({preventScroll:true});
     else if (focused) { const fresh = replacement.querySelector('[data-team-search]'); fresh.focus({preventScroll:true}); try { fresh.setSelectionRange(selection,selection); } catch (_) {} }
     return replacement;
@@ -290,6 +315,7 @@
       else if (button.dataset.venue) { state.venue = button.dataset.venue; focus = `.venue-tab[data-venue="${state.venue}"]`; }
       else if (button.dataset.group) { state.groups[state.venue] = button.dataset.group; focus = `.group-tab[data-group="${button.dataset.group}"]`; }
       else if (button.dataset.view) { state.view = button.dataset.view; focus = `[data-view="${state.view}"]`; }
+      else if (button.dataset.toggleGroup) { const group = button.dataset.toggleGroup; if (state.expandedGroups.has(group)) state.expandedGroups.delete(group); else state.expandedGroups.add(group); focus = `[data-toggle-group="${group}"]`; }
       else if (button.dataset.toggleHistory) { const group = button.dataset.toggleHistory; if (state.expanded.has(group)) state.expanded.delete(group); else state.expanded.add(group); focus = `[data-toggle-history="${group}"]`; }
       else if (button.hasAttribute('data-clear-search')) { state.query = ''; state.selectedTeam = null; focus = '[data-team-search]'; }
       else if (button.dataset.team) { const team = teams.get(button.dataset.team); if (team) { state.query = String(team.teamNumber); state.selectedTeam = team.id; entry.callbacks.onTeam?.(team.id); scrollTo = '#venue-search-title'; } }

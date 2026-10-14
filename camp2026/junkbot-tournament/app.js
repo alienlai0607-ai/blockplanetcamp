@@ -1393,10 +1393,11 @@ function renderAudience() {
   const teamB = featured?.participantIds?.[1] || null;
   const timerText = formatTime(seconds);
   const stage = featured ? matchStageLabel(featured) : '等待賽程';
+  const waitingForMainDraw = window.JunkbotVenuePlan?.isNewState(state) && window.JunkbotVenuePlan.groupsComplete(state) && state.venuePlan.mainDraw?.status !== 'drawn';
   const statusText = liveState === 'running' ? '比賽進行中'
     : liveState === 'countdown' ? '準備倒數'
       : liveState === 'awaiting-decision' ? '等待評審判定'
-        : featured ? '下一場準備中' : '等待比賽單位建立賽程';
+        : featured ? '下一場準備中' : waitingForMainDraw ? '九組冠軍已到齊，準備主舞台現場抽籤' : '等待比賽單位建立賽程';
   $('audienceView').innerHTML = `
     <div class="audience-sync ${connectionOk ? '' : 'offline'}" role="status">${connectionOk ? '戰況已同步' : lastConnectionError ? '連線中斷・目前資料尚未更新' : '正在取得最新戰況'}<span>${lastSuccessfulSyncAt || state.updatedAt ? `更新於 ${esc(resultTime(lastSuccessfulSyncAt || state.updatedAt))}` : '等待首次同步'} · 約每 8 秒更新 · 現場裁判為準${!connectionOk && lastConnectionError ? `<br>${esc(lastConnectionError)}` : ''}</span></div>
     ${simultaneousMatches.length > 1 ? `
