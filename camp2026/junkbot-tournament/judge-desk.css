@@ -118,3 +118,8 @@
 .judge-role-strip button { cursor:pointer; font-family:inherit; }
 .judge-admin-entry { cursor:pointer; font-family:inherit; }
 .judge-connection-note { color:#88651a; font-size:13px; }
+
+/* Known opponents stay visible even while another bout occupies the arena. */
+.judge-queue { margin-top:20px; }
+.judge-choice-help { margin:0 0 12px; color:#526d7c; font-size:13px; line-height:1.7; }
+.judge-arena-busy { margin:0 0 12px; padding:10px 13px; border:1px solid #e8d393; border-radius:7px; background:#fff9e8; color:#785b20; font-size:13px; line-height:1.65; }

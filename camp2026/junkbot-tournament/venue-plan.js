@@ -84,7 +84,7 @@
     const next=clone(state),main=buildMainMatches(positions);next.matches.push(...main);next.venuePlan.venueSchedules.MAIN=main.map(m=>m.id);
     next.venuePlan.mainDraw={status:'drawn',positions:[...positions],drawnAt:options.drawnAt||new Date().toISOString(),operatorName:options.operatorName||'賽務',method:options.method||'onsite-lots'};return next;
   }
-  function blockReason(state,id){
+  function readinessReason(state,id){
     if(!isVenueState(state))return '';
     const m=state.matches.find(m=>m.id===id);if(!m)return '找不到場次。';
     if(m.status==='completed')return '本場已完成。';
@@ -96,6 +96,12 @@
     }
     if(m.participantIds.filter(Boolean).length!==2)return '請等待前場晉級名單。';
     if(m.venue==='MAIN'&&!mainReady(state))return isNewState(state)?'請先完成九組比賽，並公布主舞台抽籤結果。':'八組全部完成後，才開始主舞台。';
+    return '';
+  }
+  function blockReason(state,id){
+    const reason=readinessReason(state,id);if(reason)return reason;
+    if(!isVenueState(state))return '';
+    const m=state.matches.find(m=>m.id===id);
     const active=(state.activeMatchIds||[]).map(id=>state.matches.find(x=>x.id===id)).filter(x=>x&&x.id!==m.id&&x.status!=='completed');
     if(active.some(x=>x.venue===m.venue))return `${m.venue==='MAIN'?'主舞台':`場地 ${m.venue}`}已有開啟場次，請先完成判定。`;
     if(m.venue==='MAIN'&&active.length)return '請先完成所有分場，再開始主舞台。';return '';
@@ -106,6 +112,6 @@
     if(isNewState(state)&&state.venuePlan.mainDraw?.status==='drawn')for(const g of gs){const id=state.matches.find(m=>m.id===g.winnerMatchId)?.winnerId;g.winnerMainMatchId=state.matches.find(m=>m.venue==='MAIN'&&m.slots.some(s=>s.teamId===id))?.id||null;}
     return {metadata:{preview:false,format:state.draw.method,title:`2026 全國廢材機器人大賽・${state.tournament?.title||'正式賽事'}`,revision:state.revision,updatedAt:state.updatedAt,createdAt:state.draw.createdAt,drawId:state.venuePlan.drawId},teams:clone(state.entries),groups:gs,mainDraw:clone(state.venuePlan.mainDraw||{status:'pending',positions:[]}),venueSchedules:clone(state.venuePlan.venueSchedules),matches:state.matches.map(m=>({...clone(m),productionStage:m.stage,stage:m.phase||(m.venue==='MAIN'?'main':m.roundIndex===0?'qualification':'group'),liveStatus:state.lives?.[m.id]?.status||null,canStart:!blockReason(state,m.id)&&(!options.judgeId||m.venue===options.judgeId||m.venue==='MAIN'&&options.judgeId==='A'),blockReason:blockReason(state,m.id)}))};
   }
-  root.JunkbotVenuePlan={METHOD,LEGACY_METHOD,isVenueState,isNewState,validate,generate,fromDraw,finalists,groupsComplete,mainReady,buildMainMatches,withMainDraw,blockReason,toView,shuffle};
+  root.JunkbotVenuePlan={METHOD,LEGACY_METHOD,isVenueState,isNewState,validate,generate,fromDraw,finalists,groupsComplete,mainReady,buildMainMatches,withMainDraw,readinessReason,blockReason,toView,shuffle};
   if(typeof module!=='undefined'&&module.exports)module.exports=root.JunkbotVenuePlan;
 })(typeof window!=='undefined'?window:globalThis);
