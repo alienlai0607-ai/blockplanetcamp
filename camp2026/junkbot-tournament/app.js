@@ -226,6 +226,10 @@ function stageLabelForSize(size) {
   return size === 2 ? '冠亞軍賽' : `${size} 強賽`;
 }
 
+function isPlannedBye(item) {
+  return item.resultType === 'bye' || (!item.venue && item.sourceMatchIds?.length === 1);
+}
+
 function matchStageLabel(item) {
   if (!item) return '淘汰賽';
   if (item.stage === 'bronze') return '季軍賽';
@@ -348,6 +352,7 @@ function createArchiveSnapshot(targetState = state) {
     entries: JSON.parse(JSON.stringify(targetState.entries || [])),
     matches: JSON.parse(JSON.stringify(targetState.matches || [])),
     draw: JSON.parse(JSON.stringify(targetState.draw || null)),
+    venuePlan: JSON.parse(JSON.stringify(targetState.venuePlan || null)),
     championId: targetState.championId || null,
     runnerUpId: targetState.runnerUpId || null,
     thirdPlaceId: targetState.thirdPlaceId || null,
@@ -892,6 +897,7 @@ function renderControl() {
   else if (controlView === 'bracket') root.innerHTML = bracketView(true);
   else if (controlView === 'arenas') root.innerHTML = arenasView();
   else if (controlView === 'records') root.innerHTML = recordsView();
+  else if (controlView === 'print') root.innerHTML = venuePrintView();
   else root.innerHTML = dashboardView();
   if (syncConflict) root.insertAdjacentHTML('afterbegin', `<section class="sync-conflict" role="alert"><h2>其他裝置已更新資料</h2><p>這台裝置的修改仍保留在本機。請先下載備份，再載入最新賽事核對；系統不會覆蓋其他裁判的紀錄。</p><button class="outline" data-action="export-backup">下載本機備份</button> <button class="primary" data-action="resolve-conflict">備份並載入最新資料</button></section>`);
   if (controlView === 'teams') filterRoster();
@@ -899,7 +905,7 @@ function renderControl() {
 }
 
 function dashboardView() {
-  const played = state.matches.filter(item => item.resultType !== 'bye' && item.sourceMatchIds?.length !== 1);
+  const played = state.matches.filter(item => !isPlannedBye(item));
   const completed = played.filter(item => item.status === 'completed').length;
   const active = activeMatches();
   const checked = state.entries.filter(item => item.checkedInAt).length;
@@ -1313,7 +1319,7 @@ function bracketRoundColumn(round, side, level, totalLevels, control, matchGroup
 function matchCard(item, control) {
   const playable = item.status === 'pending' && item.participantIds.filter(Boolean).length === 2;
   const active = activeMatchIds().includes(item.id) && item.status !== 'completed';
-  const plannedBye = item.resultType === 'bye' || item.sourceMatchIds?.length === 1;
+  const plannedBye = isPlannedBye(item);
   const participantIds = item.resultType === 'bye'
     ? [item.winnerId || item.participantIds.find(Boolean)]
     : plannedBye
@@ -1746,6 +1752,7 @@ function resetBracket() {
   state.runnerUpId = null;
   state.thirdPlaceId = null;
   state.draw = null;
+  delete state.venuePlan;
   state.live = null;
   saveState('賽程已重設，隊伍名單已保留');
   renderControl();
@@ -1797,7 +1804,7 @@ async function archiveCurrentTournament() {
 
 async function openArena(matchId) {
   const openingCampus = campus;
-  if (state.matches.length && state.draw?.method !== 'single-draw-full-route') {
+  if (state.matches.length && state.draw?.method !== 'single-draw-full-route' && !window.JunkbotVenuePlan?.isVenueState(state)) {
     showToast('這是重排前的舊賽程，已禁止開場；請更新到最新賽程。', true);
     controlView = 'bracket';
     renderControl();

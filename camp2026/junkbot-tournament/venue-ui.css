@@ -1,0 +1,315 @@
+.venue-tournament{--ink:#233a48;--muted:#667988;--blue:#176c9d;--blue-dark:#10577f;--blue-pale:#eaf5fc;--line:#dce5ec;--paper:#fff;--canvas:#f6f8fb;--amber:#946012;--amber-pale:#fff6df;--teal:#168379;--radius:18px;font-family:Inter,"Noto Sans TC","PingFang TC","Microsoft JhengHei",system-ui,sans-serif;color:var(--ink);background:var(--canvas);font-synthesis:none}
+.venue-tournament *{box-sizing:border-box}
+.venue-tournament button,.venue-tournament input{font:inherit}
+.venue-tournament button{cursor:pointer}
+.venue-tournament button:focus-visible,.venue-tournament input:focus-visible,.venue-tournament [tabindex]:focus-visible{outline:3px solid #f1ae47;outline-offset:3px}
+.venue-tournament button{color:inherit}
+.venue-tournament a{color:var(--blue)}
+.venue-tournament button,.venue-tournament input{touch-action:manipulation}
+.venue-tournament button{border:0}
+.venue-tournament h1,.venue-tournament h2,.venue-tournament h3,.venue-tournament p{margin:0}
+.venue-tournament svg{display:block}
+.venue-tournament .eyebrow{font-size:11px;letter-spacing:1.4px;color:var(--blue);font-weight:800;margin-bottom:10px}
+.venue-tournament .mobile-break{display:none}
+.venue-tournament .venue-overview{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;margin-top:18px}
+.venue-tournament .venue-overview button{text-align:left;border:1px solid var(--line);background:#fff;border-radius:14px;padding:16px 18px;transition:border-color .15s,box-shadow .15s;min-width:0}
+.venue-tournament .venue-overview button:hover{border-color:#7eafcb;box-shadow:0 3px 14px #1a537310}
+.venue-tournament .overview-top{display:flex;align-items:center;gap:9px;margin-bottom:10px}
+.venue-tournament .venue-letter{width:31px;height:31px;display:grid;place-items:center;background:var(--blue-pale);color:var(--blue);font-size:18px;font-weight:850;border-radius:9px}
+.venue-tournament .overview-top strong{font-size:14px}
+.venue-tournament .overview-top small{margin-left:auto;font-size:11px;color:var(--muted)}
+.venue-tournament .overview-values{display:flex;align-items:baseline;gap:5px;font-size:12px;color:var(--muted);white-space:nowrap}
+.venue-tournament .overview-values strong{font-size:25px;font-weight:800;color:var(--ink);margin-right:1px}
+.venue-tournament .overview-values .seat-number{color:var(--blue)}
+.venue-tournament .overview-values .arrow{margin:0 11px;color:#acbac4}
+.venue-tournament .overview-note{font-size:11px;color:var(--muted);margin-top:7px}
+.venue-tournament .team-search-section{margin-top:28px}
+.venue-tournament .search-heading{display:flex;align-items:baseline;justify-content:space-between;gap:12px;margin-bottom:10px}
+.venue-tournament .search-heading h2{font-size:16px}
+.venue-tournament .search-heading>span{font-size:11px;color:var(--muted)}
+.venue-tournament .search-box{display:flex;align-items:center;gap:12px;background:#fff;border:1px solid #c7d7e3;border-radius:12px;padding:4px 14px;box-shadow:0 3px 8px #172f4410}
+.venue-tournament .search-box:focus-within{border-color:var(--blue);box-shadow:0 0 0 3px #187aaa15}
+.venue-tournament .search-box svg{width:20px;height:20px;stroke:var(--blue);fill:none;stroke-width:1.7;flex:none}
+.venue-tournament .search-box input{width:100%;min-width:0;border:none;background:transparent;font-size:14px;padding:12px 0;color:var(--ink);outline:none}
+.venue-tournament .search-box kbd{font-size:10px;color:#8698a5;border:1px solid var(--line);background:var(--canvas);border-radius:4px;padding:3px 5px;white-space:nowrap}
+.venue-tournament .search-results:empty{display:none}
+.venue-tournament .search-results{margin-top:10px}
+.venue-tournament .search-result-list{display:grid;gap:7px}
+.venue-tournament .search-result-button{padding:12px 14px;border-radius:10px;background:#fff;border:1px solid var(--line);text-align:left;display:flex;align-items:center;gap:10px}
+.venue-tournament .search-result-button .team-name{font-weight:700;font-size:14px;flex:1;min-width:0;overflow-wrap:anywhere}
+.venue-tournament .search-result-button .small-meta{font-size:12px;color:var(--muted)}
+.venue-tournament .search-result-button .result-loc{font-size:12px;color:var(--blue);flex:none}
+.venue-tournament .search-empty{font-size:13px;padding:13px;background:#fff;border:1px solid var(--line);border-radius:10px;color:var(--muted)}
+.venue-tournament .team-detail{padding:17px 18px;background:#fff;border:1px solid #a9cee4;border-radius:14px;box-shadow:0 5px 20px #16456b09}
+.venue-tournament .team-detail-head{display:flex;align-items:flex-start;gap:10px}
+.venue-tournament .team-detail-head h3{font-size:18px;line-height:1.45;overflow-wrap:anywhere}
+.venue-tournament .team-detail-head p{font-size:12px;color:var(--muted);margin-top:3px;line-height:1.6}
+.venue-tournament .team-detail-head .number-tag{font-size:15px;padding:5px 9px}
+.venue-tournament .detail-close{margin-left:auto;flex:none;background:var(--canvas);border:1px solid var(--line);width:30px;height:30px;border-radius:8px;font-size:18px}
+.venue-tournament .team-detail-grid{display:grid;grid-template-columns:.85fr 1.7fr 1.35fr;gap:16px;margin-top:18px}
+.venue-tournament .detail-unit{min-width:0}
+.venue-tournament .detail-unit+.detail-unit{border-left:1px solid var(--line);padding-left:16px}
+.venue-tournament .detail-unit .label{font-size:11px;color:var(--muted);display:block;margin-bottom:5px}
+.venue-tournament .detail-unit strong{font-size:15px;line-height:1.6;display:block;overflow-wrap:anywhere}
+.venue-tournament .detail-unit p{font-size:12px;color:var(--muted);line-height:1.65;margin-top:3px}
+.venue-tournament .detail-route{font-size:12px;line-height:1.8;background:var(--blue-pale);padding:10px 12px;border-radius:8px;margin-top:16px;color:var(--blue-dark)}
+.venue-tournament .detail-route span{color:#6b8ba2;margin:0 5px}
+.venue-tournament .detail-action{display:inline-flex;align-items:center;gap:9px;background:var(--blue);color:#fff;padding:9px 12px;border-radius:8px;font-size:12px;font-weight:700;margin-top:12px}
+.venue-tournament .competition{margin-top:32px}
+.venue-tournament .section-title{display:flex;align-items:flex-end;justify-content:space-between;gap:12px;margin-bottom:16px}
+.venue-tournament .section-title .eyebrow{margin-bottom:6px}
+.venue-tournament .section-title h2{font-size:22px}
+.venue-tournament .static-label{font-size:11px;color:var(--muted);padding-bottom:3px}
+.venue-tournament .venue-tabs{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:5px;border:1px solid var(--line);background:#edf2f6;padding:5px;border-radius:12px}
+.venue-tournament .venue-tab{font-size:14px;font-weight:800;padding:12px 5px;border-radius:8px;background:transparent;min-width:0}
+.venue-tournament .venue-tab[aria-selected=true]{color:var(--blue-dark);background:#fff;box-shadow:0 2px 6px #213e5512}
+.venue-tournament .venue-tab small{display:block;font-weight:500;color:var(--muted);font-size:10px;margin-top:3px}
+.venue-tournament .venue-tab[aria-selected=true] small{color:var(--blue)}
+.venue-tournament .venue-content{outline:none;margin-top:18px}
+.venue-tournament .venue-intro{display:flex;align-items:center;justify-content:space-between;gap:16px;margin-bottom:15px}
+.venue-tournament .venue-intro h3{font-size:17px}
+.venue-tournament .venue-intro p{font-size:12px;color:var(--muted);line-height:1.7;margin-top:5px}
+.venue-tournament .venue-chip{flex:none;font-size:11px;color:var(--blue);background:var(--blue-pale);padding:7px 10px;border-radius:7px;font-weight:700}
+.venue-tournament .group-tabs{display:flex;flex-wrap:wrap;gap:8px}
+.venue-tournament .group-tab{display:flex;align-items:center;gap:11px;padding:8px 14px;border:1px solid var(--line);border-radius:9px;background:#fff;font-size:13px;font-weight:800}
+.venue-tournament .group-tab small{font-size:10px;font-weight:500;color:var(--muted)}
+.venue-tournament .group-tab[aria-selected=true]{border-color:var(--blue);background:var(--blue-pale);color:var(--blue-dark)}
+.venue-tournament .group-panel{border:1px solid var(--line);background:#fff;border-radius:16px;padding:20px;margin-top:13px;min-width:0}
+.venue-tournament .group-heading{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:18px}
+.venue-tournament .group-heading h3{font-size:18px}
+.venue-tournament .group-heading p{font-size:11px;color:var(--muted);margin-top:5px;line-height:1.5}
+.venue-tournament .view-switch{display:flex;background:#f1f4f7;padding:3px;gap:3px;border-radius:8px;flex:none}
+.venue-tournament .view-switch button{padding:8px 11px;font-size:11px;font-weight:700;background:transparent;border-radius:6px;color:var(--muted)}
+.venue-tournament .view-switch button[aria-pressed=true]{background:#fff;color:var(--blue);box-shadow:0 1px 4px #23455a15}
+.venue-tournament .bracket-scroll{width:100%;max-width:100%;overflow-x:auto;overscroll-behavior-x:contain;padding-bottom:8px;scrollbar-width:thin;scrollbar-color:#bdcfdd #f2f5f8}
+.venue-tournament .bracket-track{display:grid;grid-template-columns:repeat(4,minmax(185px,1fr));gap:22px;min-width:806px;padding:2px 1px}
+.venue-tournament .bracket-round{min-width:0;position:relative}
+.venue-tournament .round-title{display:flex;justify-content:space-between;gap:8px;align-items:baseline;border-bottom:2px solid #dce8f1;padding:0 1px 9px;margin-bottom:12px}
+.venue-tournament .round-title strong{font-size:12px}
+.venue-tournament .round-title span{font-size:10px;color:var(--muted)}
+.venue-tournament .round-body{display:grid;grid-template-rows:repeat(8,50px);row-gap:2px;position:relative}
+.venue-tournament .match-card{border:1px solid #d8e3ec;border-radius:8px;background:#fff;align-self:center;position:relative;min-width:0;grid-row:var(--row)/span 2;box-shadow:0 2px 4px #223a4c04;transition:border-color .15s}
+.venue-tournament .match-card.is-highlighted{border:2px solid #eea831;box-shadow:0 0 0 3px #efb54e26}
+.venue-tournament .match-meta{display:flex;align-items:center;justify-content:space-between;gap:6px;font-size:9px;padding:5px 8px 4px;background:#f5f8fb;border-radius:7px 7px 0 0;border-bottom:1px solid #e8eef3;color:var(--muted);line-height:1.4}
+.venue-tournament .match-meta b{font-weight:750;color:#526b7d;letter-spacing:.2px}
+.venue-tournament .match-meta>span{white-space:nowrap;color:#8b9ca9;font-size:8px}
+.venue-tournament .match-team{display:flex;gap:6px;align-items:center;padding:6px 8px;font-size:11px;min-height:28px;line-height:1.4;min-width:0}
+.venue-tournament .match-team+.match-team{border-top:1px solid #eff3f6}
+.venue-tournament .match-team strong{font-size:11px;min-width:0;overflow-wrap:anywhere;line-height:1.45;font-weight:650}
+.venue-tournament .match-team .number-tag{font-size:9px;min-width:25px;padding:3px 4px;border-radius:4px}
+.venue-tournament .number-tag{font-variant-numeric:tabular-nums;display:inline-flex;align-items:center;justify-content:center;white-space:nowrap;flex:none;background:var(--blue-pale);color:var(--blue);font-size:11px;font-weight:800;min-width:35px;padding:3px 6px;border-radius:5px}
+.venue-tournament .slot-pending{color:#6f8391}
+.venue-tournament .slot-pending .slot-dot{height:5px;width:5px;border-radius:50%;background:#bbcad5;margin:0 7px 0 5px;flex:none}
+.venue-tournament .round-note{grid-row:3/span 4;font-size:11px;color:var(--muted);line-height:1.9;padding:16px 8px 0}
+.venue-tournament .round-note strong{display:block;font-size:11px;color:#52748a;margin-bottom:4px}
+.venue-tournament .round-note .note-team-tags{display:flex;flex-wrap:wrap;gap:5px;margin-top:8px}
+.venue-tournament .round-note .note-team-tags span{font-size:9px;padding:1px 5px;border:1px solid #e2eaf0;border-radius:4px;color:#6d8494}
+.venue-tournament .round-note.note-top{grid-row:1/span 4;padding-top:8px}
+.venue-tournament .round-note.note-bottom{grid-row:5/span 4;padding-top:8px}
+.venue-tournament .connector-next:after{content:"";position:absolute;right:-23px;top:50%;width:22px;border-top:1px solid #a9c4d7}
+.venue-tournament .round-body .connector-pair-top:before,.venue-tournament .round-body .connector-pair-bottom:before{content:"";position:absolute;right:-12px;width:11px;border-right:1px solid #a9c4d7;pointer-events:none}
+.venue-tournament .round-body .connector-pair-top:before{top:50%;height:var(--link-h,52px)}
+.venue-tournament .round-body .connector-pair-bottom:before{bottom:50%;height:var(--link-h,52px)}
+.venue-tournament .connector-pair-top:after,.venue-tournament .connector-pair-bottom:after{width:11px;right:-12px}
+.venue-tournament .connector-input>.match-meta:before{content:"";position:absolute;left:-12px;top:50%;width:11px;border-top:1px solid #a9c4d7}
+.venue-tournament .row-1{--row:1}
+.venue-tournament .row-2{--row:2}
+.venue-tournament .row-3{--row:3}
+.venue-tournament .row-4{--row:4}
+.venue-tournament .row-5{--row:5}
+.venue-tournament .row-6{--row:6}
+.venue-tournament .row-7{--row:7}
+.venue-tournament .link-large{--link-h:104px}
+.venue-tournament .advance-note{display:flex;align-items:center;justify-content:center;gap:9px;padding:10px;margin-top:9px;border-radius:7px;background:var(--blue-pale);font-size:11px;color:var(--blue-dark);line-height:1.6}
+.venue-tournament .advance-note strong{font-weight:800}
+.venue-tournament .bracket-hint{display:none;margin-top:7px;color:var(--muted);font-size:10px}
+.venue-tournament .roster-details{margin-top:18px;border-top:1px solid var(--line);padding-top:15px}
+.venue-tournament .roster-details summary{cursor:pointer;font-weight:700;font-size:12px;display:flex;justify-content:space-between;align-items:center;list-style:none;padding:2px 0 10px}
+.venue-tournament .roster-details summary::-webkit-details-marker{display:none}
+.venue-tournament .roster-details summary:after{content:"＋";font-size:16px;font-weight:400;color:var(--muted)}
+.venue-tournament .roster-details[open] summary:after{content:"−"}
+.venue-tournament .roster-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:0 22px}
+.venue-tournament .roster-row{display:flex;align-items:center;gap:8px;font-size:11px;padding:8px 0;border-bottom:1px solid #edf1f4;min-width:0;text-align:left;background:transparent;width:100%}
+.venue-tournament .roster-row .team-label{min-width:0;flex:1;overflow-wrap:anywhere;line-height:1.55}
+.venue-tournament .roster-row .team-label strong{display:block;font-weight:650}
+.venue-tournament .roster-row small{font-size:10px;color:var(--muted);font-weight:400;display:block}
+.venue-tournament .roster-row .qual-marker{font-size:9px;color:var(--amber);white-space:nowrap;align-self:flex-start;margin-top:5px;flex:none}
+.venue-tournament .roster-row:hover .team-label strong{color:var(--blue)}
+.venue-tournament .round-list{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+.venue-tournament .round-list .match-card{align-self:stretch;grid-row:auto;min-width:0}
+.venue-tournament .round-list .match-meta{font-size:10px;padding:7px 10px}
+.venue-tournament .round-list .match-team{font-size:12px;padding:9px 10px}
+.venue-tournament .round-list .match-team strong{font-size:12px}
+.venue-tournament .round-list .match-meta>span{font-size:10px}
+.venue-tournament .round-list-note{font-size:11px;color:var(--muted);margin:12px 0 0;line-height:1.8}
+.venue-tournament .round-list-label{font-size:12px;color:var(--blue);margin:0 0 10px;display:flex;gap:10px;align-items:center}
+.venue-tournament .round-list-label span{font-size:10px;font-weight:400;color:var(--muted)}
+.venue-tournament .current-section+.current-section{margin-top:18px}
+.venue-tournament .stage-bracket{grid-template-columns:repeat(3,minmax(205px,1fr));min-width:682px;gap:28px}
+.venue-tournament .stage-bracket .round-body{grid-template-rows:repeat(8,43px)}
+.venue-tournament .stage-bracket .match-team{min-height:30px;font-size:12px}
+.venue-tournament .stage-bracket .match-team strong{font-size:12px}
+.venue-tournament .stage-bracket .connector-next:after{right:-29px;width:28px}
+.venue-tournament .stage-bracket .connector-pair-top:after,.venue-tournament .stage-bracket .connector-pair-bottom:after{width:14px;right:-15px}
+.venue-tournament .stage-bracket .connector-pair-top:before,.venue-tournament .stage-bracket .connector-pair-bottom:before{right:-15px;width:14px}
+.venue-tournament .stage-bracket .connector-input>.match-meta:before{left:-15px;width:14px}
+.venue-tournament .stage-bracket .connector-pair-top,.venue-tournament .stage-bracket .connector-pair-bottom{--link-h:45px}
+.venue-tournament .stage-bracket .link-large{--link-h:90px}
+.venue-tournament .main-stage-note{font-size:12px;line-height:1.7;color:var(--muted);margin:0 0 16px}
+.venue-tournament .bronze-card{margin-top:14px;max-width:420px;border-top:1px solid var(--line);padding-top:14px}
+.venue-tournament .bronze-card>h4{font-size:12px;margin:0 0 9px}
+.venue-tournament .bronze-card .match-card{max-width:320px}
+.venue-tournament .load-error{background:#fff1eb;border:1px solid #efc4b0;color:#8c4630;padding:16px;border-radius:10px;font-size:13px;line-height:1.8}
+.venue-tournament .loading{padding:25px;text-align:center;color:var(--muted);font-size:13px}
+.venue-tournament .schedule-details{margin-top:14px;padding:14px 16px;background:#fff;border:1px solid var(--line);border-radius:12px}
+.venue-tournament .schedule-details>summary{font-size:12px;font-weight:700;cursor:pointer;line-height:1.7}
+.venue-tournament .schedule-details>p{font-size:11px;color:var(--muted);line-height:1.8;margin-top:9px}
+.venue-tournament .schedule-list{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:0 18px;margin-top:8px}
+.venue-tournament .schedule-row{font-size:10px;display:flex;align-items:baseline;gap:7px;border-bottom:1px solid #edf1f4;padding:8px 0;line-height:1.5}
+.venue-tournament .schedule-row .queue-num{width:18px;color:#8a9eac;font-variant-numeric:tabular-nums;flex:none}
+.venue-tournament .schedule-row strong{font-size:10px;color:#577385}
+.venue-tournament .schedule-row span:last-child{min-width:0;overflow-wrap:anywhere;color:var(--muted)}
+@media(min-width:1500px){.venue-tournament .bracket-track{grid-template-columns:repeat(4,minmax(200px,1fr))}
+.venue-tournament .stage-bracket{grid-template-columns:repeat(3,minmax(215px,1fr))}}
+@media(max-width:900px){.venue-tournament .venue-overview button{padding:13px}
+.venue-tournament .overview-top small{display:none}
+.venue-tournament .overview-values strong{font-size:23px}
+.venue-tournament .overview-values .arrow{margin:0 6px}
+.venue-tournament .group-panel{padding:16px}
+.venue-tournament .bracket-hint{display:block}
+.venue-tournament .roster-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
+.venue-tournament .team-detail-grid{grid-template-columns:.8fr 1.4fr 1.25fr}
+.venue-tournament .team-detail-grid strong{font-size:14px}
+.venue-tournament .schedule-list{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media(max-width:600px){.venue-tournament .mobile-break{display:block}
+.venue-tournament .venue-overview{gap:7px;margin-top:13px}
+.venue-tournament .venue-overview button{padding:10px 9px;border-radius:11px}
+.venue-tournament .overview-top{gap:5px;margin-bottom:8px}
+.venue-tournament .venue-letter{width:24px;height:24px;font-size:14px;border-radius:7px}
+.venue-tournament .overview-top strong{font-size:12px}
+.venue-tournament .overview-values{flex-wrap:wrap;gap:3px;font-size:10px;white-space:normal;line-height:1.5}
+.venue-tournament .overview-values strong{font-size:20px;line-height:1}
+.venue-tournament .overview-values .arrow{display:none}
+.venue-tournament .overview-values .overview-seats{display:flex;align-items:baseline;gap:3px;flex-basis:100%;margin-top:5px}
+.venue-tournament .overview-values .seat-number{font-size:16px}
+.venue-tournament .overview-note{font-size:9px;margin-top:7px;line-height:1.5}
+.venue-tournament .team-search-section{margin-top:23px}
+.venue-tournament .search-heading h2{font-size:15px}
+.venue-tournament .search-heading>span{font-size:10px}
+.venue-tournament .search-box{gap:9px;padding:3px 11px}
+.venue-tournament .search-box input{font-size:13px;padding:11px 0}
+.venue-tournament .search-box kbd{display:none}
+.venue-tournament .search-box svg{width:18px;height:18px}
+.venue-tournament .competition{margin-top:26px}
+.venue-tournament .section-title{margin-bottom:12px;gap:8px}
+.venue-tournament .section-title .eyebrow{font-size:9px;letter-spacing:.8px}
+.venue-tournament .section-title h2{font-size:20px}
+.venue-tournament .static-label{font-size:9px;max-width:82px;text-align:right;line-height:1.5;padding-bottom:2px}
+.venue-tournament .venue-tabs{gap:3px;padding:4px;border-radius:10px}
+.venue-tournament .venue-tab{font-size:12px;padding:10px 3px}
+.venue-tournament .venue-tab small{font-size:9px}
+.venue-tournament .venue-intro{gap:10px;margin-bottom:12px}
+.venue-tournament .venue-intro h3{font-size:15px}
+.venue-tournament .venue-intro p{font-size:11px;line-height:1.7}
+.venue-tournament .venue-chip{font-size:10px;padding:6px 8px;text-align:center;max-width:88px;line-height:1.6}
+.venue-tournament .group-tabs{gap:6px}
+.venue-tournament .group-tab{padding:8px 11px;gap:7px;font-size:12px}
+.venue-tournament .group-tab small{font-size:9px}
+.venue-tournament .group-panel{padding:14px 11px;margin-top:11px;border-radius:12px}
+.venue-tournament .group-heading{align-items:flex-start;gap:10px;flex-wrap:wrap;margin-bottom:15px}
+.venue-tournament .group-heading h3{font-size:16px}
+.venue-tournament .group-heading p{font-size:10px}
+.venue-tournament .view-switch{padding:3px;gap:2px}
+.venue-tournament .view-switch button{padding:7px 8px;font-size:10px}
+.venue-tournament .bracket-track{grid-template-columns:repeat(4,185px);min-width:806px;gap:22px}
+.venue-tournament .stage-bracket{grid-template-columns:repeat(3,205px);min-width:671px;gap:28px}
+.venue-tournament .round-title strong{font-size:11px}
+.venue-tournament .round-title span{font-size:9px}
+.venue-tournament .advance-note{font-size:10px;padding:9px 8px;justify-content:flex-start;gap:7px}
+.venue-tournament .roster-grid{grid-template-columns:1fr;gap:0}
+.venue-tournament .roster-row{padding:8px 2px;font-size:12px;gap:9px}
+.venue-tournament .roster-row .team-label{display:flex;align-items:baseline;gap:8px}
+.venue-tournament .roster-row small{font-size:10px;flex:none;margin-left:auto;max-width:45%;overflow-wrap:anywhere}
+.venue-tournament .roster-row .qual-marker{font-size:9px;margin-top:4px}
+.venue-tournament .roster-row .team-label strong{font-size:11px}
+.venue-tournament .roster-details summary{font-size:11px}
+.venue-tournament .team-detail{padding:14px 12px}
+.venue-tournament .team-detail-head h3{font-size:16px}
+.venue-tournament .team-detail-head .number-tag{font-size:13px;padding:5px 7px}
+.venue-tournament .team-detail-head p{font-size:11px}
+.venue-tournament .team-detail-grid{grid-template-columns:1fr 2fr;gap:15px 12px}
+.venue-tournament .detail-unit+.detail-unit{padding-left:12px}
+.venue-tournament .detail-unit:last-child{grid-column:1/-1;padding-left:0;border-left:0;border-top:1px solid var(--line);padding-top:12px}
+.venue-tournament .detail-unit strong{font-size:14px}
+.venue-tournament .detail-unit p{font-size:11px}
+.venue-tournament .detail-route{font-size:11px;line-height:1.8;padding:9px 10px;margin-top:13px}
+.venue-tournament .team-detail-head{gap:8px}
+.venue-tournament .detail-action{font-size:11px;padding:8px 11px}
+.venue-tournament .search-result-button{gap:8px;padding:11px 10px;flex-wrap:wrap}
+.venue-tournament .search-result-button .team-name{font-size:12px}
+.venue-tournament .search-result-button .small-meta{display:none}
+.venue-tournament .search-result-button .result-loc{font-size:10px}
+.venue-tournament .round-list{grid-template-columns:1fr;gap:9px}
+.venue-tournament .round-list .match-team{padding:8px 10px}
+.venue-tournament .round-list .match-team strong{font-size:12px}
+.venue-tournament .round-list-note{font-size:10px}
+.venue-tournament .round-list-label{font-size:11px;flex-wrap:wrap;gap:4px 8px}
+.venue-tournament .round-list-label span{font-size:9px}
+.venue-tournament .main-stage-note{font-size:11px;margin-bottom:13px}
+.venue-tournament .schedule-details{padding:11px 12px}
+.venue-tournament .schedule-list{grid-template-columns:1fr}
+.venue-tournament .schedule-details>summary{font-size:11px}
+.venue-tournament .schedule-details>p{font-size:10px}
+.venue-tournament .schedule-row{padding:7px 0}}
+@media(prefers-reduced-motion:reduce){.venue-tournament *{scroll-behavior:auto!important;transition:none!important}}
+/* Scope every rule so the venue view never alters the rest of the event site. */
+.venue-tournament{display:block;min-width:0;width:100%;max-width:100%;background:transparent;text-align:left;line-height:1.5;font-weight:400;--ink:#233a48;--muted:#667988;--blue:#176c9d;--line:#dce5ec;color:var(--ink)}
+.venue-tournament button{font-family:inherit;letter-spacing:normal;text-transform:none;min-height:0;box-shadow:none;line-height:1.5;white-space:normal}
+.venue-tournament .venue-content{min-width:0;margin-top:18px}
+.venue-tournament .venue-overview{margin-top:0}
+.venue-tournament .venue-overview-card{min-width:0;background:#fff;border:1px solid var(--line);border-radius:14px;overflow:hidden}
+.venue-tournament .venue-overview-card>button[data-venue]{width:100%;border:0;border-radius:0;display:block}
+.venue-tournament .venue-overview-card>.venue-print{width:100%;border-radius:0;border:0;border-top:1px solid #e5edf3;background:#f6faff;padding:9px 8px;font-size:12px;text-align:center;display:block}
+.venue-tournament .venue-print{display:inline-flex;align-items:center;justify-content:center;gap:5px;padding:9px 13px;border:1px solid #bcd2e0;border-radius:8px;background:#fff;color:var(--blue);font-size:12px;font-weight:700;flex:none;min-height:38px}
+.venue-tournament .venue-print:hover{background:#eaf5fc;border-color:var(--blue)}
+.venue-tournament .venue-intro{flex-wrap:wrap;gap:10px}
+.venue-tournament .venue-intro>div:first-child{flex:1;min-width:200px}
+.venue-tournament .search-heading h3{margin:0;font-size:16px;line-height:1.5}
+.venue-tournament .search-icon{font-size:26px;line-height:1;color:var(--blue);width:22px;flex:none}
+.venue-tournament .search-box{margin:0;font-weight:400;min-width:0}
+.venue-tournament .search-box input{margin:0;box-shadow:none;min-height:0;max-width:100%;height:auto;border-radius:0}
+.venue-tournament .bracket-track.columns-1{grid-template-columns:minmax(185px,280px);min-width:0}
+.venue-tournament .bracket-track.columns-2{grid-template-columns:repeat(2,minmax(185px,1fr));min-width:394px}
+.venue-tournament .bracket-track.columns-3{grid-template-columns:repeat(3,minmax(185px,1fr));min-width:601px}
+.venue-tournament .bracket-track.columns-4{grid-template-columns:repeat(4,minmax(185px,1fr));min-width:808px}
+.venue-tournament .bracket-track.columns-1 .round-body{grid-template-rows:repeat(8,26px)}
+.venue-tournament .match-card{padding:0;margin:0;overflow:visible;display:block;min-height:0;text-align:left}
+.venue-tournament .match-meta{min-height:25px}
+.venue-tournament .match-open{font-size:10px;font-weight:800;background:transparent;border:0;border-radius:3px;padding:0;color:var(--blue);text-align:left}
+.venue-tournament .match-open:focus-visible{outline-offset:1px}
+.venue-tournament .match-team{width:auto;border-radius:0;box-shadow:none;background:transparent;color:var(--ink);font-weight:400;justify-content:flex-start;border:0;letter-spacing:normal}
+.venue-tournament .match-team+.match-team{border-top:1px solid #eff3f6}
+.venue-tournament .match-team.is-winner{background:#eaf7ef;color:#226a45}
+.venue-tournament .winner-mark{margin-left:auto;background:#d4eddd;color:#246e45;border-radius:3px;padding:1px 4px;font-size:9px;font-weight:800;flex:none}
+.venue-tournament .match-card.is-completed{border-color:#cce3d5}
+.venue-tournament .is-completed .match-meta>span{color:#377952}
+.venue-tournament .match-card .number-tag{line-height:1.5}
+.venue-tournament .match-card.is-highlighted{border-color:#e9a225}
+.venue-tournament .completed-rounds{display:flex;flex-wrap:wrap;align-items:center;gap:7px 12px;padding:9px 12px;border:1px solid #dae6ef;background:#f4f8fb;border-radius:8px;margin-bottom:15px;font-size:11px;color:#5c7384}
+.venue-tournament .completed-rounds button{background:#fff;border:1px solid #bdd2e1;color:var(--blue);border-radius:6px;padding:5px 9px;font-size:11px;font-weight:700}
+.venue-tournament .group-finished>strong{font-size:15px;color:#286d46}
+.venue-tournament .group-finished>p{font-size:12px;color:var(--muted);margin:5px 0 14px}
+.venue-tournament .group-finished>.match-card{max-width:330px}
+.venue-tournament .detail-progress{font-size:12px;line-height:1.7;color:#3d6d51;margin-top:14px}
+.venue-tournament .schedule-row{display:grid;grid-template-columns:18px 36px minmax(0,1fr) auto;gap:5px}
+.venue-tournament .schedule-row .queue-status{font-size:9px;white-space:nowrap;color:#6c8496}
+.venue-tournament .schedule-row.is-completed .queue-status{color:#2c774e}
+.venue-tournament .current-section+.current-section{margin-top:18px}
+@media(min-width:1500px){.venue-tournament .bracket-track.columns-4{grid-template-columns:repeat(4,minmax(200px,1fr))}}
+@media(max-width:600px){.venue-tournament .section-title{align-items:center;flex-wrap:wrap}.venue-tournament .section-title h2{font-size:20px}.venue-tournament .venue-print{font-size:11px;padding:7px 9px}.venue-tournament .venue-overview-card>.venue-print{padding:8px 4px;font-size:11px}.venue-tournament .venue-intro>div:first-child{min-width:160px}.venue-tournament .venue-intro>.venue-chip{margin-left:auto}.venue-tournament .venue-intro>.venue-print{flex-basis:100%}.venue-tournament .bracket-track.columns-1{grid-template-columns:minmax(185px,280px)}.venue-tournament .bracket-track.columns-2{grid-template-columns:repeat(2,185px)}.venue-tournament .bracket-track.columns-3{grid-template-columns:repeat(3,185px)}.venue-tournament .bracket-track.columns-4{grid-template-columns:repeat(4,185px)}.venue-tournament .search-heading{flex-wrap:wrap;gap:4px}.venue-tournament .search-heading h3{font-size:15px}.venue-tournament .team-detail-grid{grid-template-columns:1fr}.venue-tournament .detail-unit+.detail-unit{padding-left:0;border-left:0;padding-top:12px;border-top:1px solid var(--line)}.venue-tournament .detail-unit:last-child{grid-column:auto}.venue-tournament .roster-row .team-label{display:block}.venue-tournament .roster-row .team-label small{max-width:none;display:block;margin:0}.venue-tournament .completed-rounds{font-size:10px;padding:8px}.venue-tournament .completed-rounds button{font-size:10px}.venue-tournament .schedule-row{grid-template-columns:18px 38px minmax(0,1fr) auto}}
+/* Two long team names still fit a match without touching the next card. */
+.venue-tournament .round-body,.venue-tournament .stage-bracket .round-body{grid-template-rows:repeat(8,56px)}
+.venue-tournament .match-team{padding-top:4px;padding-bottom:4px}
+.venue-tournament .connector-pair-top,.venue-tournament .connector-pair-bottom,.venue-tournament .stage-bracket .connector-pair-top,.venue-tournament .stage-bracket .connector-pair-bottom{--link-h:58px}
+.venue-tournament .link-large,.venue-tournament .stage-bracket .link-large{--link-h:116px}
+.venue-tournament .bracket-track.columns-1 .round-body{grid-template-rows:repeat(8,27px)}

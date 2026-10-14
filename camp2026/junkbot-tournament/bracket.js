@@ -56,7 +56,7 @@ function flowSyncProgressView(progress) {
   flowProgressFrontierKey = frontier;
 }
 function flowRoundCount(round) {
-  const played = round.matches.filter(item => item.resultType !== 'bye' && item.sourceMatchIds?.length !== 1);
+  const played = round.matches.filter(item => !isPlannedBye(item));
   return { total: played.length, done: played.filter(item => item.status === 'completed').length };
 }
 
@@ -82,12 +82,12 @@ function flowStatus(item) {
     if (live?.status === 'awaiting-decision') return ['judge', '待判定'];
     return ['ready', '準備中'];
   }
-  if (item.sourceMatchIds?.length === 1) return ['bye', '預排輪空'];
+  if (isPlannedBye(item)) return ['bye', '預排輪空'];
   return item.participantIds.filter(Boolean).length === 2 ? ['ready', '待出賽'] : ['wait', '等待前場'];
 }
 function flowCard(item, control, compact = false) {
   const [statusClass, status] = flowStatus(item);
-  const bye = item.resultType === 'bye' || item.sourceMatchIds?.length === 1;
+  const bye = isPlannedBye(item);
   const slots = bye ? [item.participantIds.find(Boolean) || null] : item.participantIds;
   const playable = item.status !== 'completed' && item.participantIds.filter(Boolean).length === 2;
   const route = item.nextMatchId ? `勝隊 → ${flowCode(match(item.nextMatchId))}` : item.stage === 'bronze' ? '勝隊獲得季軍' : item.stage === 'final' ? '勝隊獲得冠軍' : '勝隊晉級下一輪';
@@ -138,7 +138,7 @@ bracketView = function(control) {
   const selected = allRounds.find(round => round.stage === bracketV2Round) || current;
   const visibleRounds = flowCompletedExpanded ? allRounds : progress.visibleRounds;
   const mapRounds = visibleRounds.filter(round => round.stage !== 'bronze');
-  const played = state.matches.filter(item => item.resultType !== 'bye' && item.sourceMatchIds?.length !== 1);
+  const played = state.matches.filter(item => !isPlannedBye(item));
   const complete = played.filter(item => item.status === 'completed').length;
   const activeCount = activeMatches().length;
   const hasPlayed = complete > 0;

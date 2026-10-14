@@ -1,0 +1,182 @@
+/* A4 venue roster and fixtures. Reads an existing draw; never changes it. */
+(function () {
+  'use strict';
+  const SCOPES = ['A', 'B', 'C', 'MAIN'];
+  const escape = (value) => String(value == null ? '' : value).replace(/[&<>"']/g, (char) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[char]));
+  let activeOverlay = null;
+  let previousFocus = null;
+  const venueName = (venue) => venue === 'MAIN' ? '主舞台' : `場地 ${venue}`;
+  const dateText = (value) => {
+    const date = value ? new Date(value) : new Date();
+    if (Number.isNaN(date.getTime())) return '未提供';
+    return new Intl.DateTimeFormat('zh-TW', { timeZone: 'Asia/Taipei', year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', hour12: false }).format(date);
+  };
+  function context(data) {
+    if (!data || !Array.isArray(data.teams) || !Array.isArray(data.groups) || !Array.isArray(data.matches)) throw new Error('目前沒有可列印的分組賽程。');
+    const teams = new Map(data.teams.map((team) => [team.id, team]));
+    const matches = new Map(data.matches.map((match) => [match.id, match]));
+    const groups = new Map(data.groups.map((group) => [group.id, group]));
+    const number = (id) => teams.get(id)?.teamNumber ?? '—';
+    const team = (id) => {
+      const item = teams.get(id);
+      return item ? `${item.teamNumber} 號 ${item.teamName || '未填隊名'}` : '待確認';
+    };
+    const call = (id) => matches.get(id)?.callCode || matches.get(id)?.code || id || '—';
+    function participantId(match, index, visited = new Set()) {
+      if (!match || visited.has(match.id)) return null;
+      visited.add(match.id);
+      const resolved = match.participantIds?.[index];
+      if (teams.has(resolved)) return resolved;
+      const slot = match.slots?.[index];
+      if (slot?.teamId && teams.has(slot.teamId)) return slot.teamId;
+      const source = matches.get(slot?.matchId);
+      if (!source) return null;
+      const winnerId = source.winnerId || source.winnerTeamId;
+      if (slot.outcome !== 'loser') return teams.has(winnerId) ? winnerId : null;
+      const loserId = source.loserId || source.loserTeamId;
+      if (teams.has(loserId)) return loserId;
+      if (!teams.has(winnerId)) return null;
+      const sides = [participantId(source, 0, new Set(visited)), participantId(source, 1, new Set(visited))];
+      return sides.find((id) => id && id !== winnerId) || null;
+    }
+    function participant(match, index) {
+      const id = participantId(match, index);
+      if (id) return team(id);
+      const slot = match.slots?.[index];
+      if (!slot) return '待確認';
+      const source = matches.get(slot.matchId);
+      const group = source && groups.get(source.groupId);
+      if (group?.winnerMatchId === source.id && match.venue === 'MAIN') return `${group.id} 組冠軍`;
+      return `${call(slot.matchId)} ${slot.outcome === 'loser' ? '敗隊' : '勝隊'}`;
+    }
+    function round(match) {
+      if (match.stage === 'qualification') return '資格賽';
+      if (match.groupId) return ({ 8: '組內八強', 4: '組內四強', 2: '組冠軍賽' })[match.groupRoundSize] || match.label || '組內賽';
+      return match.label || ({ 8: '八強賽', 4: '準決賽' })[match.roundSize] || '主舞台';
+    }
+    function destination(match) {
+      const next = match.nextMatchId ? `${call(match.nextMatchId)}` : (match.id === 'MAIN-BRONZE' || /BRONZE/i.test(match.id) ? '季軍' : '冠軍');
+      const prefix = match.nextMatchId && matches.get(match.nextMatchId)?.venue === 'MAIN' && match.venue !== 'MAIN' ? '主舞台 ' : '';
+      return `${prefix}${next}${match.loserNextMatchId ? `；敗隊至 ${call(match.loserNextMatchId)}` : ''}`;
+    }
+    const schedule = (venue) => {
+      const ids = data.venueSchedules?.[venue];
+      return Array.isArray(ids) ? ids.map((id) => matches.get(id)).filter(Boolean) : data.matches.filter((match) => match.venue === venue).sort((a, b) => (a.venueOrder || 0) - (b.venueOrder || 0));
+    };
+    return { data, teams, matches, groups, number, team, call, participantId, participant, round, destination, schedule };
+  }
+  function heading(title, subtitle) {
+    return `<div class="vp-page-heading"><h2>${escape(title)}</h2><p>${escape(subtitle)}</p></div>`;
+  }
+  function resultCell(match, ctx) {
+    const winner = match.winnerId || match.winnerTeamId;
+    const value = ctx.teams.has(winner) ? `${ctx.number(winner)} 號` : '________';
+    return `<div class="vp-result">勝隊：${escape(value)}<br>裁判：________</div>`;
+  }
+  function fixtureTable(matches, ctx, withGroup) {
+    return `<table class="vp-table vp-fixtures${withGroup ? ' vp-call-table' : ''}"><colgroup><col class="vp-col-call"><col class="vp-col-round"><col class="vp-col-side"><col class="vp-col-side"><col class="vp-col-next"><col class="vp-col-result"></colgroup><thead><tr><th>叫號</th><th>${withGroup ? '組別／輪次' : '輪次'}</th><th>對戰隊伍 1</th><th>對戰隊伍 2</th><th>勝隊前往</th><th>賽果紀錄</th></tr></thead><tbody>${matches.map((match) => `<tr><td class="vp-code">${escape(match.callCode || match.code)}</td><td>${withGroup && match.groupId ? `<strong>${escape(match.groupId)}</strong><br>` : ''}${escape(ctx.round(match))}</td><td>${escape(ctx.participant(match, 0))}</td><td>${escape(ctx.participant(match, 1))}</td><td class="vp-destination">${escape(ctx.destination(match))}</td><td>${resultCell(match, ctx)}</td></tr>`).join('')}</tbody></table>`;
+  }
+  function signoff(label) {
+    return `<div class="vp-signoff"><span>${escape(label)}：________________</span><span>裁判／紀錄：________________</span><span>時間：________</span></div>`;
+  }
+  function groupPage(group, ctx) {
+    const ids = group.teamIds || [];
+    const qualifiers = new Set(group.qualifierTeamIds || []);
+    const matches = (group.matchIds || []).map((id) => ctx.matches.get(id)).filter(Boolean);
+    const sorted = [...ids].sort((a, b) => Number(ctx.number(a)) - Number(ctx.number(b)));
+    const qualifier = matches.find((match) => match.stage === 'qualification');
+    const note = qualifier ? `${qualifier.callCode} 資格賽：${ctx.participant(qualifier, 0)} vs ${ctx.participant(qualifier, 1)}。勝隊進入組內八強。` : '資格賽以本組對戰表為準。';
+    const rosterRows = sorted.map((id) => {
+      const item = ctx.teams.get(id) || {};
+      // First fixture always means the original draw's entry, even after results exist.
+      const first = matches.find((match) => match.slots?.some((slot) => slot.teamId === id));
+      const slot = first?.slots?.findIndex((side) => side.teamId === id) ?? -1;
+      const opponent = first && slot >= 0 ? ctx.participant(first, 1 - slot) : '待確認';
+      return `<tr><td class="vp-number">${escape(item.teamNumber)}</td><td>${escape(item.teamName || '未填隊名')}</td><td>${escape(item.playerName || '—')}</td><td>${qualifiers.has(id) ? '<strong>先打資格賽</strong>' : '直接進組內八強'}</td><td class="vp-code">${escape(first?.callCode || '—')}</td><td>${escape(opponent)}</td></tr>`;
+    }).join('');
+    return { venue: group.venue, kind: 'group', title: `${venueName(group.venue)}・${group.id} 組`, html: `${heading(`${venueName(group.venue)} ｜ ${group.id} 組`, `${ids.length} 隊・${matches.length} 場・取 1 隊前往主舞台 ${ctx.call(group.winnerMainMatchId)}`)}<div class="vp-key-note">${escape(note)}</div><h3>參賽名單與首場報到</h3><table class="vp-table vp-roster"><colgroup><col style="width:7%"><col style="width:25%"><col style="width:12%"><col style="width:17%"><col style="width:10%"><col style="width:29%"></colgroup><thead><tr><th>隊號</th><th>隊伍名稱</th><th>選手姓名</th><th>入賽方式</th><th>首場叫號</th><th>首場對手</th></tr></thead><tbody>${rosterRows}</tbody></table><p class="vp-small-note">隊號沿用原報名編號；缺號不補號。資格賽 ${qualifiers.size} 隊，另 ${ids.length - qualifiers.size} 隊直接進組內八強。</p><h3>本組完整對戰與晉級</h3>${fixtureTable(matches, ctx, false)}<p class="vp-small-note">依「叫號」到 ${venueName(group.venue)} 報到；勝隊依表列場次續賽。本組冠軍前往主舞台，時間以現場公告為準。</p>${signoff('本組晉級隊號')}<div class="vp-notes">備註：________________________________________________________________________________</div>` };
+  }
+  function venueCallPages(venue, ctx) {
+    const matches = ctx.schedule(venue);
+    const groups = ctx.data.groups.filter((group) => group.venue === venue);
+    const pages = [];
+    const pageSize = 12;
+    for (let start = 0; start < matches.length; start += pageSize) {
+      const slice = matches.slice(start, start + pageSize);
+      pages.push({ venue, kind: 'schedule', title: `${venueName(venue)}・叫號總表`, html: `${heading(`${venueName(venue)} ｜ 賽務叫號總表`, `第 ${start + 1}–${start + slice.length} 場／共 ${matches.length} 場 · ${groups.map((group) => group.id).join('、')} · 共 ${groups.reduce((count, group) => count + group.teamIds.length, 0)} 隊`)}<div class="vp-key-note">${groups.map((group) => `${escape(group.id)} 組取 1 隊`).join('；')}，共 ${groups.length} 隊晉級主舞台八強。每場勝隊依「勝隊前往」欄接續賽程。</div>${fixtureTable(slice, ctx, true)}<div class="vp-call-guidance"><h3>現場執行</h3><p>1. 叫號前確認雙方隊號、隊名與裁判。</p><p>2. 紀錄勝隊後，告知下一場叫號；請預留選手整理機器人的時間。</p><p>3. 叫號為建議順序；遇等待前場賽果或準備未完成，由賽務調整實際開賽時間。</p></div>${signoff('場地負責人')}<div class="vp-notes">異動／備註：___________________________________________________________________________</div>` });
+    }
+    return pages;
+  }
+  function mainPage(ctx) {
+    const matches = ctx.schedule('MAIN');
+    const rows = ctx.data.groups.map((group) => {
+      const final = ctx.matches.get(group.winnerMatchId);
+      const winner = final?.winnerId || final?.winnerTeamId;
+      return `<tr><td><strong>${escape(group.id)}</strong></td><td>${escape(venueName(group.venue))}</td><td>${ctx.teams.has(winner) ? escape(ctx.team(winner)) : '隊號：________　隊名：________________'}</td><td class="vp-code">${escape(ctx.call(group.winnerMainMatchId))}</td><td>□ 已報到</td></tr>`;
+    }).join('');
+    return { venue: 'MAIN', kind: 'main', title: '主舞台・八強決賽', html: `${heading('主舞台 ｜ 八強・決賽賽務表', '8 組冠軍報到・八強 4 場・準決賽 2 場・季軍賽 1 場・冠軍賽 1 場')}<div class="vp-key-note">八強起集中主舞台。評審 A 登錄正式結果，評審 B、C 協同判定。</div><h3>八強報到名單</h3><table class="vp-table vp-main-roster"><colgroup><col style="width:10%"><col style="width:14%"><col style="width:49%"><col style="width:13%"><col style="width:14%"></colgroup><thead><tr><th>晉級組別</th><th>原場地</th><th>組冠軍隊伍</th><th>八強叫號</th><th>報到</th></tr></thead><tbody>${rows}</tbody></table><h3>主舞台完整對戰</h3>${fixtureTable(matches, ctx, false)}<p class="vp-small-note">準決賽勝隊進入冠軍賽，敗隊進入季軍賽。表列賽果須經現場裁判確認。</p>${signoff('主舞台負責人')}<div class="vp-awards"><span>冠軍隊號：________</span><span>亞軍隊號：________</span><span>季軍隊號：________</span></div>` };
+  }
+  function render(data, scope) {
+    const selected = scope == null ? 'all' : String(scope).toUpperCase();
+    if (selected !== 'ALL' && selected !== 'all' && !SCOPES.includes(selected)) throw new Error('請選擇場地 A、B、C 或主舞台。');
+    const ctx = context(data);
+    const venues = selected.toUpperCase() === 'ALL' ? SCOPES : [selected];
+    const pages = [];
+    venues.forEach((venue) => {
+      if (venue === 'MAIN') pages.push(mainPage(ctx));
+      else {
+        data.groups.filter((group) => group.venue === venue).sort((a, b) => a.id.localeCompare(b.id, 'zh-TW', { numeric: true })).forEach((group) => pages.push(groupPage(group, ctx)));
+        pages.push(...venueCallPages(venue, ctx));
+      }
+    });
+    const meta = data.metadata || {};
+    const draft = meta.preview !== false;
+    const status = draft ? '預排草案・非正式賽程' : '正式賽程';
+    const title = meta.title || '2026 全國廢材機器人大賽';
+    const revision = meta.revision ?? meta.sourceRevision ?? '未提供';
+    const generated = dateText();
+    const updated = dateText(meta.updatedAt || meta.createdAt);
+    const drawId = meta.drawId || meta.scheme || '既定分組';
+    return `<div class="vp-document" data-print-scope="${escape(selected)}" data-print-pages="${pages.length}">${pages.map((page, index) => `<section class="vp-page vp-page-${page.kind}" aria-label="${escape(page.title)} 第 ${index + 1} 頁" data-venue="${escape(page.venue)}"><header class="vp-page-header"><div><strong>${escape(title)}</strong><span>相撲機器人｜賽務用紙本</span></div><b class="vp-status${draft ? ' vp-status-draft' : ''}">${status}</b></header><div class="vp-page-content">${page.html}</div><footer class="vp-page-footer"><div><span>版本 ${escape(revision)} · 更新 ${escape(updated)}</span><span>列印 ${escape(generated)}（臺北時間）</span></div><div><span class="vp-draw-id">賽程 ${escape(drawId)}</span><span>第 ${index + 1} 頁／共 ${pages.length} 頁</span></div></footer></section>`).join('')}</div>`;
+  }
+  function close() {
+    if (!activeOverlay) return;
+    activeOverlay.remove();
+    activeOverlay = null;
+    document.body.classList.remove('vp-print-open');
+    document.removeEventListener('keydown', handleKeydown);
+    if (previousFocus?.isConnected && typeof previousFocus.focus === 'function') previousFocus.focus();
+    previousFocus = null;
+  }
+  function handleKeydown(event) {
+    if (!activeOverlay) return;
+    if (event.key === 'Escape') { event.preventDefault(); close(); return; }
+    if (event.key !== 'Tab') return;
+    const elements = [...activeOverlay.querySelectorAll('button:not([disabled]), [href], [tabindex="0"]')];
+    if (!elements.length) return;
+    const first = elements[0], last = elements[elements.length - 1];
+    if (event.shiftKey && document.activeElement === first) { event.preventDefault(); last.focus(); }
+    else if (!event.shiftKey && document.activeElement === last) { event.preventDefault(); first.focus(); }
+  }
+  function open(data, scope) {
+    const content = render(data, scope);
+    close();
+    previousFocus = document.activeElement;
+    const overlay = document.createElement('div');
+    overlay.className = 'vp-print-overlay';
+    overlay.setAttribute('role', 'dialog');
+    overlay.setAttribute('aria-modal', 'true');
+    overlay.setAttribute('aria-labelledby', 'vp-dialog-title');
+    const label = !scope || String(scope).toLowerCase() === 'all' ? '全部場地' : venueName(String(scope).toUpperCase());
+    overlay.innerHTML = `<div class="vp-toolbar"><div><h2 id="vp-dialog-title">${escape(label)}・賽務列印</h2><p>A4 直式，可列印或另存 PDF；每組名單各自一頁。</p></div><div class="vp-toolbar-actions"><button type="button" class="vp-close">關閉</button><button type="button" class="vp-print-button">列印／另存 PDF</button></div></div><div class="vp-screen-notice">列印設定請選 A4、直式，並關閉瀏覽器的「頁首及頁尾」。紙本為此刻賽程快照；更新賽果後可重新開啟列印。</div>${content}`;
+    overlay.querySelector('.vp-close').addEventListener('click', close);
+    overlay.querySelector('.vp-print-button').addEventListener('click', () => window.print());
+    document.body.appendChild(overlay);
+    activeOverlay = overlay;
+    document.body.classList.add('vp-print-open');
+    document.addEventListener('keydown', handleKeydown);
+    overlay.querySelector('.vp-close').focus();
+    return overlay;
+  }
+  window.JunkbotVenuePrint = Object.freeze({ render, open, close });
+}());
