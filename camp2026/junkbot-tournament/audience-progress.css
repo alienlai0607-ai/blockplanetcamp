@@ -1,7 +1,7 @@
 .audience-progress-links { display:flex; align-items:center; justify-content:space-between; gap:12px; margin:0 0 14px; font-size:12px; color:#526b7c; }
 .audience-progress-links > span { font-weight:750; }
 .audience-progress-links a,.audience-return-progress a { color:#1c6388; font-weight:700; text-decoration:underline; text-underline-offset:3px; }
-#audienceView > .audience-bracket { margin-top:0; margin-bottom:24px; }
+#audienceView > .audience-bracket { margin-top:28px; margin-bottom:24px; }
 .audience-return-progress { display:flex; justify-content:flex-end; margin:18px 0 10px; font-size:13px; }
 .audience-score-link { color:#1c6388; font-size:12px; white-space:nowrap; text-underline-offset:3px; }
 .audience-sync > span { margin-left:auto; }
@@ -22,3 +22,17 @@
   .audience-sync > span { margin-left:0; }
   .audience-progress-links { margin-bottom:12px; }
 }
+
+/* Compact spectator hierarchy: current match, then optional schedule exploration. */
+#audienceView > .audience-sync { margin-bottom:12px; }
+#audienceView .stage-center small { font-size:17px; font-weight:800; }
+@media(max-width:700px) {
+  #audienceView > .live-stage:not(.waiting) .stage-team { grid-row:1; padding:20px 12px; }
+  #audienceView > .live-stage:not(.waiting) .stage-center { grid-row:2; padding:18px 12px; }
+  #audienceView > .live-stage:not(.waiting) .stage-team h2 { font-size:clamp(22px,5.8vw,28px); margin-top:12px; overflow-wrap:anywhere; }
+  #audienceView > .live-stage:not(.waiting) .stage-team p { font-size:13px; }
+  #audienceView > .live-stage:not(.waiting) .audience-timer { font-size:76px; margin:10px 0; }
+}
+
+body:not(.projection-mode) #audienceView > .live-stage.waiting { min-height:140px; }
+#audienceView > .live-stage.waiting p { margin:10px 0 0; color:#65767e; font-size:14px; line-height:1.7; }

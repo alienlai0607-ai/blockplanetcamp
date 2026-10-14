@@ -391,3 +391,16 @@
 .venue-tournament .overview-group-board .round-title strong,.venue-tournament .overview-group-board .round-title span{font-size:12px}
 .venue-tournament .overview-group-board .round-list-label,.venue-tournament .overview-group-board .round-list-label span{font-size:12px}
 .venue-tournament .overview-group-advance strong{font-size:14px}
+
+/* Audience only: remove repeated statistics and keep the path to the bracket short. */
+.venue-tournament.is-audience .team-search-section { margin-top:0; }
+.venue-tournament.is-audience .search-heading h2 { font-size:22px; }
+.venue-tournament.is-audience .competition { margin-top:18px; }
+.venue-tournament.is-audience .venue-tab { padding:12px 6px; }
+.venue-tournament.is-audience .group-tabs { gap:6px; }
+.venue-tournament.is-audience .group-tab { padding:9px 12px; }
+.venue-tournament.is-audience .group-tab small { display:none; }
+@media(max-width:700px) {
+  .venue-tournament.is-audience .group-tabs { display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); }
+  .venue-tournament.is-audience .group-tab { justify-content:center; padding:10px 3px; font-size:12px; }
+}

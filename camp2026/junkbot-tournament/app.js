@@ -1408,26 +1408,28 @@ function renderAudience() {
   const indicator = document.querySelector('.audience-header .live-dot');
   if (indicator) { indicator.innerHTML = `<i></i>${connectionOk ? 'LIVE' : '待更新'}`; indicator.classList.toggle('offline', !connectionOk); }
   const simultaneousMatches = activeMatches();
-  const rawLiveMatch = state.live?.matchId ? match(state.live.matchId) : null;
-  const liveMatch = state.live?.status !== 'completed' ? rawLiveMatch : null;
-  const nextMatch = state.matches.find((item) => item.status === 'pending' && item.participantIds.filter(Boolean).length === 2);
-  const featured = liveMatch || nextMatch;
-  const liveState = liveMatch ? (state.live?.status || 'waiting') : 'waiting';
-  const seconds = liveMatch ? audienceSecondsLeft() : 60;
+  const finished = tournamentIsComplete();
+  // Judges choose the next bout; only an opened arena is a current match.
+  const featured = simultaneousMatches[0] || null;
+  const live = featured ? matchLive(featured.id) : null;
+  const liveState = live?.status || 'ready';
+  const seconds = featured ? arenaSecondsLeft(featured.id) : 60;
   const teamA = featured?.participantIds?.[0] || null;
   const teamB = featured?.participantIds?.[1] || null;
-  const timerText = formatTime(seconds);
-  const stage = featured ? matchStageLabel(featured) : '等待賽程';
+  const timerText = liveState === 'countdown' ? String(live.preCount || 3) : formatTime(seconds);
+  const stage = featured?.callCode
+    ? `${featured.venue === 'MAIN' ? '主舞台' : `場地 ${featured.venue}`} · ${featured.callCode}${featured.groupId ? ` · ${featured.groupId} 組` : ''}`
+    : featured ? matchDisplayLabel(featured) : '';
   const waitingForMainDraw = window.JunkbotVenuePlan?.isNewState(state) && window.JunkbotVenuePlan.groupsComplete(state) && state.venuePlan.mainDraw?.status !== 'drawn';
-  const statusText = liveState === 'running' ? '比賽進行中'
+  const statusText = liveState === 'running' ? (seconds > 0 ? '比賽進行中' : '時間到・等待評審判定')
     : liveState === 'countdown' ? '準備倒數'
       : liveState === 'awaiting-decision' ? '等待評審判定'
-        : featured ? '下一場準備中' : waitingForMainDraw ? '九組冠軍已到齊，準備主舞台現場抽籤' : '等待比賽單位建立賽程';
+        : '賽場準備中';
   $('audienceView').innerHTML = `
     <div class="audience-sync ${connectionOk ? '' : 'offline'}" role="status">${connectionOk ? '戰況已同步' : lastConnectionError ? '連線中斷・目前資料尚未更新' : '正在取得最新戰況'}<span>${lastSuccessfulSyncAt || state.updatedAt ? `更新於 ${esc(resultTime(lastSuccessfulSyncAt || state.updatedAt))}` : '等待首次同步'} · 約每 8 秒更新 · 現場裁判為準${!connectionOk && lastConnectionError ? `<br>${esc(lastConnectionError)}` : ''}</span></div>
-    ${simultaneousMatches.length > 1 ? `
+    ${!finished && simultaneousMatches.length > 1 ? `
       <section class="audience-multi-live">
-        <header><div><span class="section-kicker">MULTI-ARENA LIVE</span><h2>${simultaneousMatches.length} 場同時進行</h2></div><b>即時戰況</b></header>
+        <header><h2>目前對戰</h2><b>${simultaneousMatches.length} 場同步進行</b></header>
         <div>${simultaneousMatches.map((item) => {
           const live = matchLive(item.id);
           return `<article>
@@ -1438,7 +1440,7 @@ function renderAudience() {
           </article>`;
         }).join('')}</div>
       </section>` : ''}
-    ${tournamentIsComplete() ? `<section class="champion-stage"><span class="section-kicker">FINAL RESULTS · ${esc(CAMPUS[campus].name)}</span><h1>冠軍誕生</h1><p>${esc(currentTournamentTitle())}・恭喜所有參賽選手完成挑戰！</p><div class="podium">${[[state.championId, '🏆 冠軍'], [state.runnerUpId, '🥈 亞軍'], [state.thirdPlaceId, '🥉 季軍']].filter(([id]) => id).map(([id, label]) => `<div><div><span>${label}</span><strong>${esc(teamName(id))}</strong><p>${esc(entry(id)?.playerName || '')}</p></div></div>`).join('')}</div></section>` : `
+    ${finished ? `<section class="champion-stage"><span class="section-kicker">FINAL RESULTS · ${esc(CAMPUS[campus].name)}</span><h1>冠軍誕生</h1><p>${esc(currentTournamentTitle())}・恭喜所有參賽選手完成挑戰！</p><div class="podium">${[[state.championId, '🏆 冠軍'], [state.runnerUpId, '🥈 亞軍'], [state.thirdPlaceId, '🥉 季軍']].filter(([id]) => id).map(([id, label]) => `<div><div><span>${label}</span><strong>${esc(teamName(id))}</strong><p>${esc(entry(id)?.playerName || '')}</p></div></div>`).join('')}</div></section>` : simultaneousMatches.length > 1 ? '' : `
     <section class="live-stage ${featured ? '' : 'waiting'} ${seconds <= 10 && liveState === 'running' ? 'final-ten' : ''}" id="audienceStage">
       ${featured ? `
         <div class="stage-team red">
@@ -1446,16 +1448,15 @@ function renderAudience() {
           <h2>${esc(teamName(teamA))}</h2><p>${esc(entry(teamA)?.playerName || '')}</p>
         </div>
         <div class="stage-center">
-          <small>${esc(currentTournamentTitle())} · ${esc(stage)} · ${esc(CAMPUS[campus].short)} LIVE</small>
-          <div class="audience-timer" id="audienceTimer">${timerText}</div>
+          <small>${esc(stage)}</small>
+          <div class="audience-timer" id="audienceTimer" data-audience-timer="${esc(featured.id)}">${timerText}</div>
           <strong>${esc(statusText)}</strong>
-          <div class="stage-rule">一分鐘不停錶 · 現場評審判定勝負</div>
         </div>
         <div class="stage-team blue">
           <button class="team-badge" data-watch-team="${esc(teamB || '')}">B</button>
           <h2>${esc(teamName(teamB))}</h2><p>${esc(entry(teamB)?.playerName || '')}</p>
         </div>` : `
-        <div class="stage-center"><img src="assets/mascot-bengbeng.png" alt="" style="width:180px;height:160px;object-fit:contain"><small>${esc(currentTournamentTitle())} · ${esc(CAMPUS[campus].name)}</small><div class="audience-timer">--:--</div><strong>${esc(statusText)}</strong></div>
+        <div class="stage-center"><strong>${waitingForMainDraw ? '九組冠軍已到齊，等待主舞台抽籤' : '等待評審開場'}</strong><p>${waitingForMainDraw ? '抽籤完成並開場後，這裡會顯示主舞台對戰。' : '開場後，這裡會即時顯示對戰隊伍與時間。'}</p></div>
       `}
     </section>
     `}
