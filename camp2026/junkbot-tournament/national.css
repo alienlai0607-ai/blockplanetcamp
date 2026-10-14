@@ -431,17 +431,17 @@
 
 /* Spectators see the active match first, then the approved bracket and optional works. */
 .audience-bracket { margin-top: 32px; }
-.audience-showcase { padding: 0; margin-top: 28px; background: #fffefa; border-color: #dbe2d2; }
-.audience-showcase > summary { display: flex; align-items: center; gap: 14px; padding: 22px 24px; color: #3b593b; cursor: pointer; list-style: none; font-size: 19px; font-weight: 800; }
-.audience-showcase > summary::-webkit-details-marker { display: none; }
-.audience-showcase > summary::after { content: "+"; margin-left: auto; color: #8d9b7b; font-size: 23px; }
-.audience-showcase[open] > summary::after { content: "−"; }
-.audience-showcase > summary > span { padding: 4px 9px; color: #7c8e6f; border: 1px solid #dbe3ce; border-radius: 6px; font-size: 12px; font-weight: 600; white-space: nowrap; }
-.audience-showcase > p { margin: -4px 24px 20px; color: #7d8972; font-size: 14px; line-height: 1.8; }
-.audience-showcase > .showcase-grid { margin: 0 24px 24px; }
+.audience-roster { padding: 0; margin-top: 28px; background: #fffefa; border-color: #dbe2d2; }
+.audience-roster > summary { display: flex; align-items: center; gap: 14px; padding: 22px 24px; color: #3b593b; cursor: pointer; list-style: none; font-size: 19px; font-weight: 800; }
+.audience-roster > summary::-webkit-details-marker { display: none; }
+.audience-roster > summary::after { content: "+"; margin-left: auto; color: #8d9b7b; font-size: 23px; }
+.audience-roster[open] > summary::after { content: "−"; }
+.audience-roster > summary > span { padding: 4px 9px; color: #7c8e6f; border: 1px solid #dbe3ce; border-radius: 6px; font-size: 12px; font-weight: 600; white-space: nowrap; }
+.audience-roster > p { margin: -4px 24px 20px; color: #7d8972; font-size: 14px; line-height: 1.8; }
+.audience-roster > .audience-team-list { margin: 0 24px 24px; }
 .national-audience-header .live-dot.offline { color: #a17836; background: #fff3d4; }
 .national-audience-header .live-dot.offline i { background: #bb8d42; box-shadow: 0 0 0 3px rgba(187,141,66,.12); animation: none; }
-.projection-mode #audienceView > .audience-bracket, .projection-mode #audienceView > .audience-showcase { display: none; }
+.projection-mode #audienceView > .audience-bracket, .projection-mode #audienceView > .audience-roster { display: none; }
 @media (min-width: 1000px) and (min-height: 600px) {
   .projection-mode #audienceView:has(> .audience-sync) > .live-stage,
   .projection-mode #audienceView:has(> .audience-sync) > .champion-stage { min-height: calc(100dvh - 165px); }
@@ -451,17 +451,17 @@
 @media (max-width: 700px) {
   .overview-metrics > div:nth-child(3) { padding-left: 20px; }
   .audience-bracket { margin-top: 26px; }
-  .audience-showcase > summary { padding: 18px 20px; font-size: 17px; gap: 10px; }
-  .audience-showcase > p { margin-right: 20px; margin-left: 20px; font-size: 13px; }
-  .audience-showcase > .showcase-grid { margin: 0 20px 20px; }
+  .audience-roster > summary { padding: 18px 20px; font-size: 17px; gap: 10px; }
+  .audience-roster > p { margin-right: 20px; margin-left: 20px; font-size: 13px; }
+  .audience-roster > .audience-team-list { margin: 0 20px 20px; }
 }
 @media (max-width: 400px) {
   .overview-metrics > div:nth-child(3) { padding-left: 18px; }
   .national-event-title > p:last-child { display: none; }
-  .audience-showcase > summary { padding: 17px; font-size: 16px; }
-  .audience-showcase > summary > span { font-size: 11px; padding: 3px 6px; }
-  .audience-showcase > p { margin-right: 17px; margin-left: 17px; }
-  .audience-showcase > .showcase-grid { margin: 0 17px 17px; }
+  .audience-roster > summary { padding: 17px; font-size: 16px; }
+  .audience-roster > summary > span { font-size: 11px; padding: 3px 6px; }
+  .audience-roster > p { margin-right: 17px; margin-left: 17px; }
+  .audience-roster > .audience-team-list { margin: 0 17px 17px; }
 }
 /* The projection whitelist in competition.css has greater selector specificity. */
 .projection-mode #audienceView > .audience-sync { display: flex !important; }
@@ -493,7 +493,7 @@
 .roster-panel .roster-toolbar input { min-height: 40px; padding: 8px 12px; border-radius: 7px; background: #fffefa; font-size: 14px; }
 .roster-panel .roster-search-label { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
 .roster-panel .roster-list-heading,
-.national-control .roster-panel .team-row { display: grid; grid-template-columns: 28px minmax(0,1.2fr) minmax(0,.9fr) 88px auto; column-gap: 18px; align-items: center; padding: 11px 14px; }
+.national-control .roster-panel .team-row { display: grid; grid-template-columns: 28px minmax(0,1.2fr) minmax(0,.9fr) auto; column-gap: 18px; align-items: center; padding: 11px 14px; }
 .roster-panel .roster-list-heading { color: #788371; font-size: 12px; background: #eeefe6; border-radius: 7px 7px 0 0; }
 .roster-panel .roster-list-heading > :last-child { width: 236px; text-align: right; }
 .roster-panel .team-list { display: grid; gap: 0; border-radius: 0 0 7px 7px; background: #fffefa; }
@@ -505,9 +505,6 @@
 .national-control .roster-panel .team-row small { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
 .national-control .roster-panel .team-row strong { font-size: 15px; font-weight: 650; line-height: 1.5; overflow-wrap: anywhere; }
 .national-control .roster-panel .roster-player strong { color: #73806b; font-size: 14px; font-weight: 400; }
-.national-control .roster-panel .roster-video { width: auto; min-height: 0; padding: 4px 0; border: 0; border-radius: 0; background: transparent; color: #628063; font-size: 12px; font-weight: 500; line-height: 1.5; text-align: left; }
-.national-control .roster-panel .roster-video.none { color: #939b8b; }
-.national-control .roster-panel button.roster-video:hover { text-decoration: underline; }
 .national-control .roster-panel .row-actions { grid-column: auto; grid-row: auto; display: flex; flex-direction: row; flex-wrap: nowrap; justify-content: flex-end; gap: 5px; width: 236px; }
 .national-control .roster-panel .row-actions button { min-height: 34px; padding: 6px 9px; border: 0; border-radius: 5px; background: transparent; font-size: 13px; line-height: 1.5; font-weight: 500; white-space: nowrap; }
 .national-control .roster-panel .row-actions button:hover:not(:disabled) { background: #edf1e5; }
@@ -515,7 +512,7 @@
 .national-control .roster-panel .row-actions button.checked-in { color: #37714a; background: #e9f2e6; }
 .national-control .roster-panel .row-actions .delete { color: #aa786e; }
 @media (max-width: 1000px) and (min-width: 701px) {
-  .roster-panel .roster-list-heading, .national-control .roster-panel .team-row { column-gap: 12px; grid-template-columns: 25px minmax(0,1.2fr) minmax(0,.9fr) 74px auto; padding-right: 10px; padding-left: 10px; }
+  .roster-panel .roster-list-heading, .national-control .roster-panel .team-row { column-gap: 12px; grid-template-columns: 25px minmax(0,1.2fr) minmax(0,.9fr) auto; padding-right: 10px; padding-left: 10px; }
   .roster-panel .roster-list-heading > :last-child, .national-control .roster-panel .row-actions { width: 215px; }
   .national-control .roster-panel .row-actions button { padding-right: 7px; padding-left: 7px; }
 }
@@ -537,7 +534,6 @@
   .national-control .roster-panel .team-row .roster-team { grid-column: 2/-1; grid-row: 1; }
   .national-control .roster-panel .team-row .roster-player { grid-column: 2; grid-row: 2; }
   .national-control .roster-panel .team-row .roster-player strong { font-size: 13px; }
-  .national-control .roster-panel .team-row .roster-video { grid-column: 3; grid-row: 2; justify-self: end; padding: 0; }
   .national-control .roster-panel .team-row .row-actions { grid-column: 2/-1; grid-row: 3; width: auto; margin-top: 4px; justify-content: flex-start; gap: 5px; }
   .national-control .roster-panel .row-actions button { min-height: 40px; padding: 7px 9px; font-size: 12px; }
 }
@@ -553,3 +549,14 @@
 @media (max-width: 760px) {
   .roster-team-form, .team-identity-fields { grid-template-columns: minmax(0,1fr); }
 }
+
+/* Compact participant directory; competition entries need no media. */
+.audience-team-list { display: grid; grid-template-columns: repeat(auto-fill,minmax(min(100%,260px),1fr)); gap: 0 22px; }
+.audience-team-card { min-width: 0; padding: 11px 0; border-top: 1px solid #e4e9de; }
+.audience-team-card b, .audience-team-card span { display: block; overflow-wrap: anywhere; }
+.audience-team-card b { color: #345035; font-size: 15px; line-height: 1.5; font-weight: 650; }
+.audience-team-card span { margin-top: 3px; color: #73806b; font-size: 13px; line-height: 1.5; }
+.team-detail { display: grid; gap: 14px; margin: 0; }
+.team-detail > div { min-width: 0; display: grid; grid-template-columns: 80px minmax(0,1fr); gap: 14px; }
+.team-detail dt { color: var(--muted); font-size: 14px; }
+.team-detail dd { margin: 0; font-weight: 650; overflow-wrap: anywhere; }

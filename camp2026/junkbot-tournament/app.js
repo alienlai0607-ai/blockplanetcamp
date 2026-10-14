@@ -555,14 +555,14 @@ async function apiPost(payload) {
       return { success: true, ok: true, state: savedState, revision: savedState.revision };
     }
     if (payload.action === 'junkbot-match-patch') return demoMatchPatch(payload);
-    return { success: false, error: '示範模式不會連接正式伺服器；影片請改用網址' };
+    return { success: false, error: '示範模式不會連接正式伺服器。' };
   }
   const started = Date.now();
   const response = await fetchWithTimeout(API_URL, {
     method: 'POST',
     headers: { 'Content-Type': 'text/plain;charset=utf-8' },
     body: JSON.stringify(payload),
-  }, payload.action === 'junkbot-video-upload' ? 90000 : 30000);
+  }, 30000);
   if (!response.ok) throw new Error(`連線失敗（${response.status}）`);
   return acceptNationalResponse(await response.json(), started);
 }
@@ -1016,7 +1016,7 @@ function teamsView() {
   const plan = tournamentPlan();
   return `
     <div class="page-heading roster-page-heading">
-      <div><span class="kicker">PLAYERS & SHOWCASE · ${esc(CAMPUS[campus].short)}</span><h1>參賽名單</h1><p>核對原隊伍編號、隊名與選手，並管理報到與選廢秀影片。</p></div>
+      <div><span class="kicker">TEAMS & PLAYERS · ${esc(CAMPUS[campus].short)}</span><h1>參賽名單</h1><p>核對原隊伍編號、隊名與選手，並管理現場報到。</p></div>
       <span class="roster-total">${state.entries.length} 隊參賽</span>
     </div>
     <div class="roster-entry-tools">
@@ -1062,7 +1062,7 @@ function teamsView() {
     </div>
     <section class="panel roster-panel">
       <div class="panel-head"><div><h2>隊伍名單</h2><p>${state.entries.filter(item=>item.checkedInAt).length} 隊已註記報到。${state.matches.length ? '賽程已公布，隊伍編號、隊名與選手已鎖定。' : '抽籤前請逐一核對名單；未提供隊伍編號者顯示「—」。'}</p></div></div><div class="roster-toolbar"><label class="field"><span class="roster-search-label">搜尋編號、隊名或選手</span><input id="rosterSearch" type="search" value="${esc(rosterQuery)}" placeholder="搜尋編號、隊名或選手…"></label><span id="rosterSearchCount"></span></div>
-      ${state.entries.length ? `<div class="roster-list-heading" aria-hidden="true"><span>編號</span><span>隊伍名稱</span><span>選手</span><span>選廢秀</span><span>報到與操作</span></div><div class="team-list">${state.entries.map(item => teamRow(item)).join('')}</div>` : `
+      ${state.entries.length ? `<div class="roster-list-heading" aria-hidden="true"><span>編號</span><span>隊伍名稱</span><span>選手</span><span>報到與操作</span></div><div class="team-list">${state.entries.map(item => teamRow(item)).join('')}</div>` : `
         <div class="empty-card"><img src="assets/mascot-tiaotiao.png" alt=""><h2>尚未登錄參賽隊伍</h2><p>可逐隊新增，或從試算表一次貼上。</p></div>
       `}
     </section>
@@ -1075,9 +1075,8 @@ function teamRow(item) {
       <span class="seed">${esc(cleanTeamNumber(item.teamNumber) || '—')}</span>
       <div class="roster-team"><small>隊伍</small><strong>${esc(item.teamName)}</strong></div>
       <div class="roster-player"><small>選手</small><strong>${esc(item.playerName)}</strong></div>
-      ${item.videoUrl ? `<button class="video-status roster-video" data-watch-team="${esc(item.id)}" aria-label="觀看${esc(teamLabel(item))}的選廢秀">▶ 觀看影片</button>` : '<span class="video-status none roster-video">未附影片</span>'}
       <div class="row-actions">
-        <button class="${item.checkedInAt ? 'checked-in' : ''}" data-checkin-team="${esc(item.id)}" ${state.matches.length || pendingMutations ? 'disabled' : ''}>${item.checkedInAt ? '✓ 已報到' : '註記報到'}</button><button data-edit-team="${esc(item.id)}">資料／影片</button>
+        <button class="${item.checkedInAt ? 'checked-in' : ''}" data-checkin-team="${esc(item.id)}" ${state.matches.length || pendingMutations ? 'disabled' : ''}>${item.checkedInAt ? '✓ 已報到' : '註記報到'}</button><button data-edit-team="${esc(item.id)}">編輯資料</button>
         ${state.matches.length ? '' : `<button class="delete" data-delete-team="${esc(item.id)}">刪除</button>`}
       </div>
     </article>
@@ -1177,7 +1176,7 @@ function bracketView(control) {
     ${drawSummary}
     <div class="bracket-toolbar" role="group" aria-label="賽程顯示方式">
       <div><button data-bracket-display="map" aria-pressed="${bracketDisplay === 'map'}">晉級路線圖</button><button data-bracket-display="list" aria-pressed="${bracketDisplay === 'list'}">依輪次列表</button></div>
-      <span>${bracketDisplay === 'map' ? '左右捲動查看完整路線；點隊名可看選廢秀。' : '由上而下依輪次查看；已完成場次標示勝隊。'}</span>
+      <span>${bracketDisplay === 'map' ? '左右捲動查看完整路線；點隊名查看隊伍資料。' : '由上而下依輪次查看；已完成場次標示勝隊。'}</span>
     </div>
     <div class="bracket-round-list" ${bracketDisplay === 'list' ? '' : 'hidden'}>
       ${[...rounds, ...(bronzeMatch ? [{ label: '季軍賽', matches: [bronzeMatch] }] : [])].map(round => `<section><h3>${esc(round.label)}</h3><div>${round.matches.map(item => matchCard(item, control)).join('')}</div></section>`).join('')}
@@ -1393,7 +1392,7 @@ function renderAudience() {
     </section>
     `}
     ${state.matches.length ? `<section class="audience-bracket">${bracketView(false)}</section>` : ''}
-    <details class="audience-panel audience-showcase"><summary>參賽隊伍與選廢秀 <span>${state.entries.length} 隊</span></summary><p>點選隊名觀看作品影片。</p><div class="showcase-grid">${state.entries.length ? state.entries.map(item=>`<button class="showcase-card ${item.videoUrl ? '' : 'no-video'}" data-watch-team="${esc(item.id)}"><b>${esc(teamLabel(item))}</b><span>${esc(item.playerName)}</span><small>${item.videoUrl ? '觀看選廢秀' : '尚無影片'}</small></button>`).join('') : '<div class="hint">參賽名單尚未公布。</div>'}</div></details>
+    <details class="audience-panel audience-roster"><summary>參賽隊伍 <span>${state.entries.length} 隊</span></summary><div class="audience-team-list">${state.entries.length ? state.entries.map(item=>`<article class="audience-team-card"><b>${esc(teamLabel(item))}</b><span>${esc(item.playerName)}</span></article>`).join('') : '<div class="hint">參賽名單尚未公布。</div>'}</div></details>
     ${archivesSection('audience')}
   `;
   if (state.matches.length) scheduleBracketConnections();
@@ -1738,7 +1737,7 @@ function resetBracket() {
   if (state.matches.some((item) => item.status === 'completed' && item.resultType !== 'bye')) {
     return showToast('已有完成賽事，勝負已鎖定，不能重設賽程。', true);
   }
-  if (!confirm('確定重設整份賽程？隊伍與選廢秀影片會保留，但所有比賽結果會清除。')) return;
+  if (!confirm('確定重設整份賽程？隊伍名單會保留，但所有比賽結果會清除。')) return;
   state.matches = [];
   state.activeMatchIds = [];
   state.lives = {};
@@ -1748,7 +1747,7 @@ function resetBracket() {
   state.thirdPlaceId = null;
   state.draw = null;
   state.live = null;
-  saveState('賽程已重設，隊伍與影片皆保留');
+  saveState('賽程已重設，隊伍名單已保留');
   renderControl();
 }
 
@@ -1765,7 +1764,7 @@ async function archiveCurrentTournament() {
   const nextArchives = [...(state.archives || []), archive];
   const nextState = emptyState(campus, nextArchives);
   const statusWarning = archive.status === 'completed'
-    ? '完整名單、影片、賽程與名次會保留在「過往賽事」。'
+    ? '完整名單、賽程與名次會保留在「過往賽事」。'
     : '目前賽事尚未完成，系統會以「提前封存」保存現有進度。';
   if (!confirm(`確定封存「${archive.title}」並建立「${currentTournamentTitle(nextState)}」？\n\n${statusWarning}\n新場次會從空白名單開始。`)) return;
 
@@ -2072,11 +2071,11 @@ function closeModal() {
 }
 
 function openTeamEditor(teamId) {
-  if (activeMatchIds().length) return showToast('賽場開啟期間暫停編輯，請完成比賽判定後再更新影片。', true);
+  if (activeMatchIds().length) return showToast('賽場開啟期間暫停編輯，請完成比賽判定後再更新隊伍資料。', true);
   const item = entry(teamId);
   if (!item) return;
   openModal(`
-    <div class="modal-head"><div><span class="section-kicker">TEAM & SHOWCASE</span><h2>隊伍資料與選廢秀</h2></div><button data-close-modal>×</button></div>
+    <div class="modal-head"><div><span class="section-kicker">TEAM PROFILE</span><h2>隊伍資料</h2></div><button data-close-modal>×</button></div>
     <form class="modal-body" id="teamEditorForm">
       <input type="hidden" name="teamId" value="${esc(item.id)}">
       <div class="import-grid team-identity-fields">
@@ -2084,12 +2083,8 @@ function openTeamEditor(teamId) {
         <label class="field"><span>隊名</span><input name="teamName" maxlength="40" required value="${esc(item.teamName)}" ${state.matches.length ? 'readonly' : ''}></label>
         <label class="field"><span>選手名字</span><input name="playerName" maxlength="40" required value="${esc(item.playerName)}" ${state.matches.length ? 'readonly' : ''}></label>
       </div>
-      <label class="field" style="margin-top:15px"><span>影片網址（YouTube、Google Drive 或 mp4）</span><input name="videoUrl" maxlength="2000" value="${esc(item.videoUrl || '')}" placeholder="https://..."></label>
-      <label class="field" style="margin-top:15px"><span>或直接上傳影片（建議 18MB 以下）</span><input name="videoFile" type="file" accept="video/*"></label>
-      <p class="upload-progress" id="uploadProgress" hidden>正在上傳影片，請勿關閉畫面…</p>
       <div class="modal-actions">
-        ${item.videoUrl ? `<button class="outline" type="button" data-watch-team="${esc(item.id)}">先觀看</button>` : ''}
-        <button class="primary" type="submit">儲存隊伍與影片</button>
+        <button class="primary" type="submit">儲存隊伍資料</button>
       </div>
     </form>`, true);
 }
@@ -2103,31 +2098,17 @@ async function saveTeamEditor(form) {
   const teamNumberValue = cleanTeamNumber(data.get('teamNumber'));
   const teamNameValue = String(data.get('teamName') || '').trim();
   const playerNameValue = String(data.get('playerName') || '').trim();
-  const url = String(data.get('videoUrl') || '').trim();
-  const file = data.get('videoFile');
   if (state.matches.length && (teamNumberValue !== cleanTeamNumber(item.teamNumber) || cleanRosterName(teamNameValue) !== cleanRosterName(item.teamName) || cleanRosterName(playerNameValue) !== cleanRosterName(item.playerName))) return showToast('賽程已公布，隊伍編號、隊名與選手已鎖定。', true);
   const nameError = validateRosterTeam(teamNameValue, playerNameValue, item.id, state.entries, teamNumberValue);
   if (nameError) return showToast(nameError, true);
-  if (url && !validVideoUrl(url)) return showToast('請使用 2,000 字元內的有效 https:// 或 http:// 影片網址。', true);
-  if (url) { try { new URL(url); } catch (error) { return showToast('影片網址格式不正確。', true); } }
-  if (file?.size > 18 * 1024 * 1024) return showToast('影片超過 18MB，請壓縮或改貼 YouTube／Drive 網址。', true);
-  const update = { ...item, videoUrl: url, videoName: url ? '外部影片' : '' };
+  const update = { ...item };
   if (!state.matches.length) Object.assign(update, { teamNumber: teamNumberValue, teamName: cleanRosterName(teamNameValue), playerName: cleanRosterName(playerNameValue) });
   uiOperationPending = true;
   form.querySelectorAll('button').forEach(node => { node.disabled = true; });
   try {
-    if (file && file.size) {
-      $('uploadProgress').hidden = false;
-      const dataUrl = await fileToDataUrl(file);
-      const result = await apiPost({ action: 'junkbot-video-upload', password: controlPassword, campus: operationCampus,
-        teamId: item.id, teamName: update.teamName, filename: file.name, mimeType: file.type || 'video/mp4', dataUrl });
-      if (!result.success) throw new Error(result.error || '影片上傳失敗');
-      update.videoUrl = result.previewUrl || result.url;
-      update.videoName = file.name;
-    }
     if (campus !== operationCampus || role !== 'control') return;
     Object.assign(item, update);
-    const result = await saveState('隊伍與選廢秀影片已儲存');
+    const result = await saveState('隊伍資料已儲存');
     if (result?.success) {
       uiOperationPending = false;
       closeModal();
@@ -2136,71 +2117,15 @@ async function saveTeamEditor(form) {
   } finally {
     uiOperationPending = false;
     form.querySelectorAll('button').forEach(node => { node.disabled = false; });
-    if ($('uploadProgress')) $('uploadProgress').hidden = true;
   }
-}
-
-function fileToDataUrl(file) {
-  return new Promise((resolve, reject) => {
-    const reader = new FileReader();
-    reader.onload = () => resolve(reader.result);
-    reader.onerror = reject;
-    reader.readAsDataURL(file);
-  });
-}
-
-function validVideoUrl(value) {
-  if (typeof value !== 'string' || value.length > 2000 || /[\u0000-\u0020<>"\\]/.test(value)) return false;
-  // Validate scheme, authority and port directly; reject user-info and ambiguous backslashes.
-  const parts = value.match(/^https?:\/\/([^/?#]+)(?:[/?#].*)?$/i);
-  if (!parts || parts[1].indexOf('@') >= 0) return false;
-  const authority = parts[1].match(/^(\[[0-9a-f:.]+\]|[^:]+)(?::([0-9]+))?$/i);
-  if (!authority || (authority[2] && (Number(authority[2]) < 1 || Number(authority[2]) > 65535))) return false;
-  const host = authority[1];
-  const ipv4 = function(value) {
-    const octets = value.split('.');
-    return octets.length === 4 && octets.every(function(octet) { return /^[0-9]{1,3}$/.test(octet) && Number(octet) <= 255; });
-  };
-  if (host.charAt(0) === '[') {
-    const address = host.slice(1, -1);
-    const halves = address.split('::');
-    if (halves.length > 2) return false;
-    const groups = halves.reduce(function(result, half) { return result.concat(half ? half.split(':') : []); }, []);
-    let size = 0;
-    for (let index = 0; index < groups.length; index++) {
-      if (/^[0-9a-f]{1,4}$/i.test(groups[index])) size += 1;
-      else if (index === groups.length - 1 && ipv4(groups[index])) size += 2;
-      else return false;
-    }
-    return halves.length === 2 ? size < 8 : size === 8;
-  }
-  if (/^[0-9.]+$/.test(host)) return ipv4(host);
-  return host.length <= 253 && host.split('.').every(function(label) {
-    return label.length > 0 && label.length <= 63 && /^[a-z0-9\u00a1-\uffff](?:[a-z0-9\u00a1-\uffff-]*[a-z0-9\u00a1-\uffff])?$/i.test(label);
-  });
-}
-
-function videoMarkup(item) {
-  const url = String(item.videoUrl || '').trim();
-  if (!url) return '<div class="hint">這支隊伍的選廢秀影片還在準備中。</div>';
-  if (!validVideoUrl(url)) return '<div class="hint">影片網址格式不正確，請聯絡賽務人員更新。</div>';
-  try { new URL(url); } catch (error) { return '<div class="hint">影片網址格式不正確。</div>'; }
-  const youtube = url.match(/(?:youtu\.be\/|youtube\.com\/(?:watch\?v=|shorts\/|embed\/))([^?&/]+)/i);
-  if (youtube) return `<iframe class="video-frame" src="https://www.youtube.com/embed/${esc(youtube[1])}" title="${esc(teamLabel(item))}選廢秀" allow="autoplay; encrypted-media; picture-in-picture" allowfullscreen></iframe>`;
-  const drive = url.match(/drive\.google\.com\/file\/d\/([^/]+)/i);
-  if (drive) return `<iframe class="video-frame" src="https://drive.google.com/file/d/${esc(drive[1])}/preview" title="${esc(teamLabel(item))}選廢秀" allow="autoplay" allowfullscreen></iframe>`;
-  if (/\.(mp4|webm|mov)(\?|$)/i.test(url) || url.startsWith('data:video/')) {
-    return `<video class="video-player" src="${esc(url)}" controls playsinline></video>`;
-  }
-  return `<div class="hint">此影片由外部網站提供，請開啟原始頁面觀看。</div><p><a class="outline" href="${esc(url)}" target="_blank" rel="noopener noreferrer">開啟選廢秀影片 ↗</a></p>`;
 }
 
 function watchTeam(teamId) {
   const item = entry(teamId);
   if (!item) return;
   openModal(`
-    <div class="modal-head"><div><span class="section-kicker">廢材選廢秀 · ${esc(CAMPUS[campus].short)}</span><h2>${esc(teamLabel(item))}</h2><p style="margin:5px 0;color:var(--muted)">${esc(item.playerName)}</p></div><button data-close-modal>×</button></div>
-    <div class="modal-body">${videoMarkup(item)}</div>`, true);
+    <div class="modal-head"><div><span class="section-kicker">隊伍資料 · ${esc(CAMPUS[campus].short)}</span><h2>${esc(teamLabel(item))}</h2></div><button data-close-modal aria-label="關閉隊伍資料">×</button></div>
+    <div class="modal-body"><dl class="team-detail"><div><dt>隊伍編號</dt><dd>${esc(cleanTeamNumber(item.teamNumber) || '—')}</dd></div><div><dt>隊伍名稱</dt><dd>${esc(item.teamName)}</dd></div><div><dt>選手</dt><dd>${esc(item.playerName || '—')}</dd></div></dl></div>`);
 }
 
 function ensureAudio() {
@@ -2464,7 +2389,7 @@ function bindControlEvents() {
     if (remove) {
       if (state.matches.length) return showToast('請先重設賽程，才能刪除隊伍。', true);
       const item = entry(remove.dataset.deleteTeam);
-      if (item && confirm(`確定刪除「${teamLabel(item)}」？其他隊伍與影片不受影響。`)) {
+      if (item && confirm(`確定刪除「${teamLabel(item)}」？其他隊伍不受影響。`)) {
         state.entries = state.entries.filter((candidate) => candidate.id !== item.id);
         saveState('隊伍已刪除');
         renderControl();
