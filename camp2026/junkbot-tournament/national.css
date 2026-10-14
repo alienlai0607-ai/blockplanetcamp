@@ -541,3 +541,15 @@
   .national-control .roster-panel .team-row .row-actions { grid-column: 2/-1; grid-row: 3; width: auto; margin-top: 4px; justify-content: flex-start; gap: 5px; }
   .national-control .roster-panel .row-actions button { min-height: 40px; padding: 7px 9px; font-size: 12px; }
 }
+
+/* Original registration numbers are independent from roster positions. */
+.roster-team-form { grid-template-columns: minmax(110px,.6fr) minmax(0,1.4fr) minmax(0,1fr) auto; }
+.team-identity-fields { grid-template-columns: minmax(100px,.55fr) minmax(0,1fr) minmax(0,1fr); }
+.roster-team-form > *, .team-identity-fields > * { min-width: 0; }
+.roster-tools .sheet-columns { flex-wrap: wrap; gap: 6px; }
+.roster-tools .sheet-columns b { min-width: 70px; padding: 10px 6px; }
+.roster-tools .sheet-columns small { font-size: 11px; font-weight: 400; }
+.national-control .roster-panel .team-row .seed { overflow-wrap: anywhere; }
+@media (max-width: 760px) {
+  .roster-team-form, .team-identity-fields { grid-template-columns: minmax(0,1fr); }
+}
