@@ -7,15 +7,39 @@ function venuePrintView() {
   const groups=state.venuePlan.groups;
   return `<section class="venue-print-center"><div class="page-heading"><div><span class="kicker">OFFICIAL EVENT DOCUMENTS</span><h1>賽務列印</h1><p>紙本與目前正式賽程一致。選擇場地後可預覽、列印，或由列印視窗另存 PDF。</p></div><button class="primary" data-venue-print="all">列印全部場地</button></div><div class="venue-print-options">${['A','B','C','MAIN'].map(v=>{const own=groups.filter(g=>g.venue===v);return `<article><span class="venue-print-letter">${v==='MAIN'?'主舞台':`場地 ${v}`}</span><h2>${v==='MAIN'?'全國八強至決賽':own.map(g=>g.id).join('、')}</h2><p>${v==='MAIN'?'8 隊爭取冠軍 · 含季軍賽':`${own.length*9} 隊 · ${own.length} 席全國八強 · ${state.venuePlan.venueSchedules[v].length} 場`}</p><p>${v==='MAIN'?'對戰來源、晉級去向與賽果登錄表。':'各組名單、資格賽標記、首場對手，以及全場地叫號表。'}</p><button class="outline" data-venue-print="${v}">預覽／列印${v==='MAIN'?'主舞台':`場地 ${v}`}</button></article>`;}).join('')}</div><p class="venue-print-note">紙本保留原隊號，缺號不補。資格賽每組 2 隊先比，其餘 7 隊直接進組內八強。更動或判定後，請重新列印最新版本；紙上紀錄需由授權評審回填系統。</p></section>`;
 }
+let venuePrintLoading=false;
 async function venueOpenPrint(scope) {
+  if(venuePrintLoading)return;
+  const requestedScope=String(scope||'').toUpperCase();
+  const requestedCampus=campus, requestedJudge=judgeDeskId, requestedMutation=mutationRevision;
   if (role!=='control'||!judgeDeskAuthenticated||judgeDeskChooser) return showToast('請先驗證賽務密碼並選擇工作身分。',true);
-  if (judgeDeskId && scope!==judgeDeskId && !(judgeDeskId==='A'&&scope==='MAIN')) return showToast('請由總賽務列印其他場地。',true);
+  if(requestedCampus!==EVENT_SCOPE)return showToast('賽事資料來源不符，請重新進入賽務。',true);
+  if(!['A','B','C','MAIN','ALL'].includes(requestedScope))return showToast('請選擇要列印的場地。',true);
+  if (requestedJudge && requestedScope!==requestedJudge && !(requestedJudge==='A'&&requestedScope==='MAIN')) return showToast('請由總賽務列印其他場地。',true);
   if (!venuePlan.isVenueState(state)) return showToast('尚未公布三場地賽程。',true);
-  if (pendingMutations || uiOperationPending || unsavedCampusStates.has(campus)) return showToast('請先完成同步，再列印正式文件。',true);
-  const refreshed=await loadCampusState(true);
-  if(!refreshed || !connectionOk) return showToast('無法取得最新賽程，請恢復連線後再列印。',true);
-  if(!venuePlan.isVenueState(state))return showToast('賽程已變更，請重新確認分組後列印。',true);
-  window.JunkbotVenuePrint.open(venueData(),String(scope).toLowerCase()==='all'?'all':scope);
+  if (pendingMutations || uiOperationPending || unsavedCampusStates.has(requestedCampus)) return showToast('請先完成同步，再列印正式文件。',true);
+  venuePrintLoading=true;
+  let buttons=[];
+  try {
+    buttons=[...document.querySelectorAll('[data-venue-print],.venue-tournament [data-print]')].map(button=>({button,disabled:button.disabled,busy:button.getAttribute('aria-busy')}));
+    buttons.forEach(({button})=>{button.disabled=true;button.setAttribute('aria-busy','true');});
+    showToast('正在讀取最新賽程，準備列印…');
+    // A print snapshot has its own read. Background screen polling must not
+    // cancel it, replace live state, or change the revision used for writes.
+    const result=await apiGet(requestedCampus);
+    if(role!=='control'||!judgeDeskAuthenticated||judgeDeskChooser||campus!==requestedCampus||judgeDeskId!==requestedJudge)throw new Error('工作身分或賽事已變更，請重新選擇列印場地。');
+    if(judgeDeskId&&requestedScope!==judgeDeskId&&!(judgeDeskId==='A'&&requestedScope==='MAIN'))throw new Error('請由總賽務列印其他場地。');
+    if(pendingMutations||uiOperationPending||unsavedCampusStates.has(requestedCampus)||mutationRevision!==requestedMutation)throw new Error('賽事資料正在更新，請完成同步後重新列印。');
+    if(!result?.success||!result.state)throw new Error(result?.error||'無法取得最新賽程，請恢復連線後再列印。');
+    const snapshot=normalizeState(result.state,requestedCampus);
+    if(!venuePlan.isVenueState(snapshot))throw new Error('賽程已變更，請重新確認分組後列印。');
+    window.JunkbotVenuePrint.open(venuePlan.toView(snapshot,{judgeId:requestedJudge}),requestedScope==='ALL'?'all':requestedScope);
+  } catch(error) {
+    showToast(error?.message||'無法準備列印，請稍後重試。',true);
+  } finally {
+    buttons.forEach(({button,disabled,busy})=>{button.disabled=disabled;if(busy===null)button.removeAttribute('aria-busy');else button.setAttribute('aria-busy',busy);});
+    venuePrintLoading=false;
+  }
 }
 function venueBind(root) {
   const component=root?.querySelector('.venue-tournament');
