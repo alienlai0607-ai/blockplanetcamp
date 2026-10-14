@@ -43,10 +43,10 @@
     const byId=new Map(matches.map(m=>[m.id,m]));
     matches.forEach(m=>m.slots.forEach((s,i)=>{if(s.matchId){const src=byId.get(s.matchId);src.nextMatchId=m.id;src.nextSlot=i;}}));
     for(const v of ['A','B','C']){
-      const q=matches.filter(m=>m.venue===v).sort((a,b)=>a.roundIndex-b.roundIndex||Number(a.id.split('-').at(-1))-Number(b.id.split('-').at(-1))||a.groupId.localeCompare(b.groupId));
+      const q=matches.filter(m=>m.venue===v).sort((a,b)=>a.groupId.localeCompare(b.groupId)||a.roundIndex-b.roundIndex||Number(a.id.split('-').at(-1))-Number(b.id.split('-').at(-1)));
       q.forEach((m,i)=>{m.venueOrder=i+1;m.callCode=`${v}-${String(i+1).padStart(2,'0')}`;});venueSchedules[v]=q.map(m=>m.id);
     }
-    const draw={metadata:{format:METHOD,preview:false},teams:clone(entries),groups,matches,venueSchedules};validate(draw,entries);return draw;
+    const draw={metadata:{format:METHOD,preview:false,scheduleMode:'group-sequential'},teams:clone(entries),groups,matches,venueSchedules};validate(draw,entries);return draw;
   }
   function fromDraw(draw,base,options={}){
     validate(draw,base.entries);
@@ -55,7 +55,7 @@
     const next=clone(base),orders={};
     next.matches=draw.matches.map(source=>{const m=clone(source),stage=`r${m.roundSize}`,order=orders[stage]||0;orders[stage]=order+1;return {...m,phase:'group',stage,stageLabel:m.label,order,participantIds:m.slots.map(s=>s.teamId||null),sourceMatchIds:m.slots.filter(s=>s.matchId).map(s=>s.matchId),status:'pending',winnerId:null,loserId:null,reason:'',replays:0,resultType:'',auditLog:[],plannedBye:false};});
     const createdAt=options.createdAt||new Date().toISOString();
-    next.venuePlan={version:2,drawId:options.drawId||`nine-groups-${createdAt}`,groups:clone(draw.groups),venueSchedules:clone(draw.venueSchedules),mainDraw:{status:'pending',positions:[]}};
+    next.venuePlan={version:2,scheduleMode:draw.metadata?.scheduleMode||'round-interleaved',drawId:options.drawId||`nine-groups-${createdAt}`,groups:clone(draw.groups),venueSchedules:clone(draw.venueSchedules),mainDraw:{status:'pending',positions:[]}};
     next.draw={method:METHOD,createdAt,teamCount:72,bracketSize:72,groupCount:9,groupSize:8,qualificationCount:0,byeTeamIds:[],roundByeSourceMatchIds:[],byeRoundCount:0,operatorName:options.operatorName||'賽務'};
     Object.assign(next,{activeMatchIds:[],lives:{},activeMatchId:null,live:null,championId:null,runnerUpId:null,thirdPlaceId:null});return next;
   }
@@ -88,6 +88,12 @@
     if(!isVenueState(state))return '';
     const m=state.matches.find(m=>m.id===id);if(!m)return '找不到場次。';
     if(m.status==='completed')return '本場已完成。';
+    if(isNewState(state)&&state.venuePlan.scheduleMode==='group-sequential'&&m.groupId){
+      const groups=state.venuePlan.groups.filter(g=>g.venue===m.venue).sort((a,b)=>a.id.localeCompare(b.id));
+      const index=groups.findIndex(g=>g.id===m.groupId);
+      const waiting=groups.slice(0,index).find(g=>!state.matches.some(x=>x.id===g.winnerMatchId&&x.status==='completed'&&x.winnerId));
+      if(waiting)return `請先完成 ${waiting.id} 組並產生組冠軍，再開始 ${m.groupId} 組。`;
+    }
     if(m.participantIds.filter(Boolean).length!==2)return '請等待前場晉級名單。';
     if(m.venue==='MAIN'&&!mainReady(state))return isNewState(state)?'請先完成九組比賽，並公布主舞台抽籤結果。':'八組全部完成後，才開始主舞台。';
     const active=(state.activeMatchIds||[]).map(id=>state.matches.find(x=>x.id===id)).filter(x=>x&&x.id!==m.id&&x.status!=='completed');

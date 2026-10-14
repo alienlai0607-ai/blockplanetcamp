@@ -3,21 +3,29 @@
 const venuePlan = window.JunkbotVenuePlan;
 function venueData() { return venuePlan.toView(state, {judgeId:typeof activeJudgeId==='function'?activeJudgeId():null}); }
 function venuePrintView() {
-  if (!venuePlan.isVenueState(state)) return '<div class="page-heading"><div><h1>賽務列印</h1><p>三場地分組賽程公布後，可列印各場地名單與對戰表。</p></div></div><button class="primary" data-view-jump="bracket">前往對戰賽程</button>';
+  if (!venuePlan.isVenueState(state)) return '<div class="page-heading"><div><h1>賽務列印</h1><p>分組賽程公布後，即可列印各場地名單與對戰表。</p></div></div><button class="primary" data-view-jump="bracket">前往對戰賽程</button>';
   const groups=state.venuePlan.groups, nine=venuePlan.isNewState(state), drawn=state.venuePlan.mainDraw?.status==='drawn';
-  return `<section class="venue-print-center"><div class="page-heading"><div><span class="kicker">OFFICIAL EVENT DOCUMENTS</span><h1>賽務列印</h1><p>紙本與目前正式賽程一致。選擇場地後可預覽、列印，或由列印視窗另存 PDF。</p></div><button class="primary" data-venue-print="all">列印全部場地</button></div><div class="venue-print-options">${['A','B','C','MAIN'].map(v=>{const own=groups.filter(g=>g.venue===v);return `<article><span class="venue-print-letter">${v==='MAIN'?'主舞台':`場地 ${v}`}</span><h2>${v==='MAIN'?(nine?'九組冠軍・現場抽籤':'全國八強至決賽'):own.map(g=>g.id).join('、')}</h2><p>${v==='MAIN'?(nine?'9 隊 · 9 場（含季軍賽）':'8 隊 · 含季軍賽'):`${own.reduce((n,g)=>n+g.teamIds.length,0)} 隊 · ${own.length} 位組冠軍 · ${state.venuePlan.venueSchedules[v].length} 場`}</p><p>${v==='MAIN'?(nine&&!drawn?'九組冠軍報到、現場籤位登錄；抽籤前不預排對手。':'正式籤位、晉級去向與賽果登錄表。'):'各組名單、首場對手、晉級去向，以及全場地叫號表。'}</p><button class="outline" data-venue-print="${v}">預覽／列印${v==='MAIN'?'主舞台':`場地 ${v}`}</button></article>`;}).join('')}</div><p class="venue-print-note">紙本保留原隊號，缺號不補。${nine?'每組 8 隊，8 → 4 → 2 → 1，連勝 3 場成為組冠軍。九位組冠軍到主舞台重新抽籤決定位置。':'每組 9 隊；隨機 2 隊先比資格賽。'}更動或判定後，請重新列印最新版本；紙上紀錄需由授權評審回填系統。</p></section>`;
+  return `<section class="venue-print-center"><div class="page-heading"><div><h1>賽務列印</h1><p>排隊公告給選手找組別；裁判執行表用來叫號、記錄勝隊。</p></div><div class="venue-judge-actions">${nine?'<button class="primary" data-venue-print="all" data-print-kind="announcement">全部排隊公告・3 張</button>':''}<button class="outline" data-venue-print="all" data-print-kind="execution">全部裁判表${nine?'・4 張':''}</button></div></div><div class="venue-print-options">${['A','B','C','MAIN'].map(v=>{
+    const own=groups.filter(g=>g.venue===v), main=v==='MAIN';
+    const title=main?(nine&&!drawn?'報到與抽籤表':'主舞台對戰表'):own.map(g=>g.id).join(' → ');
+    const detail=main?(nine&&!drawn?'九組冠軍報到後現場抽籤':`${nine?'9':'8'} 場，包含季軍賽`):`${own.reduce((n,g)=>n+g.teamIds.length,0)} 隊，每組選出冠軍後再換下一組`;
+    return `<article><span class="venue-print-letter">${main?'主舞台':`場地 ${v}`}</span><h2>${title}</h2><p>${detail}</p><div class="venue-judge-actions">${!main&&nine?`<button class="primary" data-venue-print="${v}" data-print-kind="announcement">排隊公告・1 張</button>`:''}<button class="outline" data-venue-print="${v}" data-print-kind="execution">${main&&!drawn?'報到與抽籤表':'裁判執行表'}${nine?'・1 張':''}</button></div></article>`;
+  }).join('')}</div><p class="venue-print-note">列印時會讀取最新資料。紙上賽果請回填系統；主舞台抽籤登錄後，再列印對戰表。</p></section>`;
 }
 let venuePrintLoading=false;
-async function venueOpenPrint(scope) {
+async function venueOpenPrint(scope, kind='execution') {
   if(venuePrintLoading)return;
   const requestedScope=String(scope||'').toUpperCase();
+  const requestedKind=kind==='announcement'?'announcement':'execution';
   const requestedCampus=campus, requestedJudge=judgeDeskId, requestedMutation=mutationRevision;
   if (role!=='control'||!judgeDeskAuthenticated||judgeDeskChooser) return showToast('請先驗證賽務密碼並選擇工作身分。',true);
   if(requestedCampus!==EVENT_SCOPE)return showToast('賽事資料來源不符，請重新進入賽務。',true);
   if(!['A','B','C','MAIN','ALL'].includes(requestedScope))return showToast('請選擇要列印的場地。',true);
+  if(requestedKind==='announcement'&&requestedScope==='MAIN')return showToast('主舞台請使用報到與抽籤表。',true);
   if (requestedJudge && requestedScope!==requestedJudge && !(requestedJudge==='A'&&requestedScope==='MAIN')) return showToast('請由總賽務列印其他場地。',true);
   if (!venuePlan.isVenueState(state)) return showToast('尚未公布三場地賽程。',true);
   if (pendingMutations || uiOperationPending || unsavedCampusStates.has(requestedCampus)) return showToast('請先完成同步，再列印正式文件。',true);
+  const printTrigger=document.activeElement;
   venuePrintLoading=true;
   let buttons=[];
   try {
@@ -33,7 +41,7 @@ async function venueOpenPrint(scope) {
     if(!result?.success||!result.state)throw new Error(result?.error||'無法取得最新賽程，請恢復連線後再列印。');
     const snapshot=normalizeState(result.state,requestedCampus);
     if(!venuePlan.isVenueState(snapshot))throw new Error('賽程已變更，請重新確認分組後列印。');
-    window.JunkbotVenuePrint.open(venuePlan.toView(snapshot,{judgeId:requestedJudge}),requestedScope==='ALL'?'all':requestedScope);
+    window.JunkbotVenuePrint.open(venuePlan.toView(snapshot,{judgeId:requestedJudge}),requestedScope==='ALL'?'all':requestedScope,printTrigger,{kind:requestedKind});
   } catch(error) {
     showToast(error?.message||'無法準備列印，請稍後重試。',true);
   } finally {
@@ -118,7 +126,7 @@ arenasView=function(){
   if(!venuePlan.isVenueState(state))return venueOriginalArenas();
   return `<div class="page-heading"><div><span class="kicker">VENUE CONTROL</span><h1>賽場控制</h1><p>各場地一次一場；${venuePlan.isNewState(state)?'九組全數完成後，在主舞台現場抽籤再開賽。':'主舞台待八個分組全數完成後開放。'}</p></div><button class="outline" data-view-jump="print">賽務列印</button></div>${['A','B','C','MAIN'].map(v=>{const items=state.matches.filter(m=>m.venue===v);const active=items.filter(m=>activeMatchIds().includes(m.id)&&m.status!=='completed');const ready=items.filter(m=>!active.includes(m)&&!venuePlan.blockReason(state,m.id)).sort((a,b)=>a.venueOrder-b.venueOrder);return `<section class="venue-arena-section"><h2>${v==='MAIN'?'主舞台':`場地 ${v}`}</h2><p>${v==='MAIN'?'由評審 A 登錄，B、C 協同。':state.venuePlan.groups.filter(g=>g.venue===v).map(g=>g.id).join('、')}${v==='MAIN'&&!venuePlan.mainReady(state)?(venuePlan.isNewState(state)?' · 等待九組完成與現場抽籤。':' · 等待八組勝者全數產生。'):''}</p>${v==='MAIN'?venueMainDrawButton():''}<div class="arena-grid">${active.map(m=>arenaControlCard(m,true)).join('')}${ready.slice(0,3).map(m=>arenaControlCard(m,false)).join('')}${!active.length&&!ready.length?'<p class="hint">目前無可開賽場次；完成前場判定後自動更新。</p>':''}</div>${ready.length>3?`<p class="hint">另有 ${ready.length-3} 場已就緒；完成上述場次後自動顯示。</p>`:''}</section>`;}).join('')}`;
 };
-document.addEventListener('click',event=>{const button=event.target.closest('[data-venue-print]');if(button){event.preventDefault();venueOpenPrint(button.dataset.venuePrint);}});
+document.addEventListener('click',event=>{const button=event.target.closest('[data-venue-print]');if(button){event.preventDefault();venueOpenPrint(button.dataset.venuePrint,button.dataset.printKind);}});
 
 let venueMainDrawDraft=null, venueMainDrawLoading=false;
 function venueCanManageMainDraw(){return role==='control'&&judgeDeskAuthenticated&&!judgeDeskChooser&&!judgeDeskId&&campus===EVENT_SCOPE;}

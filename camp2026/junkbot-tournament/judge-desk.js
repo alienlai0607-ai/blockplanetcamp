@@ -75,6 +75,7 @@ function judgeDeskStatus(item) {
   if (live?.status === 'countdown') return '開場倒數';
   if (live?.status === 'awaiting-decision' || live?.timeupPending) return '待判定';
   if (activeMatchIds().includes(item.id)) return '準備中';
+  if (item.groupId && (window.JunkbotVenuePlan?.blockReason(state,item.id)||'').includes('組並產生組冠軍')) return '等待前組完成';
   return item.participantIds.filter(Boolean).length === 2 ? '待出賽' : '等待前場';
 }
 
@@ -86,14 +87,16 @@ function judgeDeskRow(item, { activeId = null, readonly = false } = {}) {
   return `<article class="judge-match-row ${completed ? 'is-completed' : ''}" data-judge-row="${esc(item.id)}">
     <div class="judge-match-label"><b>${esc(judgeDeskCode(item))}</b><small>${esc(judgeDeskStatus(item))}</small></div>
     <div class="judge-match-teams"><span class="${completed && item.winnerId && item.winnerId === item.participantIds[0] ? 'is-winner' : ''}">${esc(names[0])}</span><i>VS</i><span class="${completed && item.winnerId && item.winnerId === item.participantIds[1] ? 'is-winner' : ''}">${esc(names[1])}</span></div>
-    <div class="judge-match-action">${completed ? `<span class="judge-result">${esc(teamName(item.winnerId))} 勝</span>` : ready && !readonly ? `<button class="judge-row-button" data-start-match="${esc(item.id)}" ${disabled ? 'disabled title="請先完成目前場次"' : ''}>${item.id === activeId ? '返回賽場' : '準備開賽'} →</button>` : '<span class="judge-wait">晉級後自動更新</span>'}</div>
+    <div class="judge-match-action">${completed ? `<span class="judge-result">${esc(teamName(item.winnerId))} 勝</span>` : ready && !readonly ? `<button class="judge-row-button" data-start-match="${esc(item.id)}" ${disabled ? 'disabled title="請先完成目前場次"' : ''}>${item.id === activeId ? '返回賽場' : '準備開賽'} →</button>` : `<span class="judge-wait">${judgeDeskStatus(item)==='等待前組完成'?'前組結束後開放':'晉級後自動更新'}</span>`}</div>
   </article>`;
 }
 
 function judgeDeskView() {
   const assignments = judgeAssignmentMap();
   const own = state.matches.filter(item => assignments.get(item.id) === judgeDeskId)
-    .sort((a, b) => Number(a.roundIndex || 0) - Number(b.roundIndex || 0) || (a.venue ? a.venueOrder - b.venueOrder : a.order - b.order));
+    .sort((a, b) => window.JunkbotVenuePlan?.isNewState(state)
+      ? Number(a.venue === 'MAIN') - Number(b.venue === 'MAIN') || a.venueOrder - b.venueOrder
+      : Number(a.roundIndex || 0) - Number(b.roundIndex || 0) || (a.venue ? a.venueOrder - b.venueOrder : a.order - b.order));
   const active = own.filter(item => item.status !== 'completed' && activeMatchIds().includes(item.id));
   const completed = own.filter(item => item.status === 'completed');
   const ready = own.filter(item => item.status !== 'completed' && !activeMatchIds().includes(item.id) && item.participantIds.filter(Boolean).length === 2 && !window.JunkbotVenuePlan?.blockReason(state,item.id));
@@ -114,7 +117,7 @@ function judgeDeskView() {
   const emptyTitle = nineGroups && fieldDone && (pendingMainDraw || judgeDeskId !== 'A') ? `場地 ${judgeDeskId} 初賽已完成` : own.length && completed.length === own.length ? '你的場次已全部完成' : '等待前場比賽完成';
   const emptyText = nineGroups && fieldDone && pendingMainDraw ? (groupsReady ? '九組冠軍已到齊，等待總賽務在主舞台進行現場抽籤。抽籤公布後再開始主舞台賽事。' : '主舞台等待九組全部完成，再現場抽籤決定晉級位置。請至主舞台協同評審。') : nineGroups && fieldDone && judgeDeskId !== 'A' ? '請前往主舞台，由三位評審共同執行；主舞台 9 場由評審 A 登錄。' : own.length && completed.length === own.length ? (DEMO ? '所有判定已保存在本次演練。' : '所有判定已同步至賽事紀錄。') : '選手晉級後，可開賽場次會自動出現在這裡。';
   return `<section class="judge-desk" aria-label="評審 ${judgeDeskId} 專屬場次">
-    <header class="judge-desk-heading"><div><span class="judge-eyebrow">評審專屬工作畫面</span><h1>評審 ${judgeDeskId}</h1><p>${window.JunkbotVenuePlan?.isVenueState(state) ? `場地 ${judgeDeskId} 固定分組${nineGroups ? '，初賽 21 場' : ''}，依叫號順序開賽。${judgeDeskId === 'A' ? '主舞台由評審 A 登錄，B、C 協同。' : '分場完成後，至主舞台協同評審。'}` : '只顯示你的場次，依清單順序開賽。'}</p></div><div class="venue-judge-actions">${window.JunkbotVenuePlan?.isVenueState(state) ? `<button class="outline" data-venue-print="${judgeDeskId}">列印場地 ${judgeDeskId}</button>` : ''}<button class="outline" data-action="refresh">更新場次</button></div></header>
+    <header class="judge-desk-heading"><div><span class="judge-eyebrow">評審專屬工作畫面</span><h1>評審 ${judgeDeskId}</h1><p>${window.JunkbotVenuePlan?.isVenueState(state) ? `場地 ${judgeDeskId} 固定分組${nineGroups ? '，初賽 21 場' : ''}，每組比完再接下一組。${judgeDeskId === 'A' ? '主舞台由評審 A 登錄，B、C 協同。' : '分場完成後，至主舞台協同評審。'}` : '只顯示你的場次，依清單順序開賽。'}</p></div><div class="venue-judge-actions">${window.JunkbotVenuePlan?.isVenueState(state) ? `<button class="outline" data-venue-print="${judgeDeskId}">列印場地 ${judgeDeskId}</button>` : ''}<button class="outline" data-action="refresh">更新場次</button></div></header>
     <div class="judge-summary">${summary}<span><b>${ready.length + active.length}</b> 場已就緒</span><span><b>${waiting.length}</b> 場等待晉級</span><div class="judge-progress" role="progressbar" aria-label="評審 ${judgeDeskId} 完成進度" aria-valuemin="0" aria-valuemax="100" aria-valuenow="${progress}"><i style="width:${progress}%"></i></div></div>
     ${next ? `<section class="judge-next ${active.length ? 'is-active' : ''}"><div class="judge-next-meta"><span>${active.length ? '目前場次' : '下一場・核對後開賽'}</span><b>${esc(judgeDeskCode(next))}</b><small>${esc(judgeDeskStatus(next))}</small></div><div class="judge-next-teams"><strong>${esc(nextNames[0])}</strong><span>VS</span><strong>${esc(nextNames[1])}</strong></div><button class="primary" data-start-match="${esc(next.id)}">${active.length ? '返回目前賽場' : '核對並開啟賽場'} →</button></section>` : `<section class="judge-desk-empty"><h2>${emptyTitle}</h2><p>${emptyText}</p></section>`}
     ${active.length > 1 ? `<div class="judge-extra-active"><p>尚有其他已開啟場次，請依序完成。</p>${active.slice(1).map(item => judgeDeskRow(item, { activeId: item.id })).join('')}</div>` : ''}

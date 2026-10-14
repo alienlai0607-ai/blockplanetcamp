@@ -2537,6 +2537,37 @@ function junkbotMatchPatch(p) {
         return junkbotResponse(campus, { success: false, code: 'MAIN_DRAW_REQUIRED', error: '九組完成並確認主舞台抽籤後，才能開啟主舞台賽事' });
       }
     }
+    // Sequential groups share one arena: finish A1 before A2 before A3 (and B/C).
+    // Apply only to the explicitly migrated/new schedule; old draws keep their rules.
+    if (campus === 'national' && state.draw && state.draw.method === 'nine-groups-eight-v2'
+        && state.venuePlan && state.venuePlan.scheduleMode === 'group-sequential') {
+      if (item.venue !== 'MAIN') {
+        const groupIds = ['1', '2', '3'].map(function(number) { return item.venue + number; });
+        const groupIndex = groupIds.indexOf(item.groupId);
+        const groups = Array.isArray(state.venuePlan.groups) ? state.venuePlan.groups : [];
+        if (['A', 'B', 'C'].indexOf(item.venue) < 0 || groupIndex < 0
+            || groupIds.some(function(id) { return groups.filter(function(g) { return g.id === id && g.venue === item.venue; }).length !== 1; })) {
+          return junkbotResponse(campus, { success: false, code: 'INVALID_GROUP_SEQUENCE', error: '場地分組資料不完整，請聯絡總賽務' });
+        }
+        for (let index = 0; index < groupIndex; index++) {
+          const previous = groups.find(function(g) { return g.id === groupIds[index]; });
+          const final = state.matches.find(function(m) { return m.id === previous.winnerMatchId && m.groupId === previous.id && m.venue === item.venue; });
+          if (!final || final.status !== 'completed' || !final.winnerId) {
+            return junkbotResponse(campus, { success: false, code: 'GROUP_ORDER_REQUIRED', error: '請先完成 ' + previous.id + ' 組並產生組冠軍，再開始 ' + item.groupId + ' 組。' });
+          }
+        }
+      }
+      // Re-check under the doPost ScriptLock so two devices cannot open the same arena.
+      // Completion remains available to clear a pre-existing inconsistent active state.
+      if (['open', 'countdown', 'start', 'replay'].indexOf(op) >= 0) {
+        const conflict = state.activeMatchIds.map(function(id) {
+          return state.matches.find(function(m) { return m.id === id; });
+        }).find(function(m) { return m && m.id !== item.id && m.status !== 'completed' && m.venue === item.venue; });
+        if (conflict) {
+          return junkbotResponse(campus, { success: false, code: 'ARENA_BUSY', error: (item.venue === 'MAIN' ? '主舞台' : '場地 ' + item.venue) + '已有開啟場次，請先完成判定。' });
+        }
+      }
+    }
     if ((item.participantIds || []).filter(Boolean).length !== 2) {
       return { success: false, error: '本場選手尚未確定，不能開賽' };
     }

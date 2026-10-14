@@ -1,4 +1,4 @@
-/* A4 venue roster and fixtures. Reads an existing draw; never changes it. */
+/* Compact A4 referee sheets. Reads an existing draw snapshot; never changes it. */
 (function () {
   'use strict';
   const SCOPES = ['A', 'B', 'C', 'MAIN'];
@@ -122,46 +122,119 @@
     }).join('');
     return { venue: 'MAIN', kind: 'main', title: '主舞台・八強決賽', html: `${heading('主舞台 ｜ 八強・決賽賽務表', '8 組冠軍報到・八強 4 場・準決賽 2 場・季軍賽 1 場・冠軍賽 1 場')}<div class="vp-key-note">八強起集中主舞台。評審 A 登錄正式結果，評審 B、C 協同判定。</div><h3>八強報到名單</h3><table class="vp-table vp-main-roster"><colgroup><col style="width:10%"><col style="width:14%"><col style="width:49%"><col style="width:13%"><col style="width:14%"></colgroup><thead><tr><th>晉級組別</th><th>原場地</th><th>組冠軍隊伍</th><th>八強叫號</th><th>報到</th></tr></thead><tbody>${rows}</tbody></table><h3>主舞台完整對戰</h3>${fixtureTable(matches, ctx, false)}<p class="vp-small-note">準決賽勝隊進入冠軍賽，敗隊進入季軍賽。表列賽果須經現場裁判確認。</p>${signoff('主舞台負責人')}<div class="vp-awards"><span>冠軍隊號：________</span><span>亞軍隊號：________</span><span>季軍隊號：________</span></div>` };
   }
-  function mainGroupRows(ctx, includeCall) {
-    return ctx.data.groups.map((group) => {
-      const final = ctx.matches.get(group.winnerMatchId);
-      const winner = final?.winnerId || final?.winnerTeamId;
-      const teamText = ctx.teams.has(winner) ? ctx.team(winner) : '隊號：________　隊名：________________';
-      return `<tr><td><strong>${escape(group.id)}</strong></td><td>${escape(venueName(group.venue))}</td><td>${escape(teamText)}</td>${includeCall ? `<td class="vp-code">${escape(ctx.call(group.winnerMainMatchId))}</td>` : ''}<td>□ 已報到</td></tr>`;
+  // Compact nine-group sheets consume the same immutable draw snapshot as the screen.
+  function orderedMatches(venue, ctx) {
+    const seen = new Set();
+    return ctx.schedule(venue).filter((match) => {
+      if (seen.has(match.id)) return false;
+      seen.add(match.id);
+      return true;
+    });
+  }
+  function teamLabel(id, ctx, lot) {
+    const item = ctx.teams.get(id);
+    if (!item) return '';
+    return `<span class="vp-team-label"><strong class="vp-team-number">${escape(item.teamNumber)} 號</strong> <span>${escape(item.teamName || '未填隊名')}</span>${lot ? ` <small class="vp-team-lot">籤 ${lot}</small>` : ''}</span>`;
+  }
+  function compactParticipant(match, index, ctx, showLot) {
+    const id = ctx.participantId(match, index);
+    const direct = match.slots?.[index]?.teamId;
+    const position = showLot && direct && Array.isArray(ctx.mainDraw.positions) ? ctx.mainDraw.positions.indexOf(direct) + 1 : 0;
+    return id ? teamLabel(id, ctx, position) : `<span class="vp-source">${escape(ctx.participant(match, index))}</span>`;
+  }
+  function compactWinner(match, ctx) {
+    const id = match.winnerId || match.winnerTeamId;
+    return ctx.teams.has(id) ? `<strong class="vp-winner-number">${escape(ctx.number(id))} 號</strong>` : '<span class="vp-write-line" aria-label="填寫勝隊號"></span>';
+  }
+  function staffLine() {
+    return '<div class="vp-staff-line">裁判／紀錄姓名：<span class="vp-staff-blank"></span></div>';
+  }
+  function entryReminder() {
+    return '<p class="vp-entry-reminder">紙本結果請回填系統，確認後再進行後續場次。</p>';
+  }
+  function simpleTableHead(second) {
+    return `<colgroup><col class="vp-simple-call"><col class="vp-simple-group"><col class="vp-simple-side"><col class="vp-simple-side"><col class="vp-simple-winner"></colgroup><thead><tr><th>場次</th><th>${escape(second)}</th><th>對戰隊伍 1</th><th>對戰隊伍 2</th><th>勝隊號</th></tr></thead>`;
+  }
+  function venueExecutionPage(venue, ctx) {
+    const matches = orderedMatches(venue, ctx);
+    const groups = ctx.data.groups.filter((group) => group.venue === venue).sort((a, b) => a.id.localeCompare(b.id, 'zh-TW', { numeric: true }));
+    const groupBlocks = matches.filter((match, index) => !index || match.groupId !== matches[index - 1].groupId).map((match) => match.groupId);
+    // Old snapshots retain their real interleaved schedule; print never silently redraws it.
+    const grouped = groupBlocks.length === groups.length && new Set(groupBlocks).size === groups.length;
+    const stageLabels = { 8: '組內八強', 4: '組內四強', 2: '組冠軍賽｜勝隊至主舞台報到' };
+    const shortRounds = { 8: '八強', 4: '四強', 2: '組冠軍' };
+    let previousSection;
+    const rows = matches.map((match) => {
+      const section = grouped ? match.groupId : match.groupRoundSize;
+      let divider = '';
+      if (section !== previousSection) {
+        previousSection = section;
+        const count = matches.filter((item) => (grouped ? item.groupId : item.groupRoundSize) === section).length;
+        const title = grouped ? `${match.groupId}｜第 ${groupBlocks.indexOf(match.groupId) + 1} 組` : stageLabels[section] || ctx.round(match);
+        const note = grouped ? `${count} 場・組冠軍至主舞台報到` : `${count} 場`;
+        divider = `<tr class="vp-stage-row"${grouped ? ` data-group-id="${escape(match.groupId)}"` : ''}><th colspan="5">${escape(title)}<span>${escape(note)}</span></th></tr>`;
+      }
+      const second = grouped ? shortRounds[match.groupRoundSize] || ctx.round(match) : match.groupId || '';
+      return `${divider}<tr class="vp-match-row" data-match-id="${escape(match.id)}"><td class="vp-code">${escape(ctx.call(match.id))}</td><td class="${grouped ? 'vp-group-round' : 'vp-group-id'}">${escape(second)}</td><td>${compactParticipant(match, 0, ctx, false)}</td><td>${compactParticipant(match, 1, ctx, false)}</td><td class="vp-winner-cell">${compactWinner(match, ctx)}</td></tr>`;
     }).join('');
+    const description = grouped ? `${groupBlocks.join(' → ')}，每組比完再換下一組・共 ${matches.length} 場` : `${groups.map((group) => group.id).join('・')}　共 ${matches.length} 場，依下表順序叫號`;
+    return { venue, kind: 'venue-simple', title: `${venueName(venue)}・裁判執行表`, html: `${heading(`${venueName(venue)} ｜ 裁判執行表`, description)}${staffLine()}<table class="vp-table vp-execution-table">${simpleTableHead(grouped ? '輪次' : '組別')}<tbody>${rows}</tbody></table>${entryReminder()}` };
+  }
+  function venueAnnouncementPage(venue, ctx) {
+    const groups = ctx.data.groups.filter((group) => group.venue === venue).sort((a, b) => a.id.localeCompare(b.id, 'zh-TW', { numeric: true }));
+    const blocks = groups.map((group, index) => {
+      const ids = [...(group.teamIds || [])].sort((a, b) => String(ctx.number(a)).localeCompare(String(ctx.number(b)), 'zh-TW', { numeric: true }));
+      const rows = ids.map((id) => {
+        const item = ctx.teams.get(id) || {};
+        return `<tr data-team-id="${escape(id)}"><td class="vp-announcement-number">${escape(item.teamNumber ?? '—')} 號</td><td>${escape(item.teamName || '未填隊名')}</td><td>${escape(item.playerName || '—')}</td></tr>`;
+      }).join('');
+      return `<section class="vp-announcement-group" data-group-id="${escape(group.id)}"><h3><strong>${escape(group.id)}</strong><span>第 ${index + 1} 組</span><small>${ids.length} 隊</small></h3><table class="vp-table vp-announcement-table"><colgroup><col style="width:18mm"><col style="width:105mm"><col style="width:63mm"></colgroup><thead><tr><th>隊號</th><th>隊伍名稱</th><th>選手姓名</th></tr></thead><tbody>${rows}</tbody></table></section>`;
+    }).join('');
+    const sequence = groups.map((group) => group.id).join(' → ');
+    return { venue, kind: 'announcement', title: `${venueName(venue)}・排隊公告`, html: `${heading(`${venueName(venue)} ｜ 排隊公告`, `${sequence}，每組全部比完後，再進行下一組。`)}${blocks}` };
   }
   function mainPendingPage(ctx) {
-    const slots = Array.from({ length: 9 }, (_, index) => {
-      const position = index + 1;
-      return `<tr><td class="vp-number">${position}</td><td>組別：______　隊號：______</td><td>${position <= 2 ? '<strong>九進八先賽</strong>' : '首輪輪空，八強起賽'}</td><td>________________</td></tr>`;
+    const groups = [...ctx.data.groups].sort((a, b) => a.id.localeCompare(b.id, 'zh-TW', { numeric: true }));
+    const rows = groups.map((group) => {
+      const final = ctx.matches.get(group.winnerMatchId);
+      const winner = final?.winnerId || final?.winnerTeamId;
+      return `<tr data-group-id="${escape(group.id)}"><td class="vp-group-id">${escape(group.id)}</td><td>${teamLabel(winner, ctx)}</td><td class="vp-lot-write"><span class="vp-write-line" aria-label="填寫抽中籤位"></span></td><td class="vp-checkin-cell"><span class="vp-check-box" aria-label="已報到勾選框"></span></td></tr>`;
     }).join('');
-    return { venue: 'MAIN', kind: 'main-pending', title: '主舞台・現場抽籤登錄', html: `${heading('主舞台 ｜ 現場抽籤登錄表', '9 組冠軍全數上主舞台 · 未抽籤 · 此頁為登錄用紙，尚未產生正式對戰')}<div class="vp-key-note"><strong>籤位 1、2 先打一場九進八；籤位 3–9 首輪輪空，從八強開始。</strong>九隊以相同機會抽籤決定位置，不依原場地或組別指定種子。三位評審共同執行，評審 A 登錄結果。</div><h3>一、九組冠軍報到</h3><table class="vp-table vp-main-roster"><colgroup><col style="width:11%"><col style="width:14%"><col style="width:59%"><col style="width:16%"></colgroup><thead><tr><th>晉級組別</th><th>原場地</th><th>組冠軍隊伍</th><th>報到</th></tr></thead><tbody>${mainGroupRows(ctx, false)}</tbody></table><h3>二、現場抽籤結果登錄</h3><table class="vp-table vp-lot-table"><colgroup><col style="width:9%"><col style="width:40%"><col style="width:28%"><col style="width:23%"></colgroup><thead><tr><th>籤位</th><th>抽中隊伍</th><th>起賽輪次</th><th>確認簽名</th></tr></thead><tbody>${slots}</tbody></table><p class="vp-small-note">八強位置：〔1、2 的勝隊〕對 3；4 對 5；6 對 7；8 對 9。九個籤位各使用一次；核對九組冠軍名單後，將抽籤結果登錄系統，再列印正式主舞台賽程。</p>${signoff('抽籤主持／見證')}<div class="vp-notes">抽籤時間：________________　備註：________________________________________________</div>` };
+    return { venue: 'MAIN', kind: 'checkin-simple', title: '主舞台・報到與抽籤', html: `${heading('主舞台 ｜ 報到與抽籤表', '尚未抽籤・本表供現場登錄，並非正式對戰表')}<ol class="vp-draw-steps"><li>確認九組冠軍全數報到。</li><li>各抽 1–9 號籤，每個籤位只用一次。</li><li>將籤位登錄系統；籤 1、2 先進行九進八。</li></ol>${staffLine()}<table class="vp-table vp-checkin-table"><colgroup><col style="width:18mm"><col style="width:115mm"><col style="width:31mm"><col style="width:22mm"></colgroup><thead><tr><th>組別</th><th>晉級隊伍</th><th>抽中籤位</th><th>報到</th></tr></thead><tbody>${rows}</tbody></table><p class="vp-entry-reminder">抽籤登錄完成後，重新列印主舞台裁判執行表。</p>` };
+  }
+  function mainRound(match) {
+    if (match.id === 'MAIN-Q' || match.roundSize === 9) return '九進八';
+    if (/BRONZE/i.test(match.id) || match.roundSize === 3) return '季軍賽';
+    if (/FINAL/i.test(match.id) || match.roundSize === 2) return '冠軍賽';
+    return ({ 8: '八強', 4: '準決賽' })[match.roundSize] || '主舞台';
+  }
+  function mainAwards(ctx, matches) {
+    const final = matches.find((match) => match.id === 'MAIN-FINAL') || matches.find((match) => match.roundSize === 2);
+    const bronze = matches.find((match) => /BRONZE/i.test(match.id) || match.roundSize === 3);
+    const champion = final?.winnerId || final?.winnerTeamId;
+    const recordedRunner = final?.loserId || final?.loserTeamId;
+    const runner = ctx.teams.has(champion) ? (ctx.teams.has(recordedRunner) ? recordedRunner : [ctx.participantId(final, 0), ctx.participantId(final, 1)].find((id) => id && id !== champion)) : null;
+    const third = bronze?.winnerId || bronze?.winnerTeamId;
+    return `<div class="vp-simple-awards">${[['冠軍', champion], ['亞軍', runner], ['季軍', third]].map(([label, id]) => `<span>${label}隊號：${ctx.teams.has(id) ? `<strong>${escape(ctx.number(id))} 號</strong>` : '<span class="vp-award-blank"></span>'}</span>`).join('')}</div>`;
   }
   function mainDrawnPages(ctx) {
-    const matches = ctx.schedule('MAIN');
-    const positions = Array.isArray(ctx.mainDraw.positions) ? ctx.mainDraw.positions : [];
-    const rows = Array.from({ length: 9 }, (_, index) => {
-      const id = positions[index];
-      const group = ctx.data.groups.find((item) => item.teamIds?.includes(id));
-      const first = matches.find((match) => match.slots?.some((slot) => slot.teamId === id));
-      const item = ctx.teams.get(id);
-      return `<tr><td class="vp-number">${index + 1}</td><td>${escape(group?.id || '待確認')}</td><td>${escape(ctx.team(id))}</td><td>${escape(item?.playerName || '—')}</td><td>${index < 2 ? '九進八' : '首輪輪空'}<br><strong>${escape(first?.callCode || ctx.call(group?.winnerMainMatchId))}</strong></td><td>□ 已報到</td></tr>`;
-    }).join('');
-    const method = ctx.mainDraw.method === 'onsite-lots' ? '現場抽籤登錄' : ctx.mainDraw.method === 'computer-random' ? '電腦隨機抽籤' : '抽籤結果';
-    const drawNote = `${method} · ${dateText(ctx.mainDraw.drawnAt)} · 登錄：${ctx.mainDraw.operatorName || '未提供'}`;
-    return [
-      { venue: 'MAIN', kind: 'main-draw', title: '主舞台・抽籤與報到名單', html: `${heading('主舞台 ｜ 抽籤與報到名單', '9 組冠軍 · 籤位 1–9 · 依已登錄的抽籤結果列印')}<div class="vp-key-note"><strong>籤位 1、2 先進行九進八；籤位 3–9 首輪輪空，從八強開始。</strong>主舞台九隊重新抽籤決定位置；原場地 A、B、C 不預先指定晉級位置。</div><p class="vp-small-note">${escape(drawNote)}</p><table class="vp-table vp-main-drawn-roster"><colgroup><col style="width:8%"><col style="width:10%"><col style="width:35%"><col style="width:15%"><col style="width:17%"><col style="width:15%"></colgroup><thead><tr><th>籤位</th><th>原組別</th><th>隊號與隊名</th><th>選手姓名</th><th>首場</th><th>報到</th></tr></thead><tbody>${rows}</tbody></table><div class="vp-call-guidance"><h3>現場核對</h3><p>1. 逐一核對九位組冠軍的原隊號、組別與籤位；隊號沿用原報名編號。</p><p>2. 籤位 1、2 的勝隊進入八強，對戰籤位 3；其餘八強配對為 4 對 5、6 對 7、8 對 9。</p><p>3. 完整叫號及對戰表見下一頁。三位評審共同執行，評審 A 登錄正式結果，評審 B、C 協同判定。</p></div>${signoff('抽籤主持／見證')}<div class="vp-notes">異動／備註：___________________________________________________________________________</div>` },
-      { venue: 'MAIN', kind: 'main-fixtures', title: '主舞台・完整對戰', html: `${heading('主舞台 ｜ 九強至決賽對戰表', '九進八 1 場 · 八強 4 場 · 準決賽 2 場 · 季軍賽 1 場 · 冠軍賽 1 場')}<div class="vp-key-note">主舞台獨立叫號，共 9 場。評審 A 登錄正式結果，評審 B、C 協同判定。請依前頁籤位名單及下表確認選手。</div><h3>主舞台完整對戰與晉級</h3>${fixtureTable(matches, ctx, false)}<p class="vp-small-note">準決賽勝隊進入冠軍賽，敗隊進入季軍賽。表列賽果須經現場裁判確認；勝隊依「勝隊前往」欄續賽。</p>${signoff('主舞台負責人')}<div class="vp-awards"><span>冠軍隊號：________</span><span>亞軍隊號：________</span><span>季軍隊號：________</span></div><div class="vp-notes">異動／備註：___________________________________________________________________________</div>` }
-    ];
+    const matches = orderedMatches('MAIN', ctx);
+    const rows = matches.map((match) => `<tr class="vp-match-row" data-match-id="${escape(match.id)}"><td class="vp-code">${escape(ctx.call(match.id))}</td><td class="vp-main-round">${escape(mainRound(match))}</td><td>${compactParticipant(match, 0, ctx, true)}</td><td>${compactParticipant(match, 1, ctx, true)}</td><td class="vp-winner-cell">${compactWinner(match, ctx)}</td></tr>`).join('');
+    return [{ venue: 'MAIN', kind: 'main-simple', title: '主舞台・裁判執行表', html: `${heading('主舞台 ｜ 裁判執行表', `已完成抽籤・共 ${matches.length} 場，依下表順序叫號`)}<p class="vp-main-roles">三位評審共同判定，由評審 A 登錄結果。</p>${staffLine()}<table class="vp-table vp-execution-table vp-main-execution">${simpleTableHead('輪次')}<tbody>${rows}</tbody></table><p class="vp-bronze-note">準決賽勝隊進冠軍賽；敗隊進季軍賽。</p>${mainAwards(ctx, matches)}${entryReminder()}` }];
   }
-  function render(data, scope) {
+  function render(data, scope, options = {}) {
     const selected = scope == null ? 'all' : String(scope).toUpperCase();
     if (selected !== 'ALL' && selected !== 'all' && !SCOPES.includes(selected)) throw new Error('請選擇場地 A、B、C 或主舞台。');
+    const kind = options?.kind || 'execution';
+    if (!['execution', 'announcement'].includes(kind)) throw new Error('請選擇裁判執行表或排隊公告。');
+    if (kind === 'announcement' && selected === 'MAIN') throw new Error('排隊公告僅適用於場地 A、B、C。');
     const ctx = context(data);
-    const venues = selected.toUpperCase() === 'ALL' ? SCOPES : [selected];
+    const venues = selected.toUpperCase() === 'ALL' ? (kind === 'announcement' ? SCOPES.filter((venue) => venue !== 'MAIN') : SCOPES) : [selected];
     const pages = [];
     venues.forEach((venue) => {
-      if (venue === 'MAIN') pages.push(...(ctx.nineGroup ? ctx.mainDraw.status === 'drawn' ? mainDrawnPages(ctx) : [mainPendingPage(ctx)] : [mainPage(ctx)]));
+      if (kind === 'announcement') pages.push(venueAnnouncementPage(venue, ctx));
+      else if (venue === 'MAIN') pages.push(...(ctx.nineGroup ? ctx.mainDraw.status === 'drawn' ? mainDrawnPages(ctx) : [mainPendingPage(ctx)] : [mainPage(ctx)]));
+      else if (ctx.nineGroup) pages.push(venueExecutionPage(venue, ctx));
       else {
         data.groups.filter((group) => group.venue === venue).sort((a, b) => a.id.localeCompare(b.id, 'zh-TW', { numeric: true })).forEach((group) => pages.push(groupPage(group, ctx)));
         pages.push(...venueCallPages(venue, ctx));
@@ -171,12 +244,10 @@
     const draft = meta.preview !== false;
     const status = draft ? '預排草案・非正式賽程' : '正式賽程';
     const title = meta.title || '2026 全國廢材機器人大賽';
-    const revision = meta.revision ?? meta.sourceRevision ?? '未提供';
     const generated = dateText();
-    const updated = dateText(meta.updatedAt || meta.createdAt);
-    const drawId = meta.drawId || meta.scheme || '既定分組';
-    return `<div class="vp-document" data-print-scope="${escape(selected)}" data-print-pages="${pages.length}">${pages.map((page, index) => `<section class="vp-page vp-page-${page.kind}" aria-label="${escape(page.title)} 第 ${index + 1} 頁" data-venue="${escape(page.venue)}"><header class="vp-page-header"><div><strong>${escape(title)}</strong><span>相撲機器人｜賽務用紙本</span></div><b class="vp-status${draft ? ' vp-status-draft' : ''}">${status}</b></header><div class="vp-page-content">${page.html}</div><footer class="vp-page-footer"><div><span>版本 ${escape(revision)} · 更新 ${escape(updated)}</span><span>列印 ${escape(generated)}（臺北時間）</span></div><div><span class="vp-draw-id">賽程 ${escape(drawId)}</span><span>第 ${index + 1} 頁／共 ${pages.length} 頁</span></div></footer></section>`).join('')}</div>`;
+    return `<div class="vp-document${ctx.nineGroup || kind === 'announcement' ? ' vp-document-simple' : ' vp-document-legacy'}" data-print-kind="${escape(kind)}" data-print-scope="${escape(selected)}" data-print-pages="${pages.length}">${pages.map((page, index) => `<section class="vp-page vp-page-${page.kind}" aria-label="${escape(page.title)} 第 ${index + 1} 頁" data-venue="${escape(page.venue)}"><header class="vp-page-header"><div><strong>${escape(title)}</strong><span>相撲機器人｜${kind === 'announcement' ? '排隊公告' : '賽務用紙本'}</span></div>${draft ? `<b class="vp-status vp-status-draft">${status}</b>` : ''}</header><div class="vp-page-content">${page.html}</div><footer class="vp-page-footer"><div><span>列印 ${escape(generated)}（臺北時間）</span><span>第 ${index + 1} 頁／共 ${pages.length} 頁</span></div></footer></section>`).join('')}</div>`;
   }
+
   function close() {
     if (!activeOverlay) return;
     activeOverlay.remove();
@@ -196,17 +267,20 @@
     if (event.shiftKey && document.activeElement === first) { event.preventDefault(); last.focus(); }
     else if (!event.shiftKey && document.activeElement === last) { event.preventDefault(); first.focus(); }
   }
-  function open(data, scope) {
-    const content = render(data, scope);
+  function open(data, scope, returnFocus, options = {}) {
+    const content = render(data, scope, options);
     close();
-    previousFocus = document.activeElement;
+    previousFocus = returnFocus?.isConnected ? returnFocus : document.activeElement;
     const overlay = document.createElement('div');
     overlay.className = 'vp-print-overlay';
     overlay.setAttribute('role', 'dialog');
     overlay.setAttribute('aria-modal', 'true');
     overlay.setAttribute('aria-labelledby', 'vp-dialog-title');
     const label = !scope || String(scope).toLowerCase() === 'all' ? '全部場地' : venueName(String(scope).toUpperCase());
-    overlay.innerHTML = `<div class="vp-toolbar"><div><h2 id="vp-dialog-title">${escape(label)}・賽務列印</h2><p>A4 直式，可列印或另存 PDF；每組名單各自一頁。</p></div><div class="vp-toolbar-actions"><button type="button" class="vp-close">關閉</button><button type="button" class="vp-print-button">列印／另存 PDF</button></div></div><div class="vp-screen-notice">列印設定請選 A4、直式，並關閉瀏覽器的「頁首及頁尾」。紙本為此刻賽程快照；更新賽果後可重新開啟列印。</div>${content}`;
+    const simple = data.groups.length === 9 && data.groups.every((group) => group.teamIds?.length === 8);
+    const announcement = options?.kind === 'announcement';
+    const summary = announcement ? '每個場地一張 A4；全部公告共 3 張。' : simple ? '每個場地一張 A4；全部列印共 4 張。' : 'A4 直式，可列印或另存 PDF。';
+    overlay.innerHTML = `<div class="vp-toolbar"><div><h2 id="vp-dialog-title">${escape(label)}・${announcement ? '排隊公告' : '賽務列印'}</h2><p>${summary}</p></div><div class="vp-toolbar-actions"><button type="button" class="vp-close">關閉</button><button type="button" class="vp-print-button">列印／另存 PDF</button></div></div><div class="vp-screen-notice">列印設定請選 A4、直式，並關閉瀏覽器的「頁首及頁尾」。紙本為此刻賽程快照；更新賽果後可重新開啟列印。</div><div class="vp-paper-viewport" role="region" aria-label="A4 列印預覽，可左右捲動" tabindex="0">${content}</div>`;
     overlay.querySelector('.vp-close').addEventListener('click', close);
     overlay.querySelector('.vp-print-button').addEventListener('click', () => window.print());
     document.body.appendChild(overlay);
