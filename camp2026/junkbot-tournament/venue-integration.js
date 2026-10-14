@@ -5,12 +5,12 @@ function venueData() { return venuePlan.toView(state, {judgeId:typeof activeJudg
 function venuePrintView() {
   if (!venuePlan.isVenueState(state)) return '<div class="page-heading"><div><h1>賽務列印</h1><p>分組賽程公布後，即可列印各場地名單與對戰表。</p></div></div><button class="primary" data-view-jump="bracket">前往對戰賽程</button>';
   const groups=state.venuePlan.groups, nine=venuePlan.isNewState(state), drawn=state.venuePlan.mainDraw?.status==='drawn';
-  return `<section class="venue-print-center"><div class="page-heading"><div><h1>賽務列印</h1><p>排隊公告給選手找組別；裁判執行表用來叫號、記錄勝隊。</p></div><div class="venue-judge-actions">${nine?'<button class="primary" data-venue-print="all" data-print-kind="announcement">全部排隊公告・3 張</button>':''}<button class="outline" data-venue-print="all" data-print-kind="execution">全部裁判表${nine?'・4 張':''}</button></div></div><div class="venue-print-options">${['A','B','C','MAIN'].map(v=>{
+  return `<section class="venue-print-center"><div class="page-heading"><div><h1>賽務列印</h1><p>${nine?'排隊公告給選手找組別；裁判手寫圖已印首輪隊號，沿線填入勝隊號碼即可。':'裁判執行表用來叫號、記錄勝隊。'}</p></div><div class="venue-judge-actions">${nine?'<button class="primary" data-venue-print="all" data-print-kind="announcement">全部排隊公告・3 張</button>':''}<button class="outline" data-venue-print="all" data-print-kind="execution">${nine?'全部裁判手寫圖':'全部裁判表'}${nine?'・4 張':''}</button></div></div><div class="venue-print-options">${['A','B','C','MAIN'].map(v=>{
     const own=groups.filter(g=>g.venue===v), main=v==='MAIN';
-    const title=main?(nine&&!drawn?'報到與抽籤表':'主舞台對戰表'):own.map(g=>g.id).join(' → ');
-    const detail=main?(nine&&!drawn?'九組冠軍報到後現場抽籤':`${nine?'9':'8'} 場，包含季軍賽`):`${own.reduce((n,g)=>n+g.teamIds.length,0)} 隊，每組選出冠軍後再換下一組`;
-    return `<article><span class="venue-print-letter">${main?'主舞台':`場地 ${v}`}</span><h2>${title}</h2><p>${detail}</p><div class="venue-judge-actions">${!main&&nine?`<button class="primary" data-venue-print="${v}" data-print-kind="announcement">排隊公告・1 張</button>`:''}<button class="outline" data-venue-print="${v}" data-print-kind="execution">${main&&!drawn?'報到與抽籤表':'裁判執行表'}${nine?'・1 張':''}</button></div></article>`;
-  }).join('')}</div><p class="venue-print-note">列印時會讀取最新資料。紙上賽果請回填系統；主舞台抽籤登錄後，再列印對戰表。</p></section>`;
+    const title=main?(nine?'主舞台晉級圖':'主舞台對戰表'):own.map(g=>g.id).join(' → ');
+    const detail=main?(nine&&!drawn?'抽籤後將隊號填入籤位，再沿線記錄勝隊':`${nine?'9':'8'} 場，包含季軍賽`):`${own.reduce((n,g)=>n+g.teamIds.length,0)} 隊，每組選出冠軍後再換下一組`;
+    return `<article><span class="venue-print-letter">${main?'主舞台':`場地 ${v}`}</span><h2>${title}</h2><p>${detail}</p><div class="venue-judge-actions">${!main&&nine?`<button class="primary" data-venue-print="${v}" data-print-kind="announcement">排隊公告・1 張</button>`:''}<button class="outline" data-venue-print="${v}" data-print-kind="execution">${nine?'裁判手寫圖':'裁判執行表'}${nine?'・1 張':''}</button></div></article>`;
+  }).join('')}</div><p class="venue-print-note">列印時會讀取最新資料。紙上賽果請回填系統；主舞台抽籤登錄後，可重新列印已帶入隊號的晉級圖。</p></section>`;
 }
 let venuePrintLoading=false;
 async function venueOpenPrint(scope, kind='execution') {
@@ -21,7 +21,7 @@ async function venueOpenPrint(scope, kind='execution') {
   if (role!=='control'||!judgeDeskAuthenticated||judgeDeskChooser) return showToast('請先驗證賽務密碼並選擇工作身分。',true);
   if(requestedCampus!==EVENT_SCOPE)return showToast('賽事資料來源不符，請重新進入賽務。',true);
   if(!['A','B','C','MAIN','ALL'].includes(requestedScope))return showToast('請選擇要列印的場地。',true);
-  if(requestedKind==='announcement'&&requestedScope==='MAIN')return showToast('主舞台請使用報到與抽籤表。',true);
+  if(requestedKind==='announcement'&&requestedScope==='MAIN')return showToast('主舞台請使用裁判手寫圖。',true);
   if (requestedJudge && requestedScope!==requestedJudge && !(requestedJudge==='A'&&requestedScope==='MAIN')) return showToast('請由總賽務列印其他場地。',true);
   if (!venuePlan.isVenueState(state)) return showToast('尚未公布三場地賽程。',true);
   if (pendingMutations || uiOperationPending || unsavedCampusStates.has(requestedCampus)) return showToast('請先完成同步，再列印正式文件。',true);

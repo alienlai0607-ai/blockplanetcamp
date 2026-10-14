@@ -139,3 +139,40 @@
   .vp-print-overlay .vp-page{width:210mm!important;min-height:297mm!important;height:297mm;margin:0!important;box-shadow:none!important;border:none!important;break-inside:avoid;page-break-inside:avoid;-webkit-print-color-adjust:exact;print-color-adjust:exact}
   .vp-print-overlay .vp-page *{text-shadow:none!important;box-shadow:none!important}
 }
+/* Handwriting sheets: the same bracket as the A0 board, without repeated tables. */
+.vp-document-diagram{width:297mm}
+.vp-document-diagram .vp-page{width:297mm;min-height:210mm;height:210mm;padding:10mm 10mm 13mm}
+.vp-document-diagram .vp-page-header{min-height:6mm;margin-bottom:2mm;padding-bottom:1mm;border-bottom:.8pt solid #222}
+.vp-document-diagram .vp-page-header>div{flex-direction:row;align-items:baseline;justify-content:space-between;gap:5mm;width:100%}
+.vp-document-diagram .vp-page-header strong{font-size:9pt;line-height:1.2}
+.vp-document-diagram .vp-page-header span{font-size:8pt;line-height:1.2;white-space:nowrap}
+.vp-document-diagram .vp-status{font-size:7pt;padding:.5mm 1mm}
+.vp-document-diagram .vp-page-footer{left:10mm;right:10mm;bottom:5mm;font-size:7pt;padding-top:1mm}
+.vp-diagram-heading{margin:0 0 2mm}
+.vp-diagram-heading>div{display:flex;justify-content:space-between;align-items:baseline;gap:8mm}
+.vp-diagram-heading h2{font-size:19pt;line-height:1.2;font-weight:750;margin:0;color:#111;letter-spacing:0}
+.vp-diagram-staff{font-size:10pt;line-height:1.2;white-space:nowrap}
+.vp-diagram-heading p{margin:1mm 0 0;font-size:9.5pt;line-height:1.35;color:#222}
+.vp-group-diagrams{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:3mm;width:100%;align-items:start}
+.vp-group-diagram{display:block;width:100%;height:auto;overflow:visible}
+.vp-group-diagram,.vp-main-diagram{font-family:Arial,"Noto Sans TC","PingFang TC","Microsoft JhengHei",sans-serif;color:#111;fill:#111;line-height:normal}
+.vp-diagram-node circle{fill:#fff;stroke:#111}
+.vp-group-diagram .vp-diagram-node circle{stroke-width:.45}
+.vp-main-diagram .vp-diagram-node circle{stroke-width:2.15}
+.vp-diagram-line{fill:none;stroke:#222;stroke-linecap:round;stroke-linejoin:round}
+.vp-group-diagram .vp-diagram-line{stroke-width:.45}
+.vp-main-diagram .vp-diagram-line{stroke-width:2.15}
+.vp-main-diagram .vp-diagram-loser-line{stroke-dasharray:6 5}
+.vp-diagram-number,.vp-diagram-call,.vp-diagram-round,.vp-diagram-group-title,.vp-diagram-stage-title,.vp-diagram-award{font-weight:700}
+.vp-diagram-number{font-family:Arial,"Noto Sans TC",sans-serif;font-variant-numeric:tabular-nums}
+.vp-diagram-champion-note,.vp-diagram-instruction{font-weight:600}
+.vp-main-diagram{display:block;width:250.3mm;height:160mm;max-width:100%;margin:0 auto;overflow:visible}
+@media print{
+  @page vp-landscape{size:A4 landscape;margin:0}
+  .vp-document-diagram .vp-page{page:vp-landscape}
+  html:has(body.vp-print-landscape),body.vp-print-landscape{width:297mm!important}
+  body.vp-print-landscape>.vp-print-overlay,
+  body.vp-print-landscape .vp-paper-viewport,
+  body.vp-print-landscape .vp-document{width:297mm!important}
+  body.vp-print-landscape .vp-page{width:297mm!important;min-height:210mm!important;height:210mm!important}
+}

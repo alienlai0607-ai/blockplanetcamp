@@ -222,6 +222,155 @@
     const rows = matches.map((match) => `<tr class="vp-match-row" data-match-id="${escape(match.id)}"><td class="vp-code">${escape(ctx.call(match.id))}</td><td class="vp-main-round">${escape(mainRound(match))}</td><td>${compactParticipant(match, 0, ctx, true)}</td><td>${compactParticipant(match, 1, ctx, true)}</td><td class="vp-winner-cell">${compactWinner(match, ctx)}</td></tr>`).join('');
     return [{ venue: 'MAIN', kind: 'main-simple', title: '主舞台・裁判執行表', html: `${heading('主舞台 ｜ 裁判執行表', `已完成抽籤・共 ${matches.length} 場，依下表順序叫號`)}<p class="vp-main-roles">三位評審共同判定，由評審 A 登錄結果。</p>${staffLine()}<table class="vp-table vp-execution-table vp-main-execution">${simpleTableHead('輪次')}<tbody>${rows}</tbody></table><p class="vp-bronze-note">準決賽勝隊進冠軍賽；敗隊進季軍賽。</p>${mainAwards(ctx, matches)}${entryReminder()}` }];
   }
+  // Number-only referee diagrams share the displayed draw's positions and match routes.
+  // A result circle is also the next match's input: the winner is written only once.
+  const svgText = (value, x, y, size, className = '', anchor = 'middle') => `<text x="${x}" y="${y}" font-size="${size}" text-anchor="${anchor}" class="${className}">${escape(value)}</text>`;
+  const svgPath = (d, source, target, outcome = 'winner', dashed = false) => `<path d="${d}" class="vp-diagram-line${dashed ? ' vp-diagram-loser-line' : ''}"${source ? ` data-source="${escape(source)}"` : ''}${target ? ` data-target="${escape(target)}"` : ''} data-outcome="${escape(outcome)}"/>`;
+  function diagramCircle(x, y, r, value, attributes = '', className = '', label = '') {
+    return `<g class="vp-diagram-node ${className}" ${attributes}${label ? ` aria-label="${escape(label)}"` : ''}><circle cx="${x}" cy="${y}" r="${r}"/>${value !== '' && value != null ? `<text class="vp-diagram-number" x="${x}" y="${y}" text-anchor="middle" dominant-baseline="central" font-size="${r * .87}">${escape(value)}</text>` : ''}</g>`;
+  }
+  function resultId(match, ctx, outcome = 'winner') {
+    if (!match || match.status !== 'completed') return null;
+    const winner = match.winnerId || match.winnerTeamId;
+    if (outcome === 'winner') return ctx.teams.has(winner) ? winner : null;
+    const recorded = match.loserId || match.loserTeamId;
+    if (ctx.teams.has(recorded)) return recorded;
+    return ctx.teams.has(winner) ? [ctx.participantId(match, 0), ctx.participantId(match, 1)].find((id) => id && id !== winner) || null : null;
+  }
+  function resultCircle(match, x, y, r, ctx, options = {}) {
+    const outcome = options.outcome || 'winner';
+    const id = resultId(match, ctx, outcome);
+    const value = id ? ctx.number(id) : '';
+    const matchId = match?.id || options.matchId;
+    return diagramCircle(x, y, r, value, `${outcome === 'winner' ? 'data-match-id' : 'data-result-source'}="${escape(matchId)}" data-outcome="${outcome}" data-filled="${Boolean(id)}"${id ? ` data-winner-team-id="${escape(id)}"` : ''}`, `vp-diagram-result${outcome === 'loser' ? ' vp-diagram-loser' : ''}`, `${options.label || ctx.call(matchId)} ${outcome === 'loser' ? '敗隊' : '勝隊'}隊號${value === '' ? '，留白手寫' : ` ${value}`}`);
+  }
+  function groupDiagram(group, ctx) {
+    const matches = (group.matchIds || []).map((id) => ctx.matches.get(id)).filter(Boolean);
+    const first = matches.filter((match) => match.groupRoundSize === 8);
+    const positions = new Map();
+    const radius = 8.5;
+    const xs = { 8: 33, 4: 56, 2: 79 };
+    const paths = [], circles = [], captions = [];
+    first.forEach((match, matchIndex) => {
+      const inputs = [0, 1].map((slotIndex) => {
+        const y = 23 + (matchIndex * 2 + slotIndex) * 18;
+        const id = ctx.participantId(match, slotIndex);
+        circles.push(diagramCircle(10, y, radius, id ? ctx.number(id) : '', `data-team-id="${escape(id || '')}" data-initial-position="${matchIndex * 2 + slotIndex + 1}"`, 'vp-diagram-entry', `${group.id} 第 ${matchIndex * 2 + slotIndex + 1} 位，${id ? `${ctx.number(id)} 號` : '待確認隊號'}`));
+        return { x: 10, y, source: id || `${match.id}-slot-${slotIndex}` };
+      });
+      positions.set(match.id, { x: xs[8], y: (inputs[0].y + inputs[1].y) / 2, inputs });
+    });
+    for (const size of [4, 2]) {
+      matches.filter((match) => match.groupRoundSize === size).forEach((match) => {
+        const inputs = (match.slots || []).map((slot) => ({ ...positions.get(slot.matchId), source: slot.matchId }));
+        if (inputs.length !== 2 || inputs.some((input) => !Number.isFinite(input.x) || !Number.isFinite(input.y))) throw new Error(`${group.id} 的晉級關係不完整，請先確認賽程。`);
+        positions.set(match.id, { x: xs[size], y: (inputs[0].y + inputs[1].y) / 2, inputs });
+      });
+    }
+    if (first.length !== 4 || positions.size !== 7) throw new Error(`${group.id} 的八隊晉級圖不完整。`);
+    matches.forEach((match) => {
+      const point = positions.get(match.id);
+      if (!point) throw new Error(`${group.id} 包含無法繪製的場次。`);
+      const joint = (point.inputs[0].x + point.x) / 2;
+      point.inputs.forEach((input) => paths.push(svgPath(`M ${input.x + radius} ${input.y} H ${joint} V ${point.y} H ${point.x - radius}`, input.source, match.id)));
+      circles.push(resultCircle(match, point.x, point.y, radius, ctx));
+      captions.push(svgText(ctx.call(match.id), point.x, point.y - radius - 1.4, 3.2, 'vp-diagram-call'));
+      if (match.id === group.winnerMatchId) captions.push(svgText('至主舞台', point.x, point.y + radius + 5, 3.1, 'vp-diagram-champion-note'));
+    });
+    return `<svg class="vp-group-diagram" viewBox="0 0 90 160" role="img" aria-label="${escape(group.id)} 組手寫晉級圖" data-group-id="${escape(group.id)}"><title>${escape(group.id)} 組手寫晉級圖</title>${svgText(group.id, 45, 5.8, 5.6, 'vp-diagram-group-title')}${[['參賽隊號', 10], ['四強', 33], ['二強', 56], ['組冠軍', 79]].map(([label, x]) => svgText(label, x, 12.3, 3.1, 'vp-diagram-round')).join('')}${paths.join('')}${circles.join('')}${captions.join('')}</svg>`;
+  }
+  function venueDiagramPage(venue, ctx) {
+    const groups = ctx.data.groups.filter((group) => group.venue === venue).sort((a, b) => a.id.localeCompare(b.id, 'zh-TW', { numeric: true }));
+    const schedule = orderedMatches(venue, ctx);
+    const blocks = schedule.filter((match, index) => !index || match.groupId !== schedule[index - 1].groupId).map((match) => match.groupId);
+    const sequential = blocks.length === groups.length && new Set(blocks).size === groups.length;
+    const sequence = sequential ? `${blocks.join(' → ')}，每組選出冠軍再換下一組。` : '依場次代碼叫號。';
+    const note = `${sequence} 每場將勝隊號填入右方空圓，沿線即為下一場。`;
+    return { venue, kind: 'venue-diagram', title: `${venueName(venue)}・裁判手寫晉級圖`, html: `${diagramHeading(`${venueName(venue)} ｜ 裁判手寫晉級圖`, note)}<div class="vp-group-diagrams">${groups.map((group) => groupDiagram(group, ctx)).join('')}</div>` };
+  }
+  function diagramHeading(title, subtitle) {
+    return `<div class="vp-diagram-heading"><div><h2>${escape(title)}</h2><span class="vp-diagram-staff">裁判：________________</span></div><p>${escape(subtitle)}</p></div>`;
+  }
+  function mainDiagramPage(ctx) {
+    const drawn = ctx.mainDraw.status === 'drawn';
+    const byCode = new Map(orderedMatches('MAIN', ctx).map((match) => [ctx.call(match.id), match]));
+    const ids = ['MAIN-Q', 'MAIN-QF-1', 'MAIN-QF-2', 'MAIN-QF-3', 'MAIN-QF-4', 'MAIN-SF-1', 'MAIN-SF-2', 'MAIN-BRONZE', 'MAIN-FINAL'];
+    const matchFor = (num) => byCode.get(`M-${String(num).padStart(2, '0')}`) || ctx.matches.get(ids[num - 1]);
+    const idFor = (num) => matchFor(num)?.id || ids[num - 1];
+    if (drawn) {
+      const lot = (position) => ({ teamId: ctx.mainDraw.positions?.[position - 1] });
+      const prior = (num, outcome = 'winner') => ({ matchId: idFor(num), outcome });
+      const expected = [
+        [lot(1), lot(2)], [prior(1), lot(3)], [lot(4), lot(5)], [lot(6), lot(7)], [lot(8), lot(9)],
+        [prior(2), prior(3)], [prior(4), prior(5)], [prior(6, 'loser'), prior(7, 'loser')], [prior(6), prior(7)]
+      ];
+      if (ctx.mainDraw.positions?.length !== 9 || new Set(ctx.mainDraw.positions).size !== 9 || ctx.mainDraw.positions.some((id) => !ctx.teams.has(id))) throw new Error('主舞台籤位資料不完整，請先確認抽籤。');
+      expected.forEach((slots, index) => {
+        const match = matchFor(index + 1);
+        if (!match || match.slots?.length !== 2 || slots.some((expectedSlot, slotIndex) => {
+          const actual = match.slots[slotIndex];
+          return expectedSlot.teamId ? actual.teamId !== expectedSlot.teamId : actual.matchId !== expectedSlot.matchId || (actual.outcome || 'winner') !== expectedSlot.outcome;
+        })) throw new Error('主舞台晉級關係與抽籤不一致，請先確認賽程。');
+      });
+    }
+    const paths = [], nodes = [], labels = [];
+    const radius = 40, axis = 670, x0 = [270, 1070], x1 = [430, 910], x2 = [570, 770];
+    const seedY = [200, 320, 540, 660], quarterY = [260, 600], finalY = 430;
+    const result = (num, x, y, outcome = 'winner') => resultCircle(drawn ? matchFor(num) : null, x, y, radius, ctx, { outcome, matchId: idFor(num), label: `M-${String(num).padStart(2, '0')}` });
+    const lotNode = (lot, x, y) => {
+      const teamId = drawn ? ctx.mainDraw.positions?.[lot - 1] : null;
+      const known = ctx.teams.has(teamId);
+      return diagramCircle(x, y, radius, known ? ctx.number(teamId) : '', `data-lot="${lot}"${known ? ` data-team-id="${escape(teamId)}"` : ''}`, 'vp-diagram-entry', `籤位 ${lot}，${known ? `${ctx.number(teamId)} 號` : '空白填隊號'}`);
+    };
+    // Identical entry positions and mirror axis to the approved A0 main-stage board.
+    for (const [lot, y] of [[1, 140], [2, 260]]) {
+      paths.push(svgPath(`M 125 ${y} H 195 V 200 H 230`, `lot-${lot}`, idFor(1)));
+      nodes.push(lotNode(lot, 85, y));
+      labels.push(svgText(`籤 ${lot}`, 85, y - 49, 16, 'vp-diagram-call'));
+    }
+    labels.push(svgText('九進八', 158, 168, 18, 'vp-diagram-stage-title'), svgText('M-01', 158, 224, 17, 'vp-diagram-call'));
+    for (let side = 0; side < 2; side += 1) {
+      const direction = side ? -1 : 1;
+      const lots = side ? [6, 7, 8, 9] : [null, 3, 4, 5];
+      lots.forEach((lot, index) => {
+        nodes.push(lot === null ? result(1, x0[side], seedY[index]) : lotNode(lot, x0[side], seedY[index]));
+        labels.push(svgText(lot === null ? 'M-01 勝隊' : `籤 ${lot}`, x0[side], seedY[index] - 51, 16, 'vp-diagram-call'));
+      });
+      quarterY.forEach((y, index) => {
+        const num = 2 + side * 2 + index;
+        const joint = (x0[side] + x1[side]) / 2;
+        for (let slot = 0; slot < 2; slot += 1) {
+          const inputIndex = index * 2 + slot;
+          const source = lots[inputIndex] == null ? idFor(1) : `lot-${lots[inputIndex]}`;
+          paths.push(svgPath(`M ${x0[side] + direction * radius} ${seedY[inputIndex]} H ${joint} V ${y} H ${x1[side] - direction * radius}`, source, idFor(num)));
+        }
+        nodes.push(result(num, x1[side], y));
+        labels.push(svgText(`M-${String(num).padStart(2, '0')}`, x1[side], y - 51, 16, 'vp-diagram-call'));
+      });
+      const semiNum = 6 + side, joint = (x1[side] + x2[side]) / 2;
+      quarterY.forEach((y, index) => paths.push(svgPath(`M ${x1[side] + direction * radius} ${y} H ${joint} V ${finalY} H ${x2[side] - direction * radius}`, idFor(2 + side * 2 + index), idFor(semiNum))));
+      nodes.push(result(semiNum, x2[side], finalY));
+      labels.push(svgText(`M-0${semiNum} 勝隊`, x2[side], 376, 16, 'vp-diagram-call'));
+      paths.push(svgPath(`M ${x2[side] + direction * radius} ${finalY} H ${axis} V 277`, idFor(semiNum), idFor(9)));
+      // Bronze contestants are the semifinal losers, never the final loser.
+      nodes.push(result(semiNum, x2[side], 710, 'loser'));
+      labels.push(svgText(`M-0${semiNum} 敗隊`, x2[side], 658, 16, 'vp-diagram-call'));
+      paths.push(svgPath(`M ${x2[side] + direction * radius} 710 H ${axis} V 744`, idFor(semiNum), idFor(8), 'loser'));
+    }
+    paths.push(svgPath(`M ${axis} ${finalY} V 517`, idFor(9), 'runner-up', 'loser', true));
+    nodes.push(result(9, axis, 237), result(9, axis, 557, 'loser'), result(8, axis, 784));
+    labels.push(svgText('冠亞軍決賽', axis, 151, 24, 'vp-diagram-stage-title'));
+    labels.push(svgText('勝', axis + 20, 335, 17, 'vp-diagram-call'), svgText('敗', axis + 20, 494, 17, 'vp-diagram-call'));
+    labels.push(svgText('冠軍', axis + 106, 223, 25, 'vp-diagram-award'), svgText('M-09', axis + 106, 252, 17, 'vp-diagram-call'));
+    labels.push(svgText('亞軍', axis + 106, 548, 24, 'vp-diagram-award'), svgText('M-09 敗隊', axis + 106, 579, 16, 'vp-diagram-call'));
+    labels.push(svgText('季軍', axis + 106, 776, 24, 'vp-diagram-award'), svgText('M-08', axis + 106, 808, 17, 'vp-diagram-call'));
+    for (const x of x0) labels.push(svgText('八強', x, 108, 21, 'vp-diagram-stage-title'));
+    for (const x of x1) labels.push(svgText('四強', x, 168, 21, 'vp-diagram-stage-title'));
+    labels.push(svgText('現場抽籤', 111, 393, 24, 'vp-diagram-stage-title'));
+    [['九組冠軍', 444], ['各抽 1–9 號籤', 475], ['依籤位填入隊號', 506], ['沿線填寫勝隊號', 570], ['準決賽敗隊', 686], ['另比季軍', 723]].forEach(([text, y]) => labels.push(svgText(text, 111, y, 17, 'vp-diagram-instruction')));
+    const subtitle = drawn ? '已完成抽籤；圈內為隊號。每場填入勝隊號，沿線接續比賽；準決賽敗隊另比季軍。' : '現場抽籤後，將隊號填入對應籤位；籤 1、2 先比九進八。每場填勝隊號，沿線接續比賽。';
+    return { venue: 'MAIN', kind: 'main-diagram', title: '主舞台・裁判手寫晉級圖', html: `${diagramHeading('主舞台 ｜ 裁判手寫晉級圖', subtitle)}<svg class="vp-main-diagram" viewBox="0 76 1189 760" role="img" aria-label="主舞台九隊抽籤手寫晉級圖" data-draw-status="${drawn ? 'drawn' : 'pending'}"><title>主舞台九隊抽籤手寫晉級圖</title>${paths.join('')}${nodes.join('')}${labels.join('')}</svg>` };
+  }
   function render(data, scope, options = {}) {
     const selected = scope == null ? 'all' : String(scope).toUpperCase();
     if (selected !== 'ALL' && selected !== 'all' && !SCOPES.includes(selected)) throw new Error('請選擇場地 A、B、C 或主舞台。');
@@ -233,26 +382,27 @@
     const pages = [];
     venues.forEach((venue) => {
       if (kind === 'announcement') pages.push(venueAnnouncementPage(venue, ctx));
-      else if (venue === 'MAIN') pages.push(...(ctx.nineGroup ? ctx.mainDraw.status === 'drawn' ? mainDrawnPages(ctx) : [mainPendingPage(ctx)] : [mainPage(ctx)]));
-      else if (ctx.nineGroup) pages.push(venueExecutionPage(venue, ctx));
+      else if (venue === 'MAIN') pages.push(ctx.nineGroup ? mainDiagramPage(ctx) : mainPage(ctx));
+      else if (ctx.nineGroup) pages.push(venueDiagramPage(venue, ctx));
       else {
         data.groups.filter((group) => group.venue === venue).sort((a, b) => a.id.localeCompare(b.id, 'zh-TW', { numeric: true })).forEach((group) => pages.push(groupPage(group, ctx)));
         pages.push(...venueCallPages(venue, ctx));
       }
     });
+    const diagram = ctx.nineGroup && kind === 'execution';
     const meta = data.metadata || {};
     const draft = meta.preview !== false;
     const status = draft ? '預排草案・非正式賽程' : '正式賽程';
     const title = meta.title || '2026 全國廢材機器人大賽';
     const generated = dateText();
-    return `<div class="vp-document${ctx.nineGroup || kind === 'announcement' ? ' vp-document-simple' : ' vp-document-legacy'}" data-print-kind="${escape(kind)}" data-print-scope="${escape(selected)}" data-print-pages="${pages.length}">${pages.map((page, index) => `<section class="vp-page vp-page-${page.kind}" aria-label="${escape(page.title)} 第 ${index + 1} 頁" data-venue="${escape(page.venue)}"><header class="vp-page-header"><div><strong>${escape(title)}</strong><span>相撲機器人｜${kind === 'announcement' ? '排隊公告' : '賽務用紙本'}</span></div>${draft ? `<b class="vp-status vp-status-draft">${status}</b>` : ''}</header><div class="vp-page-content">${page.html}</div><footer class="vp-page-footer"><div><span>列印 ${escape(generated)}（臺北時間）</span><span>第 ${index + 1} 頁／共 ${pages.length} 頁</span></div></footer></section>`).join('')}</div>`;
+    return `<div class="vp-document${ctx.nineGroup || kind === 'announcement' ? ' vp-document-simple' : ' vp-document-legacy'}${diagram ? ' vp-document-diagram' : ''}" data-print-kind="${escape(kind)}" data-print-scope="${escape(selected)}" data-print-pages="${pages.length}">${pages.map((page, index) => `<section class="vp-page vp-page-${page.kind}" aria-label="${escape(page.title)} 第 ${index + 1} 頁" data-venue="${escape(page.venue)}"><header class="vp-page-header"><div><strong>${escape(title)}</strong><span>相撲機器人｜${kind === 'announcement' ? '排隊公告' : '賽務用紙本'}</span></div>${draft ? `<b class="vp-status vp-status-draft">${status}</b>` : ''}</header><div class="vp-page-content">${page.html}</div><footer class="vp-page-footer"><div><span>列印 ${escape(generated)}（臺北時間）</span><span>第 ${index + 1} 頁／共 ${pages.length} 頁</span></div></footer></section>`).join('')}</div>`;
   }
 
   function close() {
     if (!activeOverlay) return;
     activeOverlay.remove();
     activeOverlay = null;
-    document.body.classList.remove('vp-print-open');
+    document.body.classList.remove('vp-print-open', 'vp-print-landscape');
     document.removeEventListener('keydown', handleKeydown);
     if (previousFocus?.isConnected && typeof previousFocus.focus === 'function') previousFocus.focus();
     previousFocus = null;
@@ -279,13 +429,15 @@
     const label = !scope || String(scope).toLowerCase() === 'all' ? '全部場地' : venueName(String(scope).toUpperCase());
     const simple = data.groups.length === 9 && data.groups.every((group) => group.teamIds?.length === 8);
     const announcement = options?.kind === 'announcement';
-    const summary = announcement ? '每個場地一張 A4；全部公告共 3 張。' : simple ? '每個場地一張 A4；全部列印共 4 張。' : 'A4 直式，可列印或另存 PDF。';
-    overlay.innerHTML = `<div class="vp-toolbar"><div><h2 id="vp-dialog-title">${escape(label)}・${announcement ? '排隊公告' : '賽務列印'}</h2><p>${summary}</p></div><div class="vp-toolbar-actions"><button type="button" class="vp-close">關閉</button><button type="button" class="vp-print-button">列印／另存 PDF</button></div></div><div class="vp-screen-notice">列印設定請選 A4、直式，並關閉瀏覽器的「頁首及頁尾」。紙本為此刻賽程快照；更新賽果後可重新開啟列印。</div><div class="vp-paper-viewport" role="region" aria-label="A4 列印預覽，可左右捲動" tabindex="0">${content}</div>`;
+    const diagram = simple && !announcement;
+    const summary = announcement ? '每個場地一張 A4；全部公告共 3 張。' : diagram ? 'A4 橫式；每場地一張，含主舞台共 4 張。首輪隊號已填，勝隊直接寫入空圓。' : 'A4 直式，可列印或另存 PDF。';
+    overlay.innerHTML = `<div class="vp-toolbar"><div><h2 id="vp-dialog-title">${escape(label)}・${announcement ? '排隊公告' : '賽務列印'}</h2><p>${summary}</p></div><div class="vp-toolbar-actions"><button type="button" class="vp-close">關閉</button><button type="button" class="vp-print-button">列印／另存 PDF</button></div></div><div class="vp-screen-notice">列印設定請選 A4、${diagram ? '橫式' : '直式'}、100% 原尺寸，並關閉瀏覽器的「頁首及頁尾」。紙本為此刻賽程快照；更新賽果後可重新開啟列印。</div><div class="vp-paper-viewport" role="region" aria-label="A4 列印預覽，可左右捲動" tabindex="0">${content}</div>`;
     overlay.querySelector('.vp-close').addEventListener('click', close);
     overlay.querySelector('.vp-print-button').addEventListener('click', () => window.print());
     document.body.appendChild(overlay);
     activeOverlay = overlay;
     document.body.classList.add('vp-print-open');
+    document.body.classList.toggle('vp-print-landscape', diagram);
     document.addEventListener('keydown', handleKeydown);
     overlay.querySelector('.vp-close').focus();
     return overlay;
