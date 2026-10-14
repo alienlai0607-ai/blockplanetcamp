@@ -363,6 +363,7 @@ function createArchiveSnapshot(targetState = state) {
 function archivesSection(viewer = 'control') {
   const archives = [...(state.archives || [])].reverse();
   if (!archives.length) {
+    if (typeof venuePublishedDrawLocked === 'function' && venuePublishedDrawLocked()) return '';
     return viewer === 'control' ? `
       <section class="archive-section archive-empty">
         <div><span class="section-kicker">PAST TOURNAMENTS</span><h2>過往賽事封存</h2><p>完成本場後，按下「封存本場・建立下一場」，歷屆名單與勝負會保留在這裡。</p></div>
@@ -746,20 +747,38 @@ function patchMatch(matchId, op, payload = {}, message = '') {
   setSync('saving', '同步賽場');
   const operation = syncQueue.catch(() => null).then(async () => {
     if (unsavedCampusStates.has(requestedCampus)) throw new Error('請先完成尚未同步的名單／賽程儲存');
-    // Read the latest state before start operations so another controller's running clock is preserved.
-    if (['countdown', 'start'].includes(op)) {
+    // One authoritative preflight per start operation. Screen polling is optional
+    // and must never decide whether navigation or an operation is allowed.
+    if (['open', 'countdown', 'start'].includes(op)) {
+      const displayedState = state;
+      const displayedItem = displayedState.matches.find(item => item.id === matchId);
       const latest = await apiGet(requestedCampus);
-      if (!latest.success) throw new Error(latest.error || '無法確認最新賽場狀態');
+      if (!latest.success || !latest.state) throw new Error(latest.error || '目前無法連線確認場次，請稍後再試。');
       const latestState = normalizeState(latest.state, requestedCampus);
-      const latestItem = latestState.matches.find((item) => item.id === matchId);
+      const latestItem = latestState.matches.find(item => item.id === matchId);
       const latestLive = matchLive(matchId, latestState);
-      if (!latestItem || latestItem.status === 'completed') throw new Error('本場已完成或賽程已更新');
-      if (latestLive?.status === 'running' || latestLive?.status === 'awaiting-decision') {
-        saveSpectatorCache(`bp-junkbot-spectator-cache-${DEMO ? 'demo-' : ''}${requestedCampus}`, JSON.stringify(latestState));
+      if (!latestItem || latestItem.status === 'completed') throw new Error('本場已完成或賽程已更新，請更新場次。');
+      // Older published draws have no stored tournament ID; normalization creates
+      // a display-only one. Their persistent drawId identifies the fixed route.
+      const sameTournament = !latest.state.tournament?.id || displayedState.tournament?.id === latest.state.tournament.id;
+      const sameRoute = sameTournament
+        && (displayedState.venuePlan?.drawId || displayedState.draw?.createdAt) === (latestState.venuePlan?.drawId || latestState.draw?.createdAt)
+        && JSON.stringify(displayedItem?.participantIds) === JSON.stringify(latestItem.participantIds);
+      if (!sameRoute) throw new Error('畫面上的對戰與最新資料不同，請更新場次後核對；尚未開場。');
+      if (typeof judgeCanOperate === 'function' && !judgeCanOperate(matchId, latestState)) throw new Error('這場不屬於目前評審的工作範圍。');
+      const blocked = window.JunkbotVenuePlan?.blockReason(latestState, matchId);
+      if (blocked) throw new Error(blocked);
+      if (typeof judgeForMatch === 'function' && typeof activeJudgeId === 'function' && activeJudgeId()) {
+        const another = activeMatchIds(latestState).find(id => id !== matchId && judgeForMatch(id, latestState) === activeJudgeId());
+        if (another) throw new Error('請先完成目前負責的場次，再開啟下一場。');
+      }
+      if (op !== 'open' && ['running', 'awaiting-decision'].includes(latestLive?.status)) {
         if (campus === requestedCampus && role === 'control') {
           state = latestState;
           knownRevision = state.revision;
           connectionOk = true;
+          lastSuccessfulSyncAt = new Date().toISOString();
+          saveSpectatorCache(`bp-junkbot-spectator-cache-${DEMO ? 'demo-' : ''}${requestedCampus}`, JSON.stringify(state));
           if (revision === mutationRevision) setSync('', '已同步');
         }
         return { success: true, state: latestState, unchanged: true };
@@ -977,7 +996,7 @@ function recordsView() {
   return `<div class="page-heading"><div><span class="kicker">OFFICIAL RESULTS</span><h1>賽果紀錄</h1><p>${esc(currentTournamentTitle())} · ${played.length} 場判定完成，${results.length - played.length} 場輪空晉級</p></div><div class="records-toolbar"><button class="outline" data-action="export-results">匯出賽果 CSV</button><button class="outline" data-action="export-backup">下載完整備份</button></div></div>
     <section class="panel"><div class="panel-head"><div><h2>逐場判定</h2><p>依賽程順序顯示。每筆保留勝隊、判定原因、登錄人員與時間（台灣時間）。</p></div></div><div class="result-list">${results.length ? results.map(item=>`<article class="result-row"><div><small>${esc(matchDisplayLabel(item))}</small><h3>${esc(teamName(item.participantIds[0],'輪空'))}<span> VS </span>${esc(teamName(item.participantIds[1],'輪空'))}</h3></div><div><span class="result-winner">${item.resultType === 'bye' ? '輪空晉級' : '勝隊'} · ${esc(teamName(item.winnerId))}</span><p>${esc(item.reason || (item.resultType === 'bye' ? '依已公布抽籤路線自動晉級' : '未記錄原因'))}</p><small>${item.resultType === 'bye' ? '' : `${esc(resultTime(item.completedAt))} · 登錄：${esc(item.judgeName || '未記錄')} · 重賽 ${Number(item.replays) || 0} 次`}</small></div></article>`).join('') : '<div class="empty-card"><h2>尚無正式賽果</h2><p>裁判確認勝隊後，判定紀錄會顯示在這裡。</p></div>'}</div></section>
     ${archivesSection('control')}
-    <details class="operation-card archive-management"><summary>封存與建立下一場賽事</summary><p>封存會保留本次名單、對戰及判定紀錄，並建立空白的下一場賽事。請先匯出備份；開啟中的賽場必須完成判定。</p><button class="outline" data-action="archive-tournament" ${!state.entries.length || activeMatchIds().length ? 'disabled' : ''}>封存目前賽事並建立下一場</button></details>`;
+    ${typeof venuePublishedDrawLocked === 'function' && venuePublishedDrawLocked() ? '' : `<details class="operation-card archive-management"><summary>封存與建立下一場賽事</summary><p>封存會保留本次名單、對戰及判定紀錄，並建立空白的下一場賽事。請先匯出備份；開啟中的賽場必須完成判定。</p><button class="outline" data-action="archive-tournament" ${!state.entries.length || activeMatchIds().length ? 'disabled' : ''}>封存目前賽事並建立下一場</button></details>`}`;
 }
 
 function downloadFile(name, text, type) {
@@ -1855,7 +1874,10 @@ async function openArena(matchId) {
   }
   const item = match(matchId);
   if (!item || item.status === 'completed' || item.participantIds.filter(Boolean).length !== 2) return;
-  await patchMatch(item.id, 'open');
+  // Returning to an existing arena only changes the view; it must not wait
+  // for polling or submit another open operation. The next action still syncs.
+  const returning = activeMatchIds().includes(item.id) && matchLive(item.id);
+  if (!returning) await patchMatch(item.id, 'open');
   if (campus !== openingCampus || role !== 'control') return;
   stopArenaMusic();
   focusedArenaMatchId = item.id;
@@ -2404,25 +2426,12 @@ function bindControlEvents() {
     if (start) {
       const requestedMatchId = start.dataset.startMatch;
       start.disabled = true;
-      await syncQueue.catch(() => null);
-      const refreshed = await loadCampusState(true);
-      if (!refreshed) {
-        showToast('無法確認最新賽程，為避免開錯場次，本次不開場。', true);
-        renderControl();
-        return;
-      }
-      const latestMatch = match(requestedMatchId);
-      if (!latestMatch || latestMatch.status === 'completed' || latestMatch.participantIds.filter(Boolean).length !== 2) {
-        controlView = 'bracket';
-        renderControl();
-        showToast('這場已因重新抽籤而失效，已切換到最新賽程。', true);
-        return;
-      }
       try {
         await openArena(requestedMatchId);
       } catch (error) {
+        showToast(error.message || '無法開啟賽場，請稍後再試。', true);
         renderControl();
-      }
+      } finally { start.disabled = false; }
     }
     const judge = event.target.closest('[data-judge-match]');
     if (judge) {

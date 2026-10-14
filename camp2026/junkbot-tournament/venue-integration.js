@@ -57,8 +57,6 @@ function venueBind(root) {
     onMainDraw:venueShowMainDraw,
     onOpenMatch:async id=>{
       if(role!=='control')return;
-      await syncQueue.catch(()=>null);
-      if(!await loadCampusState(true))return showToast('無法確認最新賽程，請稍後重試。',true);
       try {await openArena(id);}catch(error){showToast(error.message,true);}
     }
   });
@@ -70,7 +68,7 @@ bracketView=function(control){
     return `<section class="venue-print-center"><div class="page-heading"><div><span class="kicker">THREE VENUES · NATIONAL TOURNAMENT</span><h1>準備建立三場地賽程</h1><p>已登錄 72 隊。保留原隊號，隨機抽定九組及組內晉級路線。</p></div><button class="primary" data-action="create-bracket">核對名單並抽籤</button></div><div class="venue-print-options"><article><span class="venue-print-letter">場地 A</span><h2>A1、A2、A3</h2><p>24 隊 · 21 場 · 3 位組冠軍前往主舞台</p></article><article><span class="venue-print-letter">場地 B</span><h2>B1、B2、B3</h2><p>24 隊 · 21 場 · 3 位組冠軍前往主舞台</p></article><article><span class="venue-print-letter">場地 C</span><h2>C1、C2、C3</h2><p>24 隊 · 21 場 · 3 位組冠軍前往主舞台</p></article><article><span class="venue-print-letter">主舞台</span><h2>全國八強至決賽</h2><p>9 隊 · 9 場（含季軍賽）· 三位評審集中</p></article></div><p class="venue-print-note">每組 8 隊，8 → 4 → 2 → 1，連勝 3 場成為組冠軍。分組賽固定在原場地；九位冠軍至主舞台重新抽籤。抽籤公布後，即可列印各場地名單與對戰表。</p></section>`;
   }
   if(!venuePlan.isVenueState(state))return venueOriginalBracketView(control);
-  const canReset=control&&!state.matches.some(m=>m.status==='completed')&&!activeMatchIds().length;
+  const canReset=control&&!venuePublishedDrawLocked()&&!state.matches.some(m=>m.status==='completed')&&!activeMatchIds().length;
   return `<div class="page-heading venue-heading"><div><span class="kicker">THREE VENUES · NATIONAL TOURNAMENT</span><h1>三場地對戰賽程</h1><p>${venuePlan.isNewState(state)?'72 隊 · A、B、C 各 24 隊、各 3 組；每組 8 隊取 1 位冠軍，九位冠軍上主舞台抽籤。':'72 隊 · 原八組賽制；八強集中主舞台。'}</p></div>${canReset?'<details class="venue-draw-tools"><summary>賽程管理</summary><button class="outline" data-action="redraw-bracket">重新抽籤</button><button class="outline" data-action="reset-bracket">重設賽程</button></details>':''}</div>${window.JunkbotVenueUI.render(venueData(),{control,judgeId:control?activeJudgeId():null})}`;
 };
 const venueOriginalRenderControl=renderControl;
@@ -89,6 +87,7 @@ tournamentPlan=function(count=state.entries.length){
 };
 const venueOriginalShowDraw=showDrawConfirmation;
 showDrawConfirmation=function(redraw=false){
+  if(venuePublishedDrawLocked())return showToast('已公布的分組與對手固定保留，不可重新抽籤。',true);
   if(state.entries.length!==72)return venueOriginalShowDraw(redraw);
   const error=validateRoster();if(error)return showToast(error,true);
   if(activeMatchIds().length||state.matches.some(m=>m.status==='completed'))return showToast('已有開啟場次或正式賽果，不能重新抽籤。',true);
@@ -96,6 +95,7 @@ showDrawConfirmation=function(redraw=false){
 };
 const venueOriginalCreateBracket=createBracket;
 createBracket=async function(){
+  if(venuePublishedDrawLocked())return showToast('已公布的分組與對手固定保留，不可重新抽籤。',true);
   if(state.entries.length!==72)return venueOriginalCreateBracket();
   const error=validateRoster();if(error)return showToast(error,true);
   try {
@@ -108,17 +108,6 @@ createBracket=async function(){
 };
 const venueOriginalOpenArena=openArena;
 openArena=async function(id){const reason=venuePlan.blockReason(state,id);if(reason){showToast(reason,true);return;}return venueOriginalOpenArena(id);};
-const venueOriginalApiPost=apiPost;
-apiPost=async function(payload){
-  if(payload.action==='junkbot-match-patch'&&['open','countdown','start'].includes(payload.op)&&venuePlan.isVenueState(state)){
-    let latest=state;
-    if(!DEMO){const response=await apiGet(EVENT_SCOPE);if(!response.success)return response;latest=normalizeState(response.state,EVENT_SCOPE);}
-    else {const saved=localStorage.getItem(JUDGE_DESK_STORAGE);if(saved)latest=normalizeState(JSON.parse(saved),EVENT_SCOPE);}
-    const reason=venuePlan.blockReason(latest,payload.matchId);
-    if(reason)return {success:false,code:'VENUE_NOT_READY',error:reason};
-  }
-  return venueOriginalApiPost(payload);
-};
 const venueOriginalDashboard=dashboardView;
 dashboardView=function(){const html=venueOriginalDashboard();if(!venuePlan.isVenueState(state))return html;const nine=venuePlan.isNewState(state);return `<section class="venue-dashboard-strip"><div><b>${nine?'九組分組賽已公布':'三場地分組賽已公布'}</b><span>${nine?'A1–A3／B1–B3／C1–C3 · 每場地 24 隊、21 場 · 九位冠軍至主舞台抽籤':'A1–A3／B1–B3／C1–C2 · 八強至主舞台'}</span></div><div class="venue-judge-actions">${venueMainDrawButton()}<button class="outline" data-view-jump="print">賽務列印</button></div></section>${html}`;};
 const venueOriginalArenas=arenasView;
@@ -220,3 +209,11 @@ document.addEventListener('click',event=>{
   }
   if(event.target.closest('[data-venue-submit-main]'))venueSubmitMainDraw();
 });
+
+// Event decision, 2026-10-14: published 72-team draw is fixed, including 28 vs 55.
+// A future explicitly requested result reset must retain this route, not redraw it.
+function venuePublishedDrawLocked(){return venuePlan.isNewState(state)&&Boolean(state.venuePlan.drawId)&&state.matches.length>0;}
+const venueOriginalResetBracket=resetBracket;
+resetBracket=function(){if(venuePublishedDrawLocked())return showToast('對戰抽籤已固定，不能重設賽程。測試結果需另外清除並保留原配對。',true);return venueOriginalResetBracket();};
+const venueOriginalArchiveTournament=archiveCurrentTournament;
+archiveCurrentTournament=function(){if(venuePublishedDrawLocked())return showToast('本屆隊伍與對戰位置已固定；清除測試結果不需要建立新賽事。',true);return venueOriginalArchiveTournament();};

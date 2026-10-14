@@ -124,7 +124,7 @@ function judgeDeskView() {
     <section class="judge-queue"><header><h2>接續待賽</h2><span>${list.length} 場${active.length ? '・先完成目前場次' : ''}</span></header>${list.length ? `<div class="judge-match-list">${list.map(item => judgeDeskRow(item, { activeId: active[0]?.id })).join('')}</div>` : '<p class="judge-quiet">目前沒有其他已就緒場次。</p>'}</section>
     <details class="judge-fold" data-judge-details="waiting" ${judgeDeskOpenSections.has('waiting') ? 'open' : ''}><summary>等待前場晉級 <span>${waiting.length} 場</span></summary><div class="judge-match-list">${waiting.length ? waiting.map(item => judgeDeskRow(item, { readonly: true })).join('') : '<p class="judge-quiet">沒有等待中的場次。</p>'}</div></details>
     <details class="judge-fold" data-judge-details="completed" ${judgeDeskOpenSections.has('completed') ? 'open' : ''}><summary>我的完成紀錄 <span>${completed.length} 場</span></summary><div class="judge-match-list">${completed.length ? completed.map(item => judgeDeskRow(item, { readonly: true })).join('') : '<p class="judge-quiet">尚未完成任何場次。</p>'}</div></details>
-    <p class="judge-desk-note">${DEMO ? '本頁為獨立演練，同一瀏覽器分頁共用進度。' : '判定送出後同步至全國賽事。'}每位評審一次負責一場；請完成目前場次再切換身分。</p>
+    <p class="judge-desk-note">${DEMO ? '本頁為獨立演練，同一瀏覽器分頁共用進度。' : '判定送出後同步至全國賽事。'}每位評審一次負責一場；完成判定後，接續下一場。</p>
   </section>`;
 }
 
@@ -149,8 +149,8 @@ function judgeMountRoleStrip() {
   strip.hidden = judgeDeskChooser || role !== 'control';
   const assignments = [...judgeAssignmentMap().values()];
   strip.innerHTML = judgeDeskId
-    ? `<div><span class="judge-identity-dot">${judgeDeskId}</span><strong>評審 ${judgeDeskId} 工作台</strong><span>${window.JunkbotVenuePlan?.isNewState(state) ? '初賽 21 場 · 主舞台另計 9 場、三位協同' : '僅自己的場次'}</span></div><button type="button" data-judge-select="choose">切換身分</button>`
-    : `<div><strong>總賽務</strong><span>全國賽事工作台</span></div><nav aria-label="三位評審工作台">${JUDGE_DESK_IDS.map(id => `<button type="button" data-judge-select="${id}">評審 ${id}<small>${judgeFieldCountLabel(id, assignments)}</small></button>`).join('')}</nav>${window.JunkbotVenuePlan?.isNewState(state) ? '<span>主舞台另計 9 場 · A 登錄、三位協同</span>' : ''}<a href="${judgeAudienceHref()}" target="_blank" rel="noopener">觀眾入口</a><button type="button" class="judge-switch" data-judge-select="choose">切換身分</button>`;
+    ? `<div><span class="judge-identity-dot">${judgeDeskId}</span><strong>評審 ${judgeDeskId} 工作台</strong><span>${window.JunkbotVenuePlan?.isNewState(state) ? '初賽 21 場 · 主舞台另計 9 場、三位協同' : '僅自己的場次'}</span></div>`
+    : `<div><strong>總賽務</strong><span>全國賽事工作台</span></div>${window.JunkbotVenuePlan?.isNewState(state) ? '<span>主舞台由評審 A 登錄、三位協同</span>' : ''}<a href="${judgeAudienceHref()}" target="_blank" rel="noopener">觀眾入口</a>`;
 }
 
 function judgeDeskLeaveReason() {
@@ -160,14 +160,15 @@ function judgeDeskLeaveReason() {
     if (judgeDeskId && judgeForMatch(id) !== judgeDeskId) return false;
     const live = matchLive(id);
     return ['countdown', 'running', 'awaiting-decision'].includes(live?.status) || live?.timeupPending;
-  })) return '目前場次仍在倒數、計時或等待判定，請完成後再切換身分或登出。';
+  })) return '目前場次仍在倒數、計時或等待判定，請完成後再登出。';
   if ($('modalRoot')?.innerHTML) return '請先完成或關閉目前的操作視窗。';
   return '';
 }
 
 function judgeSelectDesk(selection) {
   if (role !== 'control' || !judgeDeskAuthenticated) return showToast('請先輸入賽務密碼並完成驗證。', true);
-  if (!['admin', 'choose', ...JUDGE_DESK_IDS].includes(selection)) return;
+  // A workspace is chosen once after authentication and stays fixed until logout.
+  if (!judgeDeskChooser || !['admin', ...JUDGE_DESK_IDS].includes(selection)) return;
   const reason = judgeDeskLeaveReason();
   if (reason) return showToast(reason, true);
   if (JUDGE_DESK_IDS.includes(selection) && !connectionOk) return showToast('請先更新賽事資料，再選擇評審工作台。', true);
@@ -254,14 +255,11 @@ apiPost = async function(payload) {
       if (DEMO) {
         const saved = localStorage.getItem(JUDGE_DESK_STORAGE);
         latest = normalizeState(saved ? JSON.parse(saved) : emptyState(EVENT_SCOPE), EVENT_SCOPE);
-      } else if (['open', 'countdown', 'start'].includes(payload.op)) {
-        // Preserve the existing authenticated atomic patch API; refresh the work queue first.
-        const result = await apiGet(EVENT_SCOPE);
-        if (!result.success || !result.state) return { success: false, code: 'JUDGE_SYNC_REQUIRED', error: result.error || '無法確認最新場次，請更新後再操作。' };
-        latest = normalizeState(result.state, EVENT_SCOPE);
       }
+      // patchMatch performs the single fresh preflight; keep local scope guards
+      // here without issuing a second identical network read.
       if (!judgeCanOperate(payload.matchId, latest)) return { success: false, code: 'JUDGE_SCOPE', error: '這場由其他評審負責，請返回自己的場次。' };
-      if (['open', 'countdown', 'start'].includes(payload.op)) {
+      if (DEMO && ['open', 'countdown', 'start'].includes(payload.op)) {
         const another = activeMatchIds(latest).find(id => id !== payload.matchId && judgeForMatch(id, latest) === judgeDeskId && latest.matches.find(item => item.id === id)?.status !== 'completed');
         if (another) return { success: false, code: 'JUDGE_BUSY', error: '請先完成目前負責的場次，再開啟下一場。' };
       }
