@@ -97,7 +97,7 @@ function flowCard(item, control, compact = false) {
     const fallback = sourceMatch ? `${flowCode(sourceMatch)} ${item.stage === 'bronze' ? '敗隊' : '勝隊'}` : '等待對手';
     const winner = id && item.winnerId === id;
     return `<button class="flow-team ${winner ? 'winner' : ''} ${id ? '' : 'unresolved'}" ${id ? `data-watch-team="${esc(id)}"` : 'disabled'}>
-      <span class="flow-side">${slot === 0 ? 'A' : 'B'}</span><span class="flow-team-copy"><b>${esc(teamName(id, fallback))}</b>${!compact && id ? `<small>選手｜${esc(entry(id)?.playerName || '')}</small>` : ''}</span>${winner ? '<span class="flow-win">勝</span>' : ''}</button>`;
+      <span class="flow-side">${slot === 0 ? 'A' : 'B'}</span><span class="flow-team-copy"><b>${teamNameHTML(id, fallback)}</b></span>${winner ? '<span class="flow-win">勝</span>' : ''}</button>`;
   }).join('');
   return `<article class="flow-match ${statusClass} ${compact ? 'compact' : ''}" data-flow-match="${esc(item.id)}">
     <header><b>${esc(flowCode(item))}</b><span class="flow-status ${statusClass}">${statusClass === 'live' ? '<i></i>' : ''}${status}</span></header>
@@ -174,7 +174,7 @@ bracketView = function(control) {
         </div>
       </div>
       ${bronze ? `<section class="flow-bronze"><div><span>獨立支線${current.stage === 'bronze' ? ' · 目前進度' : ''}</span><h3>季軍爭奪戰</h3><p>四強落敗的兩隊在此對決。</p></div>${flowCard(bronze,control)}</section>` : ''}`}</div>
-    ${state.championId ? `<div class="flow-champion"><span>🏆 本屆冠軍</span><strong>${esc(teamName(state.championId))}</strong><small>${esc(entry(state.championId)?.playerName || '')}</small></div>` : ''}
+    ${state.championId ? `<div class="flow-champion"><span>🏆 本屆冠軍</span><strong>${teamNameHTML(state.championId)}</strong></div>` : ''}
     <details class="flow-draw"><summary>查看抽籤與賽程設定<span>開賽前一次抽定，路線已鎖定</span></summary><div><p>所有對戰及輪空位置均於建立賽程時排定。輪空不會新增虛構對手；比賽結果以現場評審確認為準。</p><p>${esc(bronzeRule())}</p><p>抽籤時間：${esc(resultTime(state.draw?.createdAt))}${state.draw?.operatorName ? ` · 登錄：${esc(state.draw.operatorName)}` : ''}</p>${control ? `<button class="outline" data-action="redraw-bracket" ${hasPlayed || activeCount ? 'disabled' : ''}>重新抽籤</button><button class="outline" data-action="reset-bracket" ${hasPlayed || activeCount ? 'disabled' : ''}>重設賽程</button>` : ''}</div></details>
   </section>`;
 };

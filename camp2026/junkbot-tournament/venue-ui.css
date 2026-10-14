@@ -404,3 +404,39 @@
   .venue-tournament.is-audience .group-tabs { display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); }
   .venue-tournament.is-audience .group-tab { justify-content:center; padding:10px 3px; font-size:12px; }
 }
+
+/* Full names remain visible; measured card height also controls every route line. */
+.venue-tournament .bracket-track .round-body,
+.venue-tournament .overview-group-board .bracket-track .round-body {
+  grid-template-rows:repeat(8,var(--venue-row-size,70px));
+  row-gap:2px;
+}
+.venue-tournament .bracket-track .connector-pair-top,
+.venue-tournament .bracket-track .connector-pair-bottom {
+  --link-h:calc(var(--venue-row-size,70px) + 2px);
+}
+.venue-tournament .bracket-track .link-large {
+  --link-h:calc((var(--venue-row-size,70px) + 2px) * 2);
+}
+.venue-tournament .bracket-track.columns-1 .round-body {
+  display:block;
+}
+.venue-tournament .match-team strong,
+.venue-tournament .roster-row .team-label strong,
+.venue-tournament .search-result-button .team-name {
+  white-space:normal;
+  overflow-wrap:anywhere;
+}
+.venue-tournament .schedule-row .queue-teams {
+  grid-column:2 / -1;
+  line-height:1.6;
+  font-size:12px;
+  color:var(--ink);
+}
+.venue-tournament .schedule-row .queue-teams i {
+  display:inline-block;
+  margin:0 7px;
+  color:var(--muted);
+  font-size:10px;
+  font-style:normal;
+}

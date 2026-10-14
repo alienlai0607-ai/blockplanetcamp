@@ -7,7 +7,15 @@
   const bindings = new WeakMap();
   const venueName = (venue) => venue === 'MAIN' ? '主舞台' : `場地 ${venue}`;
   const code = (match) => match?.callCode || match?.code || '';
-  const label = (team) => team ? `${team.teamNumber} 號 ${team.teamName}` : '待確認';
+  const teamCaption = (team) => {
+    const player = String(team?.playerName || '').trim();
+    return `${team?.teamName || ''}${player ? `（${player}）` : ''}`;
+  };
+  const captionHTML = (team) => {
+    const player = String(team?.playerName ?? '').trim();
+    return `${esc(team?.teamName || '')}${player ? ` <bdi class="participant-player">（${esc(player)}）</bdi>` : ''}`;
+  };
+  const label = (team) => team ? `${team.teamNumber} 號 ${teamCaption(team)}` : '待確認';
   const numberTag = (team) => `<span class="number-tag">${esc(team?.teamNumber)} 號</span>`;
   const completed = (match) => Boolean(match && match.status === 'completed');
   const nineGroups = () => state.data?.groups.length === 9 && state.data.groups.every((group) => group.teamIds.length === 8);
@@ -82,7 +90,7 @@
     const operable = canOperate(match.venue) && match.canStart === true;
     return `<article class="match-card ${classes}${row ? ` row-${row}` : ''}${highlighted ? ' is-highlighted' : ''}${completed(match) ? ' is-completed' : ''}" data-match-id="${esc(match.id)}" aria-label="${esc(accessible)}"><div class="match-meta">${operable ? `<button type="button" class="match-open" data-open-match="${esc(match.id)}" aria-label="開啟 ${esc(code(match))} 場次">${esc(code(match))} ↗</button>` : `<b>${esc(code(match))}</b>`}<span>${statusLabel(match)}</span></div>${match.slots.map((slot,index) => {
       const id = resolvedId(slot,match,index), team = teams.get(id), winner = id && completed(match) && id === match.winnerId;
-      return team ? `<div class="match-team${winner ? ' is-winner' : ''}" title="${esc(label(team))}">${numberTag(team)}<strong>${esc(team.teamName)}</strong>${winner ? '<span class="winner-mark" aria-label="勝隊">勝</span>' : ''}</div>` : `<div class="match-team slot-pending"><span class="slot-dot" aria-hidden="true"></span><strong>${esc(slotLabel(slot,match,index))}</strong></div>`;
+      return team ? `<div class="match-team${winner ? ' is-winner' : ''}" title="${esc(label(team))}">${numberTag(team)}<strong>${captionHTML(team)}</strong>${winner ? '<span class="winner-mark" aria-label="勝隊">勝</span>' : ''}</div>` : `<div class="match-team slot-pending"><span class="slot-dot" aria-hidden="true"></span><strong>${esc(slotLabel(slot,match,index))}</strong></div>`;
     }).join('')}</article>`;
   }
 
@@ -154,19 +162,19 @@
 
   function renderRoster(group) {
     const assigned = group.teamIds.map((id) => teams.get(id)).filter(Boolean).sort((a,b) => a.teamNumber-b.teamNumber);
-    return `<details class="roster-details" ${state.options.audience ? '' : 'open'}><summary>${esc(group.id)} 組參賽名單 · ${assigned.length} 隊</summary><div class="roster-grid">${assigned.map((team) => `<button type="button" class="roster-row" data-team="${esc(team.id)}" aria-label="查看 ${esc(label(team))} 的對戰">${numberTag(team)}<span class="team-label"><strong>${esc(team.teamName)}</strong><small>${esc(team.playerName || '')}</small></span>${(group.qualifierTeamIds || []).includes(team.id) ? '<span class="qual-marker">資格賽</span>' : ''}</button>`).join('')}</div></details>`;
+    return `<details class="roster-details" ${state.options.audience ? '' : 'open'}><summary>${esc(group.id)} 組參賽名單 · ${assigned.length} 隊</summary><div class="roster-grid">${assigned.map((team) => `<button type="button" class="roster-row" data-team="${esc(team.id)}" aria-label="查看 ${esc(label(team))} 的對戰">${numberTag(team)}<span class="team-label"><strong>${captionHTML(team)}</strong></span>${(group.qualifierTeamIds || []).includes(team.id) ? '<span class="qual-marker">資格賽</span>' : ''}</button>`).join('')}</div></details>`;
   }
 
   function renderQueue(venue) {
     const queue = (state.data.venueSchedules?.[venue] || state.data.matches.filter((match) => match.venue === venue).sort((a,b) => a.venueOrder-b.venueOrder).map((match) => match.id)).map((id) => matches.get(id)).filter(Boolean);
-    return `<details class="schedule-details"><summary>查看 ${venueName(venue)} 完整場次清單 · ${queue.length} 場</summary><p>${venue === 'MAIN' ? (nineGroups() ? '九組冠軍到齊後，現場抽籤決定位置。雙方已確定的對戰，由賽務依到場與休息狀況安排；原抽籤路線不變。' : '八強到齊後集中比賽。四強、季軍與決賽之間保留休息時間，由現場賽務確認。') : (nineGroups() ? '每組完成後再進下一組；同組內雙方隊伍確定並到場，即可由評審選擇先比哪一場。場碼與原對手固定，不代表強制開賽順序。' : '同一輪依組別交錯出賽。依場次順序叫號，實際開賽由賽務確認；保留選手整備時間。')}</p><div class="schedule-list">${queue.map((match,index) => `<div class="schedule-row${completed(match) ? ' is-completed' : ''}"><span class="queue-num">${String(index+1).padStart(2,'0')}</span><strong>${esc(code(match))}</strong><span>${esc(`${match.groupId ? `${match.groupId} · ` : ''}${roundName(match)}`)}</span><span class="queue-status">${statusLabel(match)}</span></div>`).join('')}</div></details>`;
+    return `<details class="schedule-details"><summary>查看 ${venueName(venue)} 完整場次清單 · ${queue.length} 場</summary><p>${venue === 'MAIN' ? (nineGroups() ? '九組冠軍到齊後，現場抽籤決定位置。雙方已確定的對戰，由賽務依到場與休息狀況安排；原抽籤路線不變。' : '八強到齊後集中比賽。四強、季軍與決賽之間保留休息時間，由現場賽務確認。') : (nineGroups() ? '每組完成後再進下一組；同組內雙方隊伍確定並到場，即可由評審選擇先比哪一場。場碼與原對手固定，不代表強制開賽順序。' : '同一輪依組別交錯出賽。依場次順序叫號，實際開賽由賽務確認；保留選手整備時間。')}</p><div class="schedule-list">${queue.map((match,index) => `<div class="schedule-row${completed(match) ? ' is-completed' : ''}"><span class="queue-num">${String(index+1).padStart(2,'0')}</span><strong>${esc(code(match))}</strong><span>${esc(`${match.groupId ? `${match.groupId} · ` : ''}${roundName(match)}`)}</span><span class="queue-status">${statusLabel(match)}</span><span class="queue-teams">${esc(slotLabel(match.slots[0],match,0))}<i>VS</i>${esc(slotLabel(match.slots[1],match,1))}</span></div>`).join('')}</div></details>`;
   }
 
   function renderMainPending() {
     const ready = state.data.groups.filter((group) => { const match = matches.get(group.winnerMatchId); return completed(match) && teams.has(match.winnerId); }).length;
     return `<div class="venue-intro"><div><h3>主舞台 · 九組冠軍</h3><p>A、B、C 場各 3 位組冠軍，全部前往主舞台。</p></div><span class="venue-chip">已產生 ${ready} / 9 隊</span>${printButton('MAIN')}</div><section class="main-draw-panel" aria-labelledby="main-draw-title"><div class="main-draw-heading"><span class="draw-status">等待現場抽籤</span><h3 id="main-draw-title">先產生九組冠軍，再抽主舞台晉級位置</h3><p>每組 8 隊，連勝 3 場晉級。九組全部完成後，由總賽務在主舞台進行抽籤。</p></div><div class="main-champions">${state.data.groups.map((group) => {
       const winnerMatch = matches.get(group.winnerMatchId), winner = completed(winnerMatch) ? teams.get(winnerMatch.winnerId) : null;
-      return `<article class="main-champion${winner ? ' is-ready' : ''}"><span class="champion-group">${esc(group.id)} 組冠軍</span>${winner ? `<strong>${esc(label(winner))}</strong><small>${esc(winner.playerName || '')}</small><span class="champion-state">已晉級</span>` : `<strong>尚未產生</strong><small>等待 ${esc(code(winnerMatch))} 組內決賽</small><span class="champion-state">分組進行中</span>`}</article>`;
+      return `<article class="main-champion${winner ? ' is-ready' : ''}"><span class="champion-group">${esc(group.id)} 組冠軍</span>${winner ? `<strong>${esc(label(winner))}</strong><span class="champion-state">已晉級</span>` : `<strong>尚未產生</strong><small>等待 ${esc(code(winnerMatch))} 組內決賽</small><span class="champion-state">分組進行中</span>`}</article>`;
     }).join('')}</div><div class="draw-rules"><h4>九支籤位，公開決定晉級路線</h4><ol><li><strong>1、2 籤位：</strong>先比九進八，勝隊進入八強。</li><li><strong>3–9 籤位：</strong>主舞台首輪輪空，直接進入八強。</li><li><strong>八強 → 四強 → 冠軍：</strong>四強負隊另比季軍賽。</li></ol><p>九位組冠軍都參與同一次抽籤，分場成績不預先指定籤位。每人抽到各籤位的機會相同。</p></div>${state.options.control && !state.options.judgeId ? `<div class="main-draw-action"><button type="button" data-main-draw ${canDrawMain() ? '' : 'disabled'}>${canDrawMain() ? '九組已到齊 · 進行主舞台抽籤' : `等待九組完成（${ready} / 9）`}</button><p>僅總賽務可操作。抽籤完成後，才會建立九進八至冠軍賽的正式對戰表。</p></div>` : '<p class="draw-wait-note">抽籤完成後，這裡會顯示正式晉級圖與每隊籤位。</p>'}</section>`;
   }
 
@@ -268,7 +276,7 @@
     const found = state.data.teams.filter((team) => number ? Number(team.teamNumber) === Number(number[1]) : `${team.teamName} ${team.playerName || ''}`.toLocaleLowerCase().includes(query.toLocaleLowerCase())).sort((a,b) => a.teamNumber-b.teamNumber);
     state.selectedTeam = found.length === 1 ? found[0].id : null;
     if (found.length === 1) return teamDetail(found[0].id);
-    return found.length ? `<div class="search-result-list">${found.map((team) => { const group = groupForTeam(team.id); return `<button type="button" class="search-result-button" data-team="${esc(team.id)}">${numberTag(team)}<span class="team-name">${esc(team.teamName)}</span><span class="small-meta">${esc(team.playerName || '')}</span><span class="result-loc">場地 ${esc(group?.venue)} · ${esc(group?.id)} →</span></button>`; }).join('')}</div>` : `<p class="search-empty">${number ? `沒有 ${esc(Number(number[1]))} 號隊伍。隊號保留原編號，缺號不遞補。` : '找不到符合的隊伍，請改用原隊號、部分隊名或選手姓名。'}</p>`;
+    return found.length ? `<div class="search-result-list">${found.map((team) => { const group = groupForTeam(team.id); return `<button type="button" class="search-result-button" data-team="${esc(team.id)}">${numberTag(team)}<span class="team-name">${captionHTML(team)}</span><span class="result-loc">場地 ${esc(group?.venue)} · ${esc(group?.id)} →</span></button>`; }).join('')}</div>` : `<p class="search-empty">${number ? `沒有 ${esc(Number(number[1]))} 號隊伍。隊號保留原編號，缺號不遞補。` : '找不到符合的隊伍，請改用原隊號、部分隊名或選手姓名。'}</p>`;
   }
 
   function render(data, options = {}) {
@@ -287,6 +295,27 @@
     return `<section class="venue-tournament${audience ? ' is-audience' : ''}" aria-label="三場地相撲機器人賽程">${audience ? '' : `<div class="section-title"><div><p class="eyebrow">SUMO TOURNAMENT</p><h2>三場地對戰賽程</h2></div>${options.control && !['A','B','C'].includes(options.judgeId) ? '<button type="button" class="venue-print" data-print="ALL">▤ 賽務列印・全部場地</button>' : '<span class="static-label">分組賽固定場地<br>組冠軍前往主舞台</span>'}</div>${overview()}`}<section class="team-search-section" aria-labelledby="venue-search-title"><div class="search-heading">${audience ? '<h2 id="venue-search-title">查詢隊伍與晉級圖</h2>' : '<h3 id="venue-search-title">查詢隊伍與對手</h3><span>保留原隊號，缺號不遞補</span>'}</div><label class="search-box"><span class="search-icon" aria-hidden="true">⌕</span><input type="search" id="venue-team-search" data-team-search value="${esc(state.query)}" aria-label="輸入隊號、隊名或選手姓名" placeholder="輸入隊號、隊名或選手姓名" autocomplete="off"></label><div class="search-results" aria-live="polite">${results}</div></section><section class="competition"><div class="venue-tabs" role="tablist" aria-label="選擇比賽場地">${['A','B','C','MAIN'].map((venue) => `<button type="button" role="tab" class="venue-tab" data-venue="${venue}" id="venue-tab-${venue}" aria-selected="${state.venue === venue}" aria-controls="venue-content" tabindex="${state.venue === venue ? 0 : -1}">${venueName(venue)}${audience ? '' : `<small>${venue === 'MAIN' ? (nineGroups() ? '九組冠軍 · 現場抽籤' : '八強起集中比賽') : `${venueStats(venue).count} 隊 · ${venueStats(venue).assigned.length} ${nineGroups() ? '席主舞台' : '席八強'}`}</small>`}</button>`).join('')}</div><div id="venue-content" class="venue-content" role="tabpanel" aria-labelledby="venue-tab-${state.venue}">${renderVenue()}</div></section></section>`;
   }
 
+  let bracketLayoutFrame = null;
+
+  // Keep all rounds on the same row rhythm, sized from the actual wrapped labels.
+  // The same row size drives connector lengths, so long names cannot break a route.
+  function layoutBrackets() {
+    bracketLayoutFrame = null;
+    document.querySelectorAll('.venue-tournament .bracket-track').forEach((track) => {
+      if (!track.getClientRects().length || track.classList.contains('columns-1')) return;
+      const cards = [...track.querySelectorAll('.round-body > .match-card')];
+      if (!cards.length) return;
+      const tallest = Math.max(...cards.map((card) => card.getBoundingClientRect().height));
+      const rowSize = Math.max(56, Math.ceil((tallest + 8) / 2));
+      track.style.setProperty('--venue-row-size', `${rowSize}px`);
+    });
+  }
+
+  function scheduleBracketLayout() {
+    if (bracketLayoutFrame != null || typeof requestAnimationFrame !== 'function') return;
+    bracketLayoutFrame = requestAnimationFrame(layoutBrackets);
+  }
+
   function refresh(container, focusSelector = null) {
     if (!container?.isConnected) return;
     const input = container.querySelector('[data-team-search]');
@@ -298,14 +327,24 @@
     for (const area of replacement.querySelectorAll('.bracket-scroll')) area.scrollLeft = scrollPositions.find(([id]) => id === (area.dataset.bracketGroup || 'MAIN'))?.[1] || 0;
     if (focusSelector) replacement.querySelector(focusSelector)?.focus({preventScroll:true});
     else if (focused) { const fresh = replacement.querySelector('[data-team-search]'); fresh.focus({preventScroll:true}); try { fresh.setSelectionRange(selection,selection); } catch (_) {} }
+    scheduleBracketLayout();
     return replacement;
   }
 
   function bind(root, callbacks = {}) {
     if (!root?.addEventListener) return;
+    scheduleBracketLayout();
     const previous = bindings.get(root);
     if (previous) { previous.callbacks = callbacks; return; }
     const entry = { callbacks }; bindings.set(root,entry);
+    if (typeof ResizeObserver === 'function') {
+      let width = null;
+      entry.resizeObserver = new ResizeObserver((entries) => {
+        const nextWidth = entries[0]?.contentRect.width;
+        if (nextWidth !== width) { width = nextWidth; scheduleBracketLayout(); }
+      });
+      entry.resizeObserver.observe(root);
+    }
     root.addEventListener('click', (event) => {
       const button = event.target.closest('button'), container = button?.closest('.venue-tournament');
       if (!button || !container || !root.contains(container) || !state.data) return;
@@ -336,5 +375,10 @@
     });
   }
 
+  window.addEventListener?.('resize', scheduleBracketLayout);
+  if (typeof document !== 'undefined') {
+    document.fonts?.ready.then(scheduleBracketLayout);
+    document.fonts?.addEventListener?.('loadingdone', scheduleBracketLayout);
+  }
   window.JunkbotVenueUI = Object.freeze({ render, bind });
 })();
