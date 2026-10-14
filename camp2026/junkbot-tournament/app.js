@@ -538,6 +538,37 @@ function demoMatchPatch(payload) {
   return { success: true, ok: true, state: target };
 }
 
+function demoMainDraw(payload) {
+  const key = `bp-junkbot-demo-${payload.campus}`;
+  const saved = localStorage.getItem(key);
+  const current = normalizeState(saved ? JSON.parse(saved) : emptyState(payload.campus), payload.campus);
+  const fail = (code,error) => ({ success:false,code,error });
+  if (!Number.isSafeInteger(payload.expectedRevision) || payload.expectedRevision < 0) return fail('REVISION_CONFLICT','請先讀取最新賽事資料再抽籤。');
+  if (!['onsite-lots','computer-random'].includes(payload.drawMethod)) return fail('INVALID_DRAW_METHOD','請選擇現場籤號或電腦抽籤。');
+  if (!Array.isArray(payload.entryIds) || payload.entryIds.length !== 9 || payload.entryIds.some(id => typeof id !== 'string' || !id) || new Set(payload.entryIds).size !== 9) return fail('INVALID_DRAW_ENTRIES','主舞台須為九支不同的組冠軍，依籤號 1 至 9 排列。');
+  if (!window.JunkbotVenuePlan?.isNewState(current)) return fail('FORMAT_MISMATCH','目前不是九組八隊的全國賽制。');
+  const groupMatches = current.matches.filter(item => item.venue !== 'MAIN');
+  if (groupMatches.length !== 63 || groupMatches.some(item => item.status !== 'completed' || item.resultType === 'bye' || !item.participantIds?.includes(item.winnerId)) || !window.JunkbotVenuePlan.groupsComplete(current)) return fail('GROUPS_NOT_COMPLETE','九組共 63 場都完成後，才能抽主舞台籤位。');
+  const champions = window.JunkbotVenuePlan.finalists(current).map(item => item.teamId);
+  if (payload.entryIds.some(id => !champions.includes(id))) return fail('INVALID_DRAW_ENTRIES','籤位名單必須恰好是九組冠軍。');
+  if (current.venuePlan.mainDraw?.status === 'drawn') {
+    return JSON.stringify(current.venuePlan.mainDraw.positions) === JSON.stringify(payload.entryIds)
+      ? { success:true,ok:true,unchanged:true,state:current,revision:current.revision }
+      : fail('MAIN_DRAW_LOCKED','主舞台已抽籤並鎖定，不能重新抽籤或更換位置。');
+  }
+  if (current.venuePlan.mainDraw && (current.venuePlan.mainDraw.status !== 'pending' || !Array.isArray(current.venuePlan.mainDraw.positions) || current.venuePlan.mainDraw.positions.length)) return fail('INVALID_DRAW_STATE','主舞台抽籤狀態不完整，請聯絡總賽務。');
+  if (payload.expectedRevision !== current.revision) return { ...fail('REVISION_CONFLICT','賽事已由其他裝置更新，請重新讀取最新資料後再抽籤。'), revision:current.revision };
+  if (current.activeMatchIds.length || current.activeMatchId || current.live || Object.values(current.lives).some(live => live && live.status !== 'completed')) return fail('ACTIVE_ARENA','請先結束所有分場賽事，再抽主舞台籤位。');
+  if (current.championId || current.runnerUpId || current.thirdPlaceId) return fail('RESULTS_LOCKED','已有全國名次，不能建立新的主舞台賽程。');
+  try {
+    const next = window.JunkbotVenuePlan.withMainDraw(current,payload.entryIds,{method:payload.drawMethod,operatorName:payload.judgeName || operatorName || '演練賽務'});
+    next.revision = current.revision + 1;
+    next.updatedAt = new Date().toISOString();
+    localStorage.setItem(key,JSON.stringify(next));
+    return { success:true,ok:true,state:next,revision:next.revision };
+  } catch (error) { return fail('MAIN_DRAW_FAILED',error.message || '主舞台抽籤失敗。'); }
+}
+
 async function apiPost(payload) {
   if (role !== 'control') throw new Error('觀眾模式無法修改賽事');
   if (payload.campus !== EVENT_SCOPE) throw new Error('賽事資料來源不符');
@@ -560,6 +591,7 @@ async function apiPost(payload) {
       return { success: true, ok: true, state: savedState, revision: savedState.revision };
     }
     if (payload.action === 'junkbot-match-patch') return demoMatchPatch(payload);
+    if (payload.action === 'junkbot-main-draw') return demoMainDraw(payload);
     return { success: false, error: '示範模式不會連接正式伺服器。' };
   }
   const started = Date.now();
@@ -907,20 +939,24 @@ function renderControl() {
 function dashboardView() {
   const played = state.matches.filter(item => !isPlannedBye(item));
   const completed = played.filter(item => item.status === 'completed').length;
+  const nineGroups = Boolean(window.JunkbotVenuePlan?.isNewState(state));
+  const plannedTotal = nineGroups ? 72 : played.length;
+  const pendingMainDraw = nineGroups && state.venuePlan.mainDraw?.status !== 'drawn';
+  const groupsReady = pendingMainDraw && window.JunkbotVenuePlan.groupsComplete(state);
   const active = activeMatches();
   const checked = state.entries.filter(item => item.checkedInAt).length;
   const plan = tournamentPlan();
   const done = tournamentIsComplete();
   const next = active[0] || played.find(item => item.status === 'pending' && item.participantIds.filter(Boolean).length === 2);
-  const phase = done ? '賽事完成' : active.length ? '比賽進行中' : state.matches.length ? '賽程已公布' : '賽前準備';
-  const phaseText = done ? '核對名次與判定紀錄後，匯出賽果留存。' : state.matches.length ? '開啟本輪對戰，依場號核對雙方隊伍後開始比賽。' : '先確認參賽名單與現場報到，再公開抽籤建立賽程。';
+  const phase = done ? '賽事完成' : groupsReady ? '準備主舞台抽籤' : active.length ? '比賽進行中' : state.matches.length ? '賽程已公布' : '賽前準備';
+  const phaseText = done ? '核對名次與判定紀錄後，匯出賽果留存。' : groupsReady ? '九組冠軍已到齊。請至對戰賽程的主舞台，依現場抽籤結果建立最後 9 場對戰。' : nineGroups ? '分組賽共 63 場，主舞台另計 9 場；A、B、C 初賽各 21 場，九組冠軍到齊後現場抽籤。' : state.matches.length ? '開啟本輪對戰，依場號核對雙方隊伍後開始比賽。' : '先確認參賽名單與現場報到，再公開抽籤建立賽程。';
   return `<div class="national-overview">
     <div class="page-heading"><div><span class="kicker">NATIONAL TOURNAMENT · CONTROL</span><h1>賽務總覽</h1><p>全國統一名單、對戰賽程與正式賽果。</p></div><button class="outline" data-action="refresh">更新戰況</button></div>
-    <section class="event-summary"><div><span class="section-kicker">2026 廢材機器人大賽</span><h2>${esc(currentTournamentTitle())}</h2><p>${phaseText}</p><div class="overview-actions"><button class="primary" data-view-jump="${done ? 'records' : state.matches.length ? 'bracket' : 'teams'}">${done ? '核對正式賽果' : state.matches.length ? '查看本輪對戰' : '確認參賽名單'} →</button><button class="outline" data-action="open-audience">開啟觀眾畫面 ↗</button></div></div><div class="overview-status"><span>${phase}</span><strong>${String(completed).padStart(2,'0')}<small> / ${played.length || '—'}</small></strong><p>已完成正式對戰</p><div class="event-progress" role="progressbar" aria-label="賽程完成比例" aria-valuemin="0" aria-valuemax="100" aria-valuenow="${played.length ? Math.round(completed / played.length * 100) : 0}"><i style="width:${played.length ? completed / played.length * 100 : 0}%"></i></div></div></section>
-    <div class="overview-metrics"><div><span>參賽隊伍</span><strong>${state.entries.length}<small> 隊</small></strong></div><div><span>已註記報到</span><strong>${checked}<small> / ${state.entries.length}</small></strong></div><div><span>開啟賽場</span><strong>${active.length}<small> 場</small></strong></div><div><span>剩餘對戰</span><strong>${played.filter(item => item.status !== 'completed').length}<small> 場</small></strong></div></div>
-    <div class="operations-grid"><section class="operation-card"><span class="section-kicker">MATCH DESK</span><h2>${active.length ? '目前進行場次' : done ? '最終名次' : '下一場對戰'}</h2>${done ? `<div class="result-podium">${[[state.championId,'冠軍'],[state.runnerUpId,'亞軍'],[state.thirdPlaceId,'季軍']].filter(([id])=>id).map(([id,label])=>`<p><span>${label}</span><strong>${esc(teamName(id))}</strong></p>`).join('')}</div>` : next ? `<div class="next-match"><small>${esc(matchDisplayLabel(next))}</small><div class="versus"><b>${esc(teamName(next.participantIds[0]))}</b><span>VS</span><b>${esc(teamName(next.participantIds[1]))}</b></div><p>${esc(arenaStatusLabel(matchLive(next.id)))}</p></div><button class="primary" data-view-jump="arenas">前往賽場控制 →</button>` : `<p class="hint">${plan.teamCount >= 2 ? '名單確認後，前往對戰賽程完成抽籤。' : '至少登錄兩支隊伍，才能建立對戰賽程。'}</p><button class="outline" data-view-jump="bracket">前往對戰賽程</button>`}</section>
-    <section class="operation-card"><span class="section-kicker">PRE-MATCH CHECK</span><h2>賽務檢核</h2><ol class="readiness-list"><li class="${state.entries.length >= 2 ? 'done':'pending'}"><b>核對參賽名單</b><span>目前 ${state.entries.length} 隊；一隊一位選手</span></li><li class="${checked === state.entries.length && checked ? 'done':'pending'}"><b>確認現場報到</b><span>${checked} 隊已註記，${state.entries.length - checked} 隊待核對</span></li><li class="${state.matches.length ? 'done':'pending'}"><b>公開抽籤與公告賽程</b><span>${state.matches.length ? '對戰與輪空路線已排定' : '抽籤前須確認名單及季軍產生方式'}</span></li><li class="${done ? 'done':'pending'}"><b>逐場判定與保存賽果</b><span>裁判確認原因及勝隊後，結果鎖定</span></li></ol></section></div>
-    <details class="operation-card competition-notes"><summary>比賽規則與現場操作提醒</summary><div><p><b>每場 60 秒、全程不停錶。</b>READY 倒數後開始計時；時間到後，由現場裁判確認勝負。每場最多重賽一次。</p><p>掉出場外、停止移動超過 10 秒、未離開起始區與違規等，依賽事簡章及現場裁判判定。系統不以倒數自動宣告勝隊。</p><p>輪空路線一次抽定。不同隊數可能有不同輪次與季軍產生方式，抽籤前會完整列出，請主辦單位核對競賽規程。</p><p>賽果送出後鎖定；對判定有疑義時，先依主辦單位申訴程序處理，再進行後續場次。</p></div></details>
+    <section class="event-summary"><div><span class="section-kicker">2026 廢材機器人大賽</span><h2>${esc(currentTournamentTitle())}</h2><p>${phaseText}</p><div class="overview-actions"><button class="primary" data-view-jump="${done ? 'records' : state.matches.length ? 'bracket' : 'teams'}">${done ? '核對正式賽果' : groupsReady ? '查看主舞台安排' : state.matches.length ? '查看本輪對戰' : '確認參賽名單'} →</button><button class="outline" data-action="open-audience">開啟觀眾畫面 ↗</button></div></div><div class="overview-status"><span>${phase}</span><strong>${String(completed).padStart(2,'0')}<small> / ${plannedTotal || '—'}</small></strong><p>${nineGroups ? '全賽事預計 72 場 · 已完成正式對戰' : '已完成正式對戰'}</p><div class="event-progress" role="progressbar" aria-label="賽程完成比例" aria-valuemin="0" aria-valuemax="100" aria-valuenow="${plannedTotal ? Math.round(completed / plannedTotal * 100) : 0}"><i style="width:${plannedTotal ? completed / plannedTotal * 100 : 0}%"></i></div></div></section>
+    <div class="overview-metrics"><div><span>參賽隊伍</span><strong>${state.entries.length}<small> 隊</small></strong></div><div><span>已註記報到</span><strong>${checked}<small> / ${state.entries.length}</small></strong></div><div><span>開啟賽場</span><strong>${active.length}<small> 場</small></strong></div><div><span>剩餘對戰</span><strong>${Math.max(0,plannedTotal - completed)}<small> 場${pendingMainDraw ? '（含主舞台 9 場）' : ''}</small></strong></div></div>
+    <div class="operations-grid"><section class="operation-card"><span class="section-kicker">MATCH DESK</span><h2>${active.length ? '目前進行場次' : done ? '最終名次' : '下一場對戰'}</h2>${done ? `<div class="result-podium">${[[state.championId,'冠軍'],[state.runnerUpId,'亞軍'],[state.thirdPlaceId,'季軍']].filter(([id])=>id).map(([id,label])=>`<p><span>${label}</span><strong>${esc(teamName(id))}</strong></p>`).join('')}</div>` : next ? `<div class="next-match"><small>${esc(matchDisplayLabel(next))}</small><div class="versus"><b>${esc(teamName(next.participantIds[0]))}</b><span>VS</span><b>${esc(teamName(next.participantIds[1]))}</b></div><p>${esc(arenaStatusLabel(matchLive(next.id)))}</p></div><button class="primary" data-view-jump="arenas">前往賽場控制 →</button>` : `<p class="hint">${groupsReady ? '九組冠軍全部產生，等待總賽務完成主舞台現場抽籤。' : plan.teamCount >= 2 ? '名單確認後，前往對戰賽程完成抽籤。' : '至少登錄兩支隊伍，才能建立對戰賽程。'}</p><button class="outline" data-view-jump="bracket">前往對戰賽程</button>`}</section>
+    <section class="operation-card"><span class="section-kicker">PRE-MATCH CHECK</span><h2>賽務檢核</h2><ol class="readiness-list"><li class="${state.entries.length >= 2 ? 'done':'pending'}"><b>核對參賽名單</b><span>目前 ${state.entries.length} 隊；一隊一位選手</span></li><li class="${checked === state.entries.length && checked ? 'done':'pending'}"><b>確認現場報到</b><span>${checked} 隊已註記，${state.entries.length - checked} 隊待核對</span></li><li class="${state.matches.length ? 'done':'pending'}"><b>公開抽籤與公告賽程</b><span>${nineGroups ? (pendingMainDraw ? '九組分場已排定；主舞台待九組完成後現場抽籤' : '分組及主舞台籤位均已公告') : state.matches.length ? '對戰與輪空路線已排定' : '抽籤前須確認名單及季軍產生方式'}</span></li><li class="${done ? 'done':'pending'}"><b>逐場判定與保存賽果</b><span>裁判確認原因及勝隊後，結果鎖定</span></li></ol></section></div>
+    <details class="operation-card competition-notes"><summary>比賽規則與現場操作提醒</summary><div><p><b>每場 60 秒、全程不停錶。</b>READY 倒數後開始計時；時間到後，由現場裁判確認勝負。每場最多重賽一次。</p><p>掉出場外、停止移動超過 10 秒、未離開起始區與違規等，依賽事簡章及現場裁判判定。系統不以倒數自動宣告勝隊。</p><p>${nineGroups ? '九組各 8 隊，分組賽沒有輪空；連勝 3 場成為組冠軍。九組冠軍到主舞台重新抽籤決定位置，1、2 籤位先比九進八，3–9 籤位首輪輪空；主舞台抽籤公布後鎖定。' : '輪空路線一次抽定。不同隊數可能有不同輪次與季軍產生方式，抽籤前會完整列出，請主辦單位核對競賽規程。'}</p><p>賽果送出後鎖定；對判定有疑義時，先依主辦單位申訴程序處理，再進行後續場次。</p></div></details>
     </div>`;
 }
 

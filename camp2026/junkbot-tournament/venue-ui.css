@@ -313,3 +313,34 @@
 .venue-tournament .connector-pair-top,.venue-tournament .connector-pair-bottom,.venue-tournament .stage-bracket .connector-pair-top,.venue-tournament .stage-bracket .connector-pair-bottom{--link-h:58px}
 .venue-tournament .link-large,.venue-tournament .stage-bracket .link-large{--link-h:116px}
 .venue-tournament .bracket-track.columns-1 .round-body{grid-template-rows:repeat(8,27px)}
+
+/* Nine equal groups; the main draw is created only after all group champions exist. */
+.venue-tournament .main-draw-panel{background:#fff;border:1px solid var(--line);border-radius:16px;padding:22px;min-width:0}
+.venue-tournament .main-draw-heading h3{font-size:19px;line-height:1.6;margin-top:9px}
+.venue-tournament .main-draw-heading p{font-size:12px;color:var(--muted);line-height:1.8;margin-top:6px}
+.venue-tournament .draw-status{display:inline-flex;font-size:11px;font-weight:700;padding:4px 9px;border-radius:6px;background:var(--amber-pale);color:var(--amber)}
+.venue-tournament .main-champions{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;margin-top:19px}
+.venue-tournament .main-champion{position:relative;min-width:0;background:#f8fafc;border:1px solid var(--line);border-radius:10px;padding:12px}
+.venue-tournament .main-champion .champion-group{display:block;color:var(--blue);font-size:11px;font-weight:800;margin-bottom:5px}
+.venue-tournament .main-champion>strong{display:block;font-size:13px;overflow-wrap:anywhere;line-height:1.6}
+.venue-tournament .main-champion>small{display:block;font-size:11px;color:var(--muted);margin-top:4px;overflow-wrap:anywhere}
+.venue-tournament .main-champion .champion-state{display:inline-block;font-size:10px;color:#6a7c87;margin-top:9px}
+.venue-tournament .main-champion.is-ready{border-color:#b6dbc7;background:#f5fbf7}
+.venue-tournament .main-champion.is-ready .champion-state{color:#28734b;font-weight:700}
+.venue-tournament .draw-rules{background:var(--blue-pale);border-radius:10px;padding:15px 17px;margin-top:18px;font-size:12px;line-height:1.8}
+.venue-tournament .draw-rules h4{font-size:13px;margin:0 0 6px}
+.venue-tournament .draw-rules ol{margin:0;padding-left:21px}
+.venue-tournament .draw-rules li+li{margin-top:4px}
+.venue-tournament .draw-rules p{font-size:11px;color:#537085;margin-top:9px}
+.venue-tournament .main-draw-action{margin-top:18px}
+.venue-tournament .main-draw-action button{max-width:100%;padding:11px 17px;border-radius:8px;background:var(--blue);color:#fff;font-size:13px;font-weight:800;line-height:1.7}
+.venue-tournament .main-draw-action button:disabled{background:#edf1f5;color:#7b8e9b;cursor:not-allowed}
+.venue-tournament .main-draw-action p,.venue-tournament .draw-wait-note{font-size:11px;line-height:1.8;color:var(--muted);margin-top:9px}
+.venue-tournament .draw-positions{padding:14px 16px;background:#fff;border:1px solid var(--line);border-radius:12px;margin-bottom:13px}
+.venue-tournament .draw-positions>summary{font-size:12px;font-weight:700;cursor:pointer;line-height:1.7}
+.venue-tournament .draw-positions>div{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px 16px;margin-top:10px}
+.venue-tournament .draw-positions article{display:grid;grid-template-columns:auto minmax(0,1fr);gap:3px 8px;min-width:0;border-top:1px solid #edf1f4;padding-top:9px;font-size:11px}
+.venue-tournament .draw-positions .lot-number{grid-row:span 2;color:var(--blue);font-weight:800;font-size:11px}
+.venue-tournament .draw-positions strong{font-size:11px;overflow-wrap:anywhere}
+.venue-tournament .draw-positions small{color:var(--muted);font-size:10px;overflow-wrap:anywhere}
+@media(max-width:600px){.venue-tournament .main-draw-panel{padding:15px 12px;border-radius:12px}.venue-tournament .main-draw-heading h3{font-size:16px}.venue-tournament .main-champions{grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}.venue-tournament .main-champion{padding:10px}.venue-tournament .main-champion>strong{font-size:12px}.venue-tournament .main-champion>small{font-size:10px}.venue-tournament .draw-rules{padding:12px;font-size:11px}.venue-tournament .draw-rules h4{font-size:12px}.venue-tournament .main-draw-action button{width:100%;font-size:12px}.venue-tournament .draw-positions{padding:12px}.venue-tournament .draw-positions>div{grid-template-columns:1fr}.venue-tournament .draw-positions article{font-size:12px}.venue-tournament .draw-positions strong{font-size:12px}}

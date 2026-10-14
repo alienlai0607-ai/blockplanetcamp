@@ -134,6 +134,7 @@ function doPost(e) {
       case 'drone-state-set': return respond(droneStateSet(p.state));
       case 'junkbot-state-set': return respond(junkbotResponse(junkbotNormalizeCampus(p.campus), junkbotStateSet(p)));
       case 'junkbot-match-patch': return respond(junkbotResponse(junkbotNormalizeCampus(p.campus), junkbotMatchPatch(p)));
+      case 'junkbot-main-draw': return respond(junkbotResponse(junkbotNormalizeCampus(p.campus), junkbotMainDraw(p)));
       default: return respond({ success: false, error: '無效的操作' });
     }
   } finally {
@@ -1892,7 +1893,7 @@ function junkbotResponse(campus, result) {
   const response = Object.assign({}, result, {
     campus: 'national', scope: 'national', protocolVersion: JUNKBOT_PROTOCOL_VERSION,
     serverNow: new Date().toISOString(),
-    capabilities: { nationalAuth: true, revisionGuard: true, matchAudit: true }
+    capabilities: { nationalAuth: true, revisionGuard: true, matchAudit: true, mainStageDraw: true }
   });
   if (response.state) response.revision = Number(response.state.revision) || 0;
   return response;
@@ -2177,6 +2178,7 @@ function junkbotNationalFullStateGuard(current, incoming) {
   if (hasStarted && !resetForArchive) {
     if (junkbotCanonical(incoming.matches) !== junkbotCanonical(current.matches)
         || junkbotCanonical(incoming.draw) !== junkbotCanonical(current.draw)
+        || junkbotCanonical(incoming.venuePlan) !== junkbotCanonical(current.venuePlan)
         || junkbotCanonical(incoming.tournament) !== junkbotCanonical(current.tournament)
         || ['championId', 'runnerUpId', 'thirdPlaceId'].some(function(key) { return (incoming[key] || null) !== (current[key] || null); })) {
       return '賽事已開場，賽程與勝負只能透過賽場操作更新；不可整份覆寫';
@@ -2303,6 +2305,118 @@ function junkbotStateSet(p, fromMatchPatch) {
   }
 }
 
+// Main-stage positions are drawn only after all nine eight-team groups finish.
+// doPost holds the script lock for the complete read/validate/append/write cycle.
+// The request provides only nine entrant IDs, never arbitrary match records.
+function junkbotMainDraw(p) {
+  const campus = junkbotNormalizeCampus(p.campus);
+  const fail = function(code, error) { return junkbotResponse(campus, { success: false, code: code, error: error }); };
+  try {
+    if (campus !== 'national') return fail('SCOPE_MISMATCH', '主舞台抽籤僅適用於全國賽事');
+    const rejected = junkbotWriteAuthorization(p, campus);
+    if (rejected) return rejected;
+    if (!Number.isSafeInteger(p.expectedRevision) || p.expectedRevision < 0) return fail('REVISION_CONFLICT', '請先讀取最新賽事資料再抽籤');
+    if (['onsite-lots', 'computer-random'].indexOf(p.drawMethod) < 0) return fail('INVALID_DRAW_METHOD', '請選擇現場籤號或電腦抽籤');
+    if (!Array.isArray(p.entryIds) || p.entryIds.length !== 9
+        || p.entryIds.some(function(id) { return typeof id !== 'string' || !id; })
+        || new Set(p.entryIds).size !== 9) return fail('INVALID_DRAW_ENTRIES', '主舞台須為九支不同的組冠軍，依籤號 1 至 9 排列');
+    const current = junkbotStateGet(campus);
+    if (!current || !current.success) return current || fail('STATE_READ_FAILED', '無法讀取最新賽事資料');
+    const state = current.state;
+    if (!state || !state.draw || state.draw.method !== 'nine-groups-eight-v2'
+        || !state.venuePlan || !Array.isArray(state.venuePlan.groups)) return fail('FORMAT_MISMATCH', '目前不是九組八隊的全國賽制');
+    const groups = state.venuePlan.groups;
+    const expectedGroups = ['A1', 'A2', 'A3', 'B1', 'B2', 'B3', 'C1', 'C2', 'C3'];
+    if (groups.length !== 9 || new Set(groups.map(function(g) { return g && g.id; })).size !== 9
+        || groups.some(function(g) { return !g || expectedGroups.indexOf(g.id) < 0 || g.venue !== g.id.charAt(0)
+          || !Array.isArray(g.teamIds) || g.teamIds.length !== 8 || new Set(g.teamIds).size !== 8
+          || !Array.isArray(g.matchIds) || g.matchIds.length !== 7 || new Set(g.matchIds).size !== 7
+          || g.matchIds.indexOf(g.winnerMatchId) < 0; })) return fail('INVALID_GROUPS', '分組資料不完整，請聯絡總賽務');
+    const teamIds = groups.reduce(function(ids, g) { return ids.concat(g.teamIds); }, []);
+    if (!Array.isArray(state.entries) || state.entries.length !== 72 || new Set(teamIds).size !== 72
+        || teamIds.some(function(id) { return !state.entries.some(function(entry) { return entry.id === id; }); })) return fail('INVALID_GROUPS', '分組名單與參賽名單不一致');
+    const matches = Array.isArray(state.matches) ? state.matches : [];
+    const groupMatches = matches.filter(function(m) { return m.venue !== 'MAIN'; });
+    if (groupMatches.length !== 63 || new Set(groupMatches.map(function(m) { return m.id; })).size !== 63
+        || groups.some(function(g) { return g.matchIds.some(function(id) {
+          const m = groupMatches.find(function(item) { return item.id === id; });
+          return !m || m.groupId !== g.id || m.venue !== g.venue
+            || m.status !== 'completed' || m.resultType === 'bye'
+            || !Array.isArray(m.participantIds) || m.participantIds.length !== 2
+            || m.participantIds.some(function(teamId) { return g.teamIds.indexOf(teamId) < 0; })
+            || m.participantIds.indexOf(m.winnerId) < 0;
+        }); })) return fail('GROUPS_NOT_COMPLETE', '九組共 63 場都完成後，才能抽主舞台籤位');
+    const champions = groups.map(function(g) { return groupMatches.find(function(m) { return m.id === g.winnerMatchId; }).winnerId; });
+    if (new Set(champions).size !== 9 || p.entryIds.some(function(id) { return champions.indexOf(id) < 0; })) return fail('INVALID_DRAW_ENTRIES', '籤位名單必須恰好是九組冠軍');
+    // A successful response may be lost on an unreliable venue network. Identical
+    // retries are read-only and return the saved draw, even with its old revision.
+    if (state.venuePlan.mainDraw && state.venuePlan.mainDraw.status === 'drawn') {
+      if (junkbotCanonical(state.venuePlan.mainDraw.positions) === junkbotCanonical(p.entryIds)) {
+        return junkbotResponse(campus, { success: true, ok: true, unchanged: true, state: state });
+      }
+      return fail('MAIN_DRAW_LOCKED', '主舞台已抽籤並鎖定，不能重新抽籤或更換位置');
+    }
+    if (state.venuePlan.mainDraw && (state.venuePlan.mainDraw.status !== 'pending'
+        || !Array.isArray(state.venuePlan.mainDraw.positions) || state.venuePlan.mainDraw.positions.length)) return fail('INVALID_DRAW_STATE', '主舞台抽籤狀態不完整，請聯絡總賽務');
+    if (p.expectedRevision !== (Number(state.revision) || 0)) return junkbotResponse(campus, {
+      success: false, code: 'REVISION_CONFLICT', revision: Number(state.revision) || 0,
+      error: '賽事已由其他裝置更新，請重新讀取最新資料後再抽籤'
+    });
+    if (matches.length !== 63) return fail('MAIN_DRAW_LOCKED', '主舞台已有場次，不能再次建立');
+    if ((state.activeMatchIds || []).length || state.activeMatchId || state.live
+        || Object.keys(state.lives || {}).some(function(id) { return state.lives[id] && state.lives[id].status !== 'completed'; })) return fail('ACTIVE_ARENA', '請先結束所有分場賽事，再抽主舞台籤位');
+    if (state.championId || state.runnerUpId || state.thirdPlaceId) return fail('RESULTS_LOCKED', '已有全國名次，不能建立新的主舞台賽程');
+    const validationError = junkbotNationalStateError(JSON.parse(JSON.stringify(state)));
+    if (validationError) return fail('INVALID_STATE', validationError);
+    const main = [];
+    const add = function(id, roundIndex, roundSize, stage, order, label, slots) {
+      const item = {
+        id: id, code: id, label: label, groupId: null, venue: 'MAIN',
+        roundIndex: roundIndex, roundSize: roundSize, phase: stage === 'r9' ? 'qualification' : 'main', stage: stage,
+        stageLabel: label, order: order, slots: slots,
+        participantIds: slots.map(function(slot) { return slot.teamId || null; }),
+        sourceMatchIds: slots.filter(function(slot) { return slot.matchId; }).map(function(slot) { return slot.matchId; }),
+        status: 'pending', winnerId: null, loserId: null, reason: '', replays: 0,
+        resultType: '', auditLog: [], plannedBye: false, nextMatchId: null, nextSlot: null,
+        venueOrder: main.length + 1, callCode: 'M-' + ('0' + (main.length + 1)).slice(-2)
+      };
+      main.push(item);
+      return item;
+    };
+    add('MAIN-Q', 3, 9, 'r9', 0, '主舞台九進八', p.entryIds.slice(0, 2).map(function(id) { return { teamId: id }; }));
+    const quarterSlots = [{ matchId: 'MAIN-Q', outcome: 'winner' }].concat(p.entryIds.slice(2).map(function(id) { return { teamId: id }; }));
+    for (let i = 0; i < 4; i++) add('MAIN-QF-' + (i + 1), 4, 8, 'quarter', i, '全國八強第 ' + (i + 1) + ' 場', quarterSlots.slice(i * 2, i * 2 + 2));
+    for (let i = 0; i < 2; i++) add('MAIN-SF-' + (i + 1), 5, 4, 'semi', i, '準決賽第 ' + (i + 1) + ' 場', [0, 1].map(function(j) { return { matchId: 'MAIN-QF-' + (i * 2 + j + 1), outcome: 'winner' }; }));
+    add('MAIN-BRONZE', 6, 3, 'bronze', 0, '季軍賽', [1, 2].map(function(i) { return { matchId: 'MAIN-SF-' + i, outcome: 'loser' }; }));
+    add('MAIN-FINAL', 7, 2, 'final', 0, '冠軍賽', [1, 2].map(function(i) { return { matchId: 'MAIN-SF-' + i, outcome: 'winner' }; }));
+    main.forEach(function(item) {
+      item.slots.forEach(function(slot, index) {
+        if (!slot.matchId) return;
+        const source = main.find(function(m) { return m.id === slot.matchId; });
+        if (slot.outcome === 'loser') { source.loserNextMatchId = item.id; source.loserNextSlot = index; }
+        else { source.nextMatchId = item.id; source.nextSlot = index; }
+      });
+    });
+    // Append only: all 63 completed group matches and their audit records remain
+    // byte-for-byte equivalent. The original group draw is also kept unchanged.
+    state.matches = matches.concat(main);
+    state.venuePlan.mainDraw = {
+      status: 'drawn', drawnAt: new Date().toISOString(),
+      operatorName: String(p.judgeName || '').normalize('NFKC').trim().replace(/\s+/g, ' ').slice(0, 80) || '總賽務',
+      positions: p.entryIds.slice(), method: p.drawMethod
+    };
+    state.venuePlan.venueSchedules = Object.assign({}, state.venuePlan.venueSchedules || {}, { MAIN: main.map(function(m) { return m.id; }) });
+    const saved = junkbotStateSet({
+      password: p.password, campus: campus, protocolVersion: p.protocolVersion,
+      expectedRevision: Number(current.state.revision) || 0, state: state
+    }, true);
+    if (!saved || !saved.success) return saved || fail('STATE_WRITE_FAILED', '主舞台抽籤儲存失敗，請讀取最新資料確認');
+    return junkbotResponse(campus, { success: true, ok: true, state: saved.state || state, updatedAt: saved.updatedAt });
+  } catch (err) {
+    return fail('MAIN_DRAW_FAILED', String(err && err.message || err));
+  }
+}
+
 function junkbotEnsureArenaState(state) {
   if (!state || typeof state !== 'object') return;
   if (!Array.isArray(state.activeMatchIds)) state.activeMatchIds = [];
@@ -2336,6 +2450,10 @@ function junkbotPropagateMatch(state, item) {
     state.thirdPlaceId = item.winnerId;
     return;
   }
+  // A group champion waits for the later onsite draw; it never enters a legacy
+  // national-final fallback based on round names or record ordering.
+  if (state.draw && state.draw.method === 'nine-groups-eight-v2'
+      && item.venue !== 'MAIN' && !item.nextMatchId) return;
   if (item.roundSize === 3 && item.loserId) state.thirdPlaceId = item.loserId;
   const linkedTarget = item.nextMatchId
     ? matches.find(function(candidate) { return candidate && candidate.id === item.nextMatchId; })
@@ -2410,6 +2528,14 @@ function junkbotMatchPatch(p) {
         return junkbotResponse(campus, { success: true, ok: true, campus: campus, state: state, unchanged: true });
       }
       return { success: false, error: '本場已完成並鎖定，不能重開、重賽或改判' };
+    }
+    if (state.draw && state.draw.method === 'nine-groups-eight-v2' && item.venue === 'MAIN') {
+      const groups = state.venuePlan && state.venuePlan.groups;
+      if (!state.venuePlan || !state.venuePlan.mainDraw || state.venuePlan.mainDraw.status !== 'drawn'
+          || !Array.isArray(groups) || groups.length !== 9
+          || groups.some(function(g) { return !(state.matches || []).some(function(m) { return m.id === g.winnerMatchId && m.status === 'completed'; }); })) {
+        return junkbotResponse(campus, { success: false, code: 'MAIN_DRAW_REQUIRED', error: '九組完成並確認主舞台抽籤後，才能開啟主舞台賽事' });
+      }
     }
     if ((item.participantIds || []).filter(Boolean).length !== 2) {
       return { success: false, error: '本場選手尚未確定，不能開賽' };

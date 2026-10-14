@@ -16,6 +16,8 @@
     const teams = new Map(data.teams.map((team) => [team.id, team]));
     const matches = new Map(data.matches.map((match) => [match.id, match]));
     const groups = new Map(data.groups.map((group) => [group.id, group]));
+    const nineGroup = data.groups.length === 9 && data.groups.every((group) => group.teamIds?.length === 8);
+    const mainDraw = data.mainDraw || {};
     const number = (id) => teams.get(id)?.teamNumber ?? '—';
     const team = (id) => {
       const item = teams.get(id);
@@ -50,11 +52,13 @@
       return `${call(slot.matchId)} ${slot.outcome === 'loser' ? '敗隊' : '勝隊'}`;
     }
     function round(match) {
+      if (match.venue === 'MAIN' && (match.roundSize === 9 || match.id === 'MAIN-Q')) return '九進八';
       if (match.stage === 'qualification') return '資格賽';
       if (match.groupId) return ({ 8: '組內八強', 4: '組內四強', 2: '組冠軍賽' })[match.groupRoundSize] || match.label || '組內賽';
       return match.label || ({ 8: '八強賽', 4: '準決賽' })[match.roundSize] || '主舞台';
     }
     function destination(match) {
+      if (nineGroup && match.groupId && groups.get(match.groupId)?.winnerMatchId === match.id && !match.nextMatchId) return '主舞台現場抽籤';
       const next = match.nextMatchId ? `${call(match.nextMatchId)}` : (match.id === 'MAIN-BRONZE' || /BRONZE/i.test(match.id) ? '季軍' : '冠軍');
       const prefix = match.nextMatchId && matches.get(match.nextMatchId)?.venue === 'MAIN' && match.venue !== 'MAIN' ? '主舞台 ' : '';
       return `${prefix}${next}${match.loserNextMatchId ? `；敗隊至 ${call(match.loserNextMatchId)}` : ''}`;
@@ -63,7 +67,7 @@
       const ids = data.venueSchedules?.[venue];
       return Array.isArray(ids) ? ids.map((id) => matches.get(id)).filter(Boolean) : data.matches.filter((match) => match.venue === venue).sort((a, b) => (a.venueOrder || 0) - (b.venueOrder || 0));
     };
-    return { data, teams, matches, groups, number, team, call, participantId, participant, round, destination, schedule };
+    return { data, teams, matches, groups, number, team, call, participantId, participant, round, destination, schedule, nineGroup, mainDraw };
   }
   function heading(title, subtitle) {
     return `<div class="vp-page-heading"><h2>${escape(title)}</h2><p>${escape(subtitle)}</p></div>`;
@@ -85,16 +89,18 @@
     const matches = (group.matchIds || []).map((id) => ctx.matches.get(id)).filter(Boolean);
     const sorted = [...ids].sort((a, b) => Number(ctx.number(a)) - Number(ctx.number(b)));
     const qualifier = matches.find((match) => match.stage === 'qualification');
-    const note = qualifier ? `${qualifier.callCode} 資格賽：${ctx.participant(qualifier, 0)} vs ${ctx.participant(qualifier, 1)}。勝隊進入組內八強。` : '資格賽以本組對戰表為準。';
+    const note = ctx.nineGroup ? '本組 8 隊從同一輪開始，8 → 4 → 2 → 1；無資格賽、無輪空，連勝 3 場者為組冠軍。組冠軍前往主舞台重新抽籤。' : qualifier ? `${qualifier.callCode} 資格賽：${ctx.participant(qualifier, 0)} vs ${ctx.participant(qualifier, 1)}。勝隊進入組內八強。` : '資格賽以本組對戰表為準。';
     const rosterRows = sorted.map((id) => {
       const item = ctx.teams.get(id) || {};
       // First fixture always means the original draw's entry, even after results exist.
       const first = matches.find((match) => match.slots?.some((slot) => slot.teamId === id));
       const slot = first?.slots?.findIndex((side) => side.teamId === id) ?? -1;
       const opponent = first && slot >= 0 ? ctx.participant(first, 1 - slot) : '待確認';
-      return `<tr><td class="vp-number">${escape(item.teamNumber)}</td><td>${escape(item.teamName || '未填隊名')}</td><td>${escape(item.playerName || '—')}</td><td>${qualifiers.has(id) ? '<strong>先打資格賽</strong>' : '直接進組內八強'}</td><td class="vp-code">${escape(first?.callCode || '—')}</td><td>${escape(opponent)}</td></tr>`;
+      return `<tr><td class="vp-number">${escape(item.teamNumber)}</td><td>${escape(item.teamName || '未填隊名')}</td><td>${escape(item.playerName || '—')}</td><td>${ctx.nineGroup ? '組內八強' : qualifiers.has(id) ? '<strong>先打資格賽</strong>' : '直接進組內八強'}</td><td class="vp-code">${escape(first?.callCode || '—')}</td><td>${escape(opponent)}</td></tr>`;
     }).join('');
-    return { venue: group.venue, kind: 'group', title: `${venueName(group.venue)}・${group.id} 組`, html: `${heading(`${venueName(group.venue)} ｜ ${group.id} 組`, `${ids.length} 隊・${matches.length} 場・取 1 隊前往主舞台 ${ctx.call(group.winnerMainMatchId)}`)}<div class="vp-key-note">${escape(note)}</div><h3>參賽名單與首場報到</h3><table class="vp-table vp-roster"><colgroup><col style="width:7%"><col style="width:25%"><col style="width:12%"><col style="width:17%"><col style="width:10%"><col style="width:29%"></colgroup><thead><tr><th>隊號</th><th>隊伍名稱</th><th>選手姓名</th><th>入賽方式</th><th>首場叫號</th><th>首場對手</th></tr></thead><tbody>${rosterRows}</tbody></table><p class="vp-small-note">隊號沿用原報名編號；缺號不補號。資格賽 ${qualifiers.size} 隊，另 ${ids.length - qualifiers.size} 隊直接進組內八強。</p><h3>本組完整對戰與晉級</h3>${fixtureTable(matches, ctx, false)}<p class="vp-small-note">依「叫號」到 ${venueName(group.venue)} 報到；勝隊依表列場次續賽。本組冠軍前往主舞台，時間以現場公告為準。</p>${signoff('本組晉級隊號')}<div class="vp-notes">備註：________________________________________________________________________________</div>` };
+    const mainDestination = group.winnerMainMatchId ? ctx.call(group.winnerMainMatchId) : ctx.nineGroup ? '現場抽籤' : '待確認';
+    const rosterNote = ctx.nineGroup ? '隊號沿用原報名編號；缺號不補號。全組 8 隊均從組內八強起賽，沒有輪空。' : `隊號沿用原報名編號；缺號不補號。資格賽 ${qualifiers.size} 隊，另 ${ids.length - qualifiers.size} 隊直接進組內八強。`;
+    return { venue: group.venue, kind: 'group', title: `${venueName(group.venue)}・${group.id} 組`, html: `${heading(`${venueName(group.venue)} ｜ ${group.id} 組`, `${ids.length} 隊・${matches.length} 場・取 1 隊前往主舞台 ${mainDestination}`)}<div class="vp-key-note">${escape(note)}</div><h3>參賽名單與首場報到</h3><table class="vp-table vp-roster"><colgroup><col style="width:7%"><col style="width:25%"><col style="width:12%"><col style="width:17%"><col style="width:10%"><col style="width:29%"></colgroup><thead><tr><th>隊號</th><th>隊伍名稱</th><th>選手姓名</th><th>${ctx.nineGroup ? '起賽輪次' : '入賽方式'}</th><th>首場叫號</th><th>首場對手</th></tr></thead><tbody>${rosterRows}</tbody></table><p class="vp-small-note">${escape(rosterNote)}</p><h3>本組完整對戰與晉級</h3>${fixtureTable(matches, ctx, false)}<p class="vp-small-note">依「叫號」到 ${venueName(group.venue)} 報到；勝隊依表列場次續賽。本組冠軍前往主舞台，時間以現場公告為準。</p>${signoff('本組晉級隊號')}<div class="vp-notes">備註：________________________________________________________________________________</div>` };
   }
   function venueCallPages(venue, ctx) {
     const matches = ctx.schedule(venue);
@@ -103,7 +109,7 @@
     const pageSize = 12;
     for (let start = 0; start < matches.length; start += pageSize) {
       const slice = matches.slice(start, start + pageSize);
-      pages.push({ venue, kind: 'schedule', title: `${venueName(venue)}・叫號總表`, html: `${heading(`${venueName(venue)} ｜ 賽務叫號總表`, `第 ${start + 1}–${start + slice.length} 場／共 ${matches.length} 場 · ${groups.map((group) => group.id).join('、')} · 共 ${groups.reduce((count, group) => count + group.teamIds.length, 0)} 隊`)}<div class="vp-key-note">${groups.map((group) => `${escape(group.id)} 組取 1 隊`).join('；')}，共 ${groups.length} 隊晉級主舞台八強。每場勝隊依「勝隊前往」欄接續賽程。</div>${fixtureTable(slice, ctx, true)}<div class="vp-call-guidance"><h3>現場執行</h3><p>1. 叫號前確認雙方隊號、隊名與裁判。</p><p>2. 紀錄勝隊後，告知下一場叫號；請預留選手整理機器人的時間。</p><p>3. 叫號為建議順序；遇等待前場賽果或準備未完成，由賽務調整實際開賽時間。</p></div>${signoff('場地負責人')}<div class="vp-notes">異動／備註：___________________________________________________________________________</div>` });
+      pages.push({ venue, kind: 'schedule', title: `${venueName(venue)}・叫號總表`, html: `${heading(`${venueName(venue)} ｜ 賽務叫號總表`, `第 ${start + 1}–${start + slice.length} 場／共 ${matches.length} 場 · ${groups.map((group) => group.id).join('、')} · 共 ${groups.reduce((count, group) => count + group.teamIds.length, 0)} 隊`)}<div class="vp-key-note">${groups.map((group) => `${escape(group.id)} 組取 1 隊`).join('；')}，共 ${groups.length} 隊晉級${ctx.nineGroup ? '主舞台，待九組冠軍到齊後現場抽籤' : '主舞台八強'}。每場勝隊依「勝隊前往」欄接續賽程。</div>${fixtureTable(slice, ctx, true)}<div class="vp-call-guidance"><h3>現場執行</h3><p>1. 叫號前確認雙方隊號、隊名與裁判。</p><p>2. 紀錄勝隊後，告知下一場叫號；請預留選手整理機器人的時間。</p><p>3. 叫號為建議順序；遇等待前場賽果或準備未完成，由賽務調整實際開賽時間。</p></div>${signoff('場地負責人')}<div class="vp-notes">異動／備註：___________________________________________________________________________</div>` });
     }
     return pages;
   }
@@ -116,6 +122,38 @@
     }).join('');
     return { venue: 'MAIN', kind: 'main', title: '主舞台・八強決賽', html: `${heading('主舞台 ｜ 八強・決賽賽務表', '8 組冠軍報到・八強 4 場・準決賽 2 場・季軍賽 1 場・冠軍賽 1 場')}<div class="vp-key-note">八強起集中主舞台。評審 A 登錄正式結果，評審 B、C 協同判定。</div><h3>八強報到名單</h3><table class="vp-table vp-main-roster"><colgroup><col style="width:10%"><col style="width:14%"><col style="width:49%"><col style="width:13%"><col style="width:14%"></colgroup><thead><tr><th>晉級組別</th><th>原場地</th><th>組冠軍隊伍</th><th>八強叫號</th><th>報到</th></tr></thead><tbody>${rows}</tbody></table><h3>主舞台完整對戰</h3>${fixtureTable(matches, ctx, false)}<p class="vp-small-note">準決賽勝隊進入冠軍賽，敗隊進入季軍賽。表列賽果須經現場裁判確認。</p>${signoff('主舞台負責人')}<div class="vp-awards"><span>冠軍隊號：________</span><span>亞軍隊號：________</span><span>季軍隊號：________</span></div>` };
   }
+  function mainGroupRows(ctx, includeCall) {
+    return ctx.data.groups.map((group) => {
+      const final = ctx.matches.get(group.winnerMatchId);
+      const winner = final?.winnerId || final?.winnerTeamId;
+      const teamText = ctx.teams.has(winner) ? ctx.team(winner) : '隊號：________　隊名：________________';
+      return `<tr><td><strong>${escape(group.id)}</strong></td><td>${escape(venueName(group.venue))}</td><td>${escape(teamText)}</td>${includeCall ? `<td class="vp-code">${escape(ctx.call(group.winnerMainMatchId))}</td>` : ''}<td>□ 已報到</td></tr>`;
+    }).join('');
+  }
+  function mainPendingPage(ctx) {
+    const slots = Array.from({ length: 9 }, (_, index) => {
+      const position = index + 1;
+      return `<tr><td class="vp-number">${position}</td><td>組別：______　隊號：______</td><td>${position <= 2 ? '<strong>九進八先賽</strong>' : '首輪輪空，八強起賽'}</td><td>________________</td></tr>`;
+    }).join('');
+    return { venue: 'MAIN', kind: 'main-pending', title: '主舞台・現場抽籤登錄', html: `${heading('主舞台 ｜ 現場抽籤登錄表', '9 組冠軍全數上主舞台 · 未抽籤 · 此頁為登錄用紙，尚未產生正式對戰')}<div class="vp-key-note"><strong>籤位 1、2 先打一場九進八；籤位 3–9 首輪輪空，從八強開始。</strong>九隊以相同機會抽籤決定位置，不依原場地或組別指定種子。三位評審共同執行，評審 A 登錄結果。</div><h3>一、九組冠軍報到</h3><table class="vp-table vp-main-roster"><colgroup><col style="width:11%"><col style="width:14%"><col style="width:59%"><col style="width:16%"></colgroup><thead><tr><th>晉級組別</th><th>原場地</th><th>組冠軍隊伍</th><th>報到</th></tr></thead><tbody>${mainGroupRows(ctx, false)}</tbody></table><h3>二、現場抽籤結果登錄</h3><table class="vp-table vp-lot-table"><colgroup><col style="width:9%"><col style="width:40%"><col style="width:28%"><col style="width:23%"></colgroup><thead><tr><th>籤位</th><th>抽中隊伍</th><th>起賽輪次</th><th>確認簽名</th></tr></thead><tbody>${slots}</tbody></table><p class="vp-small-note">八強位置：〔1、2 的勝隊〕對 3；4 對 5；6 對 7；8 對 9。九個籤位各使用一次；核對九組冠軍名單後，將抽籤結果登錄系統，再列印正式主舞台賽程。</p>${signoff('抽籤主持／見證')}<div class="vp-notes">抽籤時間：________________　備註：________________________________________________</div>` };
+  }
+  function mainDrawnPages(ctx) {
+    const matches = ctx.schedule('MAIN');
+    const positions = Array.isArray(ctx.mainDraw.positions) ? ctx.mainDraw.positions : [];
+    const rows = Array.from({ length: 9 }, (_, index) => {
+      const id = positions[index];
+      const group = ctx.data.groups.find((item) => item.teamIds?.includes(id));
+      const first = matches.find((match) => match.slots?.some((slot) => slot.teamId === id));
+      const item = ctx.teams.get(id);
+      return `<tr><td class="vp-number">${index + 1}</td><td>${escape(group?.id || '待確認')}</td><td>${escape(ctx.team(id))}</td><td>${escape(item?.playerName || '—')}</td><td>${index < 2 ? '九進八' : '首輪輪空'}<br><strong>${escape(first?.callCode || ctx.call(group?.winnerMainMatchId))}</strong></td><td>□ 已報到</td></tr>`;
+    }).join('');
+    const method = ctx.mainDraw.method === 'onsite-lots' ? '現場抽籤登錄' : ctx.mainDraw.method === 'computer-random' ? '電腦隨機抽籤' : '抽籤結果';
+    const drawNote = `${method} · ${dateText(ctx.mainDraw.drawnAt)} · 登錄：${ctx.mainDraw.operatorName || '未提供'}`;
+    return [
+      { venue: 'MAIN', kind: 'main-draw', title: '主舞台・抽籤與報到名單', html: `${heading('主舞台 ｜ 抽籤與報到名單', '9 組冠軍 · 籤位 1–9 · 依已登錄的抽籤結果列印')}<div class="vp-key-note"><strong>籤位 1、2 先進行九進八；籤位 3–9 首輪輪空，從八強開始。</strong>主舞台九隊重新抽籤決定位置；原場地 A、B、C 不預先指定晉級位置。</div><p class="vp-small-note">${escape(drawNote)}</p><table class="vp-table vp-main-drawn-roster"><colgroup><col style="width:8%"><col style="width:10%"><col style="width:35%"><col style="width:15%"><col style="width:17%"><col style="width:15%"></colgroup><thead><tr><th>籤位</th><th>原組別</th><th>隊號與隊名</th><th>選手姓名</th><th>首場</th><th>報到</th></tr></thead><tbody>${rows}</tbody></table><div class="vp-call-guidance"><h3>現場核對</h3><p>1. 逐一核對九位組冠軍的原隊號、組別與籤位；隊號沿用原報名編號。</p><p>2. 籤位 1、2 的勝隊進入八強，對戰籤位 3；其餘八強配對為 4 對 5、6 對 7、8 對 9。</p><p>3. 完整叫號及對戰表見下一頁。三位評審共同執行，評審 A 登錄正式結果，評審 B、C 協同判定。</p></div>${signoff('抽籤主持／見證')}<div class="vp-notes">異動／備註：___________________________________________________________________________</div>` },
+      { venue: 'MAIN', kind: 'main-fixtures', title: '主舞台・完整對戰', html: `${heading('主舞台 ｜ 九強至決賽對戰表', '九進八 1 場 · 八強 4 場 · 準決賽 2 場 · 季軍賽 1 場 · 冠軍賽 1 場')}<div class="vp-key-note">主舞台獨立叫號，共 9 場。評審 A 登錄正式結果，評審 B、C 協同判定。請依前頁籤位名單及下表確認選手。</div><h3>主舞台完整對戰與晉級</h3>${fixtureTable(matches, ctx, false)}<p class="vp-small-note">準決賽勝隊進入冠軍賽，敗隊進入季軍賽。表列賽果須經現場裁判確認；勝隊依「勝隊前往」欄續賽。</p>${signoff('主舞台負責人')}<div class="vp-awards"><span>冠軍隊號：________</span><span>亞軍隊號：________</span><span>季軍隊號：________</span></div><div class="vp-notes">異動／備註：___________________________________________________________________________</div>` }
+    ];
+  }
   function render(data, scope) {
     const selected = scope == null ? 'all' : String(scope).toUpperCase();
     if (selected !== 'ALL' && selected !== 'all' && !SCOPES.includes(selected)) throw new Error('請選擇場地 A、B、C 或主舞台。');
@@ -123,7 +161,7 @@
     const venues = selected.toUpperCase() === 'ALL' ? SCOPES : [selected];
     const pages = [];
     venues.forEach((venue) => {
-      if (venue === 'MAIN') pages.push(mainPage(ctx));
+      if (venue === 'MAIN') pages.push(...(ctx.nineGroup ? ctx.mainDraw.status === 'drawn' ? mainDrawnPages(ctx) : [mainPendingPage(ctx)] : [mainPage(ctx)]));
       else {
         data.groups.filter((group) => group.venue === venue).sort((a, b) => a.id.localeCompare(b.id, 'zh-TW', { numeric: true })).forEach((group) => pages.push(groupPage(group, ctx)));
         pages.push(...venueCallPages(venue, ctx));
