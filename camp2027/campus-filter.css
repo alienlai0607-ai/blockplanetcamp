@@ -94,11 +94,11 @@
   .campus-picker-options button { transition:none; }
 }
 
-/* Keep exploring and registering as two clear routes. */
+/* Keep course exploration and coupon information side by side. */
 .hero-world .hero-actions { display:flex;align-items:center;gap:12px; }
 .hero-world .hero-actions .button { min-width:0;gap:12px;padding-inline:22px;white-space:nowrap; }
-.hero-world .hero-actions .hero-register { background:#fff8e9;color:#98452f;border:1px solid #b67b54;box-shadow:none; }
-.hero-world .hero-actions .hero-register:hover { background:#f5e6cc; }
+.hero-world .hero-actions .hero-coupon { background:#fff8e9;color:#98452f;border:1px solid #b67b54;box-shadow:none; }
+.hero-world .hero-actions .hero-coupon:hover { background:#f5e6cc; }
 @media (max-width:700px) {
   .hero-world .hero { grid-template-rows:repeat(8,auto); }
   .hero-world .hero-actions { grid-column:1/-1;grid-row:7;display:grid;grid-template-columns:1.15fr 1fr;gap:10px; }

@@ -456,6 +456,13 @@
     selectTwoDay(id); $('#two-day').scrollIntoView({ block: 'start' });
   }
   window.addEventListener('hashchange', followTwoDayHash);
+  $('#camps .camp-choice-grid').addEventListener('click', event => {
+    const link = event.target.closest('.choice-camp-link');
+    if (link && link.hash === location.hash && twoDayCamps.some(c => '#' + c.id === link.hash)) {
+      event.preventDefault();
+      followTwoDayHash();
+    }
+  });
   if (twoDayCamps.some(c => '#' + c.id === location.hash)) requestAnimationFrame(followTwoDayHash);
 
   // The calendar highlights only confirmed dates. No inferred daily timetable.
@@ -644,8 +651,20 @@
     if (item.question === '沒有積木設計或飛行經驗，可以參加嗎？') answer = `${campusName()}各營隊會依課程內容帶領孩子練習。歡迎告訴我們孩子的年級與經驗，確認適合的課程。`;
     return { ...item, answer };
   }
-  const fiveDayChoice = $('#camps .camp-choice-option[href="#drone"]');
-  const twoDayChoice = $('#camps .camp-choice-option[href="#two-day"]');
+  function renderCampChoices(camps) {
+    const groups = [
+      { id: 'full-term', title: '全期營', camps: camps.filter(c => c.id === 'full-term') },
+      { id: 'five-day', title: '5 日主題', camps: camps.filter(c => c.days === 5) },
+      { id: 'two-day', title: '2 日創作', camps: camps.filter(c => c.days === 2) }
+    ];
+    $('#camps .camp-choice-grid').innerHTML = groups.map(group => `
+      <section class="camp-choice-option" aria-labelledby="choice-${group.id}">
+        <h3 class="choice-interest" id="choice-${group.id}">${group.title}</h3>
+        <ol class="choice-camp-list" role="list">${group.camps.map((camp, index) => `
+          <li><a class="choice-camp-link" href="#${camp.id}"><span class="choice-number" aria-hidden="true">${index + 1}</span><span class="choice-camp-name">${esc(camp.name)}</span><span class="choice-arrow" aria-hidden="true">→</span></a></li>`).join('')}
+        </ol>
+      </section>`).join('');
+  }
   function setCampusVisibility(element, visible) {
     element.setAttribute('data-campus-hidden', '');
     element.hidden = !visible;
@@ -654,6 +673,7 @@
     if (id !== 'all' && !data.classrooms.some(c => c.id === id)) return;
     selectedCampus = id;
     $$('[data-registration-link]').forEach(link => { link.href = `register.html?campus=${id}`; });
+    $$('[data-coupon-link]').forEach(link => { link.href = `coupon.html?campus=${id}`; });
     const camps = availableCamps(), fiveDay = camps.filter(c => c.days === 5), twoDay = camps.filter(c => c.days === 2);
     $$('[data-campus]').forEach(button => button.setAttribute('aria-pressed', String(button.dataset.campus === id)));
     $('#campusSelectionStatus').textContent = id === 'all' ? '目前顯示全部教室的營隊' : `顯示${campusName()}的 ${camps.length} 種營隊`;
@@ -664,9 +684,7 @@
       setCampusVisibility(section.closest('.culture-chapter'), campusAllows(camp));
       $('.camp-facts', section).innerHTML = `<span>${esc(camp.dateLabel)}</span><span>${esc(campClassroom(camp))}</span>`;
     });
-    fiveDayChoice.href = '#' + fiveDay[0].id;
-    $('h3', fiveDayChoice).innerHTML = fiveDay.map(c => `<span>${esc(c.id === 'lego' ? 'LEGO IDEAS' : c.name)}</span>`).join('');
-    $('h3', twoDayChoice).innerHTML = twoDay.map(c => `<span>${esc(c.name.split('｜')[0])}</span>`).join('');
+    renderCampChoices(camps);
     $$('[data-two-day-tab]').forEach(button => setCampusVisibility(button, campusAllows(campById(button.dataset.twoDayTab))));
     $('.two-day-tabs').classList.toggle('has-one-campus-course', twoDay.length === 1);
     $('.two-day-tabs').dataset.courseCount = String(twoDay.length);

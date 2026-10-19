@@ -8,6 +8,11 @@
   const campusIds = new Set(['all', 'north', 'yongkang']);
   const requestedCampus = new URLSearchParams(location.search).get('campus');
   let campus = campusIds.has(requestedCampus) ? requestedCampus : 'all';
+  const coupon = window.CAMPAIGN_COUPON;
+  document.getElementById('registrationCouponTitle').textContent = `冬令營 ${coupon?.discountLabel || '95 折'}優惠券`;
+  document.getElementById('registrationCouponStatus').textContent = coupon?.enabled && coupon.releaseStatus !== 'postponed'
+    ? '領取方式與使用規則'
+    : '開放時間另行公告';
 
   if (!data || !Array.isArray(data.camps)) {
     count.textContent = '營隊資料暫時無法載入，請重新整理。';
@@ -93,6 +98,7 @@
     const camps = data.camps.filter(camp => campus === 'all' || camp.classroomIds.includes(campus));
     filters.forEach(button => button.setAttribute('aria-pressed', String(button.dataset.campus === campus)));
     document.querySelectorAll('[data-home-link]').forEach(link => { link.href = homeUrl(); });
+    document.querySelectorAll('[data-coupon-link]').forEach(link => { link.href = `coupon.html?campus=${campus}`; });
     list.replaceChildren(...camps.map(makeCard));
     count.textContent = `${camps.length} 個營隊`;
   }

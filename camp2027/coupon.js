@@ -8,8 +8,16 @@
   const storagePrefix = config.storagePrefix || 'bp_2027c_coupon';
   const couponKey = `${storagePrefix}_data`;
   const fingerprintKey = `${storagePrefix}_fp`;
-  const home = config.homeUrl || 'index.html';
-  const camps = config.campsUrl || 'index.html#camps';
+  const requestedCampus = new URLSearchParams(location.search).get('campus');
+  const campus = ['north', 'yongkang'].includes(requestedCampus) ? requestedCampus : 'all';
+  function withCampus(value) {
+    const url = new URL(value, location.href);
+    url.searchParams.set('campus', campus);
+    return url.href;
+  }
+  const home = withCampus(config.homeUrl || 'index.html');
+  const camps = withCampus(config.campsUrl || 'index.html#camps');
+  const registrationPage = withCampus('register.html');
   const line = config.lineUrl || 'https://lin.ee/zFqqFzQ';
   const minutes = Number(config.validMinutes) || 60;
   let currentCoupon = null, memoryCoupon = null, memoryFingerprint = null;
@@ -135,7 +143,7 @@
     currentCoupon = saved;
     const savedDetails = saved ? `<section class="saved-coupon" aria-labelledby="saved-title"><h2 id="saved-title">這個瀏覽器保留的領券紀錄</h2><p>這是先前儲存的紀錄，未重新領取或延長期限。是否已套用優惠，請由官方 LINE 核對。</p><output class="coupon-code" id="saved-code">${escapeHtml(saved.code)}</output><button class="copy-code" data-action="copy-saved" type="button">複製原優惠碼 ⧉</button><p>原使用期限：${escapeHtml(new Intl.DateTimeFormat('zh-TW', {timeZone:'Asia/Taipei', year:'numeric', month:'numeric', day:'numeric', hour:'2-digit', minute:'2-digit', hour12:false}).format(new Date(saved.expiresAt)))}（台灣時間）</p>${link(line, 'LINE 核對既有領券紀錄 ↗', 'inline-button', true)}</section>` : '';
     render(ticket(`<span class="status">延後開放</span><p class="stub-label">優惠券領取</p><p class="opening-time">時間另行公告</p><span class="stub-rule"></span><p class="stub-note">新的開放日期與時間，<br>確認後會在這裡公布。</p>`,
-      `<div class="ticket-action"><div><b>優惠券延後公開</b><p>目前暫停領取，先看看冬令營課程。</p></div>${link(camps, '探索冬令營 →', 'primary')}</div>`, 'postponed', savedDetails), 'postponed');
+      `<div class="ticket-action"><div><b>優惠券延後公開</b><p>開放時間另行公告，可先選擇營隊報名。</p></div>${link(registrationPage, '選擇營隊・開始報名 →', 'primary')}</div>`, 'postponed', savedDetails), 'postponed');
   }
   async function copySavedCode() {
     if (!isPostponed() || !currentCoupon) return;
