@@ -54,11 +54,15 @@
 #calendarDetail .calendar-program-picker { display:grid;grid-template-columns:repeat(2,minmax(0,1fr));align-items:stretch;justify-self:stretch;gap:5px;width:100%;max-width:none;box-sizing:border-box; }
 #calendarDetail .calendar-program-picker:has(>button:nth-child(3):last-child) { grid-template-columns:repeat(3,minmax(0,1fr)); }
 #calendarDetail .calendar-program-picker:has(>button:only-child) { grid-template-columns:minmax(0,1fr); }
+#calendarDetail .calendar-program-picker:has(>button:nth-child(5):last-child) { grid-template-columns:repeat(6,minmax(0,1fr)); }
+#calendarDetail .calendar-program-picker:has(>button:nth-child(5):last-child)>button { grid-column:span 2; }
+#calendarDetail .calendar-program-picker:has(>button:nth-child(5):last-child)>button:nth-last-child(-n+2) { grid-column:span 3; }
 #calendarDetail .calendar-program-picker button { width:100%;min-width:0;min-height:44px;margin:0;padding:8px 5px;font-size:15px;line-height:1.45;text-wrap:balance;overflow-wrap:anywhere; }
 #calendarDetail .calendar-periods { align-items:stretch; }
 #calendarDetail .calendar-periods li { max-width:100%;white-space:normal;overflow-wrap:anywhere; }
 #calendar .date-dots .game-lab-dot { background:#437c6e; }
 #calendar .date-dots .aviation-dot { background:#b58233; }
+#calendar .date-dots .lego-dot { background:#8d699f; }
 @media(max-width:1200px) {
   #calendar .calendar-toolbar { grid-template-columns:minmax(0,1fr);gap:10px; }
 }

@@ -218,9 +218,9 @@ window.CAMP_DATA = {
       subtitle: "把中華故事，拼成自己的原創盒組",
       days: 5,
       daysLabel: "5 日特色營",
-      dates: [],
-      dateLabel: "開課日期近期公布",
-      dateNote: "五天獨立主題課程。",
+      dates: ["2027-01-25", "2027-01-26", "2027-01-27", "2027-01-28", "2027-01-29"],
+      dateLabel: "2027/1/25–1/29",
+      dateNote: "與祥龍飛行派對同期，請擇一參加；也與五燈獎全期營重疊。",
       ageLabel: "歡迎 LINE 洽詢適合年齡",
       timeLabel: "每日時段近期公布",
       pickupLabel: "接送安排請 LINE 洽詢",
@@ -238,8 +238,8 @@ window.CAMP_DATA = {
         { title: "盒組發行", description: "設計包裝，完成屬於自己的原創盒組。" }
       ],
       outcome: "從發想到圖解、包裝的原創盒組設計成果。",
-      registration: { kind: "inquiry", label: "LINE 報名", url: "https://lin.ee/zFqqFzQ", note: "向教室了解開課日期、年齡與費用。" },
-      sourceIds: ["lego-poster", "user-confirmed-scope"],
+      registration: { kind: "inquiry", label: "LINE 報名", url: "https://lin.ee/zFqqFzQ", note: "向教室了解年齡、費用與開課教室。" },
+      sourceIds: ["lego-poster", "user-confirmed-scope", "lego-dates-20261019"],
       status: "additional-details-upcoming"
     },
     {
@@ -523,9 +523,9 @@ window.CAMP_DATA = {
       id: "registration", label: "報名與費用", items: [
         { question: "全期營怎麼報名？", answer: "點選「立即報名」可前往五燈獎專屬 Google 表單，閱讀課程、費用及報名說明。特色營可由各營的「LINE 報名」入口聯繫。", action: { label: "前往全期營報名表", url: "https://docs.google.com/forms/d/e/1FAIpQLSfqclQFsLtNujPctIfk_elu3umDNIWr1W6C1MSIs5wc3BIVFg/viewform" }, sourceIds: ["full-term-form"] },
         { question: "全期營費用是多少？", answer: "五燈獎全期營 11/30 前報名享早鳥價 NT$12,000／人，原價 NT$15,000／人。這是 9 日全期營的費用；各特色營的費用將另行公布。", sourceIds: ["full-term-form"] },
-        { question: "可以報名不只一個營隊嗎？", answer: "可以選擇日期不重疊的完整營期。Game Lab 與飛行航空科學營同為 1/21–1/22，兩者擇一；選好兩日營後，可再參加 1/25–1/29 的祥龍飛行派對。這三個特色營都與五燈獎 9 日全期營重疊，同一位孩子不能同時參加全期營與重疊的特色營。玩具設計總監日期未定，追加報名前須先人工核對。", sourceIds: ["full-term-form", "drone-poster", "game-lab-user-20261019", "aviation-user-brief"] },
+        { question: "可以報名不只一個營隊嗎？", answer: "可以。1/21–1/22 的 Game Lab 與飛行航空科學營擇一，接著可再參加 1/25–1/29 的祥龍飛行派對或 LEGO IDEAS 玩具設計總監，五日營也請擇一。這四個特色營都與五燈獎 9 日全期營重疊，同一位孩子不能同時參加全期營與重疊的特色營。", sourceIds: ["full-term-form", "drone-poster", "game-lab-user-20261019", "aviation-user-brief", "lego-dates-20261019"] },
         { question: "想請假、取消或更換梯次，可以怎麼處理？", answer: "請透過 LINE 提供所報名的營隊、教室及希望調整的日期，由教室說明該方案的處理方式。付款前也可以先詢問相關規則。", sourceIds: [] },
-        { question: "特色營的日期與費用什麼時候公布？", answer: "Game Lab 與飛行航空科學營皆為 2027/1/21–1/22 兩日營，祥龍飛行派對為 2027/1/25–1/29 五日營。玩具設計總監的日期，以及各特色營的費用、適合年齡和每日時段，將陸續公布。", sourceIds: ["drone-poster", "user-confirmed-scope"] }
+        { question: "特色營的日期與費用公布了嗎？", answer: "Game Lab 與飛行航空科學營皆為 2027/1/21–1/22 兩日營；祥龍飛行派對與 LEGO IDEAS 玩具設計總監皆為 2027/1/25–1/29 五日營。同日期的主題請擇一參加。各特色營的費用、適合年齡與每日時段將陸續公布。", sourceIds: ["drone-poster", "user-confirmed-scope", "lego-dates-20261019"] }
       ]
     },
     {
@@ -533,12 +533,13 @@ window.CAMP_DATA = {
         { question: "優惠券什麼時候開放？", answer: "優惠券已延後開放，新的開放時間另行公布。目前可先瀏覽各營隊課程與報名資訊。", action: { label: "查看優惠券資訊", url: "coupon.html" }, sourceIds: ["coupon-update-20261019"] },
         { question: "優惠券適用哪些營隊？", answer: "這次 95 折優惠規劃納入五燈獎・大聖鬧辦桌、祥龍飛行派對、LEGO IDEAS 玩具設計總監、Game Lab 遊戲設計師養成營與「機」不可失 飛行航空科學營。兩日營也會納入，正式領取方式將隨開放公告說明。", sourceIds: ["coupon-winter-rules", "coupon-update-20261019"] },
         { question: "領到優惠券後，接著怎麼做？", answer: "正式開放後，領取優惠券、複製優惠碼，並在領取後 60 分鐘內依頁面說明完成報名。一支手機限領一張，限同一位學員使用。", sourceIds: ["coupon-winter-rules"] },
-        { question: "可以用在不只一個營隊嗎？", answer: "同一位學員可在日期不衝堂的營隊追加使用，仍須符合券面期限與報名規則。Game Lab 與飛行航空科學營同為 1/21–1/22，兩者擇一；可再追加 1/25–1/29 的祥龍飛行派對。上述三營皆與五燈獎全期營重疊；玩具設計總監日期未定，須先人工核對後再追加。", sourceIds: ["coupon-winter-rules", "game-lab-user-20261019"] },
+        { question: "可以用在不只一個營隊嗎？", answer: "同一位學員可在日期不衝堂的營隊追加使用，仍須符合券面期限與報名規則。1/21–1/22 的 Game Lab 與飛行航空科學營擇一，可再追加 1/25–1/29 的祥龍飛行派對或 LEGO IDEAS，五日營也請擇一。這四個特色營都與五燈獎全期營重疊，不能與全期營同時追加。", sourceIds: ["coupon-winter-rules", "game-lab-user-20261019", "lego-dates-20261019"] },
         { question: "95 折怎麼算？能和同行優惠合併嗎？", answer: "五燈獎按早鳥價 NT$12,000 計算，95 折為 NT$11,400，五燈獎沒有同行價。其他營隊若有兩人同行價，與 95 折優惠擇優使用、不疊加；各營價格以正式公布資訊為準。", sourceIds: ["coupon-winter-rules"] }
       ]
     }
   ],
   sources: [
+    { id: "lego-dates-20261019", type: "user-confirmation", title: "LEGO IDEAS 五日營日期確認", checkedOn: "2026-10-19", verification: "使用者確認 LEGO IDEAS 五日營為2027年1月25日至29日；同步首頁、課程資料、行事曆與日期重疊說明。費用、年齡、時段、教室與優惠券開放狀態未變更。" },
     { id: "aviation-editorial-20261019", type: "user-provided-copy", title: "「機」不可失｜新春飛行發明家完整課程文案", checkedOn: "2026-10-19", verification: "依使用者本次完整文案更新主副標、首頁摘要、完整介紹與活動敘述；保留從新春發想到裁切組裝、馬達與重心、遙控試飛、反覆修改及配件拆裝重用的過程。此次呈現不作2–3架數量保證；既有日期、費用、時段、教室及報名資料未更動。" },
     { id: "game-lab-user-20261019", type: "user-confirmation", title: "Game Lab 兩日營文案與日期", checkedOn: "2026-10-19", verification: "使用者明確更正為2027年1月21、22日，非2月1、2日；採Microsoft MakeCode Arcade與提供的四項課程文案；費用、年齡、時段、教室與專屬報名表尚未提供。" },
     { id: "game-lab-poster", type: "provided-image", title: "Game Lab 冬令營兩日營海報.png", path: "assets/game-lab-poster.webp", provenance: "assets/two-day-poster-sources.json", checkedOn: "2026-10-19", verification: "採使用者最新提供的含日期版本，已視覺核對1月21、22日、GAME LAB、遊戲設計師養成營、新春功夫副標、兩日營及四項課程；保持原海報內容，只轉換網頁格式。" },

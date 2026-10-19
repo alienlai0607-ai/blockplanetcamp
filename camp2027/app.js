@@ -494,7 +494,7 @@
     const candidateIds = camps.map(c => c.id).join(',');
     // Keep the active button in the DOM so switching programs preserves focus.
     if (picker.dataset.candidates !== candidateIds) {
-      picker.innerHTML = camps.map(c => '<button type="button" data-calendar-camp="' + esc(c.id) + '" aria-controls="calendarProgram" aria-pressed="false">' + esc(({ 'full-term': '五燈獎', drone: '祥龍飛行', 'game-lab': 'Game Lab', aviation: '飛行航空' })[c.id] || c.name) + '</button>').join('');
+      picker.innerHTML = camps.map(c => '<button type="button" data-calendar-camp="' + esc(c.id) + '" aria-controls="calendarProgram" aria-pressed="false">' + esc(({ 'full-term': '五燈獎', drone: '祥龍飛行', lego: 'LEGO', 'game-lab': 'Game Lab', aviation: '飛行航空' })[c.id] || c.name) + '</button>').join('');
       picker.dataset.candidates = candidateIds;
     }
     picker.hidden = camps.length < 2;
@@ -503,7 +503,12 @@
     const camp = camps.find(c => c.id === selectedCalendarCampId);
     const note = $('#calendarOverlapNote');
     note.hidden = !overlaps;
-    note.textContent = camps.some(c => c.days === 2) ? 'Game Lab 與飛行航空皆為 1/21–1/22，請擇一參加；也與五燈獎全期營的前兩天重疊。' : '營期部分日期重疊，請選擇適合孩子的完整營隊。';
+    const hasCamp = id => camps.some(c => c.id === id);
+    const overlapNotes = [];
+    if (hasCamp('game-lab') && hasCamp('aviation')) overlapNotes.push('1/21–1/22：Game Lab、飛行航空擇一。');
+    if (hasCamp('drone') && hasCamp('lego')) overlapNotes.push('1/25–1/29：祥龍飛行、LEGO IDEAS 擇一。');
+    if (hasCamp('full-term') && overlaps) overlapNotes.push('特色營與五燈獎全期營日期重疊，請勿重複報名。');
+    note.textContent = overlapNotes.join(' ') || '營期部分日期重疊，請選擇適合孩子的完整營隊。';
     if (!camp) { $('#calendarProgram').innerHTML = '<p>此日期尚無已公布的營隊。</p>'; return; }
     const periods = camp.dateLabel.split('、');
     const enrolment = camp.id === 'full-term' ? '共 9 天，須完整報名' : '共 ' + camp.days + ' 天，完整營期';
