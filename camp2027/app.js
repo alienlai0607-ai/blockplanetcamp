@@ -7,6 +7,11 @@
   const esc = v => String(v ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
   const ext = 'target="_blank" rel="noopener"';
   const campById = id => data.camps.find(c => c.id === id);
+  let selectedCampus = 'all';
+  const campusAllows = camp => !!camp && (selectedCampus === 'all' || camp.classroomIds.includes(selectedCampus));
+  const availableCamps = () => data.camps.filter(campusAllows);
+  const campusName = () => data.classrooms.find(c => c.id === selectedCampus)?.name || '全部教室';
+  const campClassroom = camp => selectedCampus === 'all' ? camp.classroomLabel : campusName();
   const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)');
   let motionPaused = reducedMotion.matches;
   let userMotionPaused = false;
@@ -205,7 +210,7 @@
     const duration = step => typeof dwell === 'function' ? dwell(step) : dwell;
     let remaining = duration(0);
     const scene = scenes[name];
-    const isPlaying = () => wantsPlayback && canAnimate() && visibleScenes.has(name) && readyScenes.has(name);
+    const isPlaying = () => wantsPlayback && canAnimate() && !scenes[name]?.closest('[hidden]') && visibleScenes.has(name) && readyScenes.has(name);
     function stopTimer(preserveRemaining = true) {
       if (timer !== null && preserveRemaining) remaining = Math.max(0, deadline - performance.now());
       clearTimeout(timer); timer = null;
@@ -408,11 +413,11 @@
       <div class="two-day-story" data-two-day-story="${esc(c.id)}"></div>
       <div class="two-day-copy"><p class="eyebrow">${esc(c.daysLabel)} · 1/21–1/22</p><h3><span class="two-day-course-name">${esc(title)}</span><span class="two-day-course-type">${esc(type)}</span></h3><p class="two-day-subtitle">${esc(c.subtitle)}</p><p>${esc(c.description)}</p>
       <ul>${c.activities.map(activity => `<li>${esc(activity.title)}</li>`).join('')}</ul>
-      <p class="two-day-details-pending">費用、上課時段與教室稍後公布。</p><div class="camp-actions"><button class="button" type="button" data-camp="${esc(c.id)}">看完整課程 <span aria-hidden="true">→</span></button><a class="text-link" href="${esc(c.registration.url)}" ${ext}>LINE 洽詢 ↗</a></div></div>
+      <p class="two-day-campus">${esc(c.classroomLabel)}</p><p class="two-day-details-pending">費用與上課時段稍後公布。</p><div class="camp-actions"><button class="button" type="button" data-camp="${esc(c.id)}">看完整課程 <span aria-hidden="true">→</span></button><a class="text-link" href="${esc(c.registration.url)}" ${ext}>LINE 洽詢 ↗</a></div></div>
     </article>`;
   }).join('');
   function selectTwoDay(id, focus = false) {
-    if (!twoDayCamps.some(c => c.id === id)) return;
+    if (!twoDayCamps.some(c => c.id === id && campusAllows(c))) return;
     $$('[data-two-day-tab]').forEach(button => {
       const selected = button.dataset.twoDayTab === id;
       button.setAttribute('aria-selected', String(selected));
@@ -421,9 +426,11 @@
     });
     twoDayCamps.forEach(c => { $('#panel-' + c.id).hidden = c.id !== id; });
   }
-  $$('[data-two-day-tab]').forEach((button, index, buttons) => {
+  $$('[data-two-day-tab]').forEach(button => {
     button.addEventListener('click', () => selectTwoDay(button.dataset.twoDayTab));
     button.addEventListener('keydown', event => {
+      const buttons = $$('[data-two-day-tab]').filter(el => !el.hidden);
+      const index = buttons.indexOf(button);
       let next;
       if (event.key === 'ArrowRight') next = (index + 1) % buttons.length;
       if (event.key === 'ArrowLeft') next = (index + buttons.length - 1) % buttons.length;
@@ -435,7 +442,7 @@
   });
   function followTwoDayHash() {
     const id = location.hash.slice(1);
-    if (!twoDayCamps.some(c => c.id === id)) return;
+    if (!twoDayCamps.some(c => c.id === id && campusAllows(c))) return;
     selectTwoDay(id); $('#two-day').scrollIntoView({ block: 'start' });
   }
   window.addEventListener('hashchange', followTwoDayHash);
@@ -444,7 +451,7 @@
   // The calendar highlights only confirmed dates. No inferred daily timetable.
   const confirmedCalendarDates = [...new Set(data.camps.flatMap(c => c.dates))].sort();
   let calendarFilter = 'all', selectedDate = null, selectedCalendarCampId = 'full-term';
-  function campsOnDate(date) { return data.camps.filter(c => c.dates.includes(date) && (calendarFilter === 'all' || c.id === calendarFilter)); }
+  function campsOnDate(date) { return availableCamps().filter(c => c.dates.includes(date) && (calendarFilter === 'all' || c.id === calendarFilter)); }
   function dateLabel(date) { const [y,m,d] = date.split('-').map(Number); const weekday = '日一二三四五六'[new Date(y,m-1,d).getDay()]; return `${m} 月 ${d} 日（${weekday}）`; }
   function calendarDate(key) { const [year, month, day] = key.split('-').map(Number); return new Date(year, month - 1, day); }
   function calendarKey(date) { return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`; }
@@ -487,14 +494,14 @@
   function renderCampSchedule() {
     // A date is a way to find a camp, never a one-day registration option.
     const camps = calendarFilter !== 'all'
-      ? data.camps.filter(c => c.id === calendarFilter && c.dates.length)
-      : selectedDate ? campsOnDate(selectedDate) : data.camps.filter(c => c.dates.length);
+      ? availableCamps().filter(c => c.id === calendarFilter && c.dates.length)
+      : selectedDate ? campsOnDate(selectedDate) : availableCamps().filter(c => c.dates.length);
     if (!camps.some(c => c.id === selectedCalendarCampId)) selectedCalendarCampId = camps[0]?.id || null;
     const picker = $('#calendarProgramPicker');
     const candidateIds = camps.map(c => c.id).join(',');
     // Keep the active button in the DOM so switching programs preserves focus.
     if (picker.dataset.candidates !== candidateIds) {
-      picker.innerHTML = camps.map(c => '<button type="button" data-calendar-camp="' + esc(c.id) + '" aria-controls="calendarProgram" aria-pressed="false">' + esc(({ 'full-term': '五燈獎', drone: '祥龍飛行', lego: 'LEGO', 'game-lab': 'Game Lab', aviation: '飛行航空' })[c.id] || c.name) + '</button>').join('');
+      picker.innerHTML = camps.map(c => '<button type="button" data-calendar-camp="' + esc(c.id) + '" aria-controls="calendarProgram" aria-pressed="false">' + esc(({ 'full-term': '五燈獎', drone: '祥龍無人機', lego: 'LEGO', 'game-lab': 'Game Lab', aviation: '飛行航空' })[c.id] || c.name) + '</button>').join('');
       picker.dataset.candidates = candidateIds;
     }
     picker.hidden = camps.length < 2;
@@ -506,14 +513,16 @@
     const hasCamp = id => camps.some(c => c.id === id);
     const overlapNotes = [];
     if (hasCamp('game-lab') && hasCamp('aviation')) overlapNotes.push('1/21–1/22：Game Lab、飛行航空擇一。');
-    if (hasCamp('drone') && hasCamp('lego')) overlapNotes.push('1/25–1/29：祥龍飛行、LEGO IDEAS 擇一。');
+    if (hasCamp('drone') && hasCamp('lego')) overlapNotes.push('1/25–1/29：祥龍無人機、LEGO IDEAS 擇一。');
     if (hasCamp('full-term') && overlaps) overlapNotes.push('特色營與五燈獎全期營日期重疊，請勿重複報名。');
     note.textContent = overlapNotes.join(' ') || '營期部分日期重疊，請選擇適合孩子的完整營隊。';
     if (!camp) { $('#calendarProgram').innerHTML = '<p>此日期尚無已公布的營隊。</p>'; return; }
     const periods = camp.dateLabel.split('、');
-    const enrolment = camp.id === 'full-term' ? '共 9 天，須完整報名' : '共 ' + camp.days + ' 天，完整營期';
+    const enrolment = camp.id === 'full-term' ? '冬令營全期營，須完整報名' : '共 ' + camp.days + ' 天，完整營期';
     const time = /近期公布|稍後公布|待公布/.test(camp.timeLabel) ? '' : '<p class="calendar-program-time">每日 ' + esc(camp.timeLabel) + '</p>';
-    $('#calendarProgram').innerHTML = '<article class="calendar-course"><h3>' + esc(camp.name) + '</h3><p class="calendar-enrolment">' + esc(enrolment) + '</p><ul class="calendar-periods" aria-label="' + esc(camp.name) + '完整上課日期">' + periods.map(period => '<li>' + esc(period) + '</li>').join('') + '</ul>' + time + '<button type="button" data-camp="' + esc(camp.id) + '">查看完整課程與報名 <span aria-hidden="true">→</span></button></article>';
+    const classroom = '<p class="calendar-program-classroom">' + esc(campClassroom(camp)) + '</p>';
+    const restNote = camp.id === 'full-term' ? '<p class="calendar-program-rest">週末休息</p>' : '';
+    $('#calendarProgram').innerHTML = '<article class="calendar-course"><h3>' + esc(camp.name) + '</h3><p class="calendar-enrolment">' + esc(enrolment) + '</p><ul class="calendar-periods" aria-label="' + esc(camp.name) + '完整上課日期">' + periods.map(period => '<li>' + esc(period) + '</li>').join('') + '</ul>' + time + classroom + restNote + '<button type="button" data-camp="' + esc(camp.id) + '">查看完整課程與報名 <span aria-hidden="true">→</span></button></article>';
   }
   $('#calendarProgramPicker').addEventListener('click', event => {
     const button = event.target.closest('[data-calendar-camp]');
@@ -522,6 +531,7 @@
     renderCampSchedule();
   });
   $$('[data-calendar-filter]').forEach(button => button.addEventListener('click', () => {
+    if (button.hidden) return;
     calendarFilter = button.dataset.calendarFilter;
     $$('[data-calendar-filter]').forEach(el => el.setAttribute('aria-pressed', String(el === button)));
     selectedDate = null;
@@ -565,13 +575,13 @@
   }
 
   function openCamp(id, trigger) {
-    const c = campById(id); if (!c) return;
+    const c = campById(id); if (!campusAllows(c)) return;
     lastDialogTrigger = trigger;
     const facts = id === 'full-term'
-      ? [['dates', '課程日期', c.dateLabel], ['age', '適合對象', c.ageLabel], ['time', '每日時間', c.timeLabel], ['classroom', '上課教室', c.classroomLabel], ['price', '課程費用', c.priceLabel]]
-      : [['dates', '課程日期', c.dateLabel], ['price', '課程費用', c.priceLabel]];
-    const factsMarkup = '<div class="dialog-facts">' + facts.map(([key, label, value]) => '<div data-fact="' + key + '"><span>' + esc(label) + '</span>' + esc(value) + (key === 'price' && c.pricing ? '<p class="dialog-price-note">' + esc(c.priceNote).replace('，原價', '，<br>原價') + '</p>' : '') + '</div>').join('') + '</div>' + (id === 'full-term' ? '' : '<p class="dialog-unknown-note">年齡、上課時段與教室將另行公布。</p>');
-    const fullTermExtras = id === 'full-term' ? '<section class="course-journey" aria-labelledby="courseJourneyTitle"><h3 id="courseJourneyTitle">9 天的文化旅程</h3><ul class="period-list">' + data.itinerary.periods.map(p => '<li><small>' + esc(p.dateLabel) + ' · ' + p.days + ' 天</small><h4>' + esc(p.title) + '</h4><p>' + esc(p.description) + '</p></li>').join('') + '</ul><p class="dialog-note">' + esc(data.itinerary.note) + '</p><div class="dialog-event"><h4>2/2 晚上，邀請爸媽來作客。</h4><p>' + esc(c.parentEvent.description) + '<br>' + esc(c.parentEvent.note) + '</p></div></section>' : '';
+      ? [['dates', '課程日期', c.dateLabel], ['age', '適合對象', c.ageLabel], ['time', '每日時間', c.timeLabel], ['classroom', '上課教室', campClassroom(c)], ['price', '課程費用', c.priceLabel]]
+      : [['dates', '課程日期', c.dateLabel], ['classroom', '上課教室', campClassroom(c)], ['price', '課程費用', c.priceLabel]];
+    const factsMarkup = '<div class="dialog-facts">' + facts.map(([key, label, value]) => '<div data-fact="' + key + '"><span>' + esc(label) + '</span>' + esc(value) + (key === 'price' && c.pricing ? '<p class="dialog-price-note">' + esc(c.priceNote).replace('，原價', '，<br>原價') + '</p>' : '') + '</div>').join('') + '</div>' + (id === 'full-term' ? '<p class="dialog-unknown-note">週末休息，請完整參與營期。</p>' : '<p class="dialog-unknown-note">年齡與上課時段將另行公布。</p>');
+    const fullTermExtras = id === 'full-term' ? '<section class="course-journey" aria-labelledby="courseJourneyTitle"><h3 id="courseJourneyTitle">寒假的文化旅程</h3><ul class="period-list">' + data.itinerary.periods.map(p => '<li><small>' + esc(p.label) + '</small><h4>' + esc(p.title) + '</h4><p>' + esc(p.description) + '</p></li>').join('') + '</ul><p class="dialog-note">' + esc(data.itinerary.note) + '</p><div class="dialog-event"><h4>2/2 晚上，邀請爸媽來作客。</h4><p>' + esc(c.parentEvent.description) + '<br>' + esc(c.parentEvent.note) + '</p></div></section>' : '';
     const poster = c.poster ? '<figure class="dialog-poster"><a href="' + esc(c.poster) + '" ' + ext + ' aria-label="開啟' + esc(c.name) + '完整海報"><picture><source type="image/avif" srcset="' + esc(c.poster.replace(/\.webp$/, '.avif')) + '"><img src="' + esc(c.poster) + '" alt="' + esc(c.name) + '完整課程海報" loading="eager" fetchpriority="high" decoding="async"></picture></a><figcaption>點開查看完整海報 <span aria-hidden="true">↗</span></figcaption></figure>' : '';
     const couponEntry = '<p class="dialog-coupon-pending">優惠券開放時間將另行公布。<a href="coupon.html">查看說明 ↗</a></p>';
     const actions = '<div class="dialog-actions"><a href="' + esc(c.registration.url) + '" ' + ext + ' class="button">' + esc(c.registration.label) + ' <span aria-hidden="true">↗</span></a></div>';
@@ -603,12 +613,83 @@
 
   const faqShortLabels = { choosing: '選營隊', 'daily-life': '營隊生活', registration: '報名費用', coupon: '優惠券' };
   $('#faqCategories').innerHTML = data.faqGroups.map((group, i) => `<button data-faq="${esc(group.id)}" aria-pressed="${i === 0}" aria-controls="faqList"><span class="faq-label-full">${esc(group.label)}</span><span class="faq-label-short">${esc(faqShortLabels[group.id] || group.label)}</span></button>`).join('');
+  let currentFaqId = data.faqGroups[0].id;
   function renderFaq(id) {
+    currentFaqId = id;
     const group = data.faqGroups.find(g => g.id === id);
-    $('#faqList').innerHTML = group.items.map(item => `<details><summary>${esc(item.question)}</summary><div class="faq-answer"><p>${esc(item.answer)}</p>${item.action ? `<a href="${esc(item.action.url)}" ${item.action.url.startsWith('https:') ? ext : ''}>${esc(item.action.label)} ↗</a>` : ''}</div></details>`).join('');
+    $('#faqList').innerHTML = group.items.map(campusFaqItem).map(item => `<details><summary>${esc(item.question)}</summary><div class="faq-answer"><p>${esc(item.answer)}</p>${item.action ? `<a href="${esc(item.action.url)}" ${item.action.url.startsWith('https:') ? ext : ''}>${esc(item.action.label)} ↗</a>` : ''}</div></details>`).join('');
     $$('[data-faq]').forEach(el => el.setAttribute('aria-pressed', String(el.dataset.faq === id)));
   }
   $$('[data-faq]').forEach(button => button.addEventListener('click', () => renderFaq(button.dataset.faq)));
   renderFaq(data.faqGroups[0].id);
-  $('#classrooms').innerHTML = data.classrooms.map(c => `<article class="classroom"><h3>${esc(c.name)}</h3><p>${esc(c.address)}</p><div class="contact-links"><a href="${esc(c.phoneHref)}">${esc(c.phone)}</a><a href="${esc(c.mapUrl)}" ${ext}>開啟地圖 ↗</a></div></article>`).join('');
+  function renderClassrooms() {
+    $('#classrooms').innerHTML = data.classrooms.filter(c => selectedCampus === 'all' || c.id === selectedCampus).map(c => `<article class="classroom"><h3>${esc(c.name)}</h3><p>${esc(c.address)}</p><div class="contact-links"><a href="${esc(c.phoneHref)}">${esc(c.phone)}</a><a href="${esc(c.mapUrl)}" ${ext}>開啟地圖 ↗</a></div></article>`).join('');
+  }
+
+  // One campus selection drives every course surface without rebuilding story players.
+  function campusFaqItem(item) {
+    if (selectedCampus === 'all') return item;
+    const camps = availableCamps(), specialties = camps.filter(c => c.id !== 'full-term');
+    const twoDay = specialties.find(c => c.days === 2);
+    const fiveDay = specialties.filter(c => c.days === 5);
+    const names = list => list.map(c => c.name).join('、');
+    const combinations = `可先參加 1/21–1/22 的${twoDay.name}，再參加 1/25–1/29 的${fiveDay.map(c => c.name).join('或')}。${fiveDay.length > 1 ? '同日期五日營請擇一參加。' : ''}特色營均與冬令營全期營日期重疊，請勿重複報名。`;
+    let answer = item.answer;
+    if (item.question === '全期營有包含樂高營或飛行營嗎？') answer = `沒有。冬令營全期營是「五燈獎・大聖鬧辦桌」的完整課程；${campusName()}的特色營有${names(specialties)}，各有自己的課程與報名入口。`;
+    if (item.question === '2 日營有哪些主題？') answer = `${campusName()}的兩日營為${twoDay.name}，日期為 2027/1/21–1/22。${twoDay.description}`;
+    if (item.question === '在哪裡上課？') {
+      const classroom = data.classrooms.find(c => c.id === selectedCampus);
+      answer = `${classroom.name}：${classroom.address}。本教室開設冬令營全期營，以及${names(specialties)}。`;
+    }
+    if (item.question === '可以報名不只一個營隊嗎？') answer = combinations;
+    if (item.question === '特色營的日期與費用公布了嗎？') answer = `${campusName()}的${twoDay.name}為 2027/1/21–1/22 兩日營；${names(fiveDay)}為 2027/1/25–1/29 五日營。費用、適合年齡與每日時段將陸續公布。`;
+    if (item.question === '優惠券適用哪些營隊？') answer = `95 折優惠規劃納入${campusName()}的冬令營全期營，以及${names(specialties)}。優惠券延後公開，正式領取方式另行公告。`;
+    if (item.question === '可以用在不只一個營隊嗎？') answer = `同一位學員可在日期不衝堂的營隊追加使用，仍須符合券面期限與報名規則。${combinations}`;
+    if (item.question === '沒有積木設計或飛行經驗，可以參加嗎？') answer = `${campusName()}各營隊會依課程內容帶領孩子練習。歡迎告訴我們孩子的年級與經驗，確認適合的課程。`;
+    return { ...item, answer };
+  }
+  const fiveDayChoice = $('#camps .camp-choice-option[href="#drone"]');
+  const twoDayChoice = $('#camps .camp-choice-option[href="#two-day"]');
+  function setCampusVisibility(element, visible) {
+    element.setAttribute('data-campus-hidden', '');
+    element.hidden = !visible;
+  }
+  function applyCampus(id) {
+    if (id !== 'all' && !data.classrooms.some(c => c.id === id)) return;
+    selectedCampus = id;
+    const camps = availableCamps(), fiveDay = camps.filter(c => c.days === 5), twoDay = camps.filter(c => c.days === 2);
+    $$('[data-campus]').forEach(button => button.setAttribute('aria-pressed', String(button.dataset.campus === id)));
+    $('#campusSelectionStatus').textContent = id === 'all' ? '目前顯示全部教室的營隊' : `顯示${campusName()}的 ${camps.length} 種營隊`;
+    $('.hero-location').innerHTML = esc(id === 'all' ? '台南北區・東橋' : id === 'yongkang' ? '永康東橋教室' : campusName()) + ' <span>各營隊獨立報名</span>';
+    $('.hero-note').innerHTML = (id === 'yongkang' ? '玩文化、設計原創玩具、發明飛行器，' : id === 'north' ? '玩文化、操控無人機、設計玩具與遊戲，' : '玩文化、操控無人機、設計原創玩具，') + '<br>把寒假過成一場創作冒險。';
+    ['full-term', 'drone', 'lego'].forEach(campId => {
+      const camp = campById(campId), section = $('#' + campId);
+      setCampusVisibility(section.closest('.culture-chapter'), campusAllows(camp));
+      $('.camp-facts', section).innerHTML = `<span>${esc(camp.dateLabel)}</span><span>${esc(campClassroom(camp))}</span>`;
+    });
+    fiveDayChoice.href = '#' + fiveDay[0].id;
+    $('h3', fiveDayChoice).innerHTML = fiveDay.map(c => esc(c.id === 'lego' ? 'LEGO IDEAS' : c.name)).join('<br>');
+    $('.choice-duration', fiveDayChoice).textContent = fiveDay.length > 1 ? '飛無人機・設計玩具' : '設計玩具';
+    $('.choice-description', fiveDayChoice).textContent = fiveDay.length > 1 ? '選一個主題，深入練習與創作' : '從自己的點子，完成原創盒組';
+    $('h3', twoDayChoice).innerHTML = twoDay.map(c => esc(c.id === 'game-lab' ? 'Game Lab' : '「機」不可失')).join('<br>');
+    $('.choice-duration', twoDayChoice).textContent = twoDay.length > 1 ? '做遊戲・造飛機' : twoDay[0].id === 'game-lab' ? '做遊戲' : '造飛機';
+    $('.choice-description', twoDayChoice).textContent = twoDay.length > 1 ? '1/21–1/22，兩種主題擇一體驗' : '1/21–1/22，兩天做出自己的作品';
+    $$('[data-two-day-tab]').forEach(button => setCampusVisibility(button, campusAllows(campById(button.dataset.twoDayTab))));
+    $('.two-day-tabs').classList.toggle('has-one-campus-course', twoDay.length === 1);
+    const activeTab = $('[data-two-day-tab][aria-selected="true"]');
+    selectTwoDay(twoDay.some(c => c.id === activeTab?.dataset.twoDayTab) ? activeTab.dataset.twoDayTab : twoDay[0].id);
+    $('#twoDayChoiceHelp').hidden = twoDay.length === 1;
+    $('.two-day-intro').textContent = twoDay.length > 1 ? '兩個不同營隊，同日期擇一參加。' : `在${campusName()}，兩天做出自己的作品。`;
+    $('.two-day-schedule-note').textContent = twoDay.length > 1 ? '兩個兩日營皆於 1/21、1/22 上課，請擇一參加；這兩天也包含在五燈獎冬令營全期營中。' : '本營於 1/21–1/22 上課，與冬令營全期營日期重疊，請擇一參加。';
+    $$('[data-calendar-filter]').forEach(button => setCampusVisibility(button, button.dataset.calendarFilter === 'all' || campusAllows(campById(button.dataset.calendarFilter))));
+    if (calendarFilter !== 'all' && !campusAllows(campById(calendarFilter))) calendarFilter = 'all';
+    selectedDate = null;
+    $$('[data-calendar-filter]').forEach(button => button.setAttribute('aria-pressed', String(button.dataset.calendarFilter === calendarFilter)));
+    renderCalendars();
+    renderFaq(currentFaqId);
+    renderClassrooms();
+    syncScenePlayback();
+  }
+  $$('[data-campus]').forEach(button => button.addEventListener('click', () => applyCampus(button.dataset.campus)));
+  applyCampus('all');
 })();

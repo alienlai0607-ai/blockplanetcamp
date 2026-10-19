@@ -17,6 +17,7 @@
 .two-day-tabs .two-day-tab-icon { position:absolute;right:25px;top:20px;width:46px;height:46px; }
 .two-day-tabs .two-day-tab-name { display:block;margin:0;color:inherit;font-size:27px;font-weight:800;line-height:1.35;letter-spacing:-.02em; }
 .two-day-tabs .two-day-tab-type { display:block;margin:4px 0 16px;font-size:16px;font-weight:550;line-height:1.5; }
+.two-day-tabs .two-day-tab-campus { margin:-8px 0 14px;font-size:14px;font-weight:700;line-height:1.5; }
 .two-day-tab-action { display:block;align-self:stretch;margin-top:auto;padding-top:12px;border-top:1px solid currentColor;font-size:14px;font-weight:700;line-height:1.5; }
 .two-day-tab-action>span { display:flex;align-items:center;justify-content:space-between;gap:8px; }
 .two-day-tab-action b { font-size:19px;line-height:1; }
@@ -84,6 +85,7 @@
   .two-day-tabs .two-day-tab-icon { width:28px;height:28px;right:11px;top:11px; }
   .two-day-tabs .two-day-tab-name { font-size:clamp(17px,4.6vw,20px);line-height:1.4;white-space:nowrap; }
   .two-day-tabs .two-day-tab-type { margin:4px 0 13px;font-size:13px; }
+  .two-day-tabs .two-day-tab-campus { margin:-5px 0 12px;font-size:13px; }
   .two-day-tab-action { padding-top:9px;font-size:12px; }
   .two-day-panel { grid-template-columns:1fr;gap:28px; }
   .two-day-copy h3 { margin-bottom:16px; }
@@ -118,5 +120,10 @@
 
 @media(max-width:360px) {
   .two-day-tabs .two-day-tab-type { font-size:12px; }
-  #calendarDetail .calendar-program-picker button { padding-inline:2px;font-size:13px;white-space:nowrap; }
+  #calendarDetail .calendar-program-picker button { padding-inline:2px;font-size:12px;white-space:nowrap; }
 }
+
+/* Confirmed campuses accompany course dates on every screen. */
+.two-day-copy>.two-day-campus { margin-bottom:6px;color:#79513a;font-weight:750; }
+#calendarDetail .calendar-course .calendar-program-classroom { margin:4px 0 0;color:#76543b;font-size:16px;font-weight:650;line-height:1.6; }
+#calendarDetail .calendar-course .calendar-program-rest { margin:4px 0 0;color:#806345;font-size:14px;line-height:1.6; }

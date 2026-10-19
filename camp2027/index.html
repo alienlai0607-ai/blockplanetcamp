@@ -4,10 +4,10 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <meta name="theme-color" content="#ffe8b4">
-  <title>2027 布拉克星球冬令營｜9 日全期・5 日主題・2 日創作營</title>
-  <meta name="description" content="布拉克星球2027台南冬令營：9日五燈獎・大聖鬧辦桌全期營、5日祥龍飛行派對與LEGO IDEAS、1/21–1/22兩日Game Lab遊戲設計與「機」不可失飛行航空科學營。依興趣與日期選擇孩子的寒假創作。">
+  <title>2027 布拉克星球冬令營｜全期營・5 日主題・2 日創作營</title>
+  <meta name="description" content="布拉克星球2027台南冬令營：五燈獎・大聖鬧辦桌冬令營全期營、5日祥龍無人機派對與LEGO IDEAS、1/21–1/22兩日Game Lab遊戲設計與「機」不可失飛行航空科學營。依興趣與日期選擇孩子的寒假創作。">
   <meta property="og:title" content="2027 布拉克星球冬令營">
-  <meta property="og:description" content="五燈亮起，飛行出發，讓孩子的點子變成自己的作品。探索9日全期營與5日／2日特色營。">
+  <meta property="og:description" content="五燈亮起，飛行出發，讓孩子的點子變成自己的作品。探索冬令營全期營與5日／2日特色營。">
   <meta property="og:type" content="website">
   <link rel="canonical" href="https://blockplanetcamp.com/camp2027/">
   <meta property="og:url" content="https://blockplanetcamp.com/camp2027/">
@@ -21,11 +21,12 @@
   <link rel="preload" as="image" href="assets/hero-camp-world-brush.webp?v=home-lights-20261013" media="(min-width:1101px)" fetchpriority="high">
   <link rel="preload" as="image" href="assets/hero-camp-world-tablet-brush.webp?v=home-lights-20261013" media="(min-width:701px) and (max-width:1100px)" fetchpriority="high">
   <link rel="stylesheet" href="campaign.css?v=image-speed-20261014">
-  <link rel="stylesheet" href="two-day.css?v=lego-dates-20261019">
+  <link rel="stylesheet" href="two-day.css?v=campus-filter-20261019">
   <link rel="stylesheet" href="two-day-stories.css?v=two-day-stories-20261019">
-  <script src="camp-data.js?v=lego-dates-20261019" defer></script>
+  <link rel="stylesheet" href="campus-filter.css?v=campus-filter-20261019">
+  <script src="camp-data.js?v=campus-filter-20261019" defer></script>
   <script src="image-loader.js?v=image-speed-20261014" defer></script>
-  <script src="app.js?v=lego-dates-20261019" defer></script>
+  <script src="app.js?v=campus-filter-20261019" defer></script>
   <script src="two-day-stories.js?v=foam-aircraft-20261019" defer></script>
 </head>
 <body>
@@ -55,10 +56,19 @@
       <div class="hero-copy">
         <p class="eyebrow hero-year"><span>2027</span><b>WINTER CAMP</b></p>
         <h1 id="heroTitle"><span class="hero-brand-line">布拉克星球</span><span class="hero-camp-title">冬令營</span></h1>
-        <p class="hero-options">9 日全期營 <b>／</b> 5 日・2 日特色營</p>
+        <p class="hero-options">冬令營全期營 <b>／</b> 5 日・2 日特色營</p>
         <p class="hero-note">玩文化、操控無人機、設計原創玩具，<br class="desktop-break">把寒假過成一場創作冒險。</p>
+        <fieldset class="campus-picker" id="campusPicker">
+          <legend>你靠近哪一間教室？</legend>
+          <div class="campus-picker-options" role="group" aria-label="選擇教室">
+            <button type="button" data-campus="all" aria-pressed="true" aria-controls="camps calendar contact">全部教室</button>
+            <button type="button" data-campus="yongkang" aria-pressed="false" aria-controls="camps calendar contact">永康東橋教室</button>
+            <button type="button" data-campus="north" aria-pressed="false" aria-controls="camps calendar contact">北區教室</button>
+          </div>
+          <p id="campusSelectionStatus" class="campus-selection-status" aria-live="polite">目前顯示全部教室的營隊</p>
+        </fieldset>
         <a class="button" href="#camps">一起探索營隊 <svg aria-hidden="true"><use href="#arrow"/></svg></a>
-        <p class="hero-location">台南北區・永康 <span>各營隊獨立報名</span></p>
+        <p class="hero-location">台南北區・東橋 <span>各營隊獨立報名</span></p>
       </div>
       <div class="hero-art">
 
@@ -82,7 +92,7 @@
       <h2 id="campIntroTitle">選一段時間，做喜歡的事。</h2>
       <div class="camp-choice-grid">
         <a class="camp-choice-option" href="#full-term">
-          <p class="choice-interest"><strong>9 日全期</strong></p>
+          <p class="choice-interest"><strong>全期營</strong></p>
           <h3>五燈獎・<br>大聖鬧辦桌</h3>
           <p class="choice-duration">玩文化</p>
           <p class="choice-description">五種文化體驗，串起完整寒假旅程</p>
@@ -90,7 +100,7 @@
         </a>
         <a class="camp-choice-option" href="#drone">
           <p class="choice-interest"><strong>5 日主題</strong></p>
-          <h3>祥龍飛行派對<br>LEGO IDEAS</h3>
+          <h3>祥龍無人機派對<br>LEGO IDEAS</h3>
           <p class="choice-duration">飛無人機・設計玩具</p>
           <p class="choice-description">選一個主題，深入練習與創作</p>
           <span class="choice-arrow" aria-hidden="true">→</span>
@@ -116,12 +126,12 @@
         <div class="scene-controls"><span>點亮一盞燈，走進一堂課</span><button class="mobile-scene-arrow" type="button" data-scene-step="lights" data-direction="-1" aria-label="上一個活動"><span aria-hidden="true">←</span></button><button class="text-control" id="lightsReplay">播放五燈故事 <span aria-hidden="true">▷</span></button><button class="mobile-scene-arrow" type="button" data-scene-step="lights" data-direction="1" aria-label="下一個活動"><span aria-hidden="true">→</span></button></div>
       </div>
       <div class="camp-copy">
-        <p class="eyebrow"><span class="section-number">01</span> 9 日全期營 · 國小一至六年級</p>
+        <p class="eyebrow"><span class="section-number">01</span> 冬令營全期營 · 國小一至六年級</p>
         <h2 id="lightsTitle">五燈獎<span class="title-dot">・</span><br>大聖鬧辦桌</h2>
         <p class="camp-subtitle">從辦桌文化探索民俗與傳統技藝</p>
         <p class="camp-description">學一門手藝、演一段故事，和夥伴把點子<br class="desktop-break">變成一場熱鬧的辦桌盛會。</p>
         <div class="experience-detail" id="experienceDetail"><span class="experience-count">01 / 05</span><h3>村落探索燈</h3><p>大崎村落創意基地玩學走讀。</p></div>
-        <div class="camp-facts"><span>1/21–1/22 · 1/25–1/29 · 2/1–2/2</span><span>北區／永康教室</span></div>
+        <div class="camp-facts"><span>2027/1/21–2/2</span><span>東橋教室／北區教室</span></div>
         <div class="camp-actions"><button class="button" data-camp="full-term">看完整課程 <svg aria-hidden="true"><use href="#arrow"/></svg></button><a class="text-link full-term-registration" href="https://docs.google.com/forms/d/e/1FAIpQLSfqclQFsLtNujPctIfk_elu3umDNIWr1W6C1MSIs5wc3BIVFg/viewform" target="_blank" rel="noopener">立即報名 ↗</a></div>
       </div>
     </section>
@@ -131,11 +141,11 @@
     <section class="camp-section drone-section page-width section-anchor" id="drone" aria-labelledby="droneTitle">
       <div class="camp-copy">
         <p class="eyebrow"><span class="section-number">02</span> 5 日特色營</p>
-        <h2 id="droneTitle">祥龍<br>飛行派對</h2>
+        <h2 id="droneTitle">祥龍<br>無人機派對</h2>
         <p class="camp-subtitle">無人機足球 × 中華文化</p>
         <p class="camp-description">當祥龍遇上齊天大聖，這次在空中較量！<br>從造型創作、操控練習到團隊挑戰，<br class="desktop-break">讓神話角色飛進孩子的冒險。</p>
         <ul class="simple-features"><li>文化造型設計</li><li>飛行操控與平衡</li><li>團隊策略與競賽</li></ul>
-        <div class="camp-facts"><span>2027/1/25（一）–1/29（五）</span></div>
+        <div class="camp-facts"><span>2027/1/25（一）–1/29（五）</span><span>北區教室</span></div>
         <div class="camp-actions"><button class="button button-blue" data-camp="drone">看完整課程 <svg aria-hidden="true"><use href="#arrow"/></svg></button><a class="text-link" href="https://lin.ee/zFqqFzQ" target="_blank" rel="noopener">LINE 報名 ↗</a></div>
       </div>
       <div class="camp-visual drone-visual" data-motion-scene="drone">
@@ -171,7 +181,7 @@
         <p class="camp-subtitle">把中華故事，拼成自己的原創盒組</p>
         <p class="camp-description">這次，孩子就是設計總監。<br>從畫下第一個點子、3D 設計、製作圖解，<br class="desktop-break">到包裝完成，享受「這是我設計的！」的喜悅。</p>
         <ul class="simple-features"><li>文化發想</li><li>3D 設計</li><li>圖解與原創包裝</li></ul>
-        <div class="camp-facts"><span>2027/1/25（一）–1/29（五）· 共 5 天</span></div>
+        <div class="camp-facts"><span>2027/1/25（一）–1/29（五）· 共 5 天</span><span>東橋教室／北區教室</span></div>
         <div class="camp-actions"><button class="button button-purple" data-camp="lego">看完整課程 <svg aria-hidden="true"><use href="#arrow"/></svg></button><a class="text-link" href="https://lin.ee/zFqqFzQ" target="_blank" rel="noopener">LINE 報名 ↗</a></div>
       </div>
     </section>
@@ -188,23 +198,23 @@
         <button type="button" role="tab" id="tab-game-lab" aria-label="Game Lab 遊戲設計師養成營" aria-selected="true" aria-controls="panel-game-lab" data-two-day-tab="game-lab">
           <span class="two-day-tab-category">像素 × 程式</span>
           <svg class="two-day-tab-icon" viewBox="0 0 48 48" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M16 16h16c5 0 8 4 9 9l2 10c1 6-4 9-8 5l-7-6h-8l-7 6c-4 4-9 1-8-5l2-10c1-5 4-9 9-9Z"/><path d="M12 25h10m-5-5v10M23 16v-6h6V5"/><circle cx="32" cy="23" r="1.5" fill="currentColor" stroke="none"/><circle cx="36" cy="28" r="1.5" fill="currentColor" stroke="none"/></svg>
-          <span class="two-day-tab-name">Game Lab</span><span class="two-day-tab-type">遊戲設計師養成營</span>
+          <span class="two-day-tab-name">Game Lab</span><span class="two-day-tab-type">遊戲設計師養成營</span><span class="two-day-tab-campus">北區教室</span>
           <span class="two-day-tab-action" aria-hidden="true"><span class="choice-open">查看課程 <b>→</b></span><span class="choice-current">正在查看 <b>✓</b></span></span>
         </button>
         <button type="button" role="tab" id="tab-aviation" aria-label="「機」不可失 飛行航空科學營" aria-selected="false" aria-controls="panel-aviation" tabindex="-1" data-two-day-tab="aviation">
           <span class="two-day-tab-category">手作 × 科學</span>
           <svg class="two-day-tab-icon" viewBox="0 0 48 48" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m5 20 37-14-13 37-8-15-16-8Z"/><path d="m21 28 21-22M11 32l-6 6m12-3-7 8"/></svg>
-          <span class="two-day-tab-name">「機」不可失</span><span class="two-day-tab-type">飛行航空科學營</span>
+          <span class="two-day-tab-name">「機」不可失</span><span class="two-day-tab-type">飛行航空科學營</span><span class="two-day-tab-campus">東橋教室</span>
           <span class="two-day-tab-action" aria-hidden="true"><span class="choice-open">查看課程 <b>→</b></span><span class="choice-current">正在查看 <b>✓</b></span></span>
         </button>
       </div>
       <div id="twoDayPanels"></div>
-      <p class="two-day-schedule-note">兩個兩日營皆於 1/21、1/22 上課，請擇一參加；這兩天也包含在五燈獎 9 日全期營中。</p>
+      <p class="two-day-schedule-note">兩個兩日營皆於 1/21、1/22 上課，請擇一參加；這兩天也包含在五燈獎冬令營全期營中。</p>
     </section>
 
     <section class="schedule-section section-anchor" id="calendar" aria-labelledby="scheduleTitle"><div class="page-width">
-      <div class="section-heading"><div><p class="eyebrow">MAKE ROOM FOR ADVENTURE</p><h2 id="scheduleTitle">把精彩，排進寒假。</h2></div><p>選擇營隊，查看完整上課日期。<br>9 日全期營須完整報名；各特色營獨立報名。</p></div>
-      <div class="calendar-toolbar"><div class="filter-group" role="group" aria-label="篩選營隊日期"><button data-calendar-filter="all" aria-pressed="true">全部營隊</button><button data-calendar-filter="full-term" aria-pressed="false">9 日全期營</button><button data-calendar-filter="drone" aria-pressed="false">祥龍飛行派對</button><button data-calendar-filter="lego" aria-pressed="false">LEGO IDEAS</button><button data-calendar-filter="game-lab" aria-pressed="false">Game Lab</button><button data-calendar-filter="aviation" aria-pressed="false">飛行航空科學營</button></div><span class="calendar-help">點日期，查看包含該日的完整營期</span></div>
+      <div class="section-heading"><div><p class="eyebrow">MAKE ROOM FOR ADVENTURE</p><h2 id="scheduleTitle">把精彩，排進寒假。</h2></div><p>選擇營隊，查看完整上課日期。<br>冬令營全期營須完整報名；各特色營獨立報名。</p></div>
+      <div class="calendar-toolbar"><div class="filter-group" role="group" aria-label="篩選營隊日期"><button data-calendar-filter="all" aria-pressed="true">全部營隊</button><button data-calendar-filter="full-term" aria-pressed="false">冬令營全期營</button><button data-calendar-filter="drone" aria-pressed="false">祥龍無人機派對</button><button data-calendar-filter="lego" aria-pressed="false">LEGO IDEAS</button><button data-calendar-filter="game-lab" aria-pressed="false">Game Lab</button><button data-calendar-filter="aviation" aria-pressed="false">飛行航空科學營</button></div><span class="calendar-help">點日期，查看包含該日的完整營期</span></div>
       <div class="calendar-layout"><div class="calendars" id="calendarGrid"></div><div class="calendar-compact" id="calendarCompact" role="group" aria-label="寒假三週總覽"></div><aside id="calendarDetail" class="calendar-detail" aria-label="完整營隊日期"><p class="calendar-summary-label">完整營隊日期</p><div id="calendarProgramPicker" class="calendar-program-picker" role="group" aria-label="選擇要查看完整營期的營隊"></div><div id="calendarProgram" aria-live="polite" aria-atomic="true"></div><p id="calendarOverlapNote" class="calendar-note" hidden>兩個營期部分日期重疊，報名前請確認安排。</p></aside></div>
     </div></section>
 

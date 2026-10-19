@@ -7,7 +7,7 @@ window.CAMP_DATA = {
     language: "zh-Hant",
     verifiedOn: "2026-10-19",
     relationship: "寒假全期營與各特色營獨立授課、獨立報名。",
-    relationshipDetail: "9 日全期營完整參與五燈獎課程；5 日與 2 日特色營各有自己的主題。全期營不包含其他特色營。"
+    relationshipDetail: "冬令營全期營完整參與五燈獎課程；5 日與 2 日特色營各有自己的主題。全期營不包含其他特色營。"
   },
   links: {
     fullTermForm: "https://docs.google.com/forms/d/e/1FAIpQLSfqclQFsLtNujPctIfk_elu3umDNIWr1W6C1MSIs5wc3BIVFg/viewform",
@@ -29,7 +29,7 @@ window.CAMP_DATA = {
     },
     {
       id: "yongkang",
-      name: "永康教室",
+      name: "東橋教室",
       address: "台南市永康區東橋一路558號",
       phone: "06-2089382",
       phoneHref: "tel:+88662089382",
@@ -52,18 +52,18 @@ window.CAMP_DATA = {
       poster: "assets/lights-poster.webp",
       name: "五燈獎・大聖鬧辦桌",
       shortName: "五燈獎・大聖鬧辦桌",
-      category: "寒假全期營",
+      category: "冬令營全期營",
       subtitle: "從辦桌文化探索民俗與傳統技藝",
       days: 9,
-      daysLabel: "9 日全期營",
+      daysLabel: "冬令營全期營",
       dates: ["2027-01-21", "2027-01-22", "2027-01-25", "2027-01-26", "2027-01-27", "2027-01-28", "2027-01-29", "2027-02-01", "2027-02-02"],
-      dateLabel: "1/21–1/22、1/25–1/29、2/1–2/2",
-      dateNote: "三段日期，共 9 個課程日。",
+      dateLabel: "2027/1/21–2/2",
+      dateNote: "完整營期參加，週末休息。",
       ageLabel: "國小一年級至六年級",
       timeLabel: "09:00–17:00",
       pickupLabel: "07:30 開門，18:30 前接回",
       classroomIds: ["north", "yongkang"],
-      classroomLabel: "北區／永康教室可選",
+      classroomLabel: "東橋教室／北區教室",
       priceLabel: "早鳥 NT$12,000／人",
       priceNote: "11/30 前報名享早鳥價，原價 NT$15,000／人。",
       pricing: {
@@ -178,9 +178,9 @@ window.CAMP_DATA = {
     },
     {
       id: "drone",
-      poster: "assets/drone-poster.webp",
-      name: "祥龍飛行派對",
-      shortName: "祥龍飛行派對",
+      poster: "assets/drone-poster-uav.webp",
+      name: "祥龍無人機派對",
+      shortName: "祥龍無人機派對",
       category: "特色主題營",
       subtitle: "無人機足球 × 中華文化",
       days: 5,
@@ -191,8 +191,8 @@ window.CAMP_DATA = {
       ageLabel: "歡迎 LINE 洽詢適合年齡",
       timeLabel: "每日時段近期公布",
       pickupLabel: "接送安排請 LINE 洽詢",
-      classroomIds: [],
-      classroomLabel: "開課教室請 LINE 洽詢",
+      classroomIds: ["north"],
+      classroomLabel: "北區教室",
       priceLabel: "費用近期公布",
       priceNote: "歡迎先透過 LINE 了解課程與報名資訊。",
       pricing: null,
@@ -220,12 +220,12 @@ window.CAMP_DATA = {
       daysLabel: "5 日特色營",
       dates: ["2027-01-25", "2027-01-26", "2027-01-27", "2027-01-28", "2027-01-29"],
       dateLabel: "2027/1/25–1/29",
-      dateNote: "與祥龍飛行派對同期，請擇一參加；也與五燈獎全期營重疊。",
+      dateNote: "與祥龍無人機派對同期，請擇一參加；也與五燈獎全期營重疊。",
       ageLabel: "歡迎 LINE 洽詢適合年齡",
       timeLabel: "每日時段近期公布",
       pickupLabel: "接送安排請 LINE 洽詢",
-      classroomIds: [],
-      classroomLabel: "開課教室請 LINE 洽詢",
+      classroomIds: ["yongkang", "north"],
+      classroomLabel: "東橋教室／北區教室",
       priceLabel: "費用近期公布",
       priceNote: "歡迎先透過 LINE 了解課程與報名資訊。",
       pricing: null,
@@ -238,7 +238,7 @@ window.CAMP_DATA = {
         { title: "盒組發行", description: "設計包裝，完成屬於自己的原創盒組。" }
       ],
       outcome: "從發想到圖解、包裝的原創盒組設計成果。",
-      registration: { kind: "inquiry", label: "LINE 報名", url: "https://lin.ee/zFqqFzQ", note: "向教室了解年齡、費用與開課教室。" },
+      registration: { kind: "inquiry", label: "LINE 報名", url: "https://lin.ee/zFqqFzQ", note: "向教室了解年齡、費用與每日時段。" },
       sourceIds: ["lego-poster", "user-confirmed-scope", "lego-dates-20261019"],
       status: "additional-details-upcoming"
     },
@@ -261,8 +261,8 @@ window.CAMP_DATA = {
       ageLabel: "適合年齡稍後公布",
       timeLabel: "每日時段稍後公布",
       pickupLabel: "接送安排稍後公布",
-      classroomIds: [],
-      classroomLabel: "開課教室稍後公布",
+      classroomIds: ["north"],
+      classroomLabel: "北區教室",
       priceLabel: "費用稍後公布",
       priceNote: "可先透過 LINE 報名，確認費用與開課安排。",
       pricing: null,
@@ -276,7 +276,7 @@ window.CAMP_DATA = {
         { title: "試玩、修改與分享", description: "和同伴交換試玩，找出問題、調整玩法，完成能與家人朋友分享的遊戲作品。", learningPoints: ["測試除錯", "調整玩法", "作品分享"] }
       ],
       outcome: "自己畫角色、自己寫程式、自己決定怎麼玩！這個新春，一起做出一款自己也想一直玩的遊戲！",
-      registration: { kind: "inquiry", label: "LINE 報名", url: "https://lin.ee/zFqqFzQ", note: "向我們說想報名 Game Lab，確認費用、年齡、每日時段與開課教室。" },
+      registration: { kind: "inquiry", label: "LINE 報名", url: "https://lin.ee/zFqqFzQ", note: "向我們說想報名 Game Lab，確認費用、年齡與每日時段。" },
       sourceIds: ["game-lab-user-20261019", "game-lab-poster"],
       status: "additional-details-upcoming"
     },
@@ -299,8 +299,8 @@ window.CAMP_DATA = {
       ageLabel: "適合年齡稍後公布",
       timeLabel: "每日時段稍後公布",
       pickupLabel: "接送安排稍後公布",
-      classroomIds: [],
-      classroomLabel: "開課教室稍後公布",
+      classroomIds: ["yongkang"],
+      classroomLabel: "東橋教室",
       priceLabel: "費用稍後公布",
       priceNote: "可先透過 LINE 報名，確認費用與開課安排。",
       pricing: null,
@@ -464,7 +464,7 @@ window.CAMP_DATA = {
   },
   itinerary: {
     campId: "full-term",
-    title: "9 天，一起把文化辦成一場盛會",
+    title: "一起把文化辦成一場盛會",
     note: "以下為三週主題安排；每日活動順序請依教室通知。",
     periods: [
       { id: "week-1", label: "第一週", dateLabel: "1/21–1/22", days: 2, title: "辦桌開席 × 民藝探奇 × 窗花迎新", description: "認識辦桌與待客文化，討論各班表演與工作分配，探索捏麵人、畫糖等傳統技藝，親手剪出迎新窗花。", dates: ["2027-01-21", "2027-01-22"] },
@@ -487,10 +487,10 @@ window.CAMP_DATA = {
   },
   comparison: {
     title: "找到適合孩子的寒假安排",
-    introduction: "先看想參加的天數，再選孩子有興趣的主題。各營隊獨立報名。",
+    introduction: "先看營期安排，再選孩子有興趣的主題。各營隊獨立報名。",
     campIds: ["full-term", "drone", "lego", "game-lab", "aviation"],
     fields: [
-      { key: "daysLabel", label: "參加天數" },
+      { key: "daysLabel", label: "營隊方案" },
       { key: "dateLabel", label: "課程日期" },
       { key: "ageLabel", label: "適合年齡" },
       { key: "timeLabel", label: "課程時間" },
@@ -502,9 +502,9 @@ window.CAMP_DATA = {
   faqGroups: [
     {
       id: "choosing", label: "怎麼選營隊", items: [
-        { question: "全期營有包含樂高營或飛行營嗎？", answer: "沒有。9 日全期營是「五燈獎・大聖鬧辦桌」的完整課程；玩具設計總監、祥龍飛行派對、Game Lab 與飛行航空科學營各有自己的課程與報名入口。", sourceIds: ["user-confirmed-scope"] },
-        { question: "9 日全期營是哪幾天？", answer: "課程分為 1/21–1/22、1/25–1/29、2/1–2/2 三段，共 9 天。這是完整全期營的日期安排，不是三個分開報名的營隊。", sourceIds: ["full-term-form", "user-confirmed-scope"] },
-        { question: "2 日營有哪些主題？", answer: "Game Lab 遊戲設計師養成營在 2027/1/21–1/22 上課，使用 Microsoft MakeCode Arcade 創作新春功夫遊戲。「機」不可失 飛行航空科學營也是 2027/1/21–1/22，從造型、重心到反覆試飛，親手打造飛機。兩個主題同時開課，請擇一參加。", sourceIds: ["game-lab-user-20261019", "aviation-user-brief"] },
+        { question: "全期營有包含樂高營或飛行營嗎？", answer: "沒有。冬令營全期營是「五燈獎・大聖鬧辦桌」的完整課程；玩具設計總監、祥龍無人機派對、Game Lab 與飛行航空科學營各有自己的課程與報名入口。", sourceIds: ["user-confirmed-scope"] },
+        { question: "冬令營全期營是哪幾天？", answer: "冬令營全期營為 2027/1/21–2/2，週末休息。請完整參與營期。", sourceIds: ["full-term-form", "user-confirmed-scope"] },
+        { question: "2 日營有哪些主題？", answer: "Game Lab 遊戲設計師養成營在北區教室，於 2027/1/21–1/22 上課，使用 Microsoft MakeCode Arcade 創作新春功夫遊戲。「機」不可失 飛行航空科學營在東橋教室，同樣於 2027/1/21–1/22 上課，從造型、重心到反覆試飛，親手打造飛機。兩個主題同時開課，請擇一參加。", sourceIds: ["game-lab-user-20261019", "aviation-user-brief"] },
         { question: "適合幾年級的孩子？", answer: "五燈獎全期營適合國小一年級至六年級。其餘營隊的適合年齡將分別公布，報名前可透過 LINE 確認。", sourceIds: ["full-term-form"] },
         { question: "沒有積木設計或飛行經驗，可以參加嗎？", answer: "飛行營包含飛行原理與基礎操控；玩具設計營會從文化發想開始，延伸至 3D 設計、圖解與包裝。歡迎告訴我們孩子的年級與經驗，由教室協助確認適合的課程。", sourceIds: ["drone-poster", "lego-poster"] }
       ]
@@ -513,7 +513,7 @@ window.CAMP_DATA = {
       id: "daily-life", label: "上課與營隊生活", items: [
         { question: "全期營每天幾點上課？可以提早送到教室嗎？", answer: "全期營上課時間是 09:00–17:00，教室最早 07:30 開放，請於 18:30 前接回。各特色營的每日時段與接送安排請另向教室確認。", sourceIds: ["full-term-form"] },
         { question: "全期營如果超過 18:30 才能接回，怎麼辦？", answer: "請提前告知老師。全期營超過 18:30 接回，延托費為每小時 NT$190，未滿一小時以一小時計算。", sourceIds: ["full-term-form"] },
-        { question: "在哪裡上課？", answer: "五燈獎全期營可選北區教室（台南市北區中華北路二段113號）或永康教室（台南市永康區東橋一路558號）。各特色營開課教室請透過 LINE 洽詢。", sourceIds: ["full-term-form"] },
+        { question: "在哪裡上課？", answer: "冬令營全期營與 LEGO IDEAS 可選東橋教室或北區教室；祥龍無人機派對只在北區教室。兩日營的 Game Lab 在北區教室，飛行航空科學營在東橋教室。東橋教室：台南市永康區東橋一路558號；北區教室：台南市北區中華北路二段113號。", sourceIds: ["full-term-form"] },
         { question: "全期營有戶外活動嗎？", answer: "有。第二週的主題安排包含大崎村落創意基地走讀，觀察村落中的藝術與生活。出發時間與當日準備事項請依教室通知。", sourceIds: ["full-term-form"] },
         { question: "午餐、午休和需要攜帶的物品怎麼安排？", answer: "請透過 LINE 告訴我們想參加的營隊，由教室提供該營的餐食、午休及攜帶物品說明。各營安排請分別確認。", sourceIds: [] },
         { question: "爸媽可以參加最後的辦桌嗎？", answer: "全期營最後一天 2/2（二）晚上將舉辦「孩子的尾牙」，開放家長報名參與成果展演與文化饗宴。家長出席與費用會另行統計，請留意後續表單通知。", sourceIds: ["full-term-form"] }
@@ -522,23 +522,24 @@ window.CAMP_DATA = {
     {
       id: "registration", label: "報名與費用", items: [
         { question: "全期營怎麼報名？", answer: "點選「立即報名」可前往五燈獎專屬 Google 表單，閱讀課程、費用及報名說明。特色營可由各營的「LINE 報名」入口聯繫。", action: { label: "前往全期營報名表", url: "https://docs.google.com/forms/d/e/1FAIpQLSfqclQFsLtNujPctIfk_elu3umDNIWr1W6C1MSIs5wc3BIVFg/viewform" }, sourceIds: ["full-term-form"] },
-        { question: "全期營費用是多少？", answer: "五燈獎全期營 11/30 前報名享早鳥價 NT$12,000／人，原價 NT$15,000／人。這是 9 日全期營的費用；各特色營的費用將另行公布。", sourceIds: ["full-term-form"] },
-        { question: "可以報名不只一個營隊嗎？", answer: "可以。1/21–1/22 的 Game Lab 與飛行航空科學營擇一，接著可再參加 1/25–1/29 的祥龍飛行派對或 LEGO IDEAS 玩具設計總監，五日營也請擇一。這四個特色營都與五燈獎 9 日全期營重疊，同一位孩子不能同時參加全期營與重疊的特色營。", sourceIds: ["full-term-form", "drone-poster", "game-lab-user-20261019", "aviation-user-brief", "lego-dates-20261019"] },
+        { question: "全期營費用是多少？", answer: "五燈獎全期營 11/30 前報名享早鳥價 NT$12,000／人，原價 NT$15,000／人。這是 冬令營全期營的費用；各特色營的費用將另行公布。", sourceIds: ["full-term-form"] },
+        { question: "可以報名不只一個營隊嗎？", answer: "可以。1/21–1/22 的 Game Lab 與飛行航空科學營擇一，接著可再參加 1/25–1/29 的祥龍無人機派對或 LEGO IDEAS 玩具設計總監，五日營也請擇一。這四個特色營都與五燈獎冬令營全期營重疊，同一位孩子不能同時參加全期營與重疊的特色營。", sourceIds: ["full-term-form", "drone-poster", "game-lab-user-20261019", "aviation-user-brief", "lego-dates-20261019"] },
         { question: "想請假、取消或更換梯次，可以怎麼處理？", answer: "請透過 LINE 提供所報名的營隊、教室及希望調整的日期，由教室說明該方案的處理方式。付款前也可以先詢問相關規則。", sourceIds: [] },
-        { question: "特色營的日期與費用公布了嗎？", answer: "Game Lab 與飛行航空科學營皆為 2027/1/21–1/22 兩日營；祥龍飛行派對與 LEGO IDEAS 玩具設計總監皆為 2027/1/25–1/29 五日營。同日期的主題請擇一參加。各特色營的費用、適合年齡與每日時段將陸續公布。", sourceIds: ["drone-poster", "user-confirmed-scope", "lego-dates-20261019"] }
+        { question: "特色營的日期與費用公布了嗎？", answer: "Game Lab 與飛行航空科學營皆為 2027/1/21–1/22 兩日營；祥龍無人機派對與 LEGO IDEAS 玩具設計總監皆為 2027/1/25–1/29 五日營。同日期的主題請擇一參加。各特色營的費用、適合年齡與每日時段將陸續公布。", sourceIds: ["drone-poster", "user-confirmed-scope", "lego-dates-20261019"] }
       ]
     },
     {
       id: "coupon", label: "優惠券怎麼用", items: [
         { question: "優惠券什麼時候開放？", answer: "優惠券已延後開放，新的開放時間另行公布。目前可先瀏覽各營隊課程與報名資訊。", action: { label: "查看優惠券資訊", url: "coupon.html" }, sourceIds: ["coupon-update-20261019"] },
-        { question: "優惠券適用哪些營隊？", answer: "這次 95 折優惠規劃納入五燈獎・大聖鬧辦桌、祥龍飛行派對、LEGO IDEAS 玩具設計總監、Game Lab 遊戲設計師養成營與「機」不可失 飛行航空科學營。兩日營也會納入，正式領取方式將隨開放公告說明。", sourceIds: ["coupon-winter-rules", "coupon-update-20261019"] },
+        { question: "優惠券適用哪些營隊？", answer: "這次 95 折優惠規劃納入五燈獎・大聖鬧辦桌、祥龍無人機派對、LEGO IDEAS 玩具設計總監、Game Lab 遊戲設計師養成營與「機」不可失 飛行航空科學營。兩日營也會納入，正式領取方式將隨開放公告說明。", sourceIds: ["coupon-winter-rules", "coupon-update-20261019"] },
         { question: "領到優惠券後，接著怎麼做？", answer: "正式開放後，領取優惠券、複製優惠碼，並在領取後 60 分鐘內依頁面說明完成報名。一支手機限領一張，限同一位學員使用。", sourceIds: ["coupon-winter-rules"] },
-        { question: "可以用在不只一個營隊嗎？", answer: "同一位學員可在日期不衝堂的營隊追加使用，仍須符合券面期限與報名規則。1/21–1/22 的 Game Lab 與飛行航空科學營擇一，可再追加 1/25–1/29 的祥龍飛行派對或 LEGO IDEAS，五日營也請擇一。這四個特色營都與五燈獎全期營重疊，不能與全期營同時追加。", sourceIds: ["coupon-winter-rules", "game-lab-user-20261019", "lego-dates-20261019"] },
+        { question: "可以用在不只一個營隊嗎？", answer: "同一位學員可在日期不衝堂的營隊追加使用，仍須符合券面期限與報名規則。1/21–1/22 的 Game Lab 與飛行航空科學營擇一，可再追加 1/25–1/29 的祥龍無人機派對或 LEGO IDEAS，五日營也請擇一。這四個特色營都與五燈獎全期營重疊，不能與全期營同時追加。", sourceIds: ["coupon-winter-rules", "game-lab-user-20261019", "lego-dates-20261019"] },
         { question: "95 折怎麼算？能和同行優惠合併嗎？", answer: "五燈獎按早鳥價 NT$12,000 計算，95 折為 NT$11,400，五燈獎沒有同行價。其他營隊若有兩人同行價，與 95 折優惠擇優使用、不疊加；各營價格以正式公布資訊為準。", sourceIds: ["coupon-winter-rules"] }
       ]
     }
   ],
   sources: [
+    { id: "campus-period-20261019", type: "user-confirmation", title: "冬令營全期營呈現與各營教室確認", checkedOn: "2026-10-19", verification: "全期營對外改稱冬令營全期營，日期統一顯示2027/1/21–2/2，實際課程日期與週末休息不變。全期營及LEGO為東橋／北區；祥龍無人機派對只在北區；Game Lab在北區；飛行航空在東橋。" },
     { id: "lego-dates-20261019", type: "user-confirmation", title: "LEGO IDEAS 五日營日期確認", checkedOn: "2026-10-19", verification: "使用者確認 LEGO IDEAS 五日營為2027年1月25日至29日；同步首頁、課程資料、行事曆與日期重疊說明。費用、年齡、時段、教室與優惠券開放狀態未變更。" },
     { id: "aviation-editorial-20261019", type: "user-provided-copy", title: "「機」不可失｜新春飛行發明家完整課程文案", checkedOn: "2026-10-19", verification: "依使用者本次完整文案更新主副標、首頁摘要、完整介紹與活動敘述；保留從新春發想到裁切組裝、馬達與重心、遙控試飛、反覆修改及配件拆裝重用的過程。此次呈現不作2–3架數量保證；既有日期、費用、時段、教室及報名資料未更動。" },
     { id: "game-lab-user-20261019", type: "user-confirmation", title: "Game Lab 兩日營文案與日期", checkedOn: "2026-10-19", verification: "使用者明確更正為2027年1月21、22日，非2月1、2日；採Microsoft MakeCode Arcade與提供的四項課程文案；費用、年齡、時段、教室與專屬報名表尚未提供。" },

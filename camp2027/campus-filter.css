@@ -1,0 +1,116 @@
+/* Choose a nearby classroom without changing the course presentation below. */
+[data-campus-hidden][hidden] { display:none!important; }
+
+.campus-picker {
+  min-width:0;
+  width:100%;
+  max-width:440px;
+  margin:0 0 20px;
+  padding:0;
+  border:0;
+  color:#754b35;
+}
+.campus-picker legend {
+  display:block;
+  width:100%;
+  margin:0 0 9px;
+  padding:0;
+  font-size:16px;
+  font-weight:800;
+  line-height:1.5;
+}
+.campus-picker-options {
+  display:grid;
+  grid-template-columns:minmax(0,1fr) minmax(0,1.35fr) minmax(0,1fr);
+  gap:7px;
+  min-width:0;
+}
+.campus-picker-options button {
+  appearance:none;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  min-width:0;
+  min-height:44px;
+  margin:0;
+  padding:9px 6px;
+  border:1px solid #c7a476;
+  border-radius:9px;
+  background:#fffaf0;
+  color:#775239;
+  font:inherit;
+  font-size:14px;
+  font-weight:750;
+  line-height:1.45;
+  white-space:nowrap;
+  cursor:pointer;
+  transition:background-color .16s ease,color .16s ease,border-color .16s ease;
+}
+.campus-picker-options button[aria-pressed="true"] {
+  border-color:#a74630;
+  background:#a74630;
+  color:#fffaf0;
+}
+.campus-picker-options button:focus-visible {
+  outline:3px solid #63412c;
+  outline-offset:3px;
+}
+.campus-selection-status {
+  margin:7px 0 0;
+  color:#806448;
+  font-size:13px;
+  line-height:1.6;
+}
+@media (hover:hover) {
+  .campus-picker-options button:hover { border-color:#a74630; }
+  .campus-picker-options button[aria-pressed="true"]:hover { background:#913b28; }
+}
+
+/* A single matching two-day course becomes a compact, full-width choice. */
+.two-day-tabs.has-one-campus-course { grid-template-columns:minmax(0,1fr); }
+.two-day-tabs.has-one-campus-course button {
+  display:grid;
+  grid-template-columns:minmax(0,1fr) auto;
+  grid-template-areas:"category icon" "name icon" "type action" "campus action";
+  gap:3px 20px;
+  padding-block:17px;
+}
+.two-day-tabs.has-one-campus-course .two-day-tab-category { grid-area:category;margin:0; }
+.two-day-tabs.has-one-campus-course .two-day-tab-icon { grid-area:icon;position:static;align-self:start;justify-self:end; }
+.two-day-tabs.has-one-campus-course .two-day-tab-name { grid-area:name; }
+.two-day-tabs.has-one-campus-course .two-day-tab-type { grid-area:type;margin:0; }
+.two-day-tabs.has-one-campus-course .two-day-tab-campus { grid-area:campus;margin:0; }
+.two-day-tabs.has-one-campus-course .two-day-tab-action { grid-area:action;align-self:center;min-width:120px;margin:0;padding:0;border:0; }
+
+/* The mobile hero's contents are explicit grid rows in campaign.css. */
+@media (max-width:700px) {
+  .hero-world .hero { grid-template-rows:repeat(7,auto); }
+  .hero-world .campus-picker {
+    grid-column:1/-1;
+    grid-row:3;
+    z-index:2;
+    max-width:none;
+    margin:15px 0 10px;
+  }
+  .hero-world .campus-picker legend { margin-bottom:7px;font-size:15px; }
+  .hero-world .campus-picker-options { gap:6px; }
+  .hero-world .campus-selection-status { margin-top:6px;font-size:12px; }
+  .hero-world .hero-art { grid-row:4;margin-top:0; }
+  .hero-world .hero-options { grid-row:5; }
+  .hero-world .hero-note { grid-row:6; }
+  .hero-world .hero .button,.hero-world .hero-location { grid-row:7; }
+  .two-day-tabs.has-one-campus-course button { gap:3px 12px;padding:14px; }
+  .two-day-tabs.has-one-campus-course .two-day-tab-category { margin:0; }
+  .two-day-tabs.has-one-campus-course .two-day-tab-icon { width:34px;height:34px; }
+  .two-day-tabs.has-one-campus-course .two-day-tab-name { font-size:22px; }
+  .two-day-tabs.has-one-campus-course .two-day-tab-type { font-size:14px; }
+  .two-day-tabs.has-one-campus-course .two-day-tab-campus { font-size:13px; }
+  .two-day-tabs.has-one-campus-course .two-day-tab-action { min-width:91px;font-size:12px; }
+}
+@media (max-width:370px) {
+  .two-day-tabs.has-one-campus-course .two-day-tab-name { font-size:20px; }
+  .two-day-tabs.has-one-campus-course .two-day-tab-type { font-size:13px; }
+}
+@media (prefers-reduced-motion:reduce) {
+  .campus-picker-options button { transition:none; }
+}
