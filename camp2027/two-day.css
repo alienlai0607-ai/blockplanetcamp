@@ -11,6 +11,7 @@
 .two-day-choice-help { margin:0 0 12px;color:#765e48;font-size:15px;line-height:1.6; }
 .two-day-choice-help>span { margin-left:6px; }
 .two-day-tabs { display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px;width:100%;margin:0 0 30px; }
+.two-day-tabs[data-course-count="3"] { grid-template-columns:repeat(3,minmax(0,1fr)); }
 .two-day-tabs button { display:grid;grid-template-columns:52px minmax(0,1fr) 24px;align-items:center;gap:18px;min-width:0;padding:18px 22px;text-align:left;border:1px solid #d7c3a3;border-radius:12px;color:#684932;background:#fffcf5;cursor:pointer;transition:border-color .16s ease,background-color .16s ease; }
 .two-day-tabs .two-day-tab-icon { display:block;position:static;width:52px;height:52px;color:#93613e; }
 .two-day-tabs .choice-icon-paper { fill:#f1e0c6; }
@@ -62,6 +63,7 @@
 #calendarDetail .calendar-periods li { max-width:100%;white-space:normal;overflow-wrap:anywhere; }
 #calendar .date-dots .game-lab-dot { background:#437c6e; }
 #calendar .date-dots .aviation-dot { background:#b58233; }
+#calendar .date-dots .fragrance-dot { background:#b96b6b; }
 #calendar .date-dots .lego-dot { background:#8d699f; }
 @media(max-width:1200px) {
   #calendar .calendar-toolbar { grid-template-columns:minmax(0,1fr);gap:10px; }
@@ -79,11 +81,13 @@
   .two-day-date small { font-size:12px; }
   .two-day-choice-help { font-size:13px; }
   .two-day-tabs { gap:10px;margin-bottom:24px; }
+  .two-day-tabs[data-course-count="3"] { grid-template-columns:none;grid-auto-flow:column;grid-auto-columns:72%;overflow-x:auto;padding:3px 2px 10px;scroll-snap-type:x proximity; }
+  .two-day-tabs[data-course-count="3"] button { scroll-snap-align:start; }
   .two-day-tabs button { grid-template-columns:minmax(0,1fr) 24px;gap:10px 5px;padding:14px;border-radius:10px; }
   .two-day-tabs .two-day-tab-icon { width:40px;height:40px; }
   .two-day-tabs .two-day-tab-copy { grid-row:2;grid-column:1/-1; }
   .two-day-tabs .two-day-tab-action { grid-row:1;grid-column:2; }
-  .two-day-tabs .two-day-tab-name { font-size:20px;line-height:1.4;white-space:nowrap; }
+  .two-day-tabs .two-day-tab-name { font-size:18px;line-height:1.4;white-space:nowrap; }
   .two-day-tabs .two-day-tab-type { margin-top:3px;font-size:14px; }
   .two-day-tabs .two-day-tab-campus { margin-top:5px;font-size:13px; }
   .two-day-panel { grid-template-columns:1fr;gap:28px; }
@@ -120,6 +124,10 @@
 @media(max-width:360px) {
   .two-day-tabs button { padding-inline:10px; }
   .two-day-tabs .two-day-tab-name { font-size:18px; }
+  .two-day-tabs[data-course-count="2"] { grid-template-columns:minmax(0,1fr); }
+  .two-day-tabs[data-course-count="2"] button { grid-template-columns:40px minmax(0,1fr) 20px;gap:10px; }
+  .two-day-tabs[data-course-count="2"] .two-day-tab-copy { grid-column:2;grid-row:1; }
+  .two-day-tabs[data-course-count="2"] .two-day-tab-action { grid-column:3; }
   #calendarDetail .calendar-program-picker button { padding-inline:2px;font-size:12px;white-space:nowrap; }
 }
 
@@ -127,3 +135,10 @@
 .two-day-copy>.two-day-campus { margin-bottom:6px;color:#79513a;font-weight:750; }
 #calendarDetail .calendar-course .calendar-program-classroom { margin:4px 0 0;color:#76543b;font-size:16px;font-weight:650;line-height:1.6; }
 #calendarDetail .calendar-course .calendar-program-rest { margin:4px 0 0;color:#806345;font-size:14px;line-height:1.6; }
+
+@media(min-width:701px) and (max-width:1100px) {
+  .two-day-tabs[data-course-count="3"] button { grid-template-columns:40px minmax(0,1fr);gap:10px;padding:16px; }
+  .two-day-tabs[data-course-count="3"] .two-day-tab-icon { width:40px;height:40px; }
+  .two-day-tabs[data-course-count="3"] .two-day-tab-copy { grid-column:1/-1;grid-row:2; }
+  .two-day-tabs[data-course-count="3"] .two-day-tab-action { grid-column:2;grid-row:1;justify-self:end; }
+}
