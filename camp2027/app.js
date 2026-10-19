@@ -652,6 +652,18 @@
     if (item.question === '沒有積木設計或飛行經驗，可以參加嗎？') answer = `${campusName()}各營隊會依課程內容帶領孩子練習。歡迎告訴我們孩子的年級與經驗，確認適合的課程。`;
     return { ...item, answer };
   }
+  const compactChoiceNames = {
+    'full-term': ['五燈獎', '大聖鬧辦桌'],
+    drone: ['祥龍', '無人機派對'],
+    lego: ['LEGO IDEAS', '玩具設計總監'],
+    'game-lab': ['Game Lab', '遊戲設計師養成營'],
+    aviation: ['「機」不可失', '飛行航空科學營'],
+    fragrance: ['小小生活工藝師', '新春香氛科學營']
+  };
+  function choiceNameMarkup(camp) {
+    const [main, subtitle] = compactChoiceNames[camp.id] || [camp.name, ''];
+    return `<span class="choice-camp-name"><span class="choice-name-wide" aria-hidden="true">${esc(camp.name)}</span><span class="choice-name-compact" aria-hidden="true"><span class="choice-name-main">${esc(main)}</span><span class="choice-name-subtitle">${esc(subtitle)}</span></span></span>`;
+  }
   function renderCampChoices(camps) {
     const groups = [
       { id: 'full-term', title: '全期營', camps: camps.filter(c => c.id === 'full-term') },
@@ -662,7 +674,7 @@
       <section class="camp-choice-option" aria-labelledby="choice-${group.id}">
         <h3 class="choice-interest" id="choice-${group.id}">${group.title}</h3>
         <ol class="choice-camp-list" role="list">${group.camps.map((camp, index) => `
-          <li><a class="choice-camp-link" href="#${camp.id}"><span class="choice-number" aria-hidden="true">${index + 1}</span><span class="choice-camp-name">${esc(camp.name)}</span><span class="choice-arrow" aria-hidden="true">→</span></a></li>`).join('')}
+          <li><a class="choice-camp-link" href="#${camp.id}" aria-label="${esc(camp.name)}"><span class="choice-number" aria-hidden="true">${index + 1}</span>${choiceNameMarkup(camp)}<span class="choice-arrow" aria-hidden="true">→</span></a></li>`).join('')}
         </ol>
       </section>`).join('');
   }
