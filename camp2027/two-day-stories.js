@@ -41,6 +41,7 @@
   }
   function loadPicture(camp, index, priority) {
     const base = `assets/${camp}-story-${String(index + 1).padStart(2, '0')}`;
+    const assetVersion = camp === 'aviation' && index === 3 ? '?v=foam-aircraft-20261019' : '';
     const key = base + (smallScreen.matches ? '-mobile' : '');
     let entry = assets.get(key);
     if (entry) {
@@ -60,7 +61,7 @@
       const source = document.createElement('source');
       source.type = type;
       if (media) source.media = media;
-      source.srcset = base + suffix;
+      source.srcset = base + suffix + assetVersion;
       picture.append(source);
     });
     picture.append(image);
@@ -89,13 +90,13 @@
       picture.querySelectorAll('source').forEach(source => source.remove());
       clearTimeout(timeout);
       timeout = setTimeout(() => finish(false), 15000);
-      image.src = key + '.webp';
+      image.src = key + '.webp' + assetVersion;
     };
     entry.start = () => {
       if (entry.started) return;
       entry.started = true;
       timeout = setTimeout(() => finish(false), 15000);
-      image.src = base + '.webp';
+      image.src = base + '.webp' + assetVersion;
     };
     if (priority === 'high') entry.start();
     else { backgroundQueue.push(entry); pump(); }
