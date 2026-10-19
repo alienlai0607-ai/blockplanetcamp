@@ -41,7 +41,7 @@
   const campIds = ['full-term', 'drone', 'lego', 'game-lab', 'aviation', 'fragrance'];
   const backendCampIds = ['full-term', 'drone', 'lego'];
   const readyRegistrationCamps = (config.registrationCamps || []).filter(camp => backendCampIds.includes(camp.id) && camp.kind === 'form');
-  const canActivate = () => !isPostponed() && config.enabled === true && config.rulesConfirmed === true && config.backendReady === true &&
+  const canActivate = () => !isPostponed() && config.enabled === true && config.rulesConfirmed === true && config.backendReady === true && config.pricingReady !== false &&
     config.campaignId === '2027C' && Number.isFinite(opening()?.getTime()) &&
     /^https:\/\/script\.google\.com\/macros\/s\/[^/]+\/exec$/.test(config.apiUrl || '') &&
     Array.isArray(config.eligibleCamps) && config.eligibleCamps.length === backendCampIds.length &&
@@ -174,6 +174,11 @@
   function renderPending() {
     if (isSelectedCampPending()) { renderCampPending(); return; }
     if (isPostponed() || !dateLabel()) { renderPostponed(); return; }
+    if (config.pricingReady === false) {
+      if (Number.isFinite(opening()?.getTime()) && now() < opening().getTime()) { renderNotYet(); return; }
+      renderStatus('pricing-pending', '優惠券資訊確認中', '各營隊費用確認後，將開放領取優惠券；目前不會開始使用期限的倒數。', link(registrationPage, '先查看營隊與報名資訊 →', 'primary'));
+      return;
+    }
     currentCoupon = null;
     const {month, day} = dateLabel();
     const exact = Number.isFinite(opening()?.getTime());

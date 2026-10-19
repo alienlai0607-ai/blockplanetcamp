@@ -38,7 +38,7 @@
   }
 
   function formUrlFor(camp) {
-    if (camp.registration?.kind !== 'form') return null;
+    if (data.campaign.pricingReady === false || camp.registration?.kind !== 'form') return null;
     try {
       const url = new URL(camp.registration.url);
       if (url.protocol !== 'https:') return null;
@@ -99,10 +99,11 @@
       registration.append(arrow);
       actions.append(registration);
     } else {
-      const pending = textElement('button', 'camp-action', '報名表準備中');
+      const pendingLabel = data.campaign.pricingReady === false ? '費用確認中' : '報名表準備中';
+      const pending = textElement('button', 'camp-action', pendingLabel);
       pending.type = 'button';
       pending.disabled = true;
-      pending.setAttribute('aria-label', `${camp.name}，報名表準備中`);
+      pending.setAttribute('aria-label', `${camp.name}，${pendingLabel}`);
       actions.append(pending);
     }
 

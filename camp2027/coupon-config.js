@@ -1,4 +1,5 @@
-/* The public opening matches the verified 2027 server setting.
+/* Fees await owner confirmation; server backendReady is held false until then.
+ * The planned public opening remains unchanged.
  * Two-day camps remain informational until their prices and forms are ready.
  */
 window.CAMPAIGN_COUPON = Object.freeze({
@@ -6,7 +7,8 @@ window.CAMPAIGN_COUPON = Object.freeze({
   enabled: true,
   releaseStatus: 'scheduled',
   rulesConfirmed: true,
-  backendReady: true,
+  backendReady: false,
+  pricingReady: false,
   openingDate: '2026-10-20',
   opensAt: '2026-10-20T19:00:00+08:00',
   apiUrl: 'https://script.google.com/macros/s/AKfycbw0seQA-F9j2TzTKO6ylWA8XdbF_51uKAsXxF4iZP26pj4eAo6stAXdO4R15uVClHc-/exec',
