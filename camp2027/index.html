@@ -20,7 +20,7 @@
   <link rel="preload" as="image" type="image/avif" href="assets/hero-camp-world-mobile.avif?v=mobile-speed-20261013" media="(max-width:700px)" fetchpriority="high">
   <link rel="preload" as="image" href="assets/hero-camp-world-brush.webp?v=home-lights-20261013" media="(min-width:1101px)" fetchpriority="high">
   <link rel="preload" as="image" href="assets/hero-camp-world-tablet-brush.webp?v=home-lights-20261013" media="(min-width:701px) and (max-width:1100px)" fetchpriority="high">
-  <link rel="stylesheet" href="campaign.css?v=camp-names-20261019">
+  <link rel="stylesheet" href="campaign.css?v=choice-columns-20261019">
   <link rel="stylesheet" href="two-day.css?v=fragrance-v3-20261019">
   <link rel="stylesheet" href="two-day-stories.css?v=fragrance-v2-20261019">
   <link rel="stylesheet" href="campus-filter.css?v=coupon-entry-20261019">
@@ -90,7 +90,7 @@
 
     <section id="camps" class="camp-selection page-width section-anchor" aria-labelledby="campIntroTitle">
       <h2 id="campIntroTitle">挑選一個喜歡的營隊吧</h2>
-      <div class="camp-choice-grid">
+      <div class="camp-choice-grid" tabindex="0" role="region" aria-label="營隊分類，左右滑動查看">
         <section class="camp-choice-option" aria-labelledby="choice-full-term">
           <h3 class="choice-interest" id="choice-full-term">全期營</h3>
           <ol class="choice-camp-list" role="list">
@@ -113,7 +113,7 @@
           </ol>
         </section>
       </div>
-      <p class="camp-choice-note"><a href="#calendar">查看營隊日期 →</a></p>
+      <p class="camp-choice-note"><span class="choice-scroll-hint">左右滑動看營隊 ↔</span><a href="#calendar">查看營隊日期 →</a></p>
     </section>
 
     <div class="culture-chapter chapter-jade">
