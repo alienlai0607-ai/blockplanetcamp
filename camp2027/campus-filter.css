@@ -66,21 +66,8 @@
   .campus-picker-options button[aria-pressed="true"]:hover { background:#913b28; }
 }
 
-/* A single matching two-day course becomes a compact, full-width choice. */
-.two-day-tabs.has-one-campus-course { grid-template-columns:minmax(0,1fr); }
-.two-day-tabs.has-one-campus-course button {
-  display:grid;
-  grid-template-columns:minmax(0,1fr) auto;
-  grid-template-areas:"category icon" "name icon" "type action" "campus action";
-  gap:3px 20px;
-  padding-block:17px;
-}
-.two-day-tabs.has-one-campus-course .two-day-tab-category { grid-area:category;margin:0; }
-.two-day-tabs.has-one-campus-course .two-day-tab-icon { grid-area:icon;position:static;align-self:start;justify-self:end; }
-.two-day-tabs.has-one-campus-course .two-day-tab-name { grid-area:name; }
-.two-day-tabs.has-one-campus-course .two-day-tab-type { grid-area:type;margin:0; }
-.two-day-tabs.has-one-campus-course .two-day-tab-campus { grid-area:campus;margin:0; }
-.two-day-tabs.has-one-campus-course .two-day-tab-action { grid-area:action;align-self:center;min-width:120px;margin:0;padding:0;border:0; }
+/* One matching course stays the size of a choice, without becoming a banner. */
+.two-day-tabs.has-one-campus-course { grid-template-columns:minmax(0,1fr);max-width:620px; }
 
 /* The mobile hero's contents are explicit grid rows in campaign.css. */
 @media (max-width:700px) {
@@ -99,17 +86,9 @@
   .hero-world .hero-options { grid-row:5; }
   .hero-world .hero-note { grid-row:6; }
   .hero-world .hero .button,.hero-world .hero-location { grid-row:7; }
-  .two-day-tabs.has-one-campus-course button { gap:3px 12px;padding:14px; }
-  .two-day-tabs.has-one-campus-course .two-day-tab-category { margin:0; }
-  .two-day-tabs.has-one-campus-course .two-day-tab-icon { width:34px;height:34px; }
-  .two-day-tabs.has-one-campus-course .two-day-tab-name { font-size:22px; }
-  .two-day-tabs.has-one-campus-course .two-day-tab-type { font-size:14px; }
-  .two-day-tabs.has-one-campus-course .two-day-tab-campus { font-size:13px; }
-  .two-day-tabs.has-one-campus-course .two-day-tab-action { min-width:91px;font-size:12px; }
-}
-@media (max-width:370px) {
-  .two-day-tabs.has-one-campus-course .two-day-tab-name { font-size:20px; }
-  .two-day-tabs.has-one-campus-course .two-day-tab-type { font-size:13px; }
+  .two-day-tabs.has-one-campus-course button { grid-template-columns:40px minmax(0,1fr) 24px;gap:12px; }
+  .two-day-tabs.has-one-campus-course .two-day-tab-copy { grid-row:1;grid-column:2; }
+  .two-day-tabs.has-one-campus-course .two-day-tab-action { grid-column:3; }
 }
 @media (prefers-reduced-motion:reduce) {
   .campus-picker-options button { transition:none; }

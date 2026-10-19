@@ -21,12 +21,12 @@
   <link rel="preload" as="image" href="assets/hero-camp-world-brush.webp?v=home-lights-20261013" media="(min-width:1101px)" fetchpriority="high">
   <link rel="preload" as="image" href="assets/hero-camp-world-tablet-brush.webp?v=home-lights-20261013" media="(min-width:701px) and (max-width:1100px)" fetchpriority="high">
   <link rel="stylesheet" href="campaign.css?v=image-speed-20261014">
-  <link rel="stylesheet" href="two-day.css?v=campus-filter-20261019">
+  <link rel="stylesheet" href="two-day.css?v=compact-choices-20261019">
   <link rel="stylesheet" href="two-day-stories.css?v=two-day-stories-20261019">
-  <link rel="stylesheet" href="campus-filter.css?v=campus-filter-20261019">
+  <link rel="stylesheet" href="campus-filter.css?v=compact-choices-20261019">
   <script src="camp-data.js?v=campus-filter-20261019" defer></script>
   <script src="image-loader.js?v=image-speed-20261014" defer></script>
-  <script src="app.js?v=campus-filter-20261019" defer></script>
+  <script src="app.js?v=compact-choices-20261019" defer></script>
   <script src="two-day-stories.js?v=foam-aircraft-20261019" defer></script>
 </head>
 <body>
@@ -195,17 +195,15 @@
       </header>
       <p class="two-day-choice-help" id="twoDayChoiceHelp">點選一個營隊，查看下方課程介紹 <span aria-hidden="true">↓</span></p>
       <div class="two-day-tabs" role="tablist" aria-label="選擇要查看的兩日營" aria-describedby="twoDayChoiceHelp">
-        <button type="button" role="tab" id="tab-game-lab" aria-label="Game Lab 遊戲設計師養成營" aria-selected="true" aria-controls="panel-game-lab" data-two-day-tab="game-lab">
-          <span class="two-day-tab-category">像素 × 程式</span>
-          <svg class="two-day-tab-icon" viewBox="0 0 48 48" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M16 16h16c5 0 8 4 9 9l2 10c1 6-4 9-8 5l-7-6h-8l-7 6c-4 4-9 1-8-5l2-10c1-5 4-9 9-9Z"/><path d="M12 25h10m-5-5v10M23 16v-6h6V5"/><circle cx="32" cy="23" r="1.5" fill="currentColor" stroke="none"/><circle cx="36" cy="28" r="1.5" fill="currentColor" stroke="none"/></svg>
-          <span class="two-day-tab-name">Game Lab</span><span class="two-day-tab-type">遊戲設計師養成營</span><span class="two-day-tab-campus">北區教室</span>
-          <span class="two-day-tab-action" aria-hidden="true"><span class="choice-open">查看課程 <b>→</b></span><span class="choice-current">正在查看 <b>✓</b></span></span>
+        <button type="button" role="tab" id="tab-game-lab" aria-label="Game Lab 遊戲設計師養成營，北區教室" aria-selected="true" aria-controls="panel-game-lab" data-two-day-tab="game-lab">
+          <svg class="two-day-tab-icon" viewBox="0 0 64 64" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle class="choice-icon-paper" cx="32" cy="32" r="31" stroke="none"/><path d="M23 25h18c5 0 8 4 9 9l2 9c1 5-3 8-7 5l-7-6H26l-7 6c-4 3-8 0-7-5l2-9c1-5 4-9 9-9Z" fill="#fffaf0"/><path d="M20 34h10m-5-5v10M29 25v-7h7"/><circle cx="40" cy="32" r="2" fill="currentColor" stroke="none"/><circle cx="45" cy="37" r="2" fill="currentColor" stroke="none"/><path d="M42 12v6m-3-3h6"/></svg>
+          <span class="two-day-tab-copy"><span class="two-day-tab-name">Game Lab</span><span class="two-day-tab-type">遊戲設計師養成營</span><span class="two-day-tab-campus">北區教室</span></span>
+          <span class="two-day-tab-action" aria-hidden="true"><span class="choice-open">→</span><span class="choice-current">✓</span></span>
         </button>
-        <button type="button" role="tab" id="tab-aviation" aria-label="「機」不可失 飛行航空科學營" aria-selected="false" aria-controls="panel-aviation" tabindex="-1" data-two-day-tab="aviation">
-          <span class="two-day-tab-category">手作 × 科學</span>
-          <svg class="two-day-tab-icon" viewBox="0 0 48 48" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m5 20 37-14-13 37-8-15-16-8Z"/><path d="m21 28 21-22M11 32l-6 6m12-3-7 8"/></svg>
-          <span class="two-day-tab-name">「機」不可失</span><span class="two-day-tab-type">飛行航空科學營</span><span class="two-day-tab-campus">東橋教室</span>
-          <span class="two-day-tab-action" aria-hidden="true"><span class="choice-open">查看課程 <b>→</b></span><span class="choice-current">正在查看 <b>✓</b></span></span>
+        <button type="button" role="tab" id="tab-aviation" aria-label="「機」不可失 飛行航空科學營，東橋教室" aria-selected="false" aria-controls="panel-aviation" tabindex="-1" data-two-day-tab="aviation">
+          <svg class="two-day-tab-icon" viewBox="0 0 64 64" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle class="choice-icon-paper" cx="32" cy="32" r="31" stroke="none"/><path d="M32 10c-3 0-4 5-4 9v8L12 36v5l16-5v10l-7 5v3l11-3 11 3v-3l-7-5V36l16 5v-5l-16-9v-8c0-4-1-9-4-9Z" fill="#fffaf0"/><path d="M28 21h8M32 39v12M14 17v6m-3-3h6"/></svg>
+          <span class="two-day-tab-copy"><span class="two-day-tab-name">「機」不可失</span><span class="two-day-tab-type">飛行航空科學營</span><span class="two-day-tab-campus">東橋教室</span></span>
+          <span class="two-day-tab-action" aria-hidden="true"><span class="choice-open">→</span><span class="choice-current">✓</span></span>
         </button>
       </div>
       <div id="twoDayPanels"></div>
@@ -214,8 +212,8 @@
 
     <section class="schedule-section section-anchor" id="calendar" aria-labelledby="scheduleTitle"><div class="page-width">
       <div class="section-heading"><div><p class="eyebrow">MAKE ROOM FOR ADVENTURE</p><h2 id="scheduleTitle">把精彩，排進寒假。</h2></div><p>選擇營隊，查看完整上課日期。<br>冬令營全期營須完整報名；各特色營獨立報名。</p></div>
-      <div class="calendar-toolbar"><div class="filter-group" role="group" aria-label="篩選營隊日期"><button data-calendar-filter="all" aria-pressed="true">全部營隊</button><button data-calendar-filter="full-term" aria-pressed="false">冬令營全期營</button><button data-calendar-filter="drone" aria-pressed="false">祥龍無人機派對</button><button data-calendar-filter="lego" aria-pressed="false">LEGO IDEAS</button><button data-calendar-filter="game-lab" aria-pressed="false">Game Lab</button><button data-calendar-filter="aviation" aria-pressed="false">飛行航空科學營</button></div><span class="calendar-help">點日期，查看包含該日的完整營期</span></div>
-      <div class="calendar-layout"><div class="calendars" id="calendarGrid"></div><div class="calendar-compact" id="calendarCompact" role="group" aria-label="寒假三週總覽"></div><aside id="calendarDetail" class="calendar-detail" aria-label="完整營隊日期"><p class="calendar-summary-label">完整營隊日期</p><div id="calendarProgramPicker" class="calendar-program-picker" role="group" aria-label="選擇要查看完整營期的營隊"></div><div id="calendarProgram" aria-live="polite" aria-atomic="true"></div><p id="calendarOverlapNote" class="calendar-note" hidden>兩個營期部分日期重疊，報名前請確認安排。</p></aside></div>
+      <div class="calendar-toolbar"><div class="filter-group" role="group" aria-label="篩選營隊日期"><button data-calendar-filter="full-term" aria-pressed="true">冬令營全期營</button><button data-calendar-filter="drone" aria-pressed="false">祥龍無人機派對</button><button data-calendar-filter="lego" aria-pressed="false">LEGO IDEAS</button><button data-calendar-filter="game-lab" aria-pressed="false">Game Lab</button><button data-calendar-filter="aviation" aria-pressed="false">飛行航空科學營</button></div><span class="calendar-help">已標示此營隊的完整上課日期</span></div>
+      <div class="calendar-layout"><div class="calendars" id="calendarGrid"></div><div class="calendar-compact" id="calendarCompact" role="group" aria-label="寒假三週總覽"></div><aside id="calendarDetail" class="calendar-detail" aria-label="完整營隊日期"><p class="calendar-summary-label">完整營隊日期</p><div id="calendarProgram" aria-live="polite" aria-atomic="true"></div><p id="calendarOverlapNote" class="calendar-note" hidden>兩個營期部分日期重疊，報名前請確認安排。</p></aside></div>
     </div></section>
 
     <p class="coupon-pending-note page-width">冬令營優惠券開放時間將另行公布。<a href="coupon.html">查看優惠券資訊 ↗</a></p>

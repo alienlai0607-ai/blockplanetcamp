@@ -10,21 +10,20 @@
 .two-day-date i { font-style:normal;font-weight:450;color:#bd9164; }
 .two-day-choice-help { margin:0 0 12px;color:#765e48;font-size:15px;line-height:1.6; }
 .two-day-choice-help>span { margin-left:6px; }
-.two-day-tabs { display:grid;grid-template-columns:1fr 1fr;gap:18px;width:100%;margin:0 0 34px; }
-.two-day-tabs button { --choice-ink:#1b5b4e;--choice-paper:#cce6dc;position:relative;display:flex;flex-direction:column;align-items:flex-start;min-width:0;padding:22px 25px 18px;text-align:left;border:2px solid var(--choice-ink);border-radius:14px;color:var(--choice-ink);background:var(--choice-paper);cursor:pointer; }
-.two-day-tabs button[data-two-day-tab=aviation] { --choice-ink:#285a7b;--choice-paper:#d4e6f5; }
-.two-day-tabs .two-day-tab-category { display:block;margin:0 0 10px;font-size:14px;font-weight:650;letter-spacing:.06em; }
-.two-day-tabs .two-day-tab-icon { position:absolute;right:25px;top:20px;width:46px;height:46px; }
-.two-day-tabs .two-day-tab-name { display:block;margin:0;color:inherit;font-size:27px;font-weight:800;line-height:1.35;letter-spacing:-.02em; }
-.two-day-tabs .two-day-tab-type { display:block;margin:4px 0 16px;font-size:16px;font-weight:550;line-height:1.5; }
-.two-day-tabs .two-day-tab-campus { margin:-8px 0 14px;font-size:14px;font-weight:700;line-height:1.5; }
-.two-day-tab-action { display:block;align-self:stretch;margin-top:auto;padding-top:12px;border-top:1px solid currentColor;font-size:14px;font-weight:700;line-height:1.5; }
-.two-day-tab-action>span { display:flex;align-items:center;justify-content:space-between;gap:8px; }
-.two-day-tab-action b { font-size:19px;line-height:1; }
+.two-day-tabs { display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px;width:100%;margin:0 0 30px; }
+.two-day-tabs button { display:grid;grid-template-columns:52px minmax(0,1fr) 24px;align-items:center;gap:18px;min-width:0;padding:18px 22px;text-align:left;border:1px solid #d7c3a3;border-radius:12px;color:#684932;background:#fffcf5;cursor:pointer;transition:border-color .16s ease,background-color .16s ease; }
+.two-day-tabs .two-day-tab-icon { display:block;position:static;width:52px;height:52px;color:#93613e; }
+.two-day-tabs .choice-icon-paper { fill:#f1e0c6; }
+.two-day-tabs .two-day-tab-copy { display:block;min-width:0; }
+.two-day-tabs .two-day-tab-name { display:block;margin:0;color:#79412f;font-size:24px;font-weight:800;line-height:1.35;letter-spacing:0; }
+.two-day-tabs .two-day-tab-type { display:block;margin:3px 0 0;color:#684932;font-size:16px;font-weight:650;line-height:1.5; }
+.two-day-tabs .two-day-tab-campus { display:block;margin:5px 0 0;color:#806448;font-size:14px;font-weight:550;line-height:1.5; }
+.two-day-tabs .two-day-tab-action { display:grid;place-items:center;width:24px;height:24px;margin:0;padding:0;border:0;color:#986746;font-size:20px;line-height:1; }
 .two-day-tab-action .choice-current,.two-day-tabs button[aria-selected=true] .choice-open { display:none; }
-.two-day-tabs button[aria-selected=true] { color:#fffaf0;background:var(--choice-ink);box-shadow:0 4px 0 #d9c8aa; }
-.two-day-tabs button[aria-selected=true] .choice-current { display:flex; }
-@media(hover:hover) { .two-day-tabs button:hover { filter:brightness(.96); } }
+.two-day-tabs button[aria-selected=true] { border-color:#ad593d;background:#f6ead8;box-shadow:inset 0 0 0 1px #ad593d; }
+.two-day-tabs button[aria-selected=true] .choice-current { display:block; }
+.two-day-tabs button[aria-selected=true] .two-day-tab-action { color:#a24730; }
+@media(hover:hover) { .two-day-tabs button:hover { border-color:#ad593d;background:#f8eedf; } }
 .two-day-tabs button:focus-visible,.two-day-panel:focus-visible { outline:3px solid #ac5737;outline-offset:4px; }
 .two-day-panel { display:grid;grid-template-columns:minmax(0,1.15fr) minmax(0,1fr);gap:clamp(28px,4vw,60px);align-items:center; }
 .two-day-panel[hidden] { display:none; }
@@ -79,14 +78,14 @@
   .two-day-date strong { font-size:20px; }
   .two-day-date small { font-size:12px; }
   .two-day-choice-help { font-size:13px; }
-  .two-day-tabs { gap:12px;margin-bottom:26px; }
-  .two-day-tabs button { padding:15px 12px 12px;border-radius:10px; }
-  .two-day-tabs .two-day-tab-category { font-size:11px;letter-spacing:0;margin-bottom:16px; }
-  .two-day-tabs .two-day-tab-icon { width:28px;height:28px;right:11px;top:11px; }
-  .two-day-tabs .two-day-tab-name { font-size:clamp(17px,4.6vw,20px);line-height:1.4;white-space:nowrap; }
-  .two-day-tabs .two-day-tab-type { margin:4px 0 13px;font-size:13px; }
-  .two-day-tabs .two-day-tab-campus { margin:-5px 0 12px;font-size:13px; }
-  .two-day-tab-action { padding-top:9px;font-size:12px; }
+  .two-day-tabs { gap:10px;margin-bottom:24px; }
+  .two-day-tabs button { grid-template-columns:minmax(0,1fr) 24px;gap:10px 5px;padding:14px;border-radius:10px; }
+  .two-day-tabs .two-day-tab-icon { width:40px;height:40px; }
+  .two-day-tabs .two-day-tab-copy { grid-row:2;grid-column:1/-1; }
+  .two-day-tabs .two-day-tab-action { grid-row:1;grid-column:2; }
+  .two-day-tabs .two-day-tab-name { font-size:20px;line-height:1.4;white-space:nowrap; }
+  .two-day-tabs .two-day-tab-type { margin-top:3px;font-size:14px; }
+  .two-day-tabs .two-day-tab-campus { margin-top:5px;font-size:13px; }
   .two-day-panel { grid-template-columns:1fr;gap:28px; }
   .two-day-copy h3 { margin-bottom:16px; }
   .two-day-course-name { font-size:30px; }
@@ -119,7 +118,8 @@
 .course-introduction .dialog-description { white-space:pre-line; }
 
 @media(max-width:360px) {
-  .two-day-tabs .two-day-tab-type { font-size:12px; }
+  .two-day-tabs button { padding-inline:10px; }
+  .two-day-tabs .two-day-tab-name { font-size:18px; }
   #calendarDetail .calendar-program-picker button { padding-inline:2px;font-size:12px;white-space:nowrap; }
 }
 

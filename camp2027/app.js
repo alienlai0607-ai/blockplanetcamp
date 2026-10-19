@@ -450,8 +450,8 @@
 
   // The calendar highlights only confirmed dates. No inferred daily timetable.
   const confirmedCalendarDates = [...new Set(data.camps.flatMap(c => c.dates))].sort();
-  let calendarFilter = 'all', selectedDate = null, selectedCalendarCampId = 'full-term';
-  function campsOnDate(date) { return availableCamps().filter(c => c.dates.includes(date) && (calendarFilter === 'all' || c.id === calendarFilter)); }
+  let calendarFilter = 'full-term', selectedDate = null;
+  function campsOnDate(date) { return availableCamps().filter(c => c.id === calendarFilter && c.dates.includes(date)); }
   function dateLabel(date) { const [y,m,d] = date.split('-').map(Number); const weekday = '日一二三四五六'[new Date(y,m-1,d).getDay()]; return `${m} 月 ${d} 日（${weekday}）`; }
   function calendarDate(key) { const [year, month, day] = key.split('-').map(Number); return new Date(year, month - 1, day); }
   function calendarKey(date) { return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`; }
@@ -492,31 +492,20 @@
     renderCampSchedule();
   }
   function renderCampSchedule() {
-    // A date is a way to find a camp, never a one-day registration option.
-    const camps = calendarFilter !== 'all'
-      ? availableCamps().filter(c => c.id === calendarFilter && c.dates.length)
-      : selectedDate ? campsOnDate(selectedDate) : availableCamps().filter(c => c.dates.length);
-    if (!camps.some(c => c.id === selectedCalendarCampId)) selectedCalendarCampId = camps[0]?.id || null;
-    const picker = $('#calendarProgramPicker');
-    const candidateIds = camps.map(c => c.id).join(',');
-    // Keep the active button in the DOM so switching programs preserves focus.
-    if (picker.dataset.candidates !== candidateIds) {
-      picker.innerHTML = camps.map(c => '<button type="button" data-calendar-camp="' + esc(c.id) + '" aria-controls="calendarProgram" aria-pressed="false">' + esc(({ 'full-term': '五燈獎', drone: '祥龍無人機', lego: 'LEGO', 'game-lab': 'Game Lab', aviation: '飛行航空' })[c.id] || c.name) + '</button>').join('');
-      picker.dataset.candidates = candidateIds;
-    }
-    picker.hidden = camps.length < 2;
-    $$('[data-calendar-camp]', picker).forEach(button => button.setAttribute('aria-pressed', String(button.dataset.calendarCamp === selectedCalendarCampId)));
-    const overlaps = camps.some((camp, index) => camps.slice(index + 1).some(other => camp.dates.some(date => other.dates.includes(date))));
-    const camp = camps.find(c => c.id === selectedCalendarCampId);
+    // The selected camp always shows its whole term, including after a date click.
+    const camps = availableCamps();
+    const camp = camps.find(c => c.id === calendarFilter && c.dates.length);
     const note = $('#calendarOverlapNote');
-    note.hidden = !overlaps;
-    const hasCamp = id => camps.some(c => c.id === id);
-    const overlapNotes = [];
-    if (hasCamp('game-lab') && hasCamp('aviation')) overlapNotes.push('1/21–1/22：Game Lab、飛行航空擇一。');
-    if (hasCamp('drone') && hasCamp('lego')) overlapNotes.push('1/25–1/29：祥龍無人機、LEGO IDEAS 擇一。');
-    if (hasCamp('full-term') && overlaps) overlapNotes.push('特色營與五燈獎全期營日期重疊，請勿重複報名。');
-    note.textContent = overlapNotes.join(' ') || '營期部分日期重疊，請選擇適合孩子的完整營隊。';
-    if (!camp) { $('#calendarProgram').innerHTML = '<p>此日期尚無已公布的營隊。</p>'; return; }
+    if (note) {
+      const overlaps = camp ? camps.filter(other => other.id !== camp.id && camp.dates.some(date => other.dates.includes(date))) : [];
+      note.hidden = overlaps.length === 0;
+      note.textContent = !camp || !overlaps.length ? '' : camp.id === 'full-term'
+        ? '全期營與特色營日期重疊，請擇一報名。'
+        : overlaps.some(other => other.id !== 'full-term')
+          ? '與全期營及同日期特色營重疊，請擇一報名。'
+          : '與全期營日期重疊，請擇一報名。';
+    }
+    if (!camp) { $('#calendarProgram').innerHTML = '<p>此營隊尚無已公布的日期。</p>'; return; }
     const periods = camp.dateLabel.split('、');
     const enrolment = camp.id === 'full-term' ? '冬令營全期營，須完整報名' : '共 ' + camp.days + ' 天，完整營期';
     const time = /近期公布|稍後公布|待公布/.test(camp.timeLabel) ? '' : '<p class="calendar-program-time">每日 ' + esc(camp.timeLabel) + '</p>';
@@ -524,14 +513,8 @@
     const restNote = camp.id === 'full-term' ? '<p class="calendar-program-rest">週末休息</p>' : '';
     $('#calendarProgram').innerHTML = '<article class="calendar-course"><h3>' + esc(camp.name) + '</h3><p class="calendar-enrolment">' + esc(enrolment) + '</p><ul class="calendar-periods" aria-label="' + esc(camp.name) + '完整上課日期">' + periods.map(period => '<li>' + esc(period) + '</li>').join('') + '</ul>' + time + classroom + restNote + '<button type="button" data-camp="' + esc(camp.id) + '">查看完整課程與報名 <span aria-hidden="true">→</span></button></article>';
   }
-  $('#calendarProgramPicker').addEventListener('click', event => {
-    const button = event.target.closest('[data-calendar-camp]');
-    if (!button) return;
-    selectedCalendarCampId = button.dataset.calendarCamp;
-    renderCampSchedule();
-  });
   $$('[data-calendar-filter]').forEach(button => button.addEventListener('click', () => {
-    if (button.hidden) return;
+    if (button.hidden || !campusAllows(campById(button.dataset.calendarFilter))) return;
     calendarFilter = button.dataset.calendarFilter;
     $$('[data-calendar-filter]').forEach(el => el.setAttribute('aria-pressed', String(el === button)));
     selectedDate = null;
@@ -681,8 +664,8 @@
     $('#twoDayChoiceHelp').hidden = twoDay.length === 1;
     $('.two-day-intro').textContent = twoDay.length > 1 ? '兩個不同營隊，同日期擇一參加。' : `在${campusName()}，兩天做出自己的作品。`;
     $('.two-day-schedule-note').textContent = twoDay.length > 1 ? '兩個兩日營皆於 1/21、1/22 上課，請擇一參加；這兩天也包含在五燈獎冬令營全期營中。' : '本營於 1/21–1/22 上課，與冬令營全期營日期重疊，請擇一參加。';
-    $$('[data-calendar-filter]').forEach(button => setCampusVisibility(button, button.dataset.calendarFilter === 'all' || campusAllows(campById(button.dataset.calendarFilter))));
-    if (calendarFilter !== 'all' && !campusAllows(campById(calendarFilter))) calendarFilter = 'all';
+    $$('[data-calendar-filter]').forEach(button => setCampusVisibility(button, campusAllows(campById(button.dataset.calendarFilter))));
+    if (!campusAllows(campById(calendarFilter))) calendarFilter = 'full-term';
     selectedDate = null;
     $$('[data-calendar-filter]').forEach(button => button.setAttribute('aria-pressed', String(button.dataset.calendarFilter === calendarFilter)));
     renderCalendars();
