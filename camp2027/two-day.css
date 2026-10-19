@@ -8,15 +8,22 @@
 .two-day-date>span,.two-day-date small { display:block;font-size:14px;font-weight:550; }
 .two-day-date strong { display:block;margin-block:3px;font-size:27px;font-weight:800;color:#82412e;white-space:nowrap; }
 .two-day-date i { font-style:normal;font-weight:450;color:#bd9164; }
-.two-day-tabs { display:grid;grid-template-columns:1fr 1fr;gap:14px;width:100%;margin:0 0 34px; }
-.two-day-tabs button { position:relative;display:flex;flex-direction:column;justify-content:center;align-items:flex-start;min-width:0;min-height:104px;padding:19px 52px 19px 24px;text-align:left;border:1px solid #d9c5a5;border-bottom:3px solid #d9c5a5;border-radius:9px;color:#74614e;background:transparent; }
-.two-day-tabs .two-day-tab-name { display:block;margin:0;color:#684b37;font-size:27px;font-weight:800;line-height:1.35;letter-spacing:-.02em; }
-.two-day-tab-name small { font-size:.72em;white-space:nowrap; }
-.two-day-tabs .two-day-tab-type { display:block;margin:6px 0 0;font-size:16px;font-weight:550;line-height:1.5; }
-.two-day-tabs .two-day-tab-marker { position:absolute;right:23px;top:calc(50% - 8px);width:16px;height:16px;margin:0;border:1px solid #cbb58e;border-radius:50%; }
-.two-day-tabs button[aria-selected=true] { color:#86553c;border-color:#bb6849;background:#f2e3c770; }
-.two-day-tabs button[aria-selected=true] .two-day-tab-name { color:#a1462e; }
-.two-day-tabs button[aria-selected=true] .two-day-tab-marker { background:#a64b32;border-color:#a64b32;box-shadow:inset 0 0 0 4px #fff7e9; }
+.two-day-choice-help { margin:0 0 12px;color:#765e48;font-size:15px;line-height:1.6; }
+.two-day-choice-help>span { margin-left:6px; }
+.two-day-tabs { display:grid;grid-template-columns:1fr 1fr;gap:18px;width:100%;margin:0 0 34px; }
+.two-day-tabs button { --choice-ink:#1b5b4e;--choice-paper:#cce6dc;position:relative;display:flex;flex-direction:column;align-items:flex-start;min-width:0;padding:22px 25px 18px;text-align:left;border:2px solid var(--choice-ink);border-radius:14px;color:var(--choice-ink);background:var(--choice-paper);cursor:pointer; }
+.two-day-tabs button[data-two-day-tab=aviation] { --choice-ink:#285a7b;--choice-paper:#d4e6f5; }
+.two-day-tabs .two-day-tab-category { display:block;margin:0 0 10px;font-size:14px;font-weight:650;letter-spacing:.06em; }
+.two-day-tabs .two-day-tab-icon { position:absolute;right:25px;top:20px;width:46px;height:46px; }
+.two-day-tabs .two-day-tab-name { display:block;margin:0;color:inherit;font-size:27px;font-weight:800;line-height:1.35;letter-spacing:-.02em; }
+.two-day-tabs .two-day-tab-type { display:block;margin:4px 0 16px;font-size:16px;font-weight:550;line-height:1.5; }
+.two-day-tab-action { display:block;align-self:stretch;margin-top:auto;padding-top:12px;border-top:1px solid currentColor;font-size:14px;font-weight:700;line-height:1.5; }
+.two-day-tab-action>span { display:flex;align-items:center;justify-content:space-between;gap:8px; }
+.two-day-tab-action b { font-size:19px;line-height:1; }
+.two-day-tab-action .choice-current,.two-day-tabs button[aria-selected=true] .choice-open { display:none; }
+.two-day-tabs button[aria-selected=true] { color:#fffaf0;background:var(--choice-ink);box-shadow:0 4px 0 #d9c8aa; }
+.two-day-tabs button[aria-selected=true] .choice-current { display:flex; }
+@media(hover:hover) { .two-day-tabs button:hover { filter:brightness(.96); } }
 .two-day-tabs button:focus-visible,.two-day-panel:focus-visible { outline:3px solid #ac5737;outline-offset:4px; }
 .two-day-panel { display:grid;grid-template-columns:minmax(0,1.15fr) minmax(0,1fr);gap:clamp(28px,4vw,60px);align-items:center; }
 .two-day-panel[hidden] { display:none; }
@@ -37,12 +44,24 @@
 .coupon-pending-note { padding-block:22px;color:#7b624c;font-size:16px;line-height:1.8;border-bottom:1px solid #e2ceb0; }
 .coupon-pending-note a,.dialog-coupon-pending a { color:#a34730;text-decoration:underline;text-underline-offset:4px; }
 .dialog-coupon-pending { margin-top:24px;color:#816850;font-size:16px;line-height:1.8; }
-#calendar .calendar-toolbar { flex-wrap:wrap;gap:14px; }
-#calendar .filter-group { flex-wrap:wrap;gap:7px; }
-#calendarDetail .calendar-program-picker { flex-wrap:wrap; }
-#calendarDetail .calendar-program-picker button { flex:1 1 42%;font-size:15px; }
+#calendar .calendar-toolbar { display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:center;gap:12px 24px; }
+#calendar .filter-group { display:flex;flex-wrap:wrap;align-items:center;gap:7px;min-width:0; }
+#calendar .calendar-help { margin:0; }
+#calendar .calendar-layout,#calendar .calendars { align-items:start; }
+#calendar .month { min-width:0; }
+#calendar .month h3 { display:flex;align-items:baseline;flex-wrap:wrap;gap:2px 8px;min-height:50px;margin:0;padding-bottom:15px; }
+#calendar #calendarDetail { min-width:0;margin:0;align-self:start; }
+#calendarDetail .calendar-program-picker { display:grid;grid-template-columns:repeat(2,minmax(0,1fr));align-items:stretch;gap:5px;max-width:none; }
+#calendarDetail .calendar-program-picker:has(>button:nth-child(3):last-child) { grid-template-columns:repeat(3,minmax(0,1fr)); }
+#calendarDetail .calendar-program-picker:has(>button:only-child) { grid-template-columns:minmax(0,1fr); }
+#calendarDetail .calendar-program-picker button { width:100%;min-width:0;min-height:44px;margin:0;padding:8px 5px;font-size:15px;line-height:1.45;text-wrap:balance;overflow-wrap:anywhere; }
+#calendarDetail .calendar-periods { align-items:stretch; }
+#calendarDetail .calendar-periods li { max-width:100%;white-space:normal;overflow-wrap:anywhere; }
 #calendar .date-dots .game-lab-dot { background:#437c6e; }
 #calendar .date-dots .aviation-dot { background:#b58233; }
+@media(max-width:1200px) {
+  #calendar .calendar-toolbar { grid-template-columns:minmax(0,1fr);gap:10px; }
+}
 @media(max-width:700px) {
   #camps .choice-duration { white-space:normal;font-size:12px; }
   .two-day-camps { padding-block:40px 36px; }
@@ -54,12 +73,14 @@
   .two-day-date>span { font-size:12px; }
   .two-day-date strong { font-size:20px; }
   .two-day-date small { font-size:12px; }
-  .two-day-tabs { gap:10px;margin-bottom:26px; }
-  .two-day-tabs button { min-height:96px;padding:14px 10px;border-radius:7px;justify-content:flex-start; }
-  .two-day-tabs .two-day-tab-name { min-height:52px;display:flex;flex-wrap:wrap;align-content:center;align-items:baseline;gap:0 4px;font-size:clamp(16px,4.6vw,20px);line-height:1.25; }
-  .two-day-tab-name small { font-size:12px; }
-  .two-day-tabs .two-day-tab-type { margin-top:3px;font-size:13px; }
-  .two-day-tabs .two-day-tab-marker { display:none; }
+  .two-day-choice-help { font-size:13px; }
+  .two-day-tabs { gap:12px;margin-bottom:26px; }
+  .two-day-tabs button { padding:15px 12px 12px;border-radius:10px; }
+  .two-day-tabs .two-day-tab-category { font-size:11px;letter-spacing:0;margin-bottom:16px; }
+  .two-day-tabs .two-day-tab-icon { width:28px;height:28px;right:11px;top:11px; }
+  .two-day-tabs .two-day-tab-name { font-size:clamp(17px,4.6vw,20px);line-height:1.4;white-space:nowrap; }
+  .two-day-tabs .two-day-tab-type { margin:4px 0 13px;font-size:13px; }
+  .two-day-tab-action { padding-top:9px;font-size:12px; }
   .two-day-panel { grid-template-columns:1fr;gap:28px; }
   .two-day-copy h3 { margin-bottom:16px; }
   .two-day-course-name { font-size:30px; }
@@ -73,7 +94,8 @@
   .coupon-pending-note { font-size:14px; }
   #calendar .filter-group { display:flex;flex-wrap:nowrap;max-width:100%;overflow-x:auto;padding:3px 2px 9px; }
   #calendar .filter-group button { flex:0 0 auto;padding:8px 12px;font-size:14px;white-space:nowrap; }
-  #calendar .calendar-toolbar { display:block;min-width:0; }
+  #calendar .calendar-toolbar { display:grid;grid-template-columns:minmax(0,1fr);min-width:0;gap:8px; }
+  #calendarDetail .calendar-program-picker button { padding-inline:4px;font-size:14px; }
 }
 
 @media(max-width:480px) {
@@ -90,4 +112,7 @@
 
 .course-introduction .dialog-description { white-space:pre-line; }
 
-@media(max-width:360px) { .two-day-tabs .two-day-tab-type { font-size:12px; } }
+@media(max-width:360px) {
+  .two-day-tabs .two-day-tab-type { font-size:12px; }
+  #calendarDetail .calendar-program-picker button { padding-inline:2px;font-size:13px;white-space:nowrap; }
+}
