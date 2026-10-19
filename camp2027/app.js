@@ -584,7 +584,8 @@
     const factsMarkup = '<div class="dialog-facts">' + facts.map(([key, label, value]) => '<div data-fact="' + key + '"><span>' + esc(label) + '</span>' + esc(value) + (key === 'price' && c.pricing ? '<p class="dialog-price-note">' + esc(c.priceNote).replace('，原價', '，<br>原價') + '</p>' : '') + '</div>').join('') + '</div>' + (id === 'full-term' ? '<p class="dialog-unknown-note">週末休息，請完整參與營期。</p>' : hasKnownTimeAndAge ? '' : '<p class="dialog-unknown-note">年齡與上課時段將另行公布。</p>');
     const fullTermExtras = id === 'full-term' ? '<section class="course-journey" aria-labelledby="courseJourneyTitle"><h3 id="courseJourneyTitle">寒假的文化旅程</h3><ul class="period-list">' + data.itinerary.periods.map(p => '<li><small>' + esc(p.label) + '</small><h4>' + esc(p.title) + '</h4><p>' + esc(p.description) + '</p></li>').join('') + '</ul><p class="dialog-note">' + esc(data.itinerary.note) + '</p><div class="dialog-event"><h4>2/2 晚上，邀請爸媽來作客。</h4><p>' + esc(c.parentEvent.description) + '<br>' + esc(c.parentEvent.note) + '</p></div></section>' : '';
     const poster = c.poster ? '<figure class="dialog-poster"><a href="' + esc(c.poster) + '" ' + ext + ' aria-label="開啟' + esc(c.name) + '完整海報"><picture>' + (c.posterMobile ? '<source media="(max-width:700px)" type="image/avif" srcset="' + esc(c.posterMobile.replace(/\.webp$/, '.avif')) + '"><source media="(max-width:700px)" type="image/webp" srcset="' + esc(c.posterMobile) + '">' : '') + '<source type="image/avif" srcset="' + esc(c.poster.replace(/\.webp$/, '.avif')) + '"><img src="' + esc(c.poster) + '" alt="' + esc(c.name) + '完整課程海報" loading="eager" fetchpriority="high" decoding="async"></picture></a><figcaption>點開查看完整海報 <span aria-hidden="true">↗</span></figcaption></figure>' : '';
-    const couponEntry = '<p class="dialog-coupon-pending">優惠券開放時間將另行公布。<a href="coupon.html">查看說明 ↗</a></p>';
+    const couponMessage = c.registration.kind === 'form' ? '95 折優惠券・10/20 晚上 7:00 開放。' : '優惠券與報名資訊準備中。';
+    const couponEntry = `<p class="dialog-coupon-pending">${couponMessage}<a href="coupon.html?campus=${selectedCampus}&camp=${c.id}">查看優惠券 ↗</a></p>`;
     const actions = '<div class="dialog-actions"><a href="' + esc(c.registration.url) + '" ' + ext + ' class="button">' + esc(c.registration.label) + ' <span aria-hidden="true">↗</span></a></div>';
     const care = c.extendedCare;
     const pickupNotes = id === 'full-term' ? '<p>接送安排：' + esc(c.pickupLabel) + '。</p>' + (care ? '<p>超過 ' + esc(care.startsAfter) + ' 接回：延托費 NT$' + esc(care.ratePerHour) + '／小時，' + esc(care.rounding) + '。' + esc(care.notice) + '</p>' : '') : '';
@@ -646,8 +647,8 @@
     }
     if (item.question === '可以報名不只一個營隊嗎？') answer = combinations;
     if (item.question === '特色營的日期與費用公布了嗎？') answer = `${campusName()}的${names(twoDay)}為 2027/1/21–1/22 兩日營；${names(fiveDay)}為 2027/1/25–1/29 五日營。${knownSpecialties.map(c => `${c.name}適合${c.ageLabel}，每日 ${c.timeLabel}。`).join('')}其餘未確認資訊及費用將陸續公布。`;
-    if (item.question === '優惠券適用哪些營隊？') answer = `95 折優惠規劃納入${campusName()}的冬令營全期營，以及${names(specialties)}。優惠券延後公開，正式領取方式另行公告。`;
-    if (item.question === '可以用在不只一個營隊嗎？') answer = `同一位學員可在日期不衝堂的營隊追加使用，仍須符合券面期限與報名規則。${combinations}`;
+    if (item.question === '優惠券適用哪些營隊？') answer = `95 折優惠券於 10/20 晚上 7:00 開放，可用於${campusName()}的冬令營全期營，以及${names(fiveDay)}。兩日營已納入後續優惠規劃，費用與報名表準備中，尚未開放領券使用。`;
+    if (item.question === '可以用在不只一個營隊嗎？') answer = `同一位學員可在日期不衝堂的適用營隊追加使用，仍須符合券面期限與報名規則。目前開放的全期營與五日營日期重疊，請擇一報名；兩日營待費用與報名表公布後，再說明追加使用方式。`;
     if (item.question === '沒有積木設計或飛行經驗，可以參加嗎？') answer = `${campusName()}各營隊會依課程內容帶領孩子練習。歡迎告訴我們孩子的年級與經驗，確認適合的課程。`;
     return { ...item, answer };
   }

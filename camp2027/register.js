@@ -10,9 +10,20 @@
   let campus = campusIds.has(requestedCampus) ? requestedCampus : 'all';
   const coupon = window.CAMPAIGN_COUPON;
   document.getElementById('registrationCouponTitle').textContent = `冬令營 ${coupon?.discountLabel || '95 折'}優惠券`;
-  document.getElementById('registrationCouponStatus').textContent = coupon?.enabled && coupon.releaseStatus !== 'postponed'
-    ? '領取方式與使用規則'
-    : '開放時間另行公告';
+  document.getElementById('registrationCouponStatus').textContent = couponOpeningLabel(coupon);
+
+  function couponOpeningLabel(config) {
+    if (!config || config.releaseStatus === 'postponed' || !config.opensAt) return '開放時間另行公告';
+    const opening = new Date(config.opensAt);
+    if (!Number.isFinite(opening.getTime())) return '開放時間另行公告';
+    const parts = new Intl.DateTimeFormat('zh-TW', {
+      timeZone: 'Asia/Taipei', month: 'numeric', day: 'numeric', hour: 'numeric', minute: '2-digit', hourCycle: 'h23'
+    }).formatToParts(opening);
+    const part = type => parts.find(item => item.type === type)?.value || '';
+    const hour = Number(part('hour'));
+    const period = hour >= 18 ? '晚上' : hour >= 12 ? '下午' : hour >= 6 ? '上午' : '凌晨';
+    return `${part('month')}/${part('day')} ${period}${hour % 12 || 12}:${part('minute')} 開放`;
+  }
 
   if (!data || !Array.isArray(data.camps)) {
     count.textContent = '營隊資料暫時無法載入，請重新整理。';
@@ -70,6 +81,11 @@
     introduction.href = homeUrl(camp.id);
     introduction.setAttribute('aria-label', `${camp.name}，課程介紹`);
     actions.append(introduction);
+
+    const couponLink = textElement('a', 'camp-action camp-action-coupon', '領取優惠券');
+    couponLink.href = `coupon.html?campus=${campus}&camp=${encodeURIComponent(camp.id)}`;
+    couponLink.setAttribute('aria-label', `${camp.name}，領取優惠券`);
+    actions.append(couponLink);
 
     const url = formUrlFor(camp);
     if (url) {

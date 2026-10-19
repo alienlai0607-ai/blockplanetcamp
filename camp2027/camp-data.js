@@ -583,10 +583,10 @@ window.CAMP_DATA = {
     },
     {
       id: "coupon", label: "優惠券怎麼用", items: [
-        { question: "優惠券什麼時候開放？", answer: "優惠券已延後開放，新的開放時間另行公布。目前可先瀏覽各營隊課程與報名資訊。", action: { label: "查看優惠券資訊", url: "coupon.html" }, sourceIds: ["coupon-update-20261019"] },
-        { question: "優惠券適用哪些營隊？", answer: "這次 95 折優惠規劃納入五燈獎・大聖鬧辦桌、祥龍無人機派對、LEGO IDEAS 玩具設計總監，以及 Game Lab、飛行航空科學營、新春香氛科學營等兩日營。正式領取方式將隨開放公告說明。", sourceIds: ["coupon-winter-rules", "coupon-update-20261019", "fragrance-user-20261019"] },
+        { question: "優惠券什麼時候開放？", answer: "優惠券於 2026 年 10 月 20 日晚上 7 點（台灣時間）開放領取，95 折限量 60 張。領取成功後開始計算 60 分鐘使用期限。", action: { label: "查看優惠券資訊", url: "coupon.html" }, sourceIds: ["coupon-update-20261019"] },
+        { question: "優惠券適用哪些營隊？", answer: "本次可用於五燈獎・大聖鬧辦桌、祥龍無人機派對及 LEGO IDEAS 玩具設計總監。Game Lab、飛行航空科學營與新春香氛科學營已納入後續優惠規劃；兩日營費用與報名表準備中，尚未開放領券使用。", sourceIds: ["coupon-winter-rules", "coupon-update-20261019", "fragrance-user-20261019"] },
         { question: "領到優惠券後，接著怎麼做？", answer: "正式開放後，領取優惠券、複製優惠碼，並在領取後 60 分鐘內依頁面說明完成報名。一支手機限領一張，限同一位學員使用。", sourceIds: ["coupon-winter-rules"] },
-        { question: "可以用在不只一個營隊嗎？", answer: "同一位學員可在日期不衝堂的營隊追加使用，仍須符合券面期限與報名規則。1/21–1/22 的兩日營請擇一，可再追加 1/25–1/29 的祥龍無人機派對或 LEGO IDEAS，五日營也請擇一。各特色營都與五燈獎全期營重疊，不能與全期營同時追加。", sourceIds: ["coupon-winter-rules", "game-lab-user-20261019", "lego-dates-20261019", "fragrance-user-20261019"] },
+        { question: "可以用在不只一個營隊嗎？", answer: "同一位學員可在日期不衝堂的適用營隊追加使用，仍須符合券面期限與報名規則。目前開放的全期營、祥龍無人機派對及 LEGO IDEAS 日期重疊，請擇一報名。兩日營待費用與報名表公布後，再說明追加使用方式。", sourceIds: ["coupon-winter-rules", "game-lab-user-20261019", "lego-dates-20261019", "fragrance-user-20261019"] },
         { question: "95 折怎麼算？能和同行優惠合併嗎？", answer: "五燈獎按早鳥價 NT$12,000 計算，95 折為 NT$11,400，五燈獎沒有同行價。其他營隊若有兩人同行價，與 95 折優惠擇優使用、不疊加；各營價格以正式公布資訊為準。", sourceIds: ["coupon-winter-rules"] }
       ]
     }
@@ -602,7 +602,7 @@ window.CAMP_DATA = {
     { id: "aviation-user-brief", type: "user-confirmation", title: "「機」不可失2.0飛行航空科學營課程與命名", checkedOn: "2026-10-19", verification: "使用者先前確認兩日入門、從造型與重心到反覆試飛，預計製作約2–3架飛機；2026-10-19補充確認航空營也是2027年1月21、22日。新春副標與照片海報沿用前序版本。費用、年齡、時段、教室與專屬報名表未提供。" },
     { id: "aviation-approved-poster", type: "existing-generated-poster", title: "飛行航空科學營照片融合版海報", path: "assets/aviation-poster.webp", provenance: "assets/two-day-poster-sources.json", checkedOn: "2026-10-19", verification: "沿用既有新春海報與使用者提供的製作、試飛、成果照片；只轉換網頁格式。" },
     { id: "coupon-winter-rules", type: "user-confirmation", title: "2027冬令營優惠規則對話確認", checkedOn: "2026-10-19", verification: "沿用95折、領券後60分鐘內完成報名、一手機一張限同一學員、與同行價擇優不疊加；五燈獎12000元按95折為11400元且無同行價；日期不衝堂可追加使用、日期未定人工核對。" },
-    { id: "coupon-update-20261019", type: "user-confirmation", title: "優惠券延後與兩日營納入", checkedOn: "2026-10-19", verification: "使用者要求先建完整網站，優惠券延後公開，未提供新開放時間；兩日營加入適用方案，不自動重新開放領券。" },
+    { id: "coupon-update-20261019", type: "user-confirmation", title: "優惠券開放時間與兩日營規劃", checkedOn: "2026-10-19", verification: "使用者確認2026年10月20日19:00台灣時間開放95折優惠券；前台時間與正式後台一致。既有三營可使用，兩日營仍待費用與報名表確認。" },
     {"id": "lights-final-poster", "type": "provided-final-image", "title": "2027五燈獎冬令營辦桌20261012-01.jpg", "path": "../03_原始素材/今年營隊/2027五燈獎冬令營辦桌20261012-01.jpg", "checkedOn": "2026-10-12", "verification": "已視覺核對2027年份、五燈由左至右順序、活動副標與全部學習重點；整體主題名稱維持使用者先前確認版本。"},
     { id: "full-term-form", type: "public-form", title: "2027冬令營《五燈獎・大聖鬧辦桌》報名表", url: "https://docs.google.com/forms/d/e/1FAIpQLSfqclQFsLtNujPctIfk_elu3umDNIWr1W6C1MSIs5wc3BIVFg/viewform", checkedOn: "2026-10-12", verification: "可見課程介紹頁與費用頁重新核對；未填寫資料、未提交報名。" },
     { id: "drone-poster", type: "provided-pdf", title: "2027寒假 無人機營隊.pdf", path: "../03_原始素材/今年營隊/2027寒假 無人機營隊.pdf", verification: "逐字視覺核對海報標題、五日日期與四組課程介紹。" },

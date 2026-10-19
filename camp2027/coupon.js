@@ -8,7 +8,10 @@
   const storagePrefix = config.storagePrefix || 'bp_2027c_coupon';
   const couponKey = `${storagePrefix}_data`;
   const fingerprintKey = `${storagePrefix}_fp`;
-  const requestedCampus = new URLSearchParams(location.search).get('campus');
+  const requestParams = new URLSearchParams(location.search);
+  const requestedCampus = requestParams.get('campus');
+  const selectedCamp = (config.registrationCamps || []).find(camp => camp.id === requestParams.get('camp')) || null;
+  const isSelectedCampPending = () => !!selectedCamp && selectedCamp.kind !== 'form';
   const campus = ['north', 'yongkang'].includes(requestedCampus) ? requestedCampus : 'all';
   function withCampus(value) {
     const url = new URL(value, location.href);
@@ -36,13 +39,16 @@
   const link = (url, text, cls = 'inline-button', external = false) => `<a class="${cls}" href="${escapeHtml(safeUrl(url))}"${external ? ' target="_blank" rel="noopener"' : ''}>${text}</a>`;
   const isPostponed = () => config.enabled !== true || config.releaseStatus === 'postponed';
   const campIds = ['full-term', 'drone', 'lego', 'game-lab', 'aviation', 'fragrance'];
+  const backendCampIds = ['full-term', 'drone', 'lego'];
+  const readyRegistrationCamps = (config.registrationCamps || []).filter(camp => backendCampIds.includes(camp.id) && camp.kind === 'form');
   const canActivate = () => !isPostponed() && config.enabled === true && config.rulesConfirmed === true && config.backendReady === true &&
     config.campaignId === '2027C' && Number.isFinite(opening()?.getTime()) &&
     /^https:\/\/script\.google\.com\/macros\/s\/[^/]+\/exec$/.test(config.apiUrl || '') &&
-    Array.isArray(config.eligibleCamps) && config.eligibleCamps.length === campIds.length &&
+    Array.isArray(config.eligibleCamps) && config.eligibleCamps.length === backendCampIds.length &&
     Array.isArray(config.registrationCamps) && config.registrationCamps.length === campIds.length &&
-    campIds.every(id => config.registrationCamps.filter(camp => camp.id === id).length === 1);
-  const isOpen = () => canActivate() && now() >= opening().getTime();
+    campIds.every(id => config.registrationCamps.filter(camp => camp.id === id).length === 1) &&
+    backendCampIds.every(id => readyRegistrationCamps.some(camp => camp.id === id && config.eligibleCamps.includes(camp.name)));
+  const isOpen = () => !isSelectedCampPending() && canActivate() && now() >= opening().getTime();
   function safeGet(key) { try { return localStorage.getItem(key); } catch (_) { persistentStorage = false; return null; } }
   function safeSet(key, value) { try { localStorage.setItem(key, value); return true; } catch (_) { persistentStorage = false; return false; } }
   function clearCoupon() {
@@ -117,7 +123,7 @@
     return `<article class="ticket" data-state="${state}" aria-label="2027冬令營95折優惠券">
       <div class="ticket-face"><div class="ticket-topline"><span>布拉克星球・冬令營</span><span class="edition">2027</span></div>
       <div class="offer"><div class="offer-copy"><p>營隊報名優惠</p><strong><span>95</span><i>折</i></strong><p class="offer-note">指定主題營隊適用</p></div><img class="learners" src="assets/coupon-learners.webp" width="1536" height="1024" alt="小橘人學員帶著布袋戲偶、無人機與積木龍車"></div>
-      <div class="ticket-bottomline"><span>全期營・五日營・兩日營</span><span aria-hidden="true">✦</span></div></div>
+      <div class="ticket-bottomline"><span>全期營・五日營適用</span><span aria-hidden="true">✦</span></div></div>
       <div class="ticket-stub"><div class="stub-content" data-panel="${state}">${stub}</div></div>${action}</article>${extra}`;
   }
   function dateLabel() {
@@ -159,7 +165,14 @@
       showNotice('請長按或使用複製快捷鍵，複製已選取的原優惠碼。');
     }
   }
+  function renderCampPending() {
+    currentCoupon = null;
+    renderStatus('camp-pending', '此營隊報名資訊準備中',
+      `${escapeHtml(selectedCamp.name)}的費用與雲端報名表尚未公布。優惠券已納入後續規劃，待報名資料確認後再開放這個營隊領取；目前不會開始 60 分鐘的使用倒數。`,
+      `${link(registrationPage, '返回選擇營隊 →', 'primary')}${link(line, 'LINE 洽詢營隊資訊 ↗', 'inline-button', true)}`);
+  }
   function renderPending() {
+    if (isSelectedCampPending()) { renderCampPending(); return; }
     if (isPostponed() || !dateLabel()) { renderPostponed(); return; }
     currentCoupon = null;
     const {month, day} = dateLabel();
@@ -173,7 +186,7 @@
     const date = opening();
     const formatted = new Intl.DateTimeFormat('zh-TW',{timeZone:'Asia/Taipei',month:'long',day:'numeric',hour:'2-digit',minute:'2-digit',hour12:false}).format(date);
     render(ticket(`<span class="status">即將開放</span><p class="stub-label">台灣時間</p><p class="opening-time">${escapeHtml(formatted)}</p><p class="quantity">限量 <b>60</b> 張</p>`,
-      `<div class="ticket-action"><div><b>距離開放領取</b><p id="pre-countdown" role="timer" aria-label="距離優惠券開放時間"></p></div><button class="primary" disabled>尚未開放</button></div>`, 'before', `<div class="state-links">${calendarLink(true)}</div>`), 'not-yet');
+      `<div class="ticket-action"><div><b>距離開放領取</b><p id="pre-countdown" role="timer" aria-label="距離優惠券開放時間"></p></div><button class="primary" disabled>尚未開放</button></div>`, 'before', `<div class="state-links">${calendarLink(true)}${link(registrationPage, '選擇營隊・開始報名 →')}</div>`), 'not-yet');
     const update = () => {
       const distance = date.getTime() - now();
       if (distance <= 0) { clearInterval(openingTimer); init(); return; }
@@ -199,7 +212,7 @@
     currentCoupon = coupon; rememberedPhone = coupon.phone;
     render(ticket(`<span class="status status-success">已領取</span><p class="stub-label">你的優惠碼</p><output class="coupon-code" id="code-value" tabindex="-1">${escapeHtml(coupon.code)}</output><button class="copy-code" data-action="copy" type="button">複製優惠碼 ⧉</button><span class="stub-rule"></span><p class="stub-label">剩餘使用時間</p><p class="timer" id="countdown" role="timer" aria-label="優惠碼剩餘使用時間">--:--</p><p class="stub-note demo-note">以優惠碼原有效期限計時</p>`,
       `<div class="ticket-action"><div><b id="copy-heading">優惠券已準備好</b><p id="copy-status" role="status">先複製優惠碼，再前往報名。</p></div><button class="primary" data-action="register" type="button">選擇營隊・前往報名 →</button></div>`, 'claimed',
-      `<section class="next-steps" aria-labelledby="next-title"><h2 id="next-title">接著，完成報名</h2><p>先選擇適合的營隊；追加營期須不重疊。1/21–1/22 的 Game Lab、飛行航空科學營與新春香氛科學營擇一；1/25–1/29 的祥龍無人機派對與 LEGO IDEAS 擇一。兩段日期不重疊，可追加報名；五個特色營皆與五燈獎全期營重疊，不可一起報名。兩日營報名表與費用準備中，可先 LINE 洽詢。</p><div class="steps-row"><p><strong>表單貼上優惠碼</strong><span>填寫同一位學員，手機 ${escapeHtml(coupon.phone)}。</span></p><p><strong>時間內完成送出</strong><span>送出後，截圖保留報名紀錄。</span></p><p><strong>傳至官方 LINE</strong><span>由行政核對優惠與報名金額。</span></p></div>${link(line, '已送出報名？到 LINE 確認 ↗', 'inline-button', true)}${!persistentStorage ? '<p class="storage-warning" role="status">此瀏覽器無法保留優惠碼，請先複製或截圖並保留本頁。若關閉頁面後無法找回，請聯絡官方 LINE 協助。</p>' : ''}${coupon.codeStatus === 'used' ? '<p class="storage-warning">這張券已有報名紀錄；有效時間內，同一位學員僅可追加營期不重疊的適用營隊，請沿用原優惠碼；未知營期須先由教室核對。</p>' : ''}</section>`), 'claimed');
+      `<section class="next-steps" aria-labelledby="next-title"><h2 id="next-title">接著，完成報名</h2><p>目前可使用於五燈獎・大聖鬧辦桌、祥龍無人機派對或 LEGO IDEAS 玩具設計總監。這三個營隊日期重疊，請擇一報名。兩日營的費用與報名表準備中，尚未開放使用優惠券。</p><div class="steps-row"><p><strong>表單貼上優惠碼</strong><span>填寫同一位學員，手機 ${escapeHtml(coupon.phone)}。</span></p><p><strong>時間內完成送出</strong><span>送出後，截圖保留報名紀錄。</span></p><p><strong>傳至官方 LINE</strong><span>由行政核對優惠與報名金額。</span></p></div>${link(line, '已送出報名？到 LINE 確認 ↗', 'inline-button', true)}${!persistentStorage ? '<p class="storage-warning" role="status">此瀏覽器無法保留優惠碼，請先複製或截圖並保留本頁。若關閉頁面後無法找回，請聯絡官方 LINE 協助。</p>' : ''}${coupon.codeStatus === 'used' ? '<p class="storage-warning">這張券已有報名紀錄；有效時間內，同一位學員僅可追加營期不重疊的適用營隊，請沿用原優惠碼；未知營期須先由教室核對。</p>' : ''}</section>`), 'claimed');
     document.getElementById('registration-code').textContent = coupon.code;
     setCopyStatus('先複製優惠碼，再前往報名。');
     if (startCountdown() && automatic) copyCode(true);
@@ -226,7 +239,7 @@
     renderStatus('error','暫時無法取得優惠券資訊','請稍後再試；若已領取，請沿用相同瀏覽器與手機重試，不會因此多領一張。',`<button class="primary" type="button" data-action="retry">重新確認優惠券資訊</button>${link(line,'LINE 聯絡我們 ↗','inline-button',true)}`);
   }
   function hasLiveCoupon() {
-    if (isPostponed()) return false; // Never erase an older claim while public release is paused.
+    if (isPostponed() || isSelectedCampPending()) return false; // Preserve existing claims while paused or browsing an unready camp.
     if (currentCoupon && new Date(currentCoupon.expiresAt).getTime() > now()) return true;
     if (currentCoupon) { rememberedPhone = currentCoupon.phone; clearCoupon(); renderExpired(); }
     return false;
@@ -328,6 +341,7 @@
   }
   async function init() {
     if (activeRequest) return;
+    if (isSelectedCampPending()) { renderCampPending(); return; }
     if (isPostponed()) { renderPostponed(storedCoupon()); return; }
     if (!canActivate()) { renderPending(); return; }
     if (!isOpen()) { renderNotYet(); return; }
@@ -350,7 +364,7 @@
     finally { if (revision === requestRevision) { activeRequest = false; app.setAttribute('aria-busy','false'); } }
   }
   document.getElementById('eligible-camps').innerHTML = (config.eligibleCamps || []).map(escapeHtml).join('<br>');
-  document.getElementById('registration-links').innerHTML = (config.registrationCamps || []).map(camp => link(camp.url, `<span><strong>${escapeHtml(camp.name)}</strong><small>${escapeHtml(camp.description)}</small></span><span aria-hidden="true">↗</span>`, '', true)).join('');
+  document.getElementById('registration-links').innerHTML = readyRegistrationCamps.filter(camp => campus === 'all' || camp.classroomIds?.includes(campus)).sort((a, b) => Number(b.id === selectedCamp?.id) - Number(a.id === selectedCamp?.id)).map(camp => link(camp.url, `<span><strong>${escapeHtml(camp.name)}</strong><small>${escapeHtml(camp.description)}</small></span><span aria-hidden="true">↗</span>`, '', true)).join('');
   app.addEventListener('submit', event => { if (event.target.id === 'claim-form') prepareClaim(event); });
   app.addEventListener('input', event => {
     if (event.target.id !== 'phone-input') return;
@@ -369,7 +383,7 @@
     if (action === 'copy-saved') copySavedCode();
     else if (action === 'copy') copyCode();
     else if (action === 'retry') init();
-    else if (action === 'reclaim') { if (!isPostponed()) clearCoupon(); init(); }
+    else if (action === 'reclaim') { if (!isPostponed() && !isSelectedCampPending()) clearCoupon(); init(); }
     else if (action === 'register' && hasLiveCoupon()) { registerDialog.showModal(); registerDialog.scrollTop = 0; }
   });
   document.querySelectorAll('[data-close]').forEach(button => button.addEventListener('click', () => button.closest('dialog').close()));
