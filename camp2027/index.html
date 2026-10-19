@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <meta name="theme-color" content="#ffe8b4">
   <title>2027 布拉克星球冬令營｜9 日全期・5 日主題・2 日創作營</title>
-  <meta name="description" content="布拉克星球2027台南冬令營：9日五燈獎・大聖鬧辦桌全期營、5日祥龍飛行派對與LEGO IDEAS、1/21–1/22兩日Game Lab遊戲設計與「機」不可失2.0飛行航空科學營。依興趣與日期選擇孩子的寒假創作。">
+  <meta name="description" content="布拉克星球2027台南冬令營：9日五燈獎・大聖鬧辦桌全期營、5日祥龍飛行派對與LEGO IDEAS、1/21–1/22兩日Game Lab遊戲設計與「機」不可失飛行航空科學營。依興趣與日期選擇孩子的寒假創作。">
   <meta property="og:title" content="2027 布拉克星球冬令營">
   <meta property="og:description" content="五燈亮起，飛行出發，讓孩子的點子變成自己的作品。探索9日全期營與5日／2日特色營。">
   <meta property="og:type" content="website">
@@ -21,10 +21,12 @@
   <link rel="preload" as="image" href="assets/hero-camp-world-brush.webp?v=home-lights-20261013" media="(min-width:1101px)" fetchpriority="high">
   <link rel="preload" as="image" href="assets/hero-camp-world-tablet-brush.webp?v=home-lights-20261013" media="(min-width:701px) and (max-width:1100px)" fetchpriority="high">
   <link rel="stylesheet" href="campaign.css?v=image-speed-20261014">
-  <link rel="stylesheet" href="two-day.css?v=two-day-20261019">
-  <script src="camp-data.js?v=two-day-20261019" defer></script>
+  <link rel="stylesheet" href="two-day.css?v=two-day-stories-20261019">
+  <link rel="stylesheet" href="two-day-stories.css?v=two-day-stories-20261019">
+  <script src="camp-data.js?v=two-day-stories-20261019" defer></script>
   <script src="image-loader.js?v=image-speed-20261014" defer></script>
-  <script src="app.js?v=two-day-20261019" defer></script>
+  <script src="app.js?v=two-day-stories-20261019" defer></script>
+  <script src="two-day-stories.js?v=two-day-stories-20261019" defer></script>
 </head>
 <body>
   <a class="skip-link" href="#main">跳至主要內容</a>
@@ -95,7 +97,7 @@
         </a>
         <a class="camp-choice-option" href="#two-day">
           <p class="choice-interest"><strong>2 日創作</strong></p>
-          <h3>Game Lab<br>「機」不可失 2.0</h3>
+          <h3>Game Lab<br>「機」不可失</h3>
           <p class="choice-duration">做遊戲・造飛機</p>
           <p class="choice-description">1/21–1/22，兩種主題擇一體驗</p>
           <span class="choice-arrow" aria-hidden="true">→</span>
@@ -177,10 +179,13 @@
     </div>
 
     <section class="two-day-camps page-width section-anchor" id="two-day" aria-labelledby="twoDayTitle">
-      <header class="two-day-heading"><p class="eyebrow">2 日特色營 · 2027/1/21–1/22</p><h2 id="twoDayTitle">兩天，做出自己的作品。</h2><p>同一段寒假，兩種創作方向。選孩子最想動手的那一種。</p></header>
+      <header class="two-day-heading">
+        <div><p class="eyebrow">2027 冬令營</p><h2 id="twoDayTitle">2 日特色營</h2><p class="two-day-intro">做遊戲，或造飛機，選一個喜歡的主題。</p></div>
+        <p class="two-day-date"><span>兩天完整體驗</span><strong>1/21 <i>—</i> 1/22</strong><small>星期四・星期五</small></p>
+      </header>
       <div class="two-day-tabs" role="tablist" aria-label="選擇兩日營主題">
-        <button type="button" role="tab" id="tab-game-lab" aria-selected="true" aria-controls="panel-game-lab" data-two-day-tab="game-lab">設計遊戲<span>Game Lab</span></button>
-        <button type="button" role="tab" id="tab-aviation" aria-selected="false" aria-controls="panel-aviation" tabindex="-1" data-two-day-tab="aviation">打造飛行器<span>「機」不可失 2.0</span></button>
+        <button type="button" role="tab" id="tab-game-lab" aria-selected="true" aria-controls="panel-game-lab" data-two-day-tab="game-lab"><span class="two-day-tab-name">Game Lab</span><span class="two-day-tab-type">遊戲設計師養成營</span><span class="two-day-tab-marker" aria-hidden="true"></span></button>
+        <button type="button" role="tab" id="tab-aviation" aria-selected="false" aria-controls="panel-aviation" tabindex="-1" data-two-day-tab="aviation"><span class="two-day-tab-name">「機」不可失</span><span class="two-day-tab-type">飛行航空科學營</span><span class="two-day-tab-marker" aria-hidden="true"></span></button>
       </div>
       <div id="twoDayPanels"></div>
       <p class="two-day-schedule-note">兩個兩日營皆於 1/21、1/22 上課，請擇一參加；這兩天也包含在五燈獎 9 日全期營中。</p>

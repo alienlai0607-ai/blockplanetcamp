@@ -402,10 +402,11 @@
   // Two themes share the same dates; show one readable course at a time.
   const twoDayCamps = data.camps.filter(c => ['game-lab', 'aviation'].includes(c.id));
   $('#twoDayPanels').innerHTML = twoDayCamps.map((c, index) => {
-    const poster = c.posterPreview || c.poster;
+    const title = c.id === 'game-lab' ? 'Game Lab' : '「機」不可失';
+    const type = c.id === 'game-lab' ? '遊戲設計師養成營' : '飛行航空科學營';
     return `<article id="panel-${esc(c.id)}" class="two-day-panel" role="tabpanel" tabindex="0" aria-labelledby="tab-${esc(c.id)}" ${index ? 'hidden' : ''}>
-      <button class="two-day-poster" type="button" data-camp="${esc(c.id)}" aria-label="查看${esc(c.name)}海報與完整課程"><picture><source type="image/avif" srcset="${esc(poster.replace(/\.webp$/, '.avif'))}"><img src="${esc(poster)}" width="${c.posterWidth || 1086}" height="${c.posterHeight || 1448}" alt="${esc(c.name)}課程海報" loading="lazy" decoding="async"></picture><span>看海報與完整課程 ↗</span></button>
-      <div class="two-day-copy"><p class="eyebrow">${esc(c.daysLabel)} · 1/21–1/22</p><h3>${esc(c.name)}</h3><p class="two-day-subtitle">${esc(c.subtitle)}</p><p>${esc(c.description)}</p>
+      <div class="two-day-story" data-two-day-story="${esc(c.id)}"></div>
+      <div class="two-day-copy"><p class="eyebrow">${esc(c.daysLabel)} · 1/21–1/22</p><h3><span class="two-day-course-name">${esc(title)}</span><span class="two-day-course-type">${esc(type)}</span></h3><p class="two-day-subtitle">${esc(c.subtitle)}</p><p>${esc(c.description)}</p>
       <ul>${c.activities.map(activity => `<li>${esc(activity.title)}</li>`).join('')}</ul>
       <p class="two-day-details-pending">費用、上課時段與教室稍後公布。</p><div class="camp-actions"><button class="button" type="button" data-camp="${esc(c.id)}">看完整課程 <span aria-hidden="true">→</span></button><a class="text-link" href="${esc(c.registration.url)}" ${ext}>LINE 洽詢 ↗</a></div></div>
     </article>`;
@@ -528,6 +529,9 @@
   let pageOverflowBeforeDialog = '';
 
   function renderCourseJournal(camp) {
+    if (camp.editorialChapters) {
+      return '<section class="course-editorial" aria-label="課程介紹">' + camp.editorialChapters.map(chapter => '<div class="course-chapter"><div class="course-chapter-heading"><h3>' + esc(chapter.title) + '</h3></div>' + chapter.paragraphs.map(paragraph => '<p>' + esc(paragraph) + '</p>').join('') + '</div>').join('') + '<p class="course-invention-outcome">' + esc(camp.outcome) + '</p></section>';
+    }
     const doodles = {
       'full-term': 'assets/course-doodle-culture.webp',
       drone: 'assets/course-doodle-drone.webp',
@@ -570,7 +574,7 @@
     const pickupNotes = id === 'full-term' ? '<p>接送安排：' + esc(c.pickupLabel) + '。</p>' + (care ? '<p>超過 ' + esc(care.startsAfter) + ' 接回：延托費 NT$' + esc(care.ratePerHour) + '／小時，' + esc(care.rounding) + '。' + esc(care.notice) + '</p>' : '') : '';
     const registrationNotes = '<details class="dialog-registration-notes"><summary>報名與接送說明</summary><div>' + pickupNotes + '<p>' + esc(c.registration.note) + '</p><p>' + esc(data.campaign.relationship) + '</p></div></details>';
     const registration = '<section class="course-registration" aria-labelledby="courseRegistrationTitle"><h3 id="courseRegistrationTitle">日期與報名</h3>' + factsMarkup + actions + couponEntry + registrationNotes + '</section>';
-    $('#dialogContent').innerHTML = '<div class="dialog-inner course-journal' + (poster ? '' : ' course-journal--text') + '">' + poster + '<article class="dialog-course-main"><header class="course-introduction"><p class="eyebrow">' + esc(c.daysLabel) + '</p><h2 id="dialogTitle">' + esc(c.name) + '</h2><p class="dialog-subtitle">' + esc(c.subtitle) + '</p><p class="dialog-description">' + esc(c.description) + '</p></header>' + renderCourseJournal(c) + fullTermExtras + registration + '</article></div>';
+    $('#dialogContent').innerHTML = '<div class="dialog-inner course-journal' + (poster ? '' : ' course-journal--text') + '">' + poster + '<article class="dialog-course-main"><header class="course-introduction"><p class="eyebrow">' + esc(c.daysLabel) + '</p><h2 id="dialogTitle">' + esc(c.name) + '</h2><p class="dialog-subtitle">' + esc(c.subtitle) + '</p><p class="dialog-description">' + esc(c.editorialIntroduction || c.description) + '</p></header>' + renderCourseJournal(c) + fullTermExtras + registration + '</article></div>';
     dialogIsOpen = true; syncScenePlayback();
     if (!campDialog.open) {
       pageOverflowBeforeDialog = document.body.style.overflow;

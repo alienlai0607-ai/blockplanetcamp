@@ -287,10 +287,10 @@ window.CAMP_DATA = {
       posterWidth: 1122,
       posterHeight: 1402,
       selectionLabel: "打造飛行器",
-      name: "「機」不可失 2.0－飛行航空科學營",
-      shortName: "「機」不可失 2.0",
+      name: "「機」不可失｜飛行航空科學營",
+      shortName: "「機」不可失",
       category: "兩日主題營",
-      subtitle: "親手造飛機，讓新春願望起飛！",
+      subtitle: "新春飛行發明家",
       days: 2,
       daysLabel: "2 日入門營",
       dates: ["2027-01-21", "2027-01-22"],
@@ -305,17 +305,36 @@ window.CAMP_DATA = {
       priceNote: "可先透過 LINE 報名，確認費用與開課安排。",
       pricing: null,
       introduction: "新年第一個發明，從親手打造一架飛機開始。",
-      description: "兩天的飛行入門體驗，從設計造型、動手製作到調整重心，預計製作約 2–3 架飛機。透過反覆試飛、觀察與修改，認識飛機造型、平衡與空氣力學的基本概念，讓自己的創意真正起飛。",
-      highlights: ["從造型開始親手造飛機", "調整重心，觀察飛行變化", "反覆試飛與改良作品"],
-      activities: [
-        { title: "設計新春飛機", description: "從新春點子畫出草稿，思考飛機的造型與結構，設計自己的飛行器。", learningPoints: ["創意發想", "造型設計", "設計草稿"] },
-        { title: "動手製作", description: "把設計變成飛機，從製作中觀察各個部位的搭配與飛行可能。", learningPoints: ["動手製作", "結構觀察", "作品組裝"] },
-        { title: "調整重心與平衡", description: "依照飛機的造型調整重心位置，透過觀察與實驗理解平衡和飛行的關係。", learningPoints: ["重心與平衡", "空氣力學入門", "科學觀察"] },
-        { title: "反覆試飛與改良", description: "實際試飛、觀察飛起來的樣子，再修改設計與重心，從一次次測試找到改善的方法。", learningPoints: ["測試記錄", "問題解決", "反覆改良"] }
+      description: "從新春找靈感，親手裁切、組裝自己的飛行器。找重心、練習遙控試飛，從每次測試裡修改；馬達等配件還能拆下重用，讓下一個點子繼續起飛。",
+      editorialIntroduction: "「我想做的這個，也可以飛嗎？」孩子畫出來的，可能是一個紅包、一串鞭炮，也可能是一個需要他解釋半天，我們才看得懂的形狀。\n\n好，那就來研究，怎麼讓它飛起來。",
+      editorialChapters: [
+        {
+          title: "從新春點子，做出自己的形狀",
+          paragraphs: ["從過年找靈感，畫下自己的想法，再親手裁切、組裝，把零件一個個安裝上去。原本只存在腦中的東西，慢慢有了形狀，也有了準備起飛的模樣。"]
+        },
+        {
+          title: "想讓它飛，先一起弄明白",
+          paragraphs: ["不過，想讓它飛，還有幾件事得弄明白。馬達要放哪裡？機身哪一邊比較重？拿起遙控器之後，它會照著預想的方向前進嗎？", "飛行原理，就在孩子想讓作品離開地面的那一刻，變成了他想知道的事。兩天裡，我們會陪孩子認識原理、動手製作、練習操控，也陪他一起處理那些「怎麼跟想的不一樣」的時刻。"]
+        },
+        {
+          title: "每一次試飛，都留下新線索",
+          paragraphs: ["看它怎麼飛，回頭檢查，動手修改，再試一次。每次試飛，都替下一次調整留下線索。"]
+        },
+        {
+          title: "下一個點子，也能繼續起飛",
+          paragraphs: ["這套裝備和學到的設計技巧，可以跟著孩子的下一個點子走。", "回到家後想換個造型，有更好的點子，就將馬達等配件拆下，裝到新設計的機身上，繼續測試。"]
+        }
       ],
-      outcome: "從自己的點子出發，帶著製作與試飛經驗，完成屬於自己的飛機作品。",
+      highlights: ["從新春靈感親手造飛機", "找重心、練操控、反覆試飛", "拆裝配件，讓下一個點子繼續飛"],
+      activities: [
+        { title: "設計新春飛行器", description: "從紅包、鞭炮或自己的新春點子畫出草稿，思考飛行器的造型與結構。", learningPoints: ["新春靈感", "造型設計", "設計草稿"] },
+        { title: "裁切、組裝與安裝", description: "親手裁切、組裝機身，把馬達等配件逐一安裝上去，讓想法慢慢有了形狀。", learningPoints: ["動手製作", "零件安裝", "結構觀察"] },
+        { title: "找重心與練習操控", description: "觀察機身哪一邊比較重，調整馬達與配件的位置，認識飛行原理並練習遙控。", learningPoints: ["重心與平衡", "飛行原理", "遙控練習"] },
+        { title: "試飛、修改與再創作", description: "從試飛找到修改線索，再調整、再測試；馬達等配件可拆下重用，裝到下一個新設計的機身。", learningPoints: ["觀察與測試", "反覆改良", "拆裝配件延續創作"] }
+      ],
+      outcome: "兩天，不只是做一架套用相同市售框架的飛機，而是一起學會「發明」屬於自己、獨一無二的飛行器。",
       registration: { kind: "inquiry", label: "LINE 報名", url: "https://lin.ee/zFqqFzQ", note: "向我們說想報名飛行航空科學營，確認費用、年齡與開課安排。" },
-      sourceIds: ["aviation-user-brief", "aviation-approved-poster"],
+      sourceIds: ["aviation-user-brief", "aviation-approved-poster", "aviation-editorial-20261019"],
       status: "additional-details-upcoming"
     }
   ],
@@ -485,7 +504,7 @@ window.CAMP_DATA = {
       id: "choosing", label: "怎麼選營隊", items: [
         { question: "全期營有包含樂高營或飛行營嗎？", answer: "沒有。9 日全期營是「五燈獎・大聖鬧辦桌」的完整課程；玩具設計總監、祥龍飛行派對、Game Lab 與飛行航空科學營各有自己的課程與報名入口。", sourceIds: ["user-confirmed-scope"] },
         { question: "9 日全期營是哪幾天？", answer: "課程分為 1/21–1/22、1/25–1/29、2/1–2/2 三段，共 9 天。這是完整全期營的日期安排，不是三個分開報名的營隊。", sourceIds: ["full-term-form", "user-confirmed-scope"] },
-        { question: "2 日營有哪些主題？", answer: "Game Lab 遊戲設計師養成營在 2027/1/21–1/22 上課，使用 Microsoft MakeCode Arcade 創作新春功夫遊戲。「機」不可失 2.0 飛行航空科學營也是 2027/1/21–1/22，從造型、重心到反覆試飛，親手打造飛機。兩個主題同時開課，請擇一參加。", sourceIds: ["game-lab-user-20261019", "aviation-user-brief"] },
+        { question: "2 日營有哪些主題？", answer: "Game Lab 遊戲設計師養成營在 2027/1/21–1/22 上課，使用 Microsoft MakeCode Arcade 創作新春功夫遊戲。「機」不可失 飛行航空科學營也是 2027/1/21–1/22，從造型、重心到反覆試飛，親手打造飛機。兩個主題同時開課，請擇一參加。", sourceIds: ["game-lab-user-20261019", "aviation-user-brief"] },
         { question: "適合幾年級的孩子？", answer: "五燈獎全期營適合國小一年級至六年級。其餘營隊的適合年齡將分別公布，報名前可透過 LINE 確認。", sourceIds: ["full-term-form"] },
         { question: "沒有積木設計或飛行經驗，可以參加嗎？", answer: "飛行營包含飛行原理與基礎操控；玩具設計營會從文化發想開始，延伸至 3D 設計、圖解與包裝。歡迎告訴我們孩子的年級與經驗，由教室協助確認適合的課程。", sourceIds: ["drone-poster", "lego-poster"] }
       ]
@@ -512,7 +531,7 @@ window.CAMP_DATA = {
     {
       id: "coupon", label: "優惠券怎麼用", items: [
         { question: "優惠券什麼時候開放？", answer: "優惠券已延後開放，新的開放時間另行公布。目前可先瀏覽各營隊課程與報名資訊。", action: { label: "查看優惠券資訊", url: "coupon.html" }, sourceIds: ["coupon-update-20261019"] },
-        { question: "優惠券適用哪些營隊？", answer: "這次 95 折優惠規劃納入五燈獎・大聖鬧辦桌、祥龍飛行派對、LEGO IDEAS 玩具設計總監、Game Lab 遊戲設計師養成營與「機」不可失 2.0 飛行航空科學營。兩日營也會納入，正式領取方式將隨開放公告說明。", sourceIds: ["coupon-winter-rules", "coupon-update-20261019"] },
+        { question: "優惠券適用哪些營隊？", answer: "這次 95 折優惠規劃納入五燈獎・大聖鬧辦桌、祥龍飛行派對、LEGO IDEAS 玩具設計總監、Game Lab 遊戲設計師養成營與「機」不可失 飛行航空科學營。兩日營也會納入，正式領取方式將隨開放公告說明。", sourceIds: ["coupon-winter-rules", "coupon-update-20261019"] },
         { question: "領到優惠券後，接著怎麼做？", answer: "正式開放後，領取優惠券、複製優惠碼，並在領取後 60 分鐘內依頁面說明完成報名。一支手機限領一張，限同一位學員使用。", sourceIds: ["coupon-winter-rules"] },
         { question: "可以用在不只一個營隊嗎？", answer: "同一位學員可在日期不衝堂的營隊追加使用，仍須符合券面期限與報名規則。Game Lab 與飛行航空科學營同為 1/21–1/22，兩者擇一；可再追加 1/25–1/29 的祥龍飛行派對。上述三營皆與五燈獎全期營重疊；玩具設計總監日期未定，須先人工核對後再追加。", sourceIds: ["coupon-winter-rules", "game-lab-user-20261019"] },
         { question: "95 折怎麼算？能和同行優惠合併嗎？", answer: "五燈獎按早鳥價 NT$12,000 計算，95 折為 NT$11,400，五燈獎沒有同行價。其他營隊若有兩人同行價，與 95 折優惠擇優使用、不疊加；各營價格以正式公布資訊為準。", sourceIds: ["coupon-winter-rules"] }
@@ -520,6 +539,7 @@ window.CAMP_DATA = {
     }
   ],
   sources: [
+    { id: "aviation-editorial-20261019", type: "user-provided-copy", title: "「機」不可失｜新春飛行發明家完整課程文案", checkedOn: "2026-10-19", verification: "依使用者本次完整文案更新主副標、首頁摘要、完整介紹與活動敘述；保留從新春發想到裁切組裝、馬達與重心、遙控試飛、反覆修改及配件拆裝重用的過程。此次呈現不作2–3架數量保證；既有日期、費用、時段、教室及報名資料未更動。" },
     { id: "game-lab-user-20261019", type: "user-confirmation", title: "Game Lab 兩日營文案與日期", checkedOn: "2026-10-19", verification: "使用者明確更正為2027年1月21、22日，非2月1、2日；採Microsoft MakeCode Arcade與提供的四項課程文案；費用、年齡、時段、教室與專屬報名表尚未提供。" },
     { id: "game-lab-poster", type: "provided-image", title: "Game Lab 冬令營兩日營海報.png", path: "assets/game-lab-poster.webp", provenance: "assets/two-day-poster-sources.json", checkedOn: "2026-10-19", verification: "採使用者最新提供的含日期版本，已視覺核對1月21、22日、GAME LAB、遊戲設計師養成營、新春功夫副標、兩日營及四項課程；保持原海報內容，只轉換網頁格式。" },
     { id: "aviation-user-brief", type: "user-confirmation", title: "「機」不可失2.0飛行航空科學營課程與命名", checkedOn: "2026-10-19", verification: "使用者先前確認兩日入門、從造型與重心到反覆試飛，預計製作約2–3架飛機；2026-10-19補充確認航空營也是2027年1月21、22日。新春副標與照片海報沿用前序版本。費用、年齡、時段、教室與專屬報名表未提供。" },
