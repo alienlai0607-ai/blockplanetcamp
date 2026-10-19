@@ -205,7 +205,7 @@ window.CAMP_DATA = {
         { title: "排障與維修", description: "練習問題判斷，認識基礎維修與維護。" }
       ],
       outcome: "文化造型創作、飛行操控與團隊任務的完整體驗。",
-      registration: { kind: "inquiry", label: "LINE 報名", url: "https://lin.ee/zFqqFzQ", note: "向教室了解年齡、費用與開課安排。" },
+      registration: { kind: "form", label: "立即報名", url: "https://docs.google.com/forms/d/e/1FAIpQLSeEDR0yX9Q5__UJq0HIXpTm71_tHfoSa_dmJab6LX535jI94w/viewform", note: "前往 Google 表單填寫報名資料。" },
       sourceIds: ["drone-poster", "user-confirmed-scope"],
       status: "additional-details-upcoming"
     },
@@ -238,7 +238,7 @@ window.CAMP_DATA = {
         { title: "盒組發行", description: "設計包裝，完成屬於自己的原創盒組。" }
       ],
       outcome: "從發想到圖解、包裝的原創盒組設計成果。",
-      registration: { kind: "inquiry", label: "LINE 報名", url: "https://lin.ee/zFqqFzQ", note: "向教室了解年齡、費用與每日時段。" },
+      registration: { kind: "form", label: "立即報名", url: "https://docs.google.com/forms/d/e/1FAIpQLSdH_h8GOVi9iSzJk2kjqdwXfRWkLC-gXRc_keDiIu4dk5XDKA/viewform", note: "前往 Google 表單填寫報名資料。" },
       sourceIds: ["lego-poster", "user-confirmed-scope", "lego-dates-20261019"],
       status: "additional-details-upcoming"
     },

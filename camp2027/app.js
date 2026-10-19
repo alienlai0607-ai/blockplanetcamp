@@ -653,6 +653,7 @@
   function applyCampus(id) {
     if (id !== 'all' && !data.classrooms.some(c => c.id === id)) return;
     selectedCampus = id;
+    $$('[data-registration-link]').forEach(link => { link.href = `register.html?campus=${id}`; });
     const camps = availableCamps(), fiveDay = camps.filter(c => c.days === 5), twoDay = camps.filter(c => c.days === 2);
     $$('[data-campus]').forEach(button => button.setAttribute('aria-pressed', String(button.dataset.campus === id)));
     $('#campusSelectionStatus').textContent = id === 'all' ? '目前顯示全部教室的營隊' : `顯示${campusName()}的 ${camps.length} 種營隊`;
@@ -664,12 +665,8 @@
       $('.camp-facts', section).innerHTML = `<span>${esc(camp.dateLabel)}</span><span>${esc(campClassroom(camp))}</span>`;
     });
     fiveDayChoice.href = '#' + fiveDay[0].id;
-    $('h3', fiveDayChoice).innerHTML = fiveDay.map(c => esc(c.id === 'lego' ? 'LEGO IDEAS' : c.name)).join('<br>');
-    $('.choice-duration', fiveDayChoice).textContent = fiveDay.length > 1 ? '飛無人機・設計玩具' : '設計玩具';
-    $('.choice-description', fiveDayChoice).textContent = fiveDay.length > 1 ? '選一個主題，深入練習與創作' : '從自己的點子，完成原創盒組';
-    $('h3', twoDayChoice).innerHTML = twoDay.map(c => esc(c.name.split('｜')[0])).join('<br>');
-    $('.choice-duration', twoDayChoice).textContent = twoDay.map(c => ({ 'game-lab': '遊戲', aviation: '飛行', fragrance: '香氛' }[c.id] || c.selectionLabel)).join('・');
-    $('.choice-description', twoDayChoice).textContent = twoDay.length > 1 ? '1/21–1/22，同日期擇一體驗' : '1/21–1/22，兩天做出自己的作品';
+    $('h3', fiveDayChoice).innerHTML = fiveDay.map(c => `<span>${esc(c.id === 'lego' ? 'LEGO IDEAS' : c.name)}</span>`).join('');
+    $('h3', twoDayChoice).innerHTML = twoDay.map(c => `<span>${esc(c.name.split('｜')[0])}</span>`).join('');
     $$('[data-two-day-tab]').forEach(button => setCampusVisibility(button, campusAllows(campById(button.dataset.twoDayTab))));
     $('.two-day-tabs').classList.toggle('has-one-campus-course', twoDay.length === 1);
     $('.two-day-tabs').dataset.courseCount = String(twoDay.length);
@@ -688,5 +685,6 @@
     syncScenePlayback();
   }
   $$('[data-campus]').forEach(button => button.addEventListener('click', () => applyCampus(button.dataset.campus)));
-  applyCampus('all');
+  const initialCampus = new URLSearchParams(location.search).get('campus');
+  applyCampus(data.classrooms.some(c => c.id === initialCampus) ? initialCampus : 'all');
 })();

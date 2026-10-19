@@ -20,13 +20,13 @@
   <link rel="preload" as="image" type="image/avif" href="assets/hero-camp-world-mobile.avif?v=mobile-speed-20261013" media="(max-width:700px)" fetchpriority="high">
   <link rel="preload" as="image" href="assets/hero-camp-world-brush.webp?v=home-lights-20261013" media="(min-width:1101px)" fetchpriority="high">
   <link rel="preload" as="image" href="assets/hero-camp-world-tablet-brush.webp?v=home-lights-20261013" media="(min-width:701px) and (max-width:1100px)" fetchpriority="high">
-  <link rel="stylesheet" href="campaign.css?v=image-speed-20261014">
+  <link rel="stylesheet" href="campaign.css?v=registration-20261019">
   <link rel="stylesheet" href="two-day.css?v=fragrance-v3-20261019">
   <link rel="stylesheet" href="two-day-stories.css?v=fragrance-v2-20261019">
-  <link rel="stylesheet" href="campus-filter.css?v=compact-choices-20261019">
-  <script src="camp-data.js?v=fragrance-v2-20261019" defer></script>
+  <link rel="stylesheet" href="campus-filter.css?v=registration-20261019">
+  <script src="camp-data.js?v=registration-20261019" defer></script>
   <script src="image-loader.js?v=image-speed-20261014" defer></script>
-  <script src="app.js?v=fragrance-v2-20261019" defer></script>
+  <script src="app.js?v=registration-20261019" defer></script>
   <script src="two-day-stories.js?v=fragrance-v2-20261019" defer></script>
 </head>
 <body>
@@ -44,7 +44,7 @@
     <a class="brand" href="#top" aria-label="布拉克星球冬令營首頁"><img src="assets/brand-logo.png" width="42" height="42" alt=""><span>布拉克星球<small>BLOCK PLANET</small></span></a>
     <button id="navToggle" class="nav-toggle" aria-controls="mainNav" aria-expanded="false">選單 <span aria-hidden="true">☰</span></button>
     <nav id="mainNav" aria-label="主選單">
-      <a href="#camps">探索營隊</a><a href="#calendar">日期與方案</a><a href="#faq">家長 Q&A</a><a href="#contact">聯絡我們</a>
+      <a href="#camps">探索營隊</a><a href="register.html" data-registration-link>開始報名</a><a href="#calendar">日期與方案</a><a href="#faq">家長 Q&A</a><a href="#contact">聯絡我們</a>
       <details id="teacherToolsMenu" class="teacher-menu"><summary>老師系統</summary><div id="teacherLinks"></div></details>
       <a href="coupon.html" class="nav-coupon">優惠券資訊 <span aria-hidden="true">↗</span></a>
     </nav>
@@ -67,7 +67,7 @@
           </div>
           <p id="campusSelectionStatus" class="campus-selection-status" aria-live="polite">目前顯示全部教室的營隊</p>
         </fieldset>
-        <a class="button" href="#camps">一起探索營隊 <svg aria-hidden="true"><use href="#arrow"/></svg></a>
+        <div class="hero-actions"><a class="button" href="#camps">一起探索營隊 <svg aria-hidden="true"><use href="#arrow"/></svg></a><a class="button hero-register" href="register.html" data-registration-link>開始報名 <svg aria-hidden="true"><use href="#arrow"/></svg></a></div>
         <p class="hero-location">台南北區・東橋 <span>各營隊獨立報名</span></p>
       </div>
       <div class="hero-art">
@@ -89,31 +89,25 @@
     </div>
 
     <section id="camps" class="camp-selection page-width section-anchor" aria-labelledby="campIntroTitle">
-      <h2 id="campIntroTitle">選一段時間，做喜歡的事。</h2>
+      <h2 id="campIntroTitle">挑選一個喜歡的營隊吧</h2>
       <div class="camp-choice-grid">
         <a class="camp-choice-option" href="#full-term">
           <p class="choice-interest"><strong>全期營</strong></p>
-          <h3>五燈獎・<br>大聖鬧辦桌</h3>
-          <p class="choice-duration">玩文化</p>
-          <p class="choice-description">五種文化體驗，串起完整寒假旅程</p>
+          <h3><span>五燈獎・大聖鬧辦桌</span></h3>
           <span class="choice-arrow" aria-hidden="true">→</span>
         </a>
         <a class="camp-choice-option" href="#drone">
           <p class="choice-interest"><strong>5 日主題</strong></p>
-          <h3>祥龍無人機派對<br>LEGO IDEAS</h3>
-          <p class="choice-duration">飛無人機・設計玩具</p>
-          <p class="choice-description">選一個主題，深入練習與創作</p>
+          <h3><span>祥龍無人機派對</span><span>LEGO IDEAS</span></h3>
           <span class="choice-arrow" aria-hidden="true">→</span>
         </a>
         <a class="camp-choice-option" href="#two-day">
           <p class="choice-interest"><strong>2 日創作</strong></p>
-          <h3>Game Lab<br>「機」不可失<br>小小生活工藝師</h3>
-          <p class="choice-duration">做遊戲・造飛機</p>
-          <p class="choice-description">1/21–1/22，同日期擇一體驗</p>
+          <h3><span>Game Lab</span><span>「機」不可失</span><span>小小生活工藝師</span></h3>
           <span class="choice-arrow" aria-hidden="true">→</span>
         </a>
       </div>
-      <p class="camp-choice-note"><span>依孩子的興趣與寒假安排，挑選適合的營隊。</span><a href="#calendar">查看營隊日期 →</a></p>
+      <p class="camp-choice-note"><a href="#calendar">查看營隊日期 →</a></p>
     </section>
 
     <div class="culture-chapter chapter-jade">
@@ -146,7 +140,7 @@
         <p class="camp-description">當祥龍遇上齊天大聖，這次在空中較量！<br>從造型創作、操控練習到團隊挑戰，<br class="desktop-break">讓神話角色飛進孩子的冒險。</p>
         <ul class="simple-features"><li>文化造型設計</li><li>飛行操控與平衡</li><li>團隊策略與競賽</li></ul>
         <div class="camp-facts"><span>2027/1/25（一）–1/29（五）</span><span>北區教室</span></div>
-        <div class="camp-actions"><button class="button button-blue" data-camp="drone">看完整課程 <svg aria-hidden="true"><use href="#arrow"/></svg></button><a class="text-link" href="https://lin.ee/zFqqFzQ" target="_blank" rel="noopener">LINE 報名 ↗</a></div>
+        <div class="camp-actions"><button class="button button-blue" data-camp="drone">看完整課程 <svg aria-hidden="true"><use href="#arrow"/></svg></button><a class="text-link" href="https://docs.google.com/forms/d/e/1FAIpQLSeEDR0yX9Q5__UJq0HIXpTm71_tHfoSa_dmJab6LX535jI94w/viewform" target="_blank" rel="noopener">立即報名 ↗</a></div>
       </div>
       <div class="camp-visual drone-visual" data-motion-scene="drone">
         <div class="drone-stage">
@@ -182,7 +176,7 @@
         <p class="camp-description">這次，孩子就是設計總監。<br>從畫下第一個點子、3D 設計、製作圖解，<br class="desktop-break">到包裝完成，享受「這是我設計的！」的喜悅。</p>
         <ul class="simple-features"><li>文化發想</li><li>3D 設計</li><li>圖解與原創包裝</li></ul>
         <div class="camp-facts"><span>2027/1/25（一）–1/29（五）· 共 5 天</span><span>東橋教室／北區教室</span></div>
-        <div class="camp-actions"><button class="button button-purple" data-camp="lego">看完整課程 <svg aria-hidden="true"><use href="#arrow"/></svg></button><a class="text-link" href="https://lin.ee/zFqqFzQ" target="_blank" rel="noopener">LINE 報名 ↗</a></div>
+        <div class="camp-actions"><button class="button button-purple" data-camp="lego">看完整課程 <svg aria-hidden="true"><use href="#arrow"/></svg></button><a class="text-link" href="https://docs.google.com/forms/d/e/1FAIpQLSdH_h8GOVi9iSzJk2kjqdwXfRWkLC-gXRc_keDiIu4dk5XDKA/viewform" target="_blank" rel="noopener">立即報名 ↗</a></div>
       </div>
     </section>
 
@@ -228,7 +222,7 @@
     <section id="contact" class="contact-section section-anchor" aria-labelledby="contactTitle"><div class="page-width contact-grid"><div class="contact-visual"><picture><source media="(max-width:700px)" type="image/avif" srcset="assets/contact-welcome-brush-mobile.avif"><source type="image/avif" srcset="assets/contact-welcome-brush.avif"><source media="(max-width:700px)" srcset="assets/contact-welcome-brush-mobile.webp"><img src="assets/contact-welcome-brush.webp?v=scope-restore-20261013" alt="大聖與四位小橘人學員在年節教室門口歡迎你，分享戲偶和祥龍積木作品" width="1536" height="1024" loading="lazy" decoding="async"></picture><span>在布拉克星球，一起長出大大的想像。</span></div><div><p class="eyebrow">COME PLAY WITH US</p><h2 id="contactTitle">在台南，<br>等孩子來玩。</h2><div class="classrooms" id="classrooms"></div><a href="https://lin.ee/zFqqFzQ" target="_blank" rel="noopener" class="button">LINE 聯絡教室 <svg aria-hidden="true"><use href="#arrow"/></svg></a></div></div></section>
   </main>
   <footer class="site-footer page-width"><div class="footer-top"><a class="brand" href="#top"><img src="assets/brand-logo.png" width="42" height="42" alt=""><span>布拉克星球<small>BLOCK PLANET</small></span></a><div><a href="https://www.facebook.com/blockplanet" target="_blank" rel="noopener">Facebook ↗</a><a href="https://www.instagram.com/blockplanet_2021" target="_blank" rel="noopener">Instagram ↗</a><a href="https://lin.ee/zFqqFzQ" target="_blank" rel="noopener">LINE ↗</a></div></div><div class="footer-bottom"><span>© 2027 布拉克星球 · 冬令營</span><button id="motionToggle" class="text-control" aria-pressed="false">暫停頁面動畫 <span aria-hidden="true">Ⅱ</span></button><a href="#top">回到頂端 ↑</a></div></footer>
-  <div class="mobile-bar"><a href="#camps">開始報名</a><a href="https://lin.ee/zFqqFzQ" target="_blank" rel="noopener">LINE 洽詢 <span aria-hidden="true">↗</span></a></div>
+  <div class="mobile-bar"><a href="register.html" data-registration-link>開始報名</a><a href="https://lin.ee/zFqqFzQ" target="_blank" rel="noopener">LINE 洽詢 <span aria-hidden="true">↗</span></a></div>
   <dialog id="campDialog" aria-labelledby="dialogTitle"><div class="dialog-toolbar"><span>2027 布拉克星球冬令營</span><button id="dialogClose" aria-label="關閉課程介紹">×</button></div><div id="dialogContent"></div></dialog>
   <div id="announcer" class="sr-only" role="status" aria-live="polite"></div>
   <noscript><p class="noscript">開啟 JavaScript 可以觀看營隊動畫與完整課程資訊。你也可以直接<a href="https://lin.ee/zFqqFzQ">聯絡 LINE</a>，或<a href="https://docs.google.com/forms/d/e/1FAIpQLSfqclQFsLtNujPctIfk_elu3umDNIWr1W6C1MSIs5wc3BIVFg/viewform">查看全期營報名表</a>。</p></noscript>
