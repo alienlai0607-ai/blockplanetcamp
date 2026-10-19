@@ -399,6 +399,47 @@
   syncMotion();
 
 
+  // Two themes share the same dates; show one readable course at a time.
+  const twoDayCamps = data.camps.filter(c => ['game-lab', 'aviation'].includes(c.id));
+  $('#twoDayPanels').innerHTML = twoDayCamps.map((c, index) => {
+    const poster = c.posterPreview || c.poster;
+    return `<article id="panel-${esc(c.id)}" class="two-day-panel" role="tabpanel" tabindex="0" aria-labelledby="tab-${esc(c.id)}" ${index ? 'hidden' : ''}>
+      <button class="two-day-poster" type="button" data-camp="${esc(c.id)}" aria-label="查看${esc(c.name)}海報與完整課程"><picture><source type="image/avif" srcset="${esc(poster.replace(/\.webp$/, '.avif'))}"><img src="${esc(poster)}" width="${c.posterWidth || 1086}" height="${c.posterHeight || 1448}" alt="${esc(c.name)}課程海報" loading="lazy" decoding="async"></picture><span>看海報與完整課程 ↗</span></button>
+      <div class="two-day-copy"><p class="eyebrow">${esc(c.daysLabel)} · 1/21–1/22</p><h3>${esc(c.name)}</h3><p class="two-day-subtitle">${esc(c.subtitle)}</p><p>${esc(c.description)}</p>
+      <ul>${c.activities.map(activity => `<li>${esc(activity.title)}</li>`).join('')}</ul>
+      <p class="two-day-details-pending">費用、上課時段與教室稍後公布。</p><div class="camp-actions"><button class="button" type="button" data-camp="${esc(c.id)}">看完整課程 <span aria-hidden="true">→</span></button><a class="text-link" href="${esc(c.registration.url)}" ${ext}>LINE 洽詢 ↗</a></div></div>
+    </article>`;
+  }).join('');
+  function selectTwoDay(id, focus = false) {
+    if (!twoDayCamps.some(c => c.id === id)) return;
+    $$('[data-two-day-tab]').forEach(button => {
+      const selected = button.dataset.twoDayTab === id;
+      button.setAttribute('aria-selected', String(selected));
+      button.tabIndex = selected ? 0 : -1;
+      if (selected && focus) button.focus();
+    });
+    twoDayCamps.forEach(c => { $('#panel-' + c.id).hidden = c.id !== id; });
+  }
+  $$('[data-two-day-tab]').forEach((button, index, buttons) => {
+    button.addEventListener('click', () => selectTwoDay(button.dataset.twoDayTab));
+    button.addEventListener('keydown', event => {
+      let next;
+      if (event.key === 'ArrowRight') next = (index + 1) % buttons.length;
+      if (event.key === 'ArrowLeft') next = (index + buttons.length - 1) % buttons.length;
+      if (event.key === 'Home') next = 0;
+      if (event.key === 'End') next = buttons.length - 1;
+      if (next === undefined) return;
+      event.preventDefault(); selectTwoDay(buttons[next].dataset.twoDayTab, true);
+    });
+  });
+  function followTwoDayHash() {
+    const id = location.hash.slice(1);
+    if (!twoDayCamps.some(c => c.id === id)) return;
+    selectTwoDay(id); $('#two-day').scrollIntoView({ block: 'start' });
+  }
+  window.addEventListener('hashchange', followTwoDayHash);
+  if (['#game-lab', '#aviation'].includes(location.hash)) requestAnimationFrame(followTwoDayHash);
+
   // The calendar highlights only confirmed dates. No inferred daily timetable.
   const confirmedCalendarDates = [...new Set(data.camps.flatMap(c => c.dates))].sort();
   let calendarFilter = 'all', selectedDate = null, selectedCalendarCampId = 'full-term';
@@ -413,7 +454,7 @@
   function calendarDay(key, label) {
     const camps = campsOnDate(key);
     if (!camps.length) return `<span class="date-cell" data-calendar-day="${key}" aria-label="${esc(dateLabel(key))}">${label}</span>`;
-    const dots = camps.map(c => `<i class="${c.id === 'drone' ? 'drone-dot' : ''}"></i>`).join('');
+    const dots = camps.map(c => `<i class="${esc(c.id) + '-dot'}"></i>`).join('');
     return `<button class="date-cell is-event" data-calendar-day="${key}" data-date="${key}" aria-controls="calendarDetail" aria-pressed="${selectedDate === key}" aria-label="${esc(dateLabel(key))}，查看${esc(camps.map(c=>c.name).join('、'))}的完整營期"><span>${label}</span><span class="date-dots" aria-hidden="true">${dots}</span></button>`;
   }
   function renderCompactCalendar() {
@@ -452,7 +493,7 @@
     const candidateIds = camps.map(c => c.id).join(',');
     // Keep the active button in the DOM so switching programs preserves focus.
     if (picker.dataset.candidates !== candidateIds) {
-      picker.innerHTML = camps.map(c => '<button type="button" data-calendar-camp="' + esc(c.id) + '" aria-controls="calendarProgram" aria-pressed="false">' + esc(c.id === 'full-term' ? '五燈獎' : c.name) + '</button>').join('');
+      picker.innerHTML = camps.map(c => '<button type="button" data-calendar-camp="' + esc(c.id) + '" aria-controls="calendarProgram" aria-pressed="false">' + esc(({ 'full-term': '五燈獎', drone: '祥龍飛行', 'game-lab': 'Game Lab', aviation: '飛行航空' })[c.id] || c.name) + '</button>').join('');
       picker.dataset.candidates = candidateIds;
     }
     picker.hidden = camps.length < 2;
@@ -461,10 +502,11 @@
     const camp = camps.find(c => c.id === selectedCalendarCampId);
     const note = $('#calendarOverlapNote');
     note.hidden = !overlaps;
+    note.textContent = camps.some(c => c.days === 2) ? 'Game Lab 與飛行航空皆為 1/21–1/22，請擇一參加；也與五燈獎全期營的前兩天重疊。' : '營期部分日期重疊，請選擇適合孩子的完整營隊。';
     if (!camp) { $('#calendarProgram').innerHTML = '<p>此日期尚無已公布的營隊。</p>'; return; }
     const periods = camp.dateLabel.split('、');
     const enrolment = camp.id === 'full-term' ? '共 9 天，須完整報名' : '共 ' + camp.days + ' 天，完整營期';
-    const time = camp.timeLabel.includes('近期公布') ? '' : '<p class="calendar-program-time">每日 ' + esc(camp.timeLabel) + '</p>';
+    const time = /近期公布|稍後公布|待公布/.test(camp.timeLabel) ? '' : '<p class="calendar-program-time">每日 ' + esc(camp.timeLabel) + '</p>';
     $('#calendarProgram').innerHTML = '<article class="calendar-course"><h3>' + esc(camp.name) + '</h3><p class="calendar-enrolment">' + esc(enrolment) + '</p><ul class="calendar-periods" aria-label="' + esc(camp.name) + '完整上課日期">' + periods.map(period => '<li>' + esc(period) + '</li>').join('') + '</ul>' + time + '<button type="button" data-camp="' + esc(camp.id) + '">查看完整課程與報名 <span aria-hidden="true">→</span></button></article>';
   }
   $('#calendarProgramPicker').addEventListener('click', event => {
@@ -508,7 +550,7 @@
         { title: '把想法拼成 3D 作品', text: '使用 3D 軟體建立作品，讓紙上的點子成為看得見的立體設計。' },
         { title: '完成說明書與原創盒組', text: '製作組裝步驟圖與說明書，再設計包裝，完成從發想到盒組的創作過程。' }
       ]
-    }[camp.id] || [];
+    }[camp.id] || camp.activities.map(activity => ({ title: activity.title, text: activity.description }));
     if (!chapters.length) return '';
     return '<section class="course-editorial" aria-label="課程介紹">' + chapters.map((chapter, index) => '<div class="course-chapter"><div class="course-chapter-heading"><h3>' + esc(chapter.title) + '</h3>' + (index === 0 ? doodle : '') + '</div><p>' + esc(chapter.text) + '</p></div>').join('') + '</section>';
   }
@@ -522,7 +564,7 @@
     const factsMarkup = '<div class="dialog-facts">' + facts.map(([key, label, value]) => '<div data-fact="' + key + '"><span>' + esc(label) + '</span>' + esc(value) + (key === 'price' && c.pricing ? '<p class="dialog-price-note">' + esc(c.priceNote).replace('，原價', '，<br>原價') + '</p>' : '') + '</div>').join('') + '</div>' + (id === 'full-term' ? '' : '<p class="dialog-unknown-note">年齡、上課時段與教室將另行公布。</p>');
     const fullTermExtras = id === 'full-term' ? '<section class="course-journey" aria-labelledby="courseJourneyTitle"><h3 id="courseJourneyTitle">9 天的文化旅程</h3><ul class="period-list">' + data.itinerary.periods.map(p => '<li><small>' + esc(p.dateLabel) + ' · ' + p.days + ' 天</small><h4>' + esc(p.title) + '</h4><p>' + esc(p.description) + '</p></li>').join('') + '</ul><p class="dialog-note">' + esc(data.itinerary.note) + '</p><div class="dialog-event"><h4>2/2 晚上，邀請爸媽來作客。</h4><p>' + esc(c.parentEvent.description) + '<br>' + esc(c.parentEvent.note) + '</p></div></section>' : '';
     const poster = c.poster ? '<figure class="dialog-poster"><a href="' + esc(c.poster) + '" ' + ext + ' aria-label="開啟' + esc(c.name) + '完整海報"><picture><source type="image/avif" srcset="' + esc(c.poster.replace(/\.webp$/, '.avif')) + '"><img src="' + esc(c.poster) + '" alt="' + esc(c.name) + '完整課程海報" loading="eager" fetchpriority="high" decoding="async"></picture></a><figcaption>點開查看完整海報 <span aria-hidden="true">↗</span></figcaption></figure>' : '';
-    const couponEntry = '<a href="coupon.html" class="camp-coupon-entry"><img class="camp-coupon-entry__logo" src="assets/brand-logo.png" width="32" height="32" alt="" loading="lazy" decoding="async"><span class="camp-coupon-entry__copy"><strong>冬令營優惠券</strong><span>10/16 19:30 開放・限量 60 張</span></span><span class="camp-coupon-entry__cta">查看領券資訊 <span aria-hidden="true">↗</span></span></a>';
+    const couponEntry = '<p class="dialog-coupon-pending">優惠券開放時間將另行公布。<a href="coupon.html">查看說明 ↗</a></p>';
     const actions = '<div class="dialog-actions"><a href="' + esc(c.registration.url) + '" ' + ext + ' class="button">' + esc(c.registration.label) + ' <span aria-hidden="true">↗</span></a></div>';
     const care = c.extendedCare;
     const pickupNotes = id === 'full-term' ? '<p>接送安排：' + esc(c.pickupLabel) + '。</p>' + (care ? '<p>超過 ' + esc(care.startsAfter) + ' 接回：延托費 NT$' + esc(care.ratePerHour) + '／小時，' + esc(care.rounding) + '。' + esc(care.notice) + '</p>' : '') : '';

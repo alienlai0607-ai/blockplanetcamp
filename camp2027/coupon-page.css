@@ -25,3 +25,7 @@ main{max-width:1000px;padding:0 28px;margin:auto}.preview-tools{display:flex;jus
 
 /* Long real server codes remain selectable and readable without prefix-only lines. */
 .coupon-code,.registration-code strong{word-break:break-all}
+
+/* Paused release preserves earlier receipts without starting another countdown. */
+.saved-coupon{max-width:760px;margin:28px auto 0;padding:24px;background:var(--paper);border:1px solid var(--line);border-radius:12px}.saved-coupon h2{font-size:22px;line-height:1.5;margin:0 0 10px}.saved-coupon p{font-size:16px;line-height:1.75;margin:12px 0}.saved-coupon .coupon-code{display:block;margin:18px 0 10px;font-size:22px}.saved-coupon .copy-code{min-height:44px}.ticket[data-state=postponed] .ticket-action>div{min-width:0}.ticket[data-state=postponed] .ticket-action .primary{white-space:nowrap}
+@media(max-width:600px){.saved-coupon{padding:20px}.saved-coupon h2{font-size:20px}.saved-coupon .coupon-code{font-size:18px}.ticket[data-state=postponed] .ticket-action>div{display:block;margin-bottom:14px}.stub-content[data-panel=postponed] .opening-time{grid-column:1/-1;font-size:24px}}

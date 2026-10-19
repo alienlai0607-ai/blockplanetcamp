@@ -1,0 +1,62 @@
+/* Two-day choices use existing campaign typography and warm paper colors. */
+.two-day-camps { padding-block:80px 64px; }
+.two-day-heading { max-width:740px;margin-bottom:30px; }
+.two-day-heading .eyebrow { margin:0 0 10px; }
+.two-day-heading h2 { margin:0 0 14px;font-size:clamp(30px,4vw,44px);line-height:1.35;color:#783f2d; }
+.two-day-heading>p:last-child { margin:0;color:#765e48;font-size:18px;line-height:1.8; }
+.two-day-tabs { display:grid;grid-template-columns:1fr 1fr;max-width:640px;margin:0 0 32px;border-bottom:1px solid #cfb38a; }
+.two-day-tabs button { min-height:78px;padding:12px 20px;color:#77624c;font-size:23px;font-weight:800;line-height:1.4;border-bottom:3px solid transparent; }
+.two-day-tabs button span { display:block;margin-top:4px;font-size:15px;font-weight:600; }
+.two-day-tabs button[aria-selected=true] { color:#9c432e;border-bottom-color:#b94b30;background:#f4e5cd70; }
+.two-day-tabs button:focus-visible,.two-day-poster:focus-visible,.two-day-panel:focus-visible { outline:3px solid #ac5737;outline-offset:4px; }
+.two-day-panel { display:grid;grid-template-columns:minmax(0,.85fr) minmax(0,1.15fr);gap:clamp(30px,5vw,72px);align-items:center; }
+.two-day-panel[hidden] { display:none; }
+.two-day-poster { display:block;width:100%;max-width:420px;justify-self:center;padding:0;text-align:center;color:#805039; }
+.two-day-poster picture,.two-day-poster img { display:block;width:100%;height:auto; }
+.two-day-poster img { border-radius:10px;box-shadow:0 9px 25px #6843291a; }
+.two-day-poster>span { display:inline-block;padding-top:12px;font-size:15px;line-height:1.6; }
+.two-day-copy { min-width:0; }
+.two-day-copy .eyebrow { margin:0 0 12px;font-size:16px;letter-spacing:.04em; }
+.two-day-copy h3 { margin:0 0 14px;color:#79412f;font-size:clamp(28px,3vw,38px);font-weight:850;line-height:1.4;text-wrap:pretty; }
+.two-day-copy>p { margin:0 0 20px;color:#745b46;font-size:18px;line-height:1.85; }
+.two-day-copy>.two-day-subtitle { color:#9f432e;font-size:21px;font-weight:750;line-height:1.6; }
+.two-day-copy ul { display:grid;grid-template-columns:1fr 1fr;gap:10px 18px;padding:18px 0;margin:0 0 20px;border-block:1px solid #dfc9a9;list-style:none; }
+.two-day-copy li { color:#704b35;font-size:16px;line-height:1.7;font-weight:700; }
+.two-day-copy>.two-day-details-pending { font-size:15px;margin-bottom:20px;color:#87705a; }
+.two-day-copy .camp-actions { gap:16px 24px;flex-wrap:wrap; }
+.two-day-copy .button { font-size:17px;min-height:50px; }
+.two-day-copy .text-link { font-size:16px; }
+.two-day-schedule-note { margin:32px 0 0;padding-top:20px;border-top:1px solid #dfc9a9;color:#7b624c;font-size:15px;line-height:1.8; }
+.coupon-pending-note { padding-block:22px;color:#7b624c;font-size:16px;line-height:1.8;border-bottom:1px solid #e2ceb0; }
+.coupon-pending-note a,.dialog-coupon-pending a { color:#a34730;text-decoration:underline;text-underline-offset:4px; }
+.dialog-coupon-pending { margin-top:24px;color:#816850;font-size:16px;line-height:1.8; }
+#calendar .calendar-toolbar { flex-wrap:wrap;gap:14px; }
+#calendar .filter-group { flex-wrap:wrap;gap:7px; }
+#calendarDetail .calendar-program-picker { flex-wrap:wrap; }
+#calendarDetail .calendar-program-picker button { flex:1 1 42%;font-size:15px; }
+#calendar .date-dots .game-lab-dot { background:#437c6e; }
+#calendar .date-dots .aviation-dot { background:#b58233; }
+@media(max-width:700px) {
+  #camps .choice-duration { white-space:normal;font-size:12px; }
+  .two-day-camps { padding-block:40px 36px; }
+  .two-day-heading { margin-bottom:22px; }
+  .two-day-heading .eyebrow { font-size:14px; }
+  .two-day-heading h2 { font-size:27px; }
+  .two-day-heading>p:last-child { font-size:16px;line-height:1.7; }
+  .two-day-tabs { margin-bottom:24px; }
+  .two-day-tabs button { min-height:73px;font-size:21px;padding:10px; }
+  .two-day-tabs button span { font-size:13px; }
+  .two-day-panel { grid-template-columns:1fr;gap:28px; }
+  .two-day-poster { max-width:290px; }
+  .two-day-copy h3 { font-size:27px; }
+  .two-day-copy>.two-day-subtitle { font-size:19px; }
+  .two-day-copy>p { font-size:16px;line-height:1.8;margin-bottom:16px; }
+  .two-day-copy .eyebrow { font-size:14px; }
+  .two-day-copy ul { gap:8px 12px;padding-block:14px; }
+  .two-day-copy li { font-size:15px; }
+  .two-day-schedule-note { margin-top:24px;font-size:14px; }
+  .coupon-pending-note { font-size:14px; }
+  #calendar .filter-group { display:flex;flex-wrap:nowrap;max-width:100%;overflow-x:auto;padding:3px 2px 9px; }
+  #calendar .filter-group button { flex:0 0 auto;padding:8px 12px;font-size:14px;white-space:nowrap; }
+  #calendar .calendar-toolbar { display:block;min-width:0; }
+}
