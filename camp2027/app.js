@@ -709,7 +709,7 @@
     selectTwoDay(twoDay.some(c => c.id === activeTab?.dataset.twoDayTab) ? activeTab.dataset.twoDayTab : twoDay[0].id);
     $('#twoDayChoiceHelp').hidden = twoDay.length === 1;
     $('.two-day-intro').textContent = twoDay.length > 1 ? `${twoDay.length === 3 ? '三' : '兩'}個不同營隊，同日期擇一參加。` : `在${campusName()}，兩天做出自己的作品。`;
-    $('.two-day-schedule-note').textContent = twoDay.length > 1 ? '兩日營皆於 1/21、1/22 上課，請擇一參加；這兩天也包含在五燈獎冬令營全期營中。' : '本營於 1/21–1/22 上課，與冬令營全期營日期重疊，請擇一參加。';
+    $('.two-day-schedule-note').textContent = twoDay.length > 1 ? '兩日營皆於 1/21–1/22 上課，請擇一參加；與全期營僅日期重疊，課程各自獨立。' : '本營於 1/21–1/22 上課，與冬令營全期營日期重疊，請擇一參加。';
     $$('[data-calendar-filter]').forEach(button => setCampusVisibility(button, campusAllows(campById(button.dataset.calendarFilter))));
     if (!campusAllows(campById(calendarFilter))) calendarFilter = 'full-term';
     selectedDate = null;
