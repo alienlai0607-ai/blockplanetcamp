@@ -51,6 +51,12 @@
 #campDialog .course-header-art { display:block; margin:0 0 28px; }
 #campDialog .course-header-art img { display:block; width:100%; height:auto; border-radius:8px; }
 #campDialog .dialog-equipment-note { margin:28px 0 0; padding:14px 18px; border-left:3px solid #d0ac70; background:#f7ecd8; color:#705742; font-size:17px; line-height:1.7; }
+@media (max-width:700px) {
+  #campDialog .course-title-main,
+  #campDialog .course-title-type { display:block; }
+  #campDialog .course-title-divider { display:none; }
+  #campDialog .course-title-type { margin-top:4px; font-size:clamp(21px,6.3vw,27px); }
+}
 #campDialog .course-introduction .eyebrow {
   margin:0 0 10px;
   font-size:17px;

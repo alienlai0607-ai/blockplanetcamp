@@ -577,6 +577,8 @@
   function openCamp(id, trigger) {
     const c = campById(id); if (!campusAllows(c)) return;
     lastDialogTrigger = trigger;
+    const titleParts = c.name.split('｜');
+    const courseTitle = titleParts.length === 2 ? '<span class="course-title-main">' + esc(titleParts[0]) + '</span><span class="course-title-divider" aria-hidden="true">｜</span><span class="course-title-type">' + esc(titleParts[1]) + '</span>' : esc(c.name);
     const hasKnownTimeAndAge = !/近期公布|稍後公布|待公布/.test(c.timeLabel + c.ageLabel);
     const facts = id === 'full-term' || hasKnownTimeAndAge
       ? [['dates', '課程日期', c.dateLabel], ['age', '適合對象', c.ageLabel], ['time', '每日時間', c.timeLabel], ['classroom', '上課教室', campClassroom(c)], ['price', '課程費用', c.priceLabel]]
@@ -593,7 +595,7 @@
     const equipmentNote = c.equipmentLabel ? '<p class="dialog-equipment-note">' + esc(c.equipmentLabel) + '</p>' : '';
     const registrationNotes = '<details class="dialog-registration-notes"><summary>報名與接送說明</summary><div>' + pickupNotes + '<p>' + esc(c.registration.note) + '</p><p>' + esc(data.campaign.relationship) + '</p></div></details>';
     const registration = '<section class="course-registration" aria-labelledby="courseRegistrationTitle"><h3 id="courseRegistrationTitle">日期與報名</h3>' + factsMarkup + actions + couponEntry + registrationNotes + '</section>';
-    $('#dialogContent').innerHTML = '<div class="dialog-inner course-journal' + (poster ? '' : ' course-journal--text') + '">' + poster + '<article class="dialog-course-main">' + courseHeader + '<header class="course-introduction"><p class="eyebrow">' + esc(c.daysLabel) + '</p><h2 id="dialogTitle">' + esc(c.name) + '</h2><p class="dialog-subtitle">' + esc(c.subtitle) + '</p><p class="dialog-description">' + esc(c.editorialIntroduction || c.description) + '</p></header>' + renderCourseJournal(c) + fullTermExtras + equipmentNote + registration + '</article></div>';
+    $('#dialogContent').innerHTML = '<div class="dialog-inner course-journal' + (poster ? '' : ' course-journal--text') + '">' + poster + '<article class="dialog-course-main">' + courseHeader + '<header class="course-introduction"><p class="eyebrow">' + esc(c.daysLabel) + '</p><h2 id="dialogTitle">' + courseTitle + '</h2><p class="dialog-subtitle">' + esc(c.subtitle) + '</p><p class="dialog-description">' + esc(c.editorialIntroduction || c.description) + '</p></header>' + renderCourseJournal(c) + fullTermExtras + equipmentNote + registration + '</article></div>';
     dialogIsOpen = true; syncScenePlayback();
     if (!campDialog.open) {
       pageOverflowBeforeDialog = document.body.style.overflow;
