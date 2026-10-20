@@ -54,6 +54,7 @@ h1, h2, p { margin: 0; }
 .camp-meta { color: var(--muted); font-size: 13px; }
 .camp-date { color: var(--ink); font-size: 16px; font-weight: 700; white-space: nowrap; }
 .camp-classroom { margin-top: 6px; }
+.camp-price { margin-top:6px; color:var(--accent); font-weight:700; white-space:nowrap; }
 .camp-actions { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); align-items: center; gap: 8px; width: 340px; }
 .camp-action { display: inline-flex; align-items: center; justify-content: center; gap: 8px; min-width: 0; min-height: 46px; padding: 10px 12px; border: 1px solid #cbb28e; border-radius: 8px; color: var(--ink); font-size: 14px; font-weight: 750; line-height: 1.5; white-space: nowrap; }
 .camp-action:hover { background: #f4e8d2; }

@@ -20,13 +20,13 @@
   <link rel="preload" as="image" type="image/avif" href="assets/hero-camp-world-mobile.avif?v=mobile-speed-20261013" media="(max-width:700px)" fetchpriority="high">
   <link rel="preload" as="image" href="assets/hero-camp-world-brush.webp?v=home-lights-20261013" media="(min-width:1101px)" fetchpriority="high">
   <link rel="preload" as="image" href="assets/hero-camp-world-tablet-brush.webp?v=home-lights-20261013" media="(min-width:701px) and (max-width:1100px)" fetchpriority="high">
-  <link rel="stylesheet" href="campaign.css?v=choice-three-mobile-20261019">
+  <link rel="stylesheet" href="campaign.css?v=camp-sync-20261020">
   <link rel="stylesheet" href="two-day.css?v=fragrance-v3-20261019">
   <link rel="stylesheet" href="two-day-stories.css?v=fragrance-v2-20261019">
   <link rel="stylesheet" href="campus-filter.css?v=coupon-entry-20261019">
-  <script src="camp-data.js?v=game-lab-storytelling-20261020" defer></script>
+  <script src="camp-data.js?v=camp-sync-20261020" defer></script>
   <script src="image-loader.js?v=image-speed-20261014" defer></script>
-  <script src="app.js?v=registration-forms-20261020" defer></script>
+  <script src="app.js?v=camp-sync-20261020" defer></script>
   <script src="two-day-stories.js?v=game-lab-storytelling-20261020" defer></script>
 </head>
 <body>
@@ -132,7 +132,7 @@
         <p class="camp-description">學一門手藝、演一段故事，和夥伴把點子<br class="desktop-break">變成一場熱鬧的辦桌盛會。</p>
         <div class="experience-detail" id="experienceDetail"><span class="experience-count">01 / 05</span><h3>村落探索燈</h3><p>大崎村落創意基地玩學走讀。</p></div>
         <div class="camp-facts"><span>2027/1/21–2/2</span><span>東橋教室／北區教室</span></div>
-        <div class="camp-actions"><button class="button" data-camp="full-term">看完整課程 <svg aria-hidden="true"><use href="#arrow"/></svg></button><a class="text-link" href="register.html">費用確認中 →</a></div>
+        <div class="camp-actions"><button class="button" data-camp="full-term">看完整課程 <svg aria-hidden="true"><use href="#arrow"/></svg></button><a class="text-link" href="register.html" data-registration-link>開始報名 →</a></div>
       </div>
     </section>
 
@@ -146,7 +146,7 @@
         <p class="camp-description">當祥龍遇上齊天大聖，這次在空中較量！<br>從造型創作、操控練習到團隊挑戰，<br class="desktop-break">讓神話角色飛進孩子的冒險。</p>
         <ul class="simple-features"><li>文化造型設計</li><li>飛行操控與平衡</li><li>團隊策略與競賽</li></ul>
         <div class="camp-facts"><span>2027/1/25（一）–1/29（五）</span><span>北區教室</span></div>
-        <div class="camp-actions"><button class="button button-blue" data-camp="drone">看完整課程 <svg aria-hidden="true"><use href="#arrow"/></svg></button><a class="text-link" href="register.html">費用確認中 →</a></div>
+        <div class="camp-actions"><button class="button button-blue" data-camp="drone">看完整課程 <svg aria-hidden="true"><use href="#arrow"/></svg></button><a class="text-link" href="register.html" data-registration-link>開始報名 →</a></div>
       </div>
       <div class="camp-visual drone-visual" data-motion-scene="drone">
         <div class="drone-stage">
@@ -182,7 +182,7 @@
         <p class="camp-description">這次，孩子就是設計總監。<br>從畫下第一個點子、3D 設計、製作圖解，<br class="desktop-break">到包裝完成，享受「這是我設計的！」的喜悅。</p>
         <ul class="simple-features"><li>文化發想</li><li>3D 設計</li><li>圖解與原創包裝</li></ul>
         <div class="camp-facts"><span>2027/1/25（一）–1/29（五）· 共 5 天</span><span>東橋教室／北區教室</span></div>
-        <div class="camp-actions"><button class="button button-purple" data-camp="lego">看完整課程 <svg aria-hidden="true"><use href="#arrow"/></svg></button><a class="text-link" href="register.html">費用確認中 →</a></div>
+        <div class="camp-actions"><button class="button button-purple" data-camp="lego">看完整課程 <svg aria-hidden="true"><use href="#arrow"/></svg></button><a class="text-link" href="register.html" data-registration-link>開始報名 →</a></div>
       </div>
     </section>
 
@@ -221,7 +221,7 @@
       <div class="calendar-layout"><div class="calendars" id="calendarGrid"></div><div class="calendar-compact" id="calendarCompact" role="group" aria-label="寒假三週總覽"></div><aside id="calendarDetail" class="calendar-detail" aria-label="完整營隊日期"><p class="calendar-summary-label">完整營隊日期</p><div id="calendarProgram" aria-live="polite" aria-atomic="true"></div><p id="calendarOverlapNote" class="calendar-note" hidden>兩個營期部分日期重疊，報名前請確認安排。</p></aside></div>
     </div></section>
 
-    <p class="coupon-pending-note page-width">冬令營優惠券開放時間將另行公布。<a href="coupon.html">查看優惠券資訊 ↗</a></p>
+    <p class="coupon-pending-note page-width">冬令營優惠券領取服務準備中，開放狀態請看公告。<a href="coupon.html" data-coupon-link>查看優惠券資訊 ↗</a></p>
 
     <section id="faq" class="faq-section page-width section-anchor" aria-labelledby="faqTitle"><div class="section-heading"><div><p class="eyebrow">A LITTLE HELP FOR PARENTS</p><h2 id="faqTitle">家長 Q&A</h2></div><p><span class="faq-intro-full">想知道的，先幫你整理好了。<br>還有問題，隨時到 LINE 找我們。</span><span class="faq-intro-short">點選分類，找到想知道的事。</span></p></div><div class="faq-layout"><div id="faqCategories" class="faq-categories" role="group" aria-label="常見問題分類"></div><div id="faqList" class="faq-list"></div></div><p class="faq-bottom">孩子有特別的需求，或不知道怎麼選？<a href="https://lin.ee/zFqqFzQ" target="_blank" rel="noopener">和我們聊聊 ↗</a></p></section>
 

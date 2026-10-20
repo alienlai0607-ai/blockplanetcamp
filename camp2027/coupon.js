@@ -11,7 +11,9 @@
   const requestParams = new URLSearchParams(location.search);
   const requestedCampus = requestParams.get('campus');
   const selectedCamp = (config.registrationCamps || []).find(camp => camp.id === requestParams.get('camp')) || null;
-  const isSelectedCampPending = () => !!selectedCamp && selectedCamp.kind !== 'form';
+  // Published registration forms do not imply coupon settlement support.
+  const backendCampIds = ['full-term', 'drone', 'lego'];
+  const isSelectedCampPending = () => !!selectedCamp && !backendCampIds.includes(selectedCamp.id);
   const campus = ['north', 'yongkang'].includes(requestedCampus) ? requestedCampus : 'all';
   function withCampus(value) {
     const url = new URL(value, location.href);
@@ -39,7 +41,6 @@
   const link = (url, text, cls = 'inline-button', external = false) => `<a class="${cls}" href="${escapeHtml(safeUrl(url))}"${external ? ' target="_blank" rel="noopener"' : ''}>${text}</a>`;
   const isPostponed = () => config.enabled !== true || config.releaseStatus === 'postponed';
   const campIds = ['full-term', 'drone', 'lego', 'game-lab', 'aviation', 'fragrance'];
-  const backendCampIds = ['full-term', 'drone', 'lego'];
   const readyRegistrationCamps = (config.registrationCamps || []).filter(camp => backendCampIds.includes(camp.id) && camp.kind === 'form');
   const canActivate = () => !isPostponed() && config.enabled === true && config.rulesConfirmed === true && config.backendReady === true && config.pricingReady !== false &&
     config.campaignId === '2027C' && Number.isFinite(opening()?.getTime()) &&
@@ -167,24 +168,19 @@
   }
   function renderCampPending() {
     currentCoupon = null;
-    renderStatus('camp-pending', '此營隊報名資訊準備中',
-      `${escapeHtml(selectedCamp.name)}的費用與雲端報名表尚未公布。優惠券已納入後續規劃，待報名資料確認後再開放這個營隊領取；目前不會開始 60 分鐘的使用倒數。`,
-      `${link(registrationPage, '返回選擇營隊 →', 'primary')}${link(line, 'LINE 洽詢營隊資訊 ↗', 'inline-button', true)}`);
+    renderStatus('camp-pending', '課程已開放報名，優惠券準備中',
+      `${escapeHtml(selectedCamp.name)}的課程、費用與雲端報名表已公布，可直接前往表單報名。此營隊的優惠券使用功能尚未開放，確認後另行公告；目前不會開始 60 分鐘的使用倒數。`,
+      `${link(selectedCamp.url, '直接前往營隊報名表 ↗', 'primary', true)}${link(registrationPage, '查看所有營隊 →')}${link(line, 'LINE 詢問優惠券進度 ↗', 'inline-button', true)}`);
   }
   function renderPending() {
     if (isSelectedCampPending()) { renderCampPending(); return; }
     if (isPostponed() || !dateLabel()) { renderPostponed(); return; }
-    if (config.pricingReady === false) {
-      if (Number.isFinite(opening()?.getTime()) && now() < opening().getTime()) { renderNotYet(); return; }
-      renderStatus('pricing-pending', '優惠券資訊確認中', '各營隊費用確認後，將開放領取優惠券；目前不會開始使用期限的倒數。', link(registrationPage, '先查看營隊與報名資訊 →', 'primary'));
-      return;
-    }
     currentCoupon = null;
     const {month, day} = dateLabel();
     const exact = Number.isFinite(opening()?.getTime());
     const time = exact ? new Intl.DateTimeFormat('zh-TW', {timeZone:'Asia/Taipei',hour:'2-digit',minute:'2-digit',hour12:false}).format(opening()) : '';
-    render(ticket(`<span class="status">即將開放</span><p class="stub-label">開放領取</p><p class="release-date">${month}<span>/</span>${day}</p><p class="quantity">限量 <b>${escapeHtml(config.initialPoolSize || 60)}</b> 張</p><span class="stub-rule"></span><p class="stub-note">${exact ? `${escapeHtml(time)} 開放<br>（台灣時間）` : '開放時間確認後，<br>會在這裡公布。'}</p>`,
-      `<div class="ticket-action"><div><b>${month} 月 ${day} 日${exact ? ` ${escapeHtml(time)}` : ''} 開放領取</b><p>優惠券尚未開放，請稍後回來查看。</p></div><button class="primary" disabled>尚未開放</button></div>`, 'before', `<div class="state-links">${calendarLink(exact)}${link(camps, '先看看冬令營課程 ↗')}</div>`), 'pending');
+    render(ticket(`<span class="status">優惠券準備中</span><p class="stub-label">原訂開放時間</p><p class="opening-time">${month} 月 ${day} 日${exact ? `<br>${escapeHtml(time)}（台灣時間）` : ''}</p><p class="quantity">限量 <b>${escapeHtml(config.initialPoolSize || 60)}</b> 張</p><span class="stub-rule"></span><p class="stub-note">實際領取開放時間，<br>請以後續公告為準。</p>`,
+      `<div class="ticket-action"><div><b>營隊已開放報名，優惠券尚未開放</b><p>課程、費用與報名表已公布。優惠券使用功能確認後再開放，目前不會開始使用期限的倒數。</p></div>${link(registrationPage, '查看營隊・直接報名 →', 'primary')}</div>`, 'before', `<div class="state-links">${link(camps, '先看看冬令營課程 ↗')}${link(line, 'LINE 詢問優惠券進度 ↗', 'inline-button', true)}</div>`), 'integration-pending');
   }
   function renderNotYet() {
     currentCoupon = null;
@@ -217,7 +213,7 @@
     currentCoupon = coupon; rememberedPhone = coupon.phone;
     render(ticket(`<span class="status status-success">已領取</span><p class="stub-label">你的優惠碼</p><output class="coupon-code" id="code-value" tabindex="-1">${escapeHtml(coupon.code)}</output><button class="copy-code" data-action="copy" type="button">複製優惠碼 ⧉</button><span class="stub-rule"></span><p class="stub-label">剩餘使用時間</p><p class="timer" id="countdown" role="timer" aria-label="優惠碼剩餘使用時間">--:--</p><p class="stub-note demo-note">以優惠碼原有效期限計時</p>`,
       `<div class="ticket-action"><div><b id="copy-heading">優惠券已準備好</b><p id="copy-status" role="status">先複製優惠碼，再前往報名。</p></div><button class="primary" data-action="register" type="button">選擇營隊・前往報名 →</button></div>`, 'claimed',
-      `<section class="next-steps" aria-labelledby="next-title"><h2 id="next-title">使用優惠碼請注意</h2><p>目前可使用於五燈獎・大聖鬧辦桌、祥龍無人機派對或 LEGO IDEAS 玩具設計總監。這三個營隊日期重疊，請擇一報名。兩日營的費用與報名表準備中，尚未開放使用優惠券。</p><div class="steps-row"><p><strong>表單貼上優惠碼</strong><span>填寫同一位學員，手機 ${escapeHtml(coupon.phone)}。</span></p><p><strong>60 分鐘內完成報名</strong><span>從領券成功起計時，請在倒數結束前送出表單。</span></p><p><strong>立即截圖傳官方 LINE</strong><span>送出後立即傳送報名截圖，由行政核對優惠與報名金額。</span></p></div>${link(line, '已送出報名？到 LINE 確認 ↗', 'inline-button', true)}${!persistentStorage ? '<p class="storage-warning" role="status">此瀏覽器無法保留優惠碼，請先複製或截圖並保留本頁。若關閉頁面後無法找回，請聯絡官方 LINE 協助。</p>' : ''}${coupon.codeStatus === 'used' ? '<p class="storage-warning">這張券已有報名紀錄；有效時間內，同一位學員僅可追加營期不重疊的適用營隊，請沿用原優惠碼；未知營期須先由教室核對。</p>' : ''}</section>`), 'claimed');
+      `<section class="next-steps" aria-labelledby="next-title"><h2 id="next-title">使用優惠碼請注意</h2><p>目前可使用於五燈獎・大聖鬧辦桌、祥龍無人機派對或 LEGO IDEAS 玩具設計總監。這三個營隊日期重疊，請擇一報名。兩日營的課程、費用與報名表已公布，優惠券使用功能尚未開放；開放後另行公告。</p><div class="steps-row"><p><strong>表單貼上優惠碼</strong><span>填寫同一位學員，手機 ${escapeHtml(coupon.phone)}。</span></p><p><strong>60 分鐘內完成報名</strong><span>從領券成功起計時，請在倒數結束前送出表單。</span></p><p><strong>立即截圖傳官方 LINE</strong><span>送出後立即傳送報名截圖，由行政核對優惠與報名金額。</span></p></div>${link(line, '已送出報名？到 LINE 確認 ↗', 'inline-button', true)}${!persistentStorage ? '<p class="storage-warning" role="status">此瀏覽器無法保留優惠碼，請先複製或截圖並保留本頁。若關閉頁面後無法找回，請聯絡官方 LINE 協助。</p>' : ''}${coupon.codeStatus === 'used' ? '<p class="storage-warning">這張券已有報名紀錄；有效時間內，同一位學員僅可追加營期不重疊的適用營隊，請沿用原優惠碼；未知營期須先由教室核對。</p>' : ''}</section>`), 'claimed');
     document.getElementById('registration-code').textContent = coupon.code;
     setCopyStatus('先複製優惠碼，再前往報名。');
     if (startCountdown() && automatic) copyCode(true);

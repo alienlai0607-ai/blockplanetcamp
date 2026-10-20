@@ -1,0 +1,31 @@
+{
+  "source": "Game Lab form header generated 2026-10-20",
+  "sourceSha256": "b7dcf68edcca9f8541ee3511e0d769b8a078bb832da59bced5af934324267c90",
+  "use": "Course introduction banner after the existing dated poster; unchanged composition, resized and encoded for the website.",
+  "assets": [
+    {
+      "file": "game-lab-course-header.webp",
+      "width": 1500,
+      "height": 500,
+      "bytes": 197382
+    },
+    {
+      "file": "game-lab-course-header.avif",
+      "width": 1500,
+      "height": 500,
+      "bytes": 113508
+    },
+    {
+      "file": "game-lab-course-header-mobile.webp",
+      "width": 750,
+      "height": 250,
+      "bytes": 74356
+    },
+    {
+      "file": "game-lab-course-header-mobile.avif",
+      "width": 750,
+      "height": 250,
+      "bytes": 43388
+    }
+  ]
+}

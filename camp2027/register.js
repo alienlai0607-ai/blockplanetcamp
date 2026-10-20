@@ -13,6 +13,7 @@
   document.getElementById('registrationCouponStatus').textContent = couponOpeningLabel(coupon);
 
   function couponOpeningLabel(config) {
+    if (config?.backendReady !== true || config?.pricingReady === false) return '領券服務準備中，開放狀態請看優惠券頁';
     if (!config || config.releaseStatus === 'postponed' || !config.opensAt) return '開放時間另行公告';
     const opening = new Date(config.opensAt);
     if (!Number.isFinite(opening.getTime())) return '開放時間另行公告';
@@ -75,6 +76,7 @@
     const meta = document.createElement('div');
     meta.className = 'camp-meta';
     meta.append(textElement('p', 'camp-date', camp.dateLabel), textElement('p', 'camp-classroom', classroomLabel(camp)));
+    if (camp.pricing) meta.append(textElement('p', 'camp-price', camp.priceLabel));
 
     const actions = document.createElement('div');
     actions.className = 'camp-actions';
