@@ -123,8 +123,8 @@
   function ticket(stub, action, state, extra = '') {
     return `<article class="ticket" data-state="${state}" aria-label="2027冬令營95折優惠券">
       <div class="ticket-face"><div class="ticket-topline"><span>布拉克星球・冬令營</span><span class="edition">2027</span></div>
-      <div class="offer"><div class="offer-copy"><p>營隊報名優惠</p><strong><span>95</span><i>折</i></strong><p class="offer-note">指定主題營隊適用</p></div><img class="learners" src="assets/coupon-learners.webp" width="1536" height="1024" alt="小橘人學員帶著布袋戲偶、無人機與積木龍車"></div>
-      <div class="ticket-bottomline"><span>全期營・五日營適用</span><span aria-hidden="true">✦</span></div></div>
+      <div class="offer"><div class="offer-copy"><p>營隊報名優惠</p><strong><span>95</span><i>折</i></strong><p class="offer-note">六個冬令營皆適用</p></div><img class="learners" src="assets/coupon-learners.webp" width="1536" height="1024" alt="小橘人學員帶著布袋戲偶、無人機與積木龍車"></div>
+      <div class="ticket-bottomline"><span>全期營・五日營・兩日營</span><span aria-hidden="true">✦</span></div></div>
       <div class="ticket-stub"><div class="stub-content" data-panel="${state}">${stub}</div></div>${action}</article>${extra}`;
   }
   function dateLabel() {
