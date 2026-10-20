@@ -110,3 +110,14 @@
   .hero-world .hero-actions { gap:8px; }
   .hero-world .hero-actions .button { font-size:14px;padding-inline:8px;gap:5px; }
 }
+
+/* Three direct homepage actions, including registration on every screen. */
+.hero-world .hero-actions { width:max-content;max-width:calc(100vw - 64px);gap:10px; }
+.hero-world .hero-actions .button { padding-inline:18px;font-size:16px;gap:8px; }
+.hero-world .hero-actions .hero-register { background:#833f2e;color:#fff8e9; }
+.hero-world .hero-actions .hero-register:hover { background:#6c3023; }
+@media(max-width:700px){
+ .hero-world .hero-actions { width:100%;max-width:100%;grid-template-columns:1.2fr 1.1fr 1fr;gap:6px; }
+ .hero-world .hero-actions .button { padding:12px 5px;font-size:13px;gap:3px; }
+ .hero-world .hero-actions .button svg { width:14px;height:14px;flex-shrink:0; }
+}
