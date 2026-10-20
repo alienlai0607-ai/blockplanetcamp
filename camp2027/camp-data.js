@@ -6,7 +6,7 @@ window.CAMP_DATA = {
     year: 2027,
     language: "zh-Hant",
     verifiedOn: "2026-10-19",
-    pricingReady: false,
+    pricingReady: true,
     relationship: "寒假全期營與各特色營獨立授課、獨立報名。",
     relationshipDetail: "冬令營全期營完整參與五燈獎課程；5 日與 2 日特色營各有自己的主題。全期營不包含其他特色營。"
   },
@@ -66,7 +66,7 @@ window.CAMP_DATA = {
       classroomIds: ["north", "yongkang"],
       classroomLabel: "東橋教室／北區教室",
       priceLabel: "早鳥 NT$13,000／人",
-      priceNote: "原價 NT$15,000／人；早鳥截止 2026/11/30。有效 95 折優惠券價 NT$12,350，實際應繳金額請由官方 LINE 確認；優惠券尚未開放領取。",
+      priceNote: "原價 NT$15,000／人；早鳥截止 2026/11/30。有效 95 折優惠券價 NT$12,350，實際應繳金額請由官方 LINE 確認；優惠券於 10/20 晚上 7 點開放領取。",
       pricing: { currency: "TWD", original: 15000, earlyBird: 13000, earlyBirdDeadline: "2026-11-30", earlyBirdDeadlineLabel: "2026/11/30 截止", couponPrice: 12350, sourceId: "confirmed-prices-20261020" },
       description: "跟著齊天大聖探索村落、操演戲偶、體驗捏麵人與畫糖，從陀螺與扯鈴認識旋轉，再合作布置自己的辦桌宴席。孩子把文化、觀察與創意帶進寒假。",
       highlights: ["五種文化體驗", "大崎村落創意基地走讀", "孩子共同策劃辦桌盛會"],
@@ -189,7 +189,7 @@ window.CAMP_DATA = {
       classroomIds: ["north"],
       classroomLabel: "北區教室",
       priceLabel: "早鳥 NT$7,999／人",
-      priceNote: "原價 NT$9,200／人；早鳥截止 2026/11/30。有效 95 折優惠券價 NT$7,600，實際應繳金額請由官方 LINE 確認；優惠券尚未開放領取。",
+      priceNote: "原價 NT$9,200／人；早鳥截止 2026/11/30。有效 95 折優惠券價 NT$7,600，實際應繳金額請由官方 LINE 確認；優惠券於 10/20 晚上 7 點開放領取。",
       pricing: { currency: "TWD", original: 9200, earlyBird: 7999, earlyBirdDeadline: "2026-11-30", earlyBirdDeadlineLabel: "2026/11/30 截止", couponPrice: 7600, sourceId: "confirmed-prices-20261020" },
       description: "把中華神話變成專屬無人機造型，從飛行原理、基礎操控到路線規劃與團隊競賽，和夥伴一起迎接空中的挑戰。",
       highlights: ["設計文化主題飛行造型", "練習操控與障礙接力", "學習問題判斷與基礎維護"],
@@ -224,7 +224,7 @@ window.CAMP_DATA = {
       classroomIds: ["yongkang", "north"],
       classroomLabel: "東橋教室／北區教室",
       priceLabel: "早鳥 NT$7,800／人",
-      priceNote: "原價 NT$9,800／人；早鳥截止 2026/11/30。有效 95 折優惠券價 NT$7,410，實際應繳金額請由官方 LINE 確認；優惠券尚未開放領取。",
+      priceNote: "原價 NT$9,800／人；早鳥截止 2026/11/30。有效 95 折優惠券價 NT$7,410，實際應繳金額請由官方 LINE 確認；優惠券於 10/20 晚上 7 點開放領取。",
       pricing: { currency: "TWD", original: 9800, earlyBird: 7800, earlyBirdDeadline: "2026-11-30", earlyBirdDeadlineLabel: "2026/11/30 截止", couponPrice: 7410, sourceId: "confirmed-prices-20261020" },
       description: "從中華故事發想，畫出原創設計，在 3D 軟體中建立作品，再製作步驟圖與說明書、設計包裝，完成自己的原創盒組。",
       highlights: ["從文化故事找靈感", "3D 設計與組裝圖解", "打造自己的原創盒組"],
@@ -266,7 +266,7 @@ window.CAMP_DATA = {
       classroomIds: ["north"],
       classroomLabel: "北區教室",
       priceLabel: "早鳥 NT$5,400／人",
-      priceNote: "原價 NT$7,400／人；早鳥截止 2026/11/30。有效 95 折優惠券價 NT$5,130，實際應繳金額請由官方 LINE 確認；優惠券尚未開放領取。",
+      priceNote: "原價 NT$7,400／人；早鳥截止 2026/11/30。有效 95 折優惠券價 NT$5,130，實際應繳金額請由官方 LINE 確認；優惠券於 10/20 晚上 7 點開放領取。",
       pricing: { currency: "TWD", original: 7400, earlyBird: 5400, earlyBirdDeadline: "2026-11-30", earlyBirdDeadlineLabel: "2026/11/30 截止", couponPrice: 5130, sourceId: "confirmed-prices-20261020" },
       introduction: "年獸出沒的新春，會發生什麼故事？從主角、挑戰到結局，孩子先寫下自己的劇情，再讓故事成為可以玩的遊戲。",
       description: "從新春故事與腳本出發，畫出原創像素角色和動作，用 Microsoft MakeCode Arcade 將劇情變成遊戲邏輯，再試玩、修改，把故事說給大家聽。每位報名學員贈送一台遊戲機，老師協助匯入孩子創作的遊戲，帶回家與家人分享。",
@@ -314,7 +314,7 @@ window.CAMP_DATA = {
       classroomIds: ["yongkang"],
       classroomLabel: "東橋教室",
       priceLabel: "早鳥 NT$5,400／人",
-      priceNote: "原價 NT$6,500／人；早鳥截止 2026/11/30。有效 95 折優惠券價 NT$5,130，實際應繳金額請由官方 LINE 確認；優惠券尚未開放領取。",
+      priceNote: "原價 NT$6,500／人；早鳥截止 2026/11/30。有效 95 折優惠券價 NT$5,130，實際應繳金額請由官方 LINE 確認；優惠券於 10/20 晚上 7 點開放領取。",
       pricing: { currency: "TWD", original: 6500, earlyBird: 5400, earlyBirdDeadline: "2026-11-30", earlyBirdDeadlineLabel: "2026/11/30 截止", couponPrice: 5130, sourceId: "confirmed-prices-20261020" },
       introduction: "新年第一個發明，從親手打造一架飛機開始。",
       description: "從新春找靈感，親手裁切、組裝自己的飛行器。找重心、練習遙控試飛，從每次測試裡修改；馬達等配件還能拆下重用，讓下一個點子繼續起飛。",
@@ -373,7 +373,7 @@ window.CAMP_DATA = {
       classroomIds: ["north"],
       classroomLabel: "北區教室",
       priceLabel: "早鳥 NT$4,800／人",
-      priceNote: "原價 NT$6,500／人；早鳥截止 2026/11/30。有效 95 折優惠券價 NT$4,560，實際應繳金額請由官方 LINE 確認；優惠券尚未開放領取。",
+      priceNote: "原價 NT$6,500／人；早鳥截止 2026/11/30。有效 95 折優惠券價 NT$4,560，實際應繳金額請由官方 LINE 確認；優惠券於 10/20 晚上 7 點開放領取。",
       pricing: { currency: "TWD", original: 6500, earlyBird: 4800, earlyBirdDeadline: "2026-11-30", earlyBirdDeadlineLabel: "2026/11/30 截止", couponPrice: 4560, sourceId: "confirmed-prices-20261020" },
       introduction: "這個新年，換孩子來設計一份驚喜。想一想，這份禮物要送給誰？他喜歡什麼味道？打開時，看到什麼會開心？",
       description: "從觀察、實驗到動手設計，親手製作驚喜沐浴球、新春香氛蠟燭，再設計專屬禮盒與祝福卡。讓香氣、色彩與科學，成為孩子送祝福的好幫手。",
@@ -588,7 +588,7 @@ window.CAMP_DATA = {
     {
       id: "registration", label: "報名與費用", items: [
         { question: "全期營怎麼報名？", answer: "在「開始報名」頁選擇五燈獎全期營，點選「直接報名」即可進入 Google 表單。六個營隊的報名表皆已開放；送出後請立即截圖傳至官方 LINE，確認報名資料與應繳金額。", action: { label: "選擇營隊・開始報名", url: "register.html" }, sourceIds: ["full-term-form", "confirmed-form-details-20261020"] },
-        { question: "全期營費用是多少？", answer: "五燈獎全期營原價 NT$15,000／人，早鳥價 NT$13,000／人，早鳥截止 2026/11/30。有效 95 折優惠券價為 NT$12,350；優惠券尚未開放領取，實際應繳金額請由官方 LINE 確認後再付款。", sourceIds: ["full-term-form", "confirmed-prices-20261020"] },
+        { question: "全期營費用是多少？", answer: "五燈獎全期營原價 NT$15,000／人，早鳥價 NT$13,000／人，早鳥截止 2026/11/30。有效 95 折優惠券價為 NT$12,350；優惠券於 10/20 晚上 7 點開放領取，實際應繳金額請由官方 LINE 確認後再付款。", sourceIds: ["full-term-form", "confirmed-prices-20261020"] },
         { question: "可以報名不只一個營隊嗎？", answer: "可以。先從 1/21–1/22 的兩日營選一個主題，再參加 1/25–1/29 的祥龍無人機派對或 LEGO IDEAS 玩具設計總監，五日營也請擇一。各特色營都與五燈獎冬令營全期營重疊，同一位孩子不能同時參加全期營與重疊的特色營。", sourceIds: ["full-term-form", "drone-poster", "game-lab-user-20261019", "aviation-user-brief", "lego-dates-20261019", "fragrance-user-20261019"] },
         { question: "想請假、取消或更換梯次，可以怎麼處理？", answer: "請透過 LINE 提供所報名的營隊、教室及希望調整的日期，由教室說明該方案的處理方式。付款前也可以先詢問相關規則。", sourceIds: [] },
         { question: "特色營的日期與費用公布了嗎？", answer: "已公布。2027/1/21–1/22 兩日營的早鳥價為：Game Lab NT$5,400、飛行航空 NT$5,400、新春香氛 NT$4,800。2027/1/25–1/29 五日營的早鳥價為：祥龍無人機派對 NT$7,999、LEGO IDEAS NT$7,800。皆為每位學員費用，早鳥截止 2026/11/30，每日 09:00–17:00 上課。同日期主題請擇一參加，完整費用請查看各營課程介紹。", sourceIds: ["confirmed-prices-20261020", "confirmed-form-details-20261020"] }
@@ -596,11 +596,11 @@ window.CAMP_DATA = {
     },
     {
       id: "coupon", label: "優惠券怎麼用", items: [
-        { question: "優惠券什麼時候開放？", answer: "95 折優惠券限量 60 張，目前尚未開放領取；開放時間請以優惠券頁公告為準。正式領取成功後開始計算 60 分鐘使用期限。", action: { label: "查看優惠券資訊", url: "coupon.html" }, sourceIds: ["coupon-winter-rules", "confirmed-prices-20261020"] },
-        { question: "優惠券適用哪些營隊？", answer: "六個營隊均已確認 95 折優惠券方案：五燈獎・大聖鬧辦桌、祥龍無人機派對、LEGO IDEAS、Game Lab、飛行航空與新春香氛科學營。報名表已開放，優惠券目前尚未開放領取；正式開放與使用方式請以優惠券頁公告為準。", sourceIds: ["coupon-winter-rules", "confirmed-prices-20261020"] },
+        { question: "優惠券什麼時候開放？", answer: "95 折優惠券六營共用限量 60 張，2026/10/20 晚上 7 點（台灣時間）開放領取。正式領取成功後開始計算 60 分鐘使用期限。", action: { label: "查看優惠券資訊", url: "coupon.html" }, sourceIds: ["coupon-winter-rules", "confirmed-prices-20261020"] },
+        { question: "優惠券適用哪些營隊？", answer: "六個營隊均已確認 95 折優惠券方案：五燈獎・大聖鬧辦桌、祥龍無人機派對、LEGO IDEAS、Game Lab、飛行航空與新春香氛科學營。報名表已開放，優惠券於 10/20 晚上 7 點開放領取，使用方式請看優惠券頁。", sourceIds: ["coupon-winter-rules", "confirmed-prices-20261020"] },
         { question: "領到優惠券後，接著怎麼做？", answer: "正式開放後，領取優惠券並複製優惠碼，在報名表的「優惠碼」欄位貼上，於領券後 60 分鐘內完成送出，再立即截圖傳至官方 LINE 確認。一支手機限領一張，限同一位學員使用，報名請填相同手機。", sourceIds: ["coupon-winter-rules"] },
-        { question: "可以用在不只一個營隊嗎？", answer: "正式開放後，同一位學員可在日期不衝堂的適用營隊追加使用，仍須符合券面期限與報名規則。可從 1/21–1/22 的兩日營擇一，再從 1/25–1/29 的五日營擇一；全期營與這些特色營重疊，不能同時報名。優惠券目前尚未開放領取。", sourceIds: ["coupon-winter-rules", "confirmed-form-details-20261020"] },
-        { question: "95 折優惠券可以和其他優惠一起使用嗎？", answer: "正式開放後，早鳥期間可於適用營隊使用 95 折券，折扣不重複使用；各營優惠券價已列於課程介紹。請在報名表填入有效優惠碼，送出後立即截圖傳至官方 LINE，由教室核對優惠與應付金額，確認後再付款。優惠券目前尚未開放領取。", sourceIds: ["coupon-winter-rules", "confirmed-prices-20261020"] }
+        { question: "可以用在不只一個營隊嗎？", answer: "正式開放後，同一位學員可在日期不衝堂的適用營隊追加使用，仍須符合券面期限與報名規則。可從 1/21–1/22 的兩日營擇一，再從 1/25–1/29 的五日營擇一；全期營與這些特色營重疊，不能同時報名。優惠券於 10/20 晚上 7 點開放領取。", sourceIds: ["coupon-winter-rules", "confirmed-form-details-20261020"] },
+        { question: "95 折優惠券可以和其他優惠一起使用嗎？", answer: "正式開放後，早鳥期間可於適用營隊使用 95 折券，折扣不重複使用；各營優惠券價已列於課程介紹。請在報名表填入有效優惠碼，送出後立即截圖傳至官方 LINE，由教室核對優惠與應付金額，確認後再付款。優惠券於 10/20 晚上 7 點開放領取。", sourceIds: ["coupon-winter-rules", "confirmed-prices-20261020"] }
       ]
     }
   ],
@@ -619,7 +619,7 @@ window.CAMP_DATA = {
     { id: "aviation-user-brief", type: "user-confirmation", title: "「機」不可失2.0飛行航空科學營課程與命名", checkedOn: "2026-10-19", verification: "使用者先前確認兩日入門、從造型與重心到反覆試飛，預計製作約2–3架飛機；2026-10-19補充確認航空營也是2027年1月21、22日。新春副標與照片海報沿用前序版本。費用、年齡、時段、教室與專屬報名表未提供。" },
     { id: "aviation-approved-poster", type: "existing-generated-poster", title: "飛行航空科學營照片融合版海報", path: "assets/aviation-poster.webp", provenance: "assets/two-day-poster-sources.json", checkedOn: "2026-10-19", verification: "沿用既有新春海報與使用者提供的製作、試飛、成果照片；只轉換網頁格式。" },
     { id: "coupon-winter-rules", type: "user-confirmation", title: "2027冬令營優惠規則對話確認", checkedOn: "2026-10-20", verification: "使用者確認2027所有營隊取消同行與團報價格；沿用95折、領券後60分鐘內完成報名、一手機一張限同一學員，送出後立即截圖傳官方LINE。各營隊費用須經確認；優惠券資訊不展示試算金額；日期不衝堂可追加使用、日期未定人工核對。" },
-    { id: "coupon-update-20261019", type: "user-confirmation", title: "優惠券開放時間與兩日營規劃", checkedOn: "2026-10-19", verification: "使用者確認2026年10月20日19:00台灣時間開放95折優惠券；前台時間與正式後台一致。既有三營可使用，兩日營仍待費用與報名表確認。" },
+    { id: "coupon-update-20261019", type: "user-confirmation", title: "優惠券開放時間與兩日營規劃", checkedOn: "2026-10-19", verification: "使用者確認2026年10月20日19:00台灣時間開放95折優惠券；前台時間與正式後台一致。六營費用與表單已確認，已完成六營後台串接。" },
     {"id": "lights-final-poster", "type": "provided-final-image", "title": "2027五燈獎冬令營辦桌20261012-01.jpg", "path": "../03_原始素材/今年營隊/2027五燈獎冬令營辦桌20261012-01.jpg", "checkedOn": "2026-10-12", "verification": "已視覺核對2027年份、五燈由左至右順序、活動副標與全部學習重點；整體主題名稱維持使用者先前確認版本。"},
     { id: "full-term-form", type: "public-form", title: "2027冬令營《五燈獎・大聖鬧辦桌》報名表", url: "https://docs.google.com/forms/d/e/1FAIpQLSfqclQFsLtNujPctIfk_elu3umDNIWr1W6C1MSIs5wc3BIVFg/viewform", checkedOn: "2026-10-12", verification: "可見課程介紹頁與費用頁重新核對；未填寫資料、未提交報名。" },
     { id: "drone-poster", type: "provided-pdf", title: "2027寒假 無人機營隊.pdf", path: "../03_原始素材/今年營隊/2027寒假 無人機營隊.pdf", verification: "逐字視覺核對海報標題、五日日期與四組課程介紹。" },

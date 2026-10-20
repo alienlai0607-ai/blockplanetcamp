@@ -12,7 +12,7 @@
   const requestedCampus = requestParams.get('campus');
   const selectedCamp = (config.registrationCamps || []).find(camp => camp.id === requestParams.get('camp')) || null;
   // Published registration forms do not imply coupon settlement support.
-  const backendCampIds = ['full-term', 'drone', 'lego'];
+  const backendCampIds = ['full-term', 'drone', 'lego', 'game-lab', 'aviation', 'fragrance'];
   const isSelectedCampPending = () => !!selectedCamp && !backendCampIds.includes(selectedCamp.id);
   const campus = ['north', 'yongkang'].includes(requestedCampus) ? requestedCampus : 'all';
   function withCampus(value) {
@@ -213,7 +213,7 @@
     currentCoupon = coupon; rememberedPhone = coupon.phone;
     render(ticket(`<span class="status status-success">已領取</span><p class="stub-label">你的優惠碼</p><output class="coupon-code" id="code-value" tabindex="-1">${escapeHtml(coupon.code)}</output><button class="copy-code" data-action="copy" type="button">複製優惠碼 ⧉</button><span class="stub-rule"></span><p class="stub-label">剩餘使用時間</p><p class="timer" id="countdown" role="timer" aria-label="優惠碼剩餘使用時間">--:--</p><p class="stub-note demo-note">以優惠碼原有效期限計時</p>`,
       `<div class="ticket-action"><div><b id="copy-heading">優惠券已準備好</b><p id="copy-status" role="status">先複製優惠碼，再前往報名。</p></div><button class="primary" data-action="register" type="button">選擇營隊・前往報名 →</button></div>`, 'claimed',
-      `<section class="next-steps" aria-labelledby="next-title"><h2 id="next-title">使用優惠碼請注意</h2><p>目前可使用於五燈獎・大聖鬧辦桌、祥龍無人機派對或 LEGO IDEAS 玩具設計總監。這三個營隊日期重疊，請擇一報名。兩日營的課程、費用與報名表已公布，優惠券使用功能尚未開放；開放後另行公告。</p><div class="steps-row"><p><strong>表單貼上優惠碼</strong><span>填寫同一位學員，手機 ${escapeHtml(coupon.phone)}。</span></p><p><strong>60 分鐘內完成報名</strong><span>從領券成功起計時，請在倒數結束前送出表單。</span></p><p><strong>立即截圖傳官方 LINE</strong><span>送出後立即傳送報名截圖，由行政核對優惠與報名金額。</span></p></div>${link(line, '已送出報名？到 LINE 確認 ↗', 'inline-button', true)}${!persistentStorage ? '<p class="storage-warning" role="status">此瀏覽器無法保留優惠碼，請先複製或截圖並保留本頁。若關閉頁面後無法找回，請聯絡官方 LINE 協助。</p>' : ''}${coupon.codeStatus === 'used' ? '<p class="storage-warning">這張券已有報名紀錄；有效時間內，同一位學員僅可追加營期不重疊的適用營隊，請沿用原優惠碼；未知營期須先由教室核對。</p>' : ''}</section>`), 'claimed');
+      `<section class="next-steps" aria-labelledby="next-title"><h2 id="next-title">使用優惠碼請注意</h2><p>六個營隊皆適用。同一位學員可選一個 1/21–1/22 兩日營，再追加一個 1/25–1/29 五日營；每份報名都須在領券後 60 分鐘內送出。全期營與其他營隊日期重疊，請擇一報名。</p><div class="steps-row"><p><strong>表單貼上優惠碼</strong><span>填寫同一位學員，手機 ${escapeHtml(coupon.phone)}。</span></p><p><strong>60 分鐘內完成報名</strong><span>從領券成功起計時，請在倒數結束前送出表單。</span></p><p><strong>立即截圖傳官方 LINE</strong><span>送出後立即傳送報名截圖，由行政核對優惠與報名金額。</span></p></div>${link(line, '已送出報名？到 LINE 確認 ↗', 'inline-button', true)}${!persistentStorage ? '<p class="storage-warning" role="status">此瀏覽器無法保留優惠碼，請先複製或截圖並保留本頁。若關閉頁面後無法找回，請聯絡官方 LINE 協助。</p>' : ''}${coupon.codeStatus === 'used' ? '<p class="storage-warning">這張券已有報名紀錄；有效時間內，同一位學員僅可追加營期不重疊的適用營隊，請沿用原優惠碼；未知營期須先由教室核對。</p>' : ''}</section>`), 'claimed');
     document.getElementById('registration-code').textContent = coupon.code;
     setCopyStatus('先複製優惠碼，再前往報名。');
     if (startCountdown() && automatic) copyCode(true);

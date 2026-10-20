@@ -651,7 +651,7 @@
     }
     if (item.question === '可以報名不只一個營隊嗎？') answer = combinations;
     if (item.question === '特色營的日期與費用公布了嗎？') answer = `${campusName()}的${names(twoDay)}為 2027/1/21–1/22 兩日營；${names(fiveDay)}為 2027/1/25–1/29 五日營。${specialties.map(c => `${c.name}：${c.priceLabel}。`).join('')}早鳥截止日為 2026/11/30，完整費用與上課資訊可在各營隊的課程介紹及報名表查看。`;
-    if (item.question === '優惠券適用哪些營隊？') answer = `${campusName()}各營隊已公布有效 95 折券的優惠價格。領券服務仍在準備中，開放狀態與適用營隊請以優惠券頁公告為準；兩日營的報名表已可直接填寫。實際應繳金額由官方 LINE 核對。`;
+    if (item.question === '優惠券適用哪些營隊？') answer = `${campusName()}各營隊皆可使用有效 95 折券。六營共用限量 60 張，2026/10/20 晚上 7 點開放領取；領券後須在 60 分鐘內完成報名。相同學員可追加日期不重疊的營隊，實際應繳金額由官方 LINE 核對。`;
     if (item.question === '可以用在不只一個營隊嗎？') answer = `同一位學員可在日期不衝堂的適用營隊追加使用，仍須符合券面期限與報名規則。${combinations}領券與追加使用的開放狀態，請查看優惠券頁公告。`;
     if (item.question === '沒有積木設計或飛行經驗，可以參加嗎？') answer = `${campusName()}各營隊會依課程內容帶領孩子練習。歡迎告訴我們孩子的年級與經驗，確認適合的課程。`;
     return { ...item, answer };
