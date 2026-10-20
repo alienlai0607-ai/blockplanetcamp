@@ -86,7 +86,7 @@
     return memoryCoupon;
   }
   async function apiCall(action, params = {}, timeoutOverrideMs = null) {
-    if (!isOpen() || !['status', 'claim'].includes(action)) throw new Error('CAMPAIGN_NOT_OPEN');
+    if (!canActivate() || !['status', 'claim'].includes(action) || (action === 'claim' && !isOpen())) throw new Error('CAMPAIGN_NOT_OPEN');
     const url = new URL(config.apiUrl);
     url.searchParams.set('action', action);
     url.searchParams.set('campaignId', config.campaignId);
@@ -141,7 +141,7 @@
     const url = new URL('https://www.google.com/calendar/render');
     url.searchParams.set('action', 'TEMPLATE'); url.searchParams.set('text', '布拉克星球 2027 冬令營優惠券開放');
     url.searchParams.set('dates', exact ? `${stamp(opening())}/${stamp(new Date(opening().getTime()+1800000))}` : `${localDay(day)}/${localDay(new Date(day.getTime()+86400000))}`);
-    url.searchParams.set('ctz', 'Asia/Taipei'); url.searchParams.set('details', `冬令營95折優惠券，限量35張。${exact ? '' : '開放時刻請以頁面公告為準。'}\n${config.publicCouponUrl}`);
+    url.searchParams.set('ctz', 'Asia/Taipei'); url.searchParams.set('details', `冬令營95折優惠券，首波35張，加開名額以領券頁為準。${exact ? '' : '開放時刻請以頁面公告為準。'}\n${config.publicCouponUrl}`);
     return link(url.href, '加入日曆提醒 ↗', 'inline-button', true);
   }
   function renderPostponed(saved = storedCoupon()) {
@@ -345,7 +345,7 @@
     if (isSelectedCampPending()) { renderCampPending(); return; }
     if (isPostponed()) { renderPostponed(storedCoupon()); return; }
     if (!canActivate()) { renderPending(); return; }
-    if (!isOpen()) { renderNotYet(); return; }
+    if (!isOpen()) { renderNotYet(); const beforeRevision = viewRevision; apiCall('status').then(data => { if (beforeRevision !== viewRevision) return; const total = Number(data.poolSize); if (Number.isSafeInteger(total) && total > 0 && total <= 10000) { const value = app.querySelector('.quantity b'); if (value) value.textContent = total; } }).catch(() => {}); return; }
     const local = storedCoupon();
     if (local) {
       rememberedPhone = local.phone;
@@ -359,7 +359,7 @@
       if (revision !== requestRevision) return;
       if (responseUnavailable(data)) return;
       const available = Number(data.available), poolSize = Number(data.poolSize || config.initialPoolSize);
-      if (data.success !== true || !Number.isInteger(available) || available < 0 || !Number.isInteger(poolSize) || poolSize !== config.initialPoolSize || available > poolSize) throw new Error('INVALID_STATUS');
+      if (data.success !== true || !Number.isInteger(available) || available < 0 || !Number.isInteger(poolSize) || poolSize < 1 || poolSize > 10000 || available > poolSize) throw new Error('INVALID_STATUS');
       available > 0 ? renderAvailable(available,poolSize) : renderEmpty();
     } catch (_) { if (revision === requestRevision) renderError(); }
     finally { if (revision === requestRevision) { activeRequest = false; app.setAttribute('aria-busy','false'); } }
