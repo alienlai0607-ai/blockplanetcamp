@@ -4,7 +4,7 @@ window.CAMPAIGN_COUPON = Object.freeze({
   enabled: true,
   releaseStatus: 'scheduled',
   rulesConfirmed: true,
-  backendReady: false,
+  backendReady: true,
   pricingReady: true,
   openingDate: '2026-10-20',
   opensAt: '2026-10-20T19:00:00+08:00',
