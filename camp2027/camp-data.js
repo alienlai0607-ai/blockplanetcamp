@@ -259,18 +259,26 @@ window.CAMP_DATA = {
       priceLabel: "費用確認後公布",
       priceNote: "可先透過 LINE 報名，確認費用與開課安排。",
       pricing: null,
-      introduction: "年獸來了！英雄長什麼樣子？要使出什麼招式？這次，角色、動作和遊戲規則，都由孩子來設計！",
-      description: "兩天裡，孩子將使用 Microsoft MakeCode Arcade，從畫出像素角色開始，透過積木程式讓角色移動、跳躍、出招，親手做出自己的新春功夫遊戲！",
-      highlights: ["自己畫角色與動作動畫", "用積木程式設計玩法", "試玩修改，分享自己的遊戲"],
-      activities: [
-        { title: "像素角色設計", description: "畫出功夫英雄與年獸，製作角色的動作動畫，讓想像中的人物動起來。", learningPoints: ["像素繪圖", "角色造型", "動作動畫"] },
-        { title: "積木程式編寫", description: "設定移動、跳躍與攻擊，認識按鍵操作、事件觸發與程式執行的關係。", learningPoints: ["按鍵操作", "事件觸發", "積木程式"] },
-        { title: "遊戲規則設計", description: "設定血量、得分與過關條件，練習條件判斷，也思考怎樣的挑戰才好玩。", learningPoints: ["條件判斷", "血量與得分", "關卡挑戰"] },
-        { title: "試玩、修改與分享", description: "和同伴交換試玩，找出問題、調整玩法，完成能與家人朋友分享的遊戲作品。", learningPoints: ["測試除錯", "調整玩法", "作品分享"] }
+      introduction: "年獸出沒的新春，會發生什麼故事？從主角、挑戰到結局，孩子先寫下自己的劇情，再讓故事成為可以玩的遊戲。",
+      description: "從新春故事與腳本出發，畫出原創像素角色和動作，用 Microsoft MakeCode Arcade 將劇情變成遊戲邏輯，再試玩、修改，把故事說給大家聽。每位報名學員贈送一台遊戲機，老師協助匯入孩子創作的遊戲，帶回家與家人分享。",
+      highlights: ["創作新春故事與腳本", "設計像素角色、動作與遊戲邏輯", "試玩修改，練習說故事與表達"],
+      editorialIntroduction: "「年獸來了，然後呢？」\n\n英雄為什麼出發？途中會遇到什麼挑戰？故事最後會怎麼樣？兩天裡，孩子從自己的新春故事出發，寫下腳本、畫出角色，再一步步把它變成可以玩的遊戲。",
+      editorialChapters: [
+        { title: "先把故事想清楚，寫成自己的腳本", paragraphs: ["以新春與年獸為靈感，想出主角、事件、挑戰與結局。練習安排故事的先後順序，把想說的內容寫下來，也試著說給同伴聽。"] },
+        { title: "讓角色有模樣，也有動作", paragraphs: ["畫出原創功夫英雄與年獸，設計像素造型和動作動畫。角色的樣子、移動方式與招式，都為孩子想說的故事服務。"] },
+        { title: "把劇情變成可以玩的規則", paragraphs: ["使用 Microsoft MakeCode Arcade 的積木程式，設定移動、跳躍與攻擊，把腳本中的事件轉成遊戲邏輯。透過血量、得分與過關條件，練習事件觸發和條件判斷。"] },
+        { title: "交換試玩，再親口說出創作故事", paragraphs: ["邀請同伴試玩，看看規則是否清楚、操作是否順暢，再回頭修改。分享時，孩子練習介紹故事、角色和玩法，說明自己做了哪些選擇。"] },
+        { title: "把自己的遊戲帶回家", paragraphs: ["每位報名學員贈送一台遊戲機，老師協助將孩子創作的遊戲匯入，帶回家與家人分享。"] }
       ],
-      outcome: "自己畫角色、自己寫程式、自己決定怎麼玩！這個新春，一起做出一款自己也想一直玩的遊戲！",
+      activities: [
+        { title: "新春故事與腳本", description: "從新春與年獸找靈感，安排主角、挑戰與結局，把故事寫成自己的腳本。", learningPoints: ["故事發想", "腳本撰寫", "情節安排"] },
+        { title: "像素角色與動作", description: "畫出原創功夫英雄與年獸，製作角色的動作動畫，讓故事人物動起來。", learningPoints: ["像素繪圖", "原創角色", "動作動畫"] },
+        { title: "劇情變成遊戲邏輯", description: "用 MakeCode Arcade 積木程式設定操作、事件與過關條件，把腳本變成可以玩的新春冒險。", learningPoints: ["事件觸發", "條件判斷", "遊戲邏輯"] },
+        { title: "試玩修改與說故事", description: "交換試玩、修改問題，再親口介紹故事、角色和玩法，練習讓別人聽懂自己的創作。", learningPoints: ["測試除錯", "口語表達", "故事分享"] }
+      ],
+      outcome: "把故事寫下來、讓角色動起來，再把自己的創作說給大家聽。",
       registration: { kind: "form", label: "立即報名", url: "https://docs.google.com/forms/d/e/1FAIpQLScwA_q70THCfSpRelyAPqX1wfe2rIFgl23JThgTrsK4iThXTA/viewform", note: "前往 Google 表單填寫報名資料；送出後請截圖傳至官方 LINE 確認。" },
-      sourceIds: ["game-lab-user-20261019", "game-lab-poster"],
+      sourceIds: ["game-lab-user-20261019", "game-lab-storytelling-20261020", "game-lab-poster"],
       status: "additional-details-upcoming"
     },
     {
@@ -550,7 +558,7 @@ window.CAMP_DATA = {
       id: "choosing", label: "怎麼選營隊", items: [
         { question: "全期營有包含其他特色營嗎？", answer: "沒有。冬令營全期營是「五燈獎・大聖鬧辦桌」的完整課程；LEGO IDEAS、祥龍無人機派對、Game Lab、飛行航空科學營與新春香氛科學營各有自己的課程與報名入口。", sourceIds: ["user-confirmed-scope", "fragrance-user-20261019"] },
         { question: "冬令營全期營是哪幾天？", answer: "冬令營全期營為 2027/1/21–2/2，週末休息。請完整參與營期。", sourceIds: ["full-term-form", "user-confirmed-scope"] },
-        { question: "2 日營有哪些主題？", answer: "2027/1/21–1/22 有三種主題：北區教室的 Game Lab 遊戲設計師養成營，用 MakeCode Arcade 創作新春功夫遊戲；北區教室的小小生活工藝師，新春香氛科學營，製作驚喜沐浴球、香氛蠟燭與專屬禮盒；東橋教室的「機」不可失 飛行航空科學營，從造型、重心到反覆試飛，親手打造飛機。各主題同時開課，請擇一參加。", sourceIds: ["game-lab-user-20261019", "aviation-user-brief", "fragrance-user-20261019"] },
+        { question: "2 日營有哪些主題？", answer: "2027/1/21–1/22 有三種主題：北區教室的 Game Lab 遊戲設計師養成營，從新春故事、腳本與像素角色出發，用 MakeCode Arcade 創作遊戲，練習說故事與分享；北區教室的小小生活工藝師，新春香氛科學營，製作驚喜沐浴球、香氛蠟燭與專屬禮盒；東橋教室的「機」不可失 飛行航空科學營，從造型、重心到反覆試飛，親手打造飛機。各主題同時開課，請擇一參加。", sourceIds: ["game-lab-storytelling-20261020", "aviation-user-brief", "fragrance-user-20261019"] },
         { question: "適合幾年級的孩子？", answer: "五燈獎全期營適合國小一年級至六年級，新春香氛科學營適合國小學童。其餘營隊的適合年齡將分別公布，報名前可透過 LINE 確認。", sourceIds: ["full-term-form", "fragrance-poster"] },
         { question: "沒有積木設計或飛行經驗，可以參加嗎？", answer: "飛行營包含飛行原理與基礎操控；玩具設計營會從文化發想開始，延伸至 3D 設計、圖解與包裝。歡迎告訴我們孩子的年級與經驗，由教室協助確認適合的課程。", sourceIds: ["drone-poster", "lego-poster"] }
       ]
@@ -592,6 +600,7 @@ window.CAMP_DATA = {
     { id: "lego-dates-20261019", type: "user-confirmation", title: "LEGO IDEAS 五日營日期確認", checkedOn: "2026-10-19", verification: "使用者確認 LEGO IDEAS 五日營為2027年1月25日至29日；同步首頁、課程資料、行事曆與日期重疊說明。費用、年齡、時段、教室與優惠券開放狀態未變更。" },
     { id: "aviation-editorial-20261019", type: "user-provided-copy", title: "「機」不可失｜新春飛行發明家完整課程文案", checkedOn: "2026-10-19", verification: "依使用者本次完整文案更新主副標、首頁摘要、完整介紹與活動敘述；保留從新春發想到裁切組裝、馬達與重心、遙控試飛、反覆修改及配件拆裝重用的過程。此次呈現不作2–3架數量保證；既有日期、費用、時段、教室及報名資料未更動。" },
     { id: "game-lab-user-20261019", type: "user-confirmation", title: "Game Lab 兩日營文案與日期", checkedOn: "2026-10-19", verification: "使用者明確更正為2027年1月21、22日，非2月1、2日；採Microsoft MakeCode Arcade與提供的四項課程文案；費用、年齡、時段、教室與專屬報名表尚未提供。" },
+    { id: "game-lab-storytelling-20261020", type: "user-confirmation", title: "Game Lab 故事腳本課程與贈送遊戲機", checkedOn: "2026-10-20", verification: "課程以新春故事、腳本撰寫、原創像素角色與動作、遊戲邏輯、試玩修改和口頭故事分享為主。每位報名學員贈送一台遊戲機，由老師協助匯入孩子創作的遊戲；不是製作機台或控制器。保留已確認日期、北區教室、報名表及價格暫停設定。" },
     { id: "game-lab-poster", type: "provided-image", title: "Game Lab 冬令營兩日營海報.png", path: "assets/game-lab-poster.webp", provenance: "assets/two-day-poster-sources.json", checkedOn: "2026-10-19", verification: "採使用者最新提供的含日期版本，已視覺核對1月21、22日、GAME LAB、遊戲設計師養成營、新春功夫副標、兩日營及四項課程；保持原海報內容，只轉換網頁格式。" },
     { id: "aviation-user-brief", type: "user-confirmation", title: "「機」不可失2.0飛行航空科學營課程與命名", checkedOn: "2026-10-19", verification: "使用者先前確認兩日入門、從造型與重心到反覆試飛，預計製作約2–3架飛機；2026-10-19補充確認航空營也是2027年1月21、22日。新春副標與照片海報沿用前序版本。費用、年齡、時段、教室與專屬報名表未提供。" },
     { id: "aviation-approved-poster", type: "existing-generated-poster", title: "飛行航空科學營照片融合版海報", path: "assets/aviation-poster.webp", provenance: "assets/two-day-poster-sources.json", checkedOn: "2026-10-19", verification: "沿用既有新春海報與使用者提供的製作、試飛、成果照片；只轉換網頁格式。" },
