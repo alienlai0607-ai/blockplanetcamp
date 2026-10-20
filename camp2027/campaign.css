@@ -1706,3 +1706,18 @@ p{font-weight:500}
 /* Native responsive sources retain the existing illustration layout. */
 .voucher-scene picture{display:contents}
 .contact-visual picture{display:block}
+
+/* Explain independent programs without directional arrows between categories. */
+#camps #campIntroTitle { margin-bottom:16px; }
+#camps .camp-independence-note { margin:0 0 26px;padding:14px 18px;border-left:3px solid #ba7852;background:#f6ecd9;color:#70513d;font-size:16px;line-height:1.8; }
+#camps .camp-independence-note p { margin:0; }
+#camps .camp-independence-note strong { color:#873f2d; }
+#camps .choice-interest { margin-bottom:6px; }
+#camps .choice-duration-note { margin:0 0 17px;color:#806448;font-size:14px;line-height:1.7;text-wrap:pretty; }
+#camps .choice-camp-link { grid-template-columns:28px minmax(0,1fr); }
+@media(max-width:1000px){#camps .choice-camp-link {grid-template-columns:24px minmax(0,1fr);}}
+@media(max-width:700px){
+ #camps .camp-independence-note {font-size:14px;padding:12px;margin-bottom:18px;}
+ #camps .choice-duration-note {font-size:12px;min-height:62px;margin-bottom:10px;}
+ #camps .choice-camp-link {grid-template-columns:20px minmax(0,1fr);}
+}
