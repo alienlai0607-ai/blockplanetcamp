@@ -11,7 +11,7 @@
   <link rel="icon" href="assets/brand-logo.png">
   <link rel="stylesheet" href="coupon-page.css?v=20261020-1900">
   <script src="coupon-config.js?v=fees-pending-20261019" defer></script>
-  <script src="coupon.js?v=fees-pending-20261019" defer></script>
+  <script src="coupon.js?v=coupon-rules-20261020" defer></script>
 </head>
 <body>
   <a class="skip-link" href="#app">跳到優惠券</a>
@@ -24,7 +24,7 @@
     <section id="app" tabindex="-1" aria-label="冬令營優惠券" aria-busy="true"><p role="status">優惠券將於 10 月 20 日晚上 7 點（台灣時間）開放領取。</p></section>
     <noscript><p class="status-card">優惠券將於 10 月 20 日晚上 7 點（台灣時間）開放領取。請透過官方 LINE 洽詢。</p></noscript>
     <div class="coupon-notes">
-      <details><summary>優惠券怎麼使用？<span aria-hidden="true">＋</span></summary><div><p>各營隊費用確認後公布；優惠券資訊不提供金額試算，報名金額請等候教室確認後再付款。</p><p>領券後 60 分鐘內，在營隊報名表的「優惠碼」欄位貼上代碼，手機號碼請與領券時相同。送出後截圖，傳至官方 LINE 確認。</p><p>一支手機限領一張，一張限一位學員；兄弟姊妹請使用不同手機分別領取。目前可使用於全期營、祥龍無人機派對與 LEGO IDEAS，三個營隊日期重疊，請擇一報名。未來追加使用仍須符合營期不重疊及券面期限。</p><p>五燈獎於早鳥期間報名，可使用優惠券享早鳥價再 95 折，沒有同行價。其他營隊若有同行優惠，優惠券與同行價擇優使用，不重複折扣。報名送出後，由教室核對適用優惠與應付金額。</p></div></details>
+      <details><summary>優惠券怎麼使用？<span aria-hidden="true">＋</span></summary><div><p>各營隊費用確認後公布；優惠券資訊不提供金額試算，報名金額請等候教室確認後再付款。</p><p>領券後 60 分鐘內，在營隊報名表的「優惠碼」欄位貼上代碼，手機號碼請與領券時相同。完成送出後，請立即截圖傳至官方 LINE 確認。</p><p>一支手機限領一張，一張限一位學員；兄弟姊妹請使用不同手機分別領取。目前可使用於全期營、祥龍無人機派對與 LEGO IDEAS，三個營隊日期重疊，請擇一報名。未來追加使用仍須符合營期不重疊及券面期限。</p><p>早鳥期間可於適用營隊使用 95 折券，折扣不重複使用。報名送出後，由教室依已確認的營隊費用核對優惠與應付金額；確認後再付款。</p></div></details>
       <details><summary>適用營隊與優惠說明<span aria-hidden="true">＋</span></summary><div><p>95 折優惠券限量 60 張，2026 年 10 月 20 日晚上 7 點（台灣時間）開放領取。</p><p>本次開放五燈獎・大聖鬧辦桌、祥龍無人機派對與 LEGO IDEAS 玩具設計總監使用。Game Lab｜遊戲設計師養成營、「機」不可失｜飛行航空科學營及小小生活工藝師｜新春香氛科學營已納入後續優惠規劃；兩日營的費用與報名表準備中，尚未開放領券使用。</p></div></details>
     </div>
     <p class="help">有優惠或報名問題？ <a href="https://lin.ee/zFqqFzQ" target="_blank" rel="noopener">LINE 聯絡我們 ↗</a></p>
@@ -37,8 +37,8 @@
     <ul class="rule-list">
       <li><strong>手機與學員綁定</strong><span>一支手機限一張，一張限一位學員；報名請填相同手機。兄弟姊妹請分別領券。</span></li>
       <li><strong>追加營隊，日期必須不重疊</strong><span>每份報名都需在 60 分鐘有效時間內送出。目前開放的全期營、祥龍無人機派對與 LEGO IDEAS 日期重疊，請擇一報名。兩日營仍在準備中，尚未開放使用。</span></li>
-      <li><strong>優惠擇優，不重複折扣</strong><span>五燈獎於早鳥期間可享早鳥價再 95 折，沒有同行價。其他營隊若有同行優惠，與優惠券擇優使用、不疊加；應付金額由教室核對確認。</span></li>
-      <li><strong>送出報名後，到 LINE 確認</strong><span>表單貼上優惠碼，送出後將截圖傳至官方 LINE，確認優惠與報名金額。</span></li>
+      <li><strong>使用 95 折券，不重複折扣</strong><span>早鳥期間可於適用營隊使用 95 折券；優惠券資訊不提供金額試算，應付金額由教室依已確認的營隊費用核對。</span></li>
+      <li><strong>送出後，立即截圖傳官方 LINE</strong><span>請在報名表貼上優惠碼，於領券後 60 分鐘內完成送出，並立即將報名截圖傳至官方 LINE，確認優惠與報名金額。</span></li>
     </ul>
     <div class="eligible"><b>適用營隊</b><p id="eligible-camps"></p></div>
     <p class="registration-reminder">兩日營已納入後續優惠規劃，待費用與報名表確認後另行公布；目前請為已開放報名的適用營隊領券。</p>
@@ -50,12 +50,12 @@
     <h2 id="register-title">想參加哪個營隊？</h2>
     <div class="registration-code"><div><span>報名表單請貼上</span><strong id="registration-code"></strong></div><button type="button" class="copy-code" data-action="copy">複製優惠碼 ⧉</button></div>
     <p class="registration-copy-state" role="status">先複製優惠碼，再前往報名。</p>
-    <p class="registration-reminder">請在 <b>60 分鐘內</b>完成報名，填寫相同手機與學員，送出後<b>截圖傳至 LINE</b>，確認優惠與金額。</p>
+    <p class="registration-reminder">請在領券後 <b>60 分鐘內</b>完成報名，貼上優惠碼並填寫相同手機與學員。送出後<b>立即截圖傳至官方 LINE</b>，確認優惠與金額。</p>
     <p class="registration-reminder">以下列出目前可直接使用優惠券的營隊；三個營隊日期重疊，請擇一報名。兩日營的費用與報名表準備中，尚未開放使用優惠券。</p><div class="registration-links" id="registration-links"></div>
   </dialog>
   <dialog class="flow-dialog" id="reminder-dialog" aria-labelledby="reminder-title">
     <div class="dialog-heading"><span class="dialog-kicker">優惠碼仍在計時</span><button class="dialog-close" type="button" aria-label="關閉提醒" data-close>×</button></div>
-    <h2 id="reminder-title">離開前，記得帶著優惠碼</h2><p class="registration-reminder">請在倒數結束前送出報名表，填寫相同手機與學員，並保留送出截圖。</p>
+    <h2 id="reminder-title">離開前，記得帶著優惠碼</h2><p class="registration-reminder">請在領券後 60 分鐘內送出報名表，貼上優惠碼並填寫相同手機與學員。完成後立即截圖傳至官方 LINE，確認優惠與報名金額。</p>
     <a class="primary" id="continue-link" href="index.html">繼續前往 →</a><button class="dialog-cancel" type="button" data-close>返回優惠券</button>
   </dialog>
   <div id="notice" role="status" hidden></div>
