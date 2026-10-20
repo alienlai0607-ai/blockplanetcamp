@@ -670,15 +670,15 @@
   }
   function renderCampChoices(camps) {
     const groups = [
-      { id: 'full-term', title: '全期營', camps: camps.filter(c => c.id === 'full-term') },
-      { id: 'five-day', title: '5 日主題', camps: camps.filter(c => c.days === 5) },
-      { id: 'two-day', title: '2 日創作', camps: camps.filter(c => c.days === 2) }
+      { id: 'full-term', title: '全期營', note: '以五燈獎文化主題貫穿完整營期。', camps: camps.filter(c => c.id === 'full-term') },
+      { id: 'five-day', title: '5 日主題', note: '選一個主題，連續五天深入探索。', camps: camps.filter(c => c.days === 5) },
+      { id: 'two-day', title: '2 日創作', note: '選一個主題，兩天完成創作體驗。', camps: camps.filter(c => c.days === 2) }
     ];
     $('#camps .camp-choice-grid').innerHTML = groups.map(group => `
       <section class="camp-choice-option" aria-labelledby="choice-${group.id}">
-        <h3 class="choice-interest" id="choice-${group.id}">${group.title}</h3>
+        <h3 class="choice-interest" id="choice-${group.id}">${group.title}</h3><p class="choice-duration-note">${group.note}</p>
         <ol class="choice-camp-list" role="list">${group.camps.map((camp, index) => `
-          <li><a class="choice-camp-link" href="#${camp.id}" aria-label="${esc(camp.name)}"><span class="choice-number" aria-hidden="true">${index + 1}</span>${choiceNameMarkup(camp)}<span class="choice-arrow" aria-hidden="true">→</span></a></li>`).join('')}
+          <li><a class="choice-camp-link" href="#${camp.id}" aria-label="${esc(camp.name)}"><span class="choice-number" aria-hidden="true">${index + 1}</span>${choiceNameMarkup(camp)}</a></li>`).join('')}
         </ol>
       </section>`).join('');
   }
