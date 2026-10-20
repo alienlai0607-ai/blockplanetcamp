@@ -269,7 +269,7 @@ window.CAMP_DATA = {
         { title: "試玩、修改與分享", description: "和同伴交換試玩，找出問題、調整玩法，完成能與家人朋友分享的遊戲作品。", learningPoints: ["測試除錯", "調整玩法", "作品分享"] }
       ],
       outcome: "自己畫角色、自己寫程式、自己決定怎麼玩！這個新春，一起做出一款自己也想一直玩的遊戲！",
-      registration: { kind: "inquiry", label: "LINE 報名", url: "https://lin.ee/zFqqFzQ", note: "向我們說想報名 Game Lab，確認費用、年齡與每日時段。" },
+      registration: { kind: "form", label: "立即報名", url: "https://docs.google.com/forms/d/e/1FAIpQLScwA_q70THCfSpRelyAPqX1wfe2rIFgl23JThgTrsK4iThXTA/viewform", note: "前往 Google 表單填寫報名資料；送出後請截圖傳至官方 LINE 確認。" },
       sourceIds: ["game-lab-user-20261019", "game-lab-poster"],
       status: "additional-details-upcoming"
     },
@@ -326,7 +326,7 @@ window.CAMP_DATA = {
         { title: "試飛、修改與再創作", description: "從試飛找到修改線索，再調整、再測試；馬達等配件可拆下重用，裝到下一個新設計的機身。", learningPoints: ["觀察與測試", "反覆改良", "拆裝配件延續創作"] }
       ],
       outcome: "兩天，不只是做一架套用相同市售框架的飛機，而是一起學會「發明」屬於自己、獨一無二的飛行器。",
-      registration: { kind: "inquiry", label: "LINE 報名", url: "https://lin.ee/zFqqFzQ", note: "向我們說想報名飛行航空科學營，確認費用、年齡與開課安排。" },
+      registration: { kind: "form", label: "立即報名", url: "https://docs.google.com/forms/d/e/1FAIpQLSeB3BupV4r-337T0SBRwbVmWIMGoRsb4UZTUexkwJwUw8-PoA/viewform", note: "前往 Google 表單填寫報名資料；送出後請截圖傳至官方 LINE 確認。" },
       sourceIds: ["aviation-user-brief", "aviation-approved-poster", "aviation-editorial-20261019"],
       status: "additional-details-upcoming"
     },
@@ -379,7 +379,7 @@ window.CAMP_DATA = {
         { title: "專屬禮盒與祝福卡", description: "彩繪盒面、設計標籤，寫下想說的話，讓包裝與禮物都藏著孩子的巧思。", learningPoints: ["包裝設計", "美感創作", "心意表達"] }
       ],
       outcome: "「這是我自己做的，特別送給你。」期待孩子捧著禮物說出這句話，也期待收到的人，在熟悉的香氣裡，想起這份暖暖的心意。",
-      registration: { kind: "inquiry", label: "LINE 報名", url: "https://lin.ee/zFqqFzQ", note: "向我們說想報名北區教室的新春香氛科學營，確認費用與接送安排。" },
+      registration: { kind: "form", label: "立即報名", url: "https://docs.google.com/forms/d/e/1FAIpQLSdHvQiwVxZt6qjY6mN0GLO9cV3pMjQR2rVC0MU4l8L8bHQlBA/viewform", note: "前往 Google 表單填寫報名資料；送出後請截圖傳至官方 LINE 確認。" },
       sourceIds: ["fragrance-user-20261019", "fragrance-poster"],
       status: "additional-details-upcoming"
     }

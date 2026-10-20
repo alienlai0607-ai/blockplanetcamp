@@ -414,7 +414,7 @@
       <div class="two-day-story" data-two-day-story="${esc(c.id)}"></div>
       <div class="two-day-copy"><p class="eyebrow">${esc(c.daysLabel)} · 1/21–1/22</p><h3><span class="two-day-course-name">${esc(title)}</span><span class="two-day-course-type">${esc(type)}</span></h3><p class="two-day-subtitle">${esc(c.subtitle)}</p><p>${esc(c.description)}</p>
       <ul>${c.activities.map(activity => `<li>${esc(activity.title)}</li>`).join('')}</ul>
-      <p class="two-day-campus">${esc(c.classroomLabel)}</p><p class="two-day-details-pending">${esc(details)}</p><div class="camp-actions"><button class="button" type="button" data-camp="${esc(c.id)}">看完整課程 <span aria-hidden="true">→</span></button><a class="text-link" href="${esc(c.registration.url)}" ${ext}>LINE 洽詢 ↗</a></div></div>
+      <p class="two-day-campus">${esc(c.classroomLabel)}</p><p class="two-day-details-pending">${esc(details)}</p><div class="camp-actions"><button class="button" type="button" data-camp="${esc(c.id)}">看完整課程 <span aria-hidden="true">→</span></button><a class="text-link" href="${esc(c.registration.url)}" ${ext}>${esc(c.registration.kind === 'form' ? c.registration.label : 'LINE 洽詢')} ↗</a></div></div>
     </article>`;
   }).join('');
   function selectTwoDay(id, focus = false) {
@@ -586,7 +586,7 @@
     const poster = c.poster ? '<figure class="dialog-poster"><a href="' + esc(c.poster) + '" ' + ext + ' aria-label="開啟' + esc(c.name) + '完整海報"><picture>' + (c.posterMobile ? '<source media="(max-width:700px)" type="image/avif" srcset="' + esc(c.posterMobile.replace(/\.webp$/, '.avif')) + '"><source media="(max-width:700px)" type="image/webp" srcset="' + esc(c.posterMobile) + '">' : '') + '<source type="image/avif" srcset="' + esc(c.poster.replace(/\.webp$/, '.avif')) + '"><img src="' + esc(c.poster) + '" alt="' + esc(c.name) + '完整課程海報" loading="eager" fetchpriority="high" decoding="async"></picture></a><figcaption>點開查看完整海報 <span aria-hidden="true">↗</span></figcaption></figure>' : '';
     const couponMessage = c.registration.kind === 'form' ? '95 折優惠券・10/20 晚上 7:00 開放。' : '優惠券與報名資訊準備中。';
     const couponEntry = `<p class="dialog-coupon-pending">${couponMessage}<a href="coupon.html?campus=${selectedCampus}&camp=${c.id}">查看優惠券 ↗</a></p>`;
-    const actions = data.campaign.pricingReady === false && c.registration.kind === 'form' ? '<div class="dialog-actions"><a href="register.html?campus=' + selectedCampus + '" class="button">費用確認中・查看報名資訊</a></div>' : '<div class="dialog-actions"><a href="' + esc(c.registration.url) + '" ' + ext + ' class="button">' + esc(c.registration.label) + ' <span aria-hidden="true">↗</span></a></div>';
+    const actions = '<div class="dialog-actions"><a href="' + esc(c.registration.url) + '" ' + ext + ' class="button">' + esc(c.registration.label) + ' <span aria-hidden="true">↗</span></a></div>';
     const care = c.extendedCare;
     const pickupNotes = id === 'full-term' ? '<p>接送安排：' + esc(c.pickupLabel) + '。</p>' + (care ? '<p>超過 ' + esc(care.startsAfter) + ' 接回：' + (Number.isFinite(care.ratePerHour) ? '延托費 NT$' + esc(care.ratePerHour) + '／小時，' + esc(care.rounding) + '。' : '延托安排與費用請先由教室確認。') + esc(care.notice) + '</p>' : '') : '';
     const registrationNotes = '<details class="dialog-registration-notes"><summary>報名與接送說明</summary><div>' + pickupNotes + '<p>' + esc(c.registration.note) + '</p><p>' + esc(data.campaign.relationship) + '</p></div></details>';
