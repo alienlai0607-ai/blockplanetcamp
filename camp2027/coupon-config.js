@@ -10,7 +10,7 @@ window.CAMPAIGN_COUPON = Object.freeze({
   opensAt: '2026-10-20T19:00:00+08:00',
   apiUrl: 'https://script.google.com/macros/s/AKfycbw0seQA-F9j2TzTKO6ylWA8XdbF_51uKAsXxF4iZP26pj4eAo6stAXdO4R15uVClHc-/exec',
   requestTimeoutMs: 15000,
-  initialPoolSize: 60,
+  initialPoolSize: 35,
   discountLabel: '95 折',
   validMinutes: 60,
   eligibleCamps: ['五燈獎・大聖鬧辦桌', '祥龍無人機派對', 'LEGO IDEAS 玩具設計總監', 'Game Lab｜遊戲設計師養成營', '「機」不可失｜飛行航空科學營', '小小生活工藝師｜新春香氛科學營'],

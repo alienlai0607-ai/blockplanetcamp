@@ -596,7 +596,7 @@ window.CAMP_DATA = {
     },
     {
       id: "coupon", label: "優惠券怎麼用", items: [
-        { question: "優惠券什麼時候開放？", answer: "95 折優惠券六營共用限量 60 張，2026/10/20 晚上 7 點（台灣時間）開放領取。正式領取成功後開始計算 60 分鐘使用期限。", action: { label: "查看優惠券資訊", url: "coupon.html" }, sourceIds: ["coupon-winter-rules", "confirmed-prices-20261020"] },
+        { question: "優惠券什麼時候開放？", answer: "95 折優惠券六營共用限量 35 張，2026/10/20 晚上 7 點（台灣時間）開放領取。正式領取成功後開始計算 60 分鐘使用期限。", action: { label: "查看優惠券資訊", url: "coupon.html" }, sourceIds: ["coupon-winter-rules", "confirmed-prices-20261020"] },
         { question: "優惠券適用哪些營隊？", answer: "六個營隊均已確認 95 折優惠券方案：五燈獎・大聖鬧辦桌、祥龍無人機派對、LEGO IDEAS、Game Lab、飛行航空與新春香氛科學營。報名表已開放，優惠券於 10/20 晚上 7 點開放領取，使用方式請看優惠券頁。", sourceIds: ["coupon-winter-rules", "confirmed-prices-20261020"] },
         { question: "領到優惠券後，接著怎麼做？", answer: "正式開放後，領取優惠券並複製優惠碼，在報名表的「優惠碼」欄位貼上，於領券後 60 分鐘內完成送出，再立即截圖傳至官方 LINE 確認。一支手機限領一張，限同一位學員使用，報名請填相同手機。", sourceIds: ["coupon-winter-rules"] },
         { question: "可以用在不只一個營隊嗎？", answer: "正式開放後，同一位學員可在日期不衝堂的適用營隊追加使用，仍須符合券面期限與報名規則。可從 1/21–1/22 的兩日營擇一，再從 1/25–1/29 的五日營擇一；全期營與這些特色營重疊，不能同時報名。優惠券於 10/20 晚上 7 點開放領取。", sourceIds: ["coupon-winter-rules", "confirmed-form-details-20261020"] },

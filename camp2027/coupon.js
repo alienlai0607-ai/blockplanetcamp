@@ -141,7 +141,7 @@
     const url = new URL('https://www.google.com/calendar/render');
     url.searchParams.set('action', 'TEMPLATE'); url.searchParams.set('text', '布拉克星球 2027 冬令營優惠券開放');
     url.searchParams.set('dates', exact ? `${stamp(opening())}/${stamp(new Date(opening().getTime()+1800000))}` : `${localDay(day)}/${localDay(new Date(day.getTime()+86400000))}`);
-    url.searchParams.set('ctz', 'Asia/Taipei'); url.searchParams.set('details', `冬令營95折優惠券，限量60張。${exact ? '' : '開放時刻請以頁面公告為準。'}\n${config.publicCouponUrl}`);
+    url.searchParams.set('ctz', 'Asia/Taipei'); url.searchParams.set('details', `冬令營95折優惠券，限量35張。${exact ? '' : '開放時刻請以頁面公告為準。'}\n${config.publicCouponUrl}`);
     return link(url.href, '加入日曆提醒 ↗', 'inline-button', true);
   }
   function renderPostponed(saved = storedCoupon()) {
@@ -179,14 +179,14 @@
     const {month, day} = dateLabel();
     const exact = Number.isFinite(opening()?.getTime());
     const time = exact ? new Intl.DateTimeFormat('zh-TW', {timeZone:'Asia/Taipei',hour:'2-digit',minute:'2-digit',hour12:false}).format(opening()) : '';
-    render(ticket(`<span class="status">優惠券準備中</span><p class="stub-label">原訂開放時間</p><p class="opening-time">${month} 月 ${day} 日${exact ? `<br>${escapeHtml(time)}（台灣時間）` : ''}</p><p class="quantity">限量 <b>${escapeHtml(config.initialPoolSize || 60)}</b> 張</p><span class="stub-rule"></span><p class="stub-note">實際領取開放時間，<br>請以後續公告為準。</p>`,
+    render(ticket(`<span class="status">優惠券準備中</span><p class="stub-label">原訂開放時間</p><p class="opening-time">${month} 月 ${day} 日${exact ? `<br>${escapeHtml(time)}（台灣時間）` : ''}</p><p class="quantity">限量 <b>${escapeHtml(config.initialPoolSize || 35)}</b> 張</p><span class="stub-rule"></span><p class="stub-note">實際領取開放時間，<br>請以後續公告為準。</p>`,
       `<div class="ticket-action"><div><b>營隊已開放報名，優惠券尚未開放</b><p>課程、費用與報名表已公布。優惠券使用功能確認後再開放，目前不會開始使用期限的倒數。</p></div>${link(registrationPage, '查看營隊・直接報名 →', 'primary')}</div>`, 'before', `<div class="state-links">${link(camps, '先看看冬令營課程 ↗')}${link(line, 'LINE 詢問優惠券進度 ↗', 'inline-button', true)}</div>`), 'integration-pending');
   }
   function renderNotYet() {
     currentCoupon = null;
     const date = opening();
     const formatted = new Intl.DateTimeFormat('zh-TW',{timeZone:'Asia/Taipei',month:'long',day:'numeric',hour:'2-digit',minute:'2-digit',hour12:false}).format(date);
-    render(ticket(`<span class="status">即將開放</span><p class="stub-label">台灣時間</p><p class="opening-time">${escapeHtml(formatted)}</p><p class="quantity">限量 <b>60</b> 張</p>`,
+    render(ticket(`<span class="status">即將開放</span><p class="stub-label">台灣時間</p><p class="opening-time">${escapeHtml(formatted)}</p><p class="quantity">限量 <b>${escapeHtml(config.initialPoolSize)}</b> 張</p>`,
       `<div class="ticket-action"><div><b>距離開放領取</b><p id="pre-countdown" role="timer" aria-label="距離優惠券開放時間"></p></div><button class="primary" disabled>尚未開放</button></div>`, 'before', `<div class="state-links">${calendarLink(true)}${link(registrationPage, '選擇營隊・開始報名 →')}</div>`), 'not-yet');
     const update = () => {
       const distance = date.getTime() - now();
@@ -199,7 +199,7 @@
   function renderStatus(state, title, description, actions) {
     render(`<section class="status-card"><span class="status">2027 冬令營優惠券</span><h2>${title}</h2><p role="status">${description}</p><div class="status-actions">${actions || ''}</div></section>`, state);
   }
-  function renderAvailable(remaining, poolSize = 60) {
+  function renderAvailable(remaining, poolSize = config.initialPoolSize) {
     currentCoupon = null;
     render(ticket(`<span class="status">開放領取中</span><p class="stub-label">目前可領取</p><p class="release-date">${escapeHtml(remaining)}<span class="unit">張</span></p><p class="quantity">本次限量 ${escapeHtml(poolSize)} 張</p><span class="stub-rule"></span><p class="stub-note">手機綁定優惠碼，<br>報名請填相同號碼。</p>`,
       `<form class="ticket-action claim-form" id="claim-form" novalidate><div class="phone-field"><label for="phone-input">報名人手機號碼</label><input id="phone-input" type="tel" inputmode="numeric" autocomplete="tel-national" maxlength="16" placeholder="09xx xxx xxx" value="${escapeHtml(rememberedPhone)}" required aria-describedby="phone-hint claim-error"><p id="phone-hint">優惠碼綁定此手機，報名時請填相同號碼。</p><p id="claim-error" class="field-error" role="alert"></p></div><button class="primary" id="claim-button" type="submit">領取優惠券 →</button><p class="claim-terms">領取後 <b>${minutes} 分鐘內</b>完成報名。一支手機一張，限一位學員。<button class="inline-button" type="button" id="read-rules">查看使用規則</button></p></form>`, 'available'), 'available');
@@ -359,7 +359,7 @@
       if (revision !== requestRevision) return;
       if (responseUnavailable(data)) return;
       const available = Number(data.available), poolSize = Number(data.poolSize || config.initialPoolSize);
-      if (data.success !== true || !Number.isInteger(available) || available < 0 || !Number.isInteger(poolSize) || poolSize !== 60 || available > poolSize) throw new Error('INVALID_STATUS');
+      if (data.success !== true || !Number.isInteger(available) || available < 0 || !Number.isInteger(poolSize) || poolSize !== config.initialPoolSize || available > poolSize) throw new Error('INVALID_STATUS');
       available > 0 ? renderAvailable(available,poolSize) : renderEmpty();
     } catch (_) { if (revision === requestRevision) renderError(); }
     finally { if (revision === requestRevision) { activeRequest = false; app.setAttribute('aria-busy','false'); } }
