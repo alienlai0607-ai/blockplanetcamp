@@ -28,6 +28,8 @@
   <script src="image-loader.js?v=image-speed-20261014" defer></script>
   <script src="app.js?v=20261020-add-tickets" defer></script>
   <script src="two-day-stories.js?v=game-lab-storytelling-20261020" defer></script>
+  <link rel="stylesheet" href="photo-gallery.css?v=20261023-compact-tabs">
+  <script src="photo-gallery.js?v=20261023-compact-tabs" defer></script>
 </head>
 <body>
   <a class="skip-link" href="#main">跳至主要內容</a>
@@ -118,6 +120,13 @@
         </section>
       </div>
       <p class="camp-choice-note"><a href="#calendar">查看營隊日期</a></p>
+    </section>
+
+    <section class="real-gallery page-width" id="real-gallery" aria-labelledby="realGalleryTitle">
+      <div class="real-gallery-heading"><div><p class="real-gallery-kicker">孩子的創作現場</p><h2 id="realGalleryTitle">認真的模樣，<br>完成作品的笑容。</h2></div><p>把點子變成作品的每一步，<br>都值得被看見。<span>過往課程紀錄 · 實際活動依本期課程安排</span></p></div>
+      <div class="real-gallery-tabs" role="group" aria-label="選擇營隊照片"><button type="button" data-photo-camp="full-term" aria-pressed="true"><span class="real-tab-desktop">五燈獎<span>文化探索</span></span><span class="real-tab-mobile">五燈獎</span></button><button type="button" data-photo-camp="drone" aria-pressed="false"><span class="real-tab-desktop">祥龍<span>無人機派對</span></span><span class="real-tab-mobile">無人機派對</span></button><button type="button" data-photo-camp="lego" aria-pressed="false"><span class="real-tab-desktop">LEGO IDEAS<span>玩具設計</span></span><span class="real-tab-mobile">LEGO IDEAS</span></button><button type="button" data-photo-camp="game-lab" aria-pressed="false"><span class="real-tab-desktop">Game Lab<span>遊戲設計</span></span><span class="real-tab-mobile">Game Lab</span></button><button type="button" data-photo-camp="aviation" aria-pressed="false"><span class="real-tab-desktop">「機」不可失<span>飛行航空科學營</span></span><span class="real-tab-mobile">「機」不可失</span></button><button type="button" data-photo-camp="fragrance" aria-pressed="false"><span class="real-tab-desktop">小小生活工藝師<span>新春香氛科學營</span></span><span class="real-tab-mobile">小小生活工藝師</span></button></div>
+      <div class="real-gallery-layout"><div class="real-gallery-media"><figure class="real-gallery-stage"><img id="realGalleryImage" width="1280" height="960" decoding="async" alt=""><figcaption><span id="realGalleryCount" aria-live="polite"></span><div><button type="button" id="realGalleryPrev" aria-label="上一張照片">←</button><button type="button" id="realGalleryNext" aria-label="下一張照片">→</button></div></figcaption></figure><p id="realGalleryCaption" class="real-gallery-caption" aria-live="polite"></p></div>
+      <div class="real-gallery-side"><p class="real-gallery-kicker" id="realGalleryCampTitle">真實體驗・真實作品</p><h3 id="realGallerySubtitle"></h3><p id="realGalleryDescription"></p><div id="realGalleryThumbs" class="real-gallery-thumbs" role="group" aria-label="選擇照片"></div><p class="real-gallery-hint">點選小照片，看看更多精彩時刻</p><div class="real-gallery-actions"><a id="realGalleryIntro" href="#full-term">認識這個營隊</a><a href="register.html" data-registration-link>開始報名</a></div></div></div>
     </section>
 
     <div class="culture-chapter chapter-jade">
