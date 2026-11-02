@@ -9,7 +9,7 @@
   const requestedCampus = new URLSearchParams(location.search).get('campus');
   let campus = campusIds.has(requestedCampus) ? requestedCampus : 'all';
   const coupon = window.CAMPAIGN_COUPON;
-  document.getElementById('registrationCouponTitle').textContent = `冬令營 ${coupon?.discountLabel || '95 折'}優惠券`;
+  document.getElementById('registrationCouponTitle').textContent = `感謝熱情支持・${coupon?.discountLabel || '95 折'}優惠券追加回饋`;
   document.getElementById('registrationCouponStatus').textContent = couponOpeningLabel(coupon);
 
   function couponOpeningLabel(config) {
@@ -17,6 +17,7 @@
     if (!config || config.releaseStatus === 'postponed' || !config.opensAt) return '開放時間另行公告';
     const opening = new Date(config.opensAt);
     if (!Number.isFinite(opening.getTime())) return '開放時間另行公告';
+    if (Date.now() >= opening.getTime()) return '目前可領張數以優惠券頁即時資訊為準；領券後請於 60 分鐘內送出報名。';
     const parts = new Intl.DateTimeFormat('zh-TW', {
       timeZone: 'Asia/Taipei', month: 'numeric', day: 'numeric', hour: 'numeric', minute: '2-digit', hourCycle: 'h23'
     }).formatToParts(opening);
