@@ -1,0 +1,65 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#214d40"><meta name="description" content="一格一格畫出想像，創造你的原創寶可夢。寶可夢訓練家計劃的像素繪圖工具，讓孩子自由畫、存作品、分享圖片。">
+  <title>寶可夢訓練家計劃 · 畫出你的原創寶可夢</title><link rel="icon" href="./favicon.svg" type="image/svg+xml"><link rel="stylesheet" href="./style.css">
+</head>
+<body>
+<svg class="icon-defs" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><defs>
+<symbol id="i-pencil" viewBox="0 0 24 24"><path d="m15 4 5 5M4 20l5-1L20 8a2 2 0 0 0 0-3l-1-1a2 2 0 0 0-3 0L5 15l-1 5Z"/></symbol>
+<symbol id="i-eraser" viewBox="0 0 24 24"><path d="m8 19-5-5a2 2 0 0 1 0-3l8-8a2 2 0 0 1 3 0l7 7a2 2 0 0 1 0 3l-6 6H8ZM7 7l10 10M8 19h13"/></symbol>
+<symbol id="i-fill" viewBox="0 0 24 24"><path d="m5 3 11 11M12 4 3 13a2 2 0 0 0 0 3l5 5a2 2 0 0 0 3 0l9-9-8-8ZM3 13h16M20 16c0 0-2 3-2 4a2 2 0 0 0 4 0c0-1-2-4-2-4Z"/></symbol>
+<symbol id="i-dropper" viewBox="0 0 24 24"><path d="m14 4 6 6M15 8 5 18l-1 3 3-1L17 10M15 6l3-3a2 2 0 0 1 3 3l-3 3M12 5l7 7"/></symbol>
+<symbol id="i-undo" viewBox="0 0 24 24"><path d="M8 5 3 10l5 5M3 10h11a6 6 0 0 1 0 12" transform="translate(0 -2)"/></symbol>
+<symbol id="i-redo" viewBox="0 0 24 24"><path d="m16 3 5 5-5 5M21 8H10a6 6 0 0 0 0 12"/></symbol>
+<symbol id="i-grid" viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M9 3v18M15 3v18M3 9h18M3 15h18"/></symbol>
+<symbol id="i-mirror" viewBox="0 0 24 24"><path d="M12 2v3m0 3v3m0 3v3m0 3v2M8 5 2 18h6V5ZM16 5l6 13h-6V5Z"/></symbol>
+<symbol id="i-trash" viewBox="0 0 24 24"><path d="M3 6h18M9 6V3h6v3M5 6l1 15h12l1-15M10 10v7M14 10v7"/></symbol>
+<symbol id="i-folder" viewBox="0 0 24 24"><path d="M3 7V5h7l2 3h9v12H3V7Z"/></symbol>
+<symbol id="i-plus" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></symbol>
+<symbol id="i-download" viewBox="0 0 24 24"><path d="M12 3v12m-5-5 5 5 5-5M4 16v5h16v-5"/></symbol>
+<symbol id="i-upload" viewBox="0 0 24 24"><path d="M12 16V4m-5 5 5-5 5 5M4 17v4h16v-4"/></symbol>
+<symbol id="i-save" viewBox="0 0 24 24"><path d="M4 3h13l4 4v14H3V3h1ZM7 3v6h10V3M7 21v-8h10v8"/></symbol>
+<symbol id="i-close" viewBox="0 0 24 24"><path d="m6 6 12 12M18 6 6 18"/></symbol>
+<symbol id="i-copy" viewBox="0 0 24 24"><rect x="8" y="8" width="13" height="13" rx="2"/><path d="M16 8V3H3v13h5"/></symbol>
+<symbol id="i-spark" viewBox="0 0 24 24"><path d="m12 3 3 6 6 3-6 3-3 6-3-6-6-3 6-3 3-6Z"/></symbol>
+</defs></svg>
+<header class="topbar"><div class="topbar-inner">
+  <a class="brand" href="./" aria-label="寶可夢訓練家計劃首頁"><span class="brand-icon" aria-hidden="true"><i></i><b></b></span><span>寶可夢訓練家計劃<small>BLOCK PLANET · TRAINER LAB</small></span></a>
+  <div class="top-actions"><span class="save-status" id="saveStatus" role="status"><span class="status-dot"></span>正在準備畫布</span><button class="button secondary" id="openGallery"><svg><use href="#i-folder"/></svg>我的作品<span id="projectCount" class="count">1</span></button><button class="button primary" id="newProject"><svg><use href="#i-plus"/></svg><span>新夥伴</span></button></div>
+</div></header>
+<main class="page">
+ <section class="intro"><div><div class="eyebrow"><span class="tiny-square"></span> 原創寶可夢 · 造型工作室</div><h1>把想像，畫成夥伴<span class="heading-dot">.</span></h1><p>從一個小像素開始，創造只屬於你的寶可夢。</p></div><div class="intro-note"><svg><use href="#i-spark"/></svg><span>你的點子，<br><b>就是牠的超能力。</b></span></div></section>
+ <section class="workspace" aria-label="寶可夢像素編輯器">
+  <div class="project-strip"><div class="project-name"><span class="number-tag">NO.<span id="projectNumber">001</span></span><label for="nameInput" class="sr-only">寶可夢名字</label><input id="nameInput" maxlength="24" placeholder="為夥伴取個名字" autocomplete="off"><svg class="name-pencil"><use href="#i-pencil"/></svg></div><div class="size-control"><label for="canvasSize">畫布大小</label><select id="canvasSize"><option value="16">16 × 16</option><option value="32" selected>32 × 32</option><option value="64">64 × 64</option></select></div></div>
+  <div class="editor-layout">
+   <aside class="tools" aria-label="繪圖工具"><span class="tool-heading">工具</span>
+    <button class="tool active" data-tool="pencil" aria-pressed="true" title="畫筆 (B)"><svg><use href="#i-pencil"/></svg><span>畫筆</span><kbd>B</kbd></button>
+    <button class="tool" data-tool="eraser" aria-pressed="false" title="橡皮擦 (E)"><svg><use href="#i-eraser"/></svg><span>橡皮擦</span><kbd>E</kbd></button>
+    <button class="tool" data-tool="fill" aria-pressed="false" title="填色 (F)"><svg><use href="#i-fill"/></svg><span>填色</span><kbd>F</kbd></button>
+    <button class="tool" data-tool="picker" aria-pressed="false" title="吸色 (I)"><svg><use href="#i-dropper"/></svg><span>吸色</span><kbd>I</kbd></button>
+    <div class="tool-divider"></div><span class="tool-heading">筆尖</span><div class="brush-sizes" aria-label="筆尖大小"><button data-brush="1" class="active" aria-pressed="true" aria-label="1 格筆尖"><i style="--dot:4px"></i></button><button data-brush="2" aria-pressed="false" aria-label="2 格筆尖"><i style="--dot:8px"></i></button><button data-brush="4" aria-pressed="false" aria-label="4 格筆尖"><i style="--dot:12px"></i></button></div>
+   </aside>
+   <div class="drawing-column">
+    <div class="canvas-toolbar"><div class="history-buttons"><button class="icon-button" id="undo" title="復原 (⌘/Ctrl Z)" aria-label="復原" disabled><svg><use href="#i-undo"/></svg></button><button class="icon-button" id="redo" title="重做 (⌘/Ctrl Shift Z)" aria-label="重做" disabled><svg><use href="#i-redo"/></svg></button><span class="toolbar-separator"></span><button class="toggle-button active" id="gridToggle" aria-pressed="true"><svg><use href="#i-grid"/></svg><span>格線</span></button></div><div class="canvas-options"><button class="toggle-button" id="mirrorToggle" aria-pressed="false"><svg><use href="#i-mirror"/></svg><span>左右對稱</span></button><button class="icon-button danger" id="clear" title="清空畫布" aria-label="清空畫布"><svg><use href="#i-trash"/></svg></button></div></div>
+    <div class="canvas-well"><div class="canvas-frame"><canvas id="drawingCanvas" width="512" height="512" tabindex="0" aria-label="像素畫布，滑鼠或手指繪圖；也可用方向鍵移動、空白鍵上色"></canvas><span class="canvas-corner tl"></span><span class="canvas-corner br"></span></div></div>
+    <div class="canvas-info"><span id="toolHint">畫筆 · 按住拖曳就能畫</span><span id="coordinate" aria-live="off">32 × 32 像素</span></div>
+    <div class="palette-panel"><div class="palette-heading"><span>你的調色盤</span><span class="selected-color"><i id="selectedSwatch"></i><code id="selectedHex">#214D40</code></span></div><div class="palette-row"><div id="palette" class="palette" aria-label="選擇顏色"></div><label class="custom-color" title="選擇更多顏色"><svg><use href="#i-plus"/></svg><span class="sr-only">自訂顏色</span><input type="color" id="customColor" value="#214d40" aria-label="自訂顏色"></label></div><div class="palette-bottom"><button class="text-button" id="transparentColor"><span class="transparent-chip"></span>透明</button><span>選個顏色，讓牠有自己的個性</span></div></div>
+   </div>
+   <aside class="preview-column"><div class="preview-header"><h2>夥伴預覽</h2><span class="live-tag"><i></i>即時</span></div><div class="preview-stage meadow" id="previewStage"><span class="pixel-spark s1"></span><span class="pixel-spark s2"></span><canvas id="previewCanvas" width="32" height="32" aria-label="寶可夢即時預覽"></canvas><div class="sprite-shadow"></div></div><div class="preview-name"><h3 id="previewName">芽芽（練習）</h3><p id="previewStats">32 × 32 · 原創夥伴</p></div>
+    <div class="background-row"><span>預覽底色</span><div class="background-options"><button data-bg="meadow" class="bg-choice meadow active" aria-pressed="true" aria-label="草地底色"></button><button data-bg="paper" class="bg-choice paper" aria-pressed="false" aria-label="白色底色"></button><button data-bg="night" class="bg-choice night" aria-pressed="false" aria-label="夜晚底色"></button></div></div>
+    <div class="export-panel"><div class="download-size"><label for="exportScale">圖片尺寸</label><select id="exportScale"><option value="8">放大 8 倍</option><option value="1">原始像素尺寸</option></select></div><button class="button primary full" id="downloadPng"><svg><use href="#i-download"/></svg>下載圖片</button><p class="export-note">PNG 透明背景，保留清晰像素</p><button class="button secondary full" id="downloadProject"><svg><use href="#i-save"/></svg>儲存作品檔</button><button class="text-button import-button" id="importProject"><svg><use href="#i-upload"/></svg>開啟之前的作品檔</button><input type="file" id="importFile" accept=".json,.tpsprite,application/json" hidden></div>
+    <div class="creative-note"><svg><use href="#i-spark"/></svg><div><strong>一點創作靈感</strong><p>先畫一雙眼睛，再加上耳朵、尾巴，或一個意想不到的小配件！</p></div></div>
+   </aside>
+  </div>
+ </section>
+ <footer class="page-footer"><p><span class="status-dot"></span>作品自動保存在這個瀏覽器。換裝置前，記得儲存作品檔。</p><a href="/camp2027/">返回布拉克星球營隊首頁 ↗</a></footer>
+</main>
+<div id="toast" class="toast" role="status" aria-live="polite"></div>
+<dialog id="galleryDialog" class="gallery-dialog" aria-labelledby="galleryTitle"><div class="dialog-top"><div><span class="eyebrow">MY CREATIONS</span><h2 id="galleryTitle">我的夥伴作品</h2></div><button class="icon-button" data-close="galleryDialog" aria-label="關閉我的作品"><svg><use href="#i-close"/></svg></button></div><p class="dialog-description">每個點子，都值得好好收藏。點選作品繼續畫。</p><div id="galleryGrid" class="gallery-grid"></div><div class="dialog-footer"><span>保存在此瀏覽器，下載作品檔可帶到其他裝置。</span><button class="button primary" id="galleryNew"><svg><use href="#i-plus"/></svg>新增夥伴</button></div></dialog>
+<dialog id="newDialog" aria-labelledby="newTitle"><div class="dialog-top"><div><span class="eyebrow">A NEW FRIEND</span><h2 id="newTitle">新夥伴，準備誕生！</h2></div><button class="icon-button" data-close="newDialog" aria-label="取消新增"><svg><use href="#i-close"/></svg></button></div><form id="newForm"><label class="field-label" for="newName">先幫牠取個名字</label><input class="field-input" id="newName" maxlength="24" placeholder="例如：棉花小龍" autocomplete="off"><label class="field-label" for="newSize">選擇畫布</label><select class="field-input" id="newSize"><option value="16">16 × 16 · 小小練習</option><option value="32" selected>32 × 32 · 角色創作</option><option value="64">64 × 64 · 更多細節</option></select><fieldset class="start-options"><legend>從哪裡開始？</legend><label><input type="radio" name="start" value="blank" checked><span>空白畫布<small>自由畫出你的想像</small></span></label><label><input type="radio" name="start" value="sprout"><span>芽芽範例<small>試著改造練習角色</small></span></label></fieldset><div class="form-actions"><button type="submit" class="button primary full"><svg><use href="#i-pencil"/></svg>開始創作</button></div></form></dialog>
+<dialog id="confirmDialog" class="confirm-dialog" aria-labelledby="confirmTitle"><h2 id="confirmTitle"></h2><p id="confirmText"></p><div class="confirm-actions"><button class="button secondary" id="confirmCancel">取消</button><button class="button primary" id="confirmOk">確定</button></div></dialog>
+<noscript><div class="noscript">請開啟瀏覽器的 JavaScript，才能使用像素繪圖工具。</div></noscript>
+<script type="module" src="./app.js"></script>
+</body></html>
