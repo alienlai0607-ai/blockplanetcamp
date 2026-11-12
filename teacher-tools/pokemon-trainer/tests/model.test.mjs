@@ -34,11 +34,11 @@ test('export/import round trip preserves editable artwork but assigns new identi
 test('malformed, oversized, unsupported and injected data are rejected',()=>{
   assert.throws(()=>importSprite('{'));assert.throws(()=>importSprite('x'.repeat(524289)));
   const raw=JSON.parse(serialize(makeProject('',16)));
-  for(const patch of [{version:2},{width:100000},{height:32},{pixels:[]},{name:{}},{pixels:Array(256).fill('url(https://bad)')}])assert.throws(()=>importSprite(JSON.stringify({...raw,...patch})));
+  for(const patch of [{version:99},{width:100000},{height:32},{frames:[]},{name:{}},{frames:[Array(256).fill('url(https://bad)')]}])assert.throws(()=>importSprite(JSON.stringify({...raw,...patch})));
   const q=importSprite(JSON.stringify({...raw,name:'<img src=x onerror=bad()>'}));assert.equal(typeof q.name,'string'); // UI always renders names with textContent.
 });
 test('collection reload preserves each independent drawing and active selection',()=>{
-  const a=makeProject('甲',16),b=makeProject('乙',32,true);paint(a,0,0,'#214d40');const c=readCollection(JSON.stringify({version:1,activeId:b.id,projects:[a,b]}));assert.equal(c.activeId,b.id);assert.equal(c.projects[0].pixels[0],'#214d40');assert.deepEqual(c.projects[1].pixels,b.pixels);
+  const a=makeProject('甲',16),b=makeProject('乙',32,true);paint(a,0,0,'#214d40');const c=readCollection(JSON.stringify({version:2,activeId:b.id,projects:[a,b]}));assert.equal(c.activeId,b.id);assert.equal(c.projects[0].pixels[0],'#214d40');assert.deepEqual(c.projects[1].pixels,b.pixels);
   assert.throws(()=>readCollection(JSON.stringify({...c,projects:[a,a]})));assert.throws(()=>readCollection(JSON.stringify({...c,projects:[]})));assert.throws(()=>readCollection(JSON.stringify({...c,projects:Array(MAX_PROJECTS+1).fill(a)})));
 });
 test('original sample scales cleanly at all supported sizes and Unicode names are bounded',()=>{

@@ -2,49 +2,73 @@ export const SIZES = [16, 32, 64];
 export const PALETTE = ['#214d40','#ffffff','#f5e9c9','#d5d7d1','#f393aa','#d54d63','#f39850','#f2cf67','#bdd584','#62a878','#3d7970','#72bfc2','#83b5df','#786fa9','#b397cc','#9d765a'];
 export const STORAGE_KEY = 'teampoke.trainer.v1';
 export const MAX_PROJECTS = 40;
+export const MAX_FRAMES = 4;
+export const DEFAULT_FPS = 4;
+export function withFrames(p) {
+  Object.defineProperty(p, 'pixels', {configurable:true, get(){return this.frames[this.activeFrame];}, set(value){this.frames[this.activeFrame]=value;}});
+  return p;
+}
 export function nameOf(value) { return [...String(value ?? '').trim()].slice(0, 24).join('') || '未命名夥伴'; }
 export function validColor(value) { return value === null || (typeof value === 'string' && /^#[0-9a-f]{6}$/i.test(value)); }
 export function makeProject(name = '未命名夥伴', size = 32, sample = false) {
   if (!SIZES.includes(size)) throw new Error('畫布大小不支援');
   const now = new Date().toISOString();
-  return {id: crypto.randomUUID(), name: nameOf(name), width:size, height:size, pixels:sample ? sprout(size) : Array(size*size).fill(null), createdAt:now, updatedAt:now};
+  return withFrames({id: crypto.randomUUID(), name: nameOf(name), width:size, height:size, frames:[sample ? sprout(size) : Array(size*size).fill(null)], activeFrame:0, fps:DEFAULT_FPS, createdAt:now, updatedAt:now});
 }
 export function validateSprite(raw) {
-  if (!raw || raw.format !== 'teampoke-sprite' || raw.version !== 1) throw new Error('這不是支援的作品檔，請選擇從本工具儲存的 JSON 檔。');
-  if (!SIZES.includes(raw.width) || raw.height !== raw.width || !Array.isArray(raw.pixels) || raw.pixels.length !== raw.width*raw.height || !raw.pixels.every(validColor)) throw new Error('作品的畫布或顏色資料不完整。');
+  if (!raw || raw.format !== 'teampoke-sprite' || ![1,2].includes(raw.version)) throw new Error('這不是支援的作品檔，請選擇從本工具儲存的 JSON 檔。');
+  const frames=raw.version===1?[raw.pixels]:raw.frames;
+  if (!SIZES.includes(raw.width) || raw.height !== raw.width || !Array.isArray(frames) || frames.length<1 || frames.length>MAX_FRAMES || !frames.every(px=>Array.isArray(px) && px.length===raw.width*raw.height && px.every(validColor))) throw new Error('作品的畫布或畫格資料不完整。');
+  const fps=raw.version===1?DEFAULT_FPS:raw.fps;
+  if(!Number.isInteger(fps)||fps<1||fps>12)throw new Error('動畫速度必須是每秒 1～12 格。');
   if (typeof raw.name !== 'string') throw new Error('作品缺少名字。');
-  return {name:nameOf(raw.name), width:raw.width, height:raw.height, pixels:raw.pixels.map(c => c?.toLowerCase() ?? null)};
+  return {name:nameOf(raw.name), width:raw.width, height:raw.height, frames:frames.map(px=>px.map(c=>c?.toLowerCase()??null)), activeFrame:0, fps};
 }
 export function serialize(project) {
-  return JSON.stringify({format:'teampoke-sprite',version:1,name:nameOf(project.name),width:project.width,height:project.height,pixels:project.pixels});
+  return JSON.stringify({format:'teampoke-sprite',version:2,name:nameOf(project.name),width:project.width,height:project.height,frames:project.frames,fps:project.fps});
 }
 export function importSprite(text) {
   if (text.length > 524288) throw new Error('作品檔太大，請選擇小於 512 KB 的檔案。');
   let raw;
   try { raw = JSON.parse(text); } catch { throw new Error('無法讀取這個作品檔，請確認檔案完整。'); }
   const sprite = validateSprite(raw);
-  return {...makeProject(sprite.name, sprite.width), ...sprite};
+  return withFrames({...makeProject(sprite.name, sprite.width), ...sprite});
 }
 export function readCollection(text) {
   const raw = JSON.parse(text);
-  if (!raw || raw.version !== 1 || !Array.isArray(raw.projects) || raw.projects.length < 1 || raw.projects.length > MAX_PROJECTS) throw new Error('作品收藏格式不正確');
+  if (!raw || ![1,2].includes(raw.version) || !Array.isArray(raw.projects) || raw.projects.length < 1 || raw.projects.length > MAX_PROJECTS) throw new Error('作品收藏格式不正確');
   const ids = new Set();
   const projects = raw.projects.map(p => {
-    const sprite = validateSprite({...p,format:'teampoke-sprite',version:1});
+    const sprite = validateSprite({...p,format:'teampoke-sprite',version:raw.version});
     if (typeof p.id !== 'string' || !p.id || p.id.length>100 || ids.has(p.id)) throw new Error('作品編號不正確');
     ids.add(p.id);
-    return {...sprite, id:p.id, createdAt:typeof p.createdAt==='string'?p.createdAt:'', updatedAt:typeof p.updatedAt==='string'?p.updatedAt:''};
+    const activeFrame=raw.version===2?p.activeFrame:0;
+    if(!Number.isInteger(activeFrame)||activeFrame<0||activeFrame>=sprite.frames.length)throw new Error('目前畫格不正確');
+    return withFrames({...sprite, activeFrame, id:p.id, createdAt:typeof p.createdAt==='string'?p.createdAt:'', updatedAt:typeof p.updatedAt==='string'?p.updatedAt:''});
   });
-  return {version:1,activeId:ids.has(raw.activeId)?raw.activeId:projects[0].id,projects};
+  return {version:2,activeId:ids.has(raw.activeId)?raw.activeId:projects[0].id,projects};
 }
-export function snapshot(p) { return {width:p.width,height:p.height,pixels:p.pixels.slice()}; }
-function same(a,b) { return a.width===b.width && a.height===b.height && a.pixels.every((v,i)=>v===b.pixels[i]); }
+export function snapshot(p) { return {width:p.width,height:p.height,frames:p.frames.map(px=>px.slice()),activeFrame:p.activeFrame,fps:p.fps}; }
+function same(a,b) { return a.width===b.width && a.height===b.height && a.fps===b.fps && a.activeFrame===b.activeFrame && a.frames.length===b.frames.length && a.frames.every((px,f)=>px.every((v,i)=>v===b.frames[f][i])); }
+export function addFrame(p,duplicate=true) {
+  if(p.frames.length>=MAX_FRAMES)throw new Error('第一版最多 4 格動畫。');
+  p.frames.splice(p.activeFrame+1,0,duplicate?p.pixels.slice():Array(p.width*p.height).fill(null));p.activeFrame++;
+}
+export function deleteFrame(p) { if(p.frames.length<=1)throw new Error('至少保留一格畫面。');p.frames.splice(p.activeFrame,1);p.activeFrame=Math.min(p.activeFrame,p.frames.length-1); }
+export function moveFrame(p,delta) { const next=p.activeFrame+delta;if(!Number.isInteger(next)||next<0||next>=p.frames.length)return false;[p.frames[p.activeFrame],p.frames[next]]=[p.frames[next],p.frames[p.activeFrame]];p.activeFrame=next;return true; }
+export function previousPixels(p) { return p.activeFrame>0?p.frames[p.activeFrame-1]:null; }
+export function frameAt(p,elapsedMs) { return Math.floor(Math.max(0,elapsedMs)*p.fps/1000)%p.frames.length; }
+export function sheetPixels(p) {
+  const width=p.width*p.frames.length,pixels=Array(width*p.height).fill(null);
+  p.frames.forEach((frame,f)=>frame.forEach((v,i)=>{pixels[Math.floor(i/p.width)*width+f*p.width+i%p.width]=v;}));
+  return {width,height:p.height,pixels};
+}
 export class History {
   constructor(limit=100) { this.limit=limit; this.past=[];this.future=[];this.before=null; }
   begin(p) { if (!this.before) this.before=snapshot(p); }
-  commit(p) { const before=this.before;this.before=null;if (!before || same(before,p)) return false;this.past.push(before);if(this.past.length>this.limit)this.past.shift();this.future=[];return true; }
-  undo(p) { if (!this.past.length)return false;this.future.push(snapshot(p));Object.assign(p,this.past.pop());return true; }
-  redo(p) { if (!this.future.length)return false;this.past.push(snapshot(p));Object.assign(p,this.future.pop());return true; }
+  commit(p) { const before=this.before;this.before=null;if (!before || same(before,p)) return false;this.past.push({before,after:snapshot(p)});if(this.past.length>this.limit)this.past.shift();this.future=[];return true; }
+  undo(p) { if (!this.past.length)return false;const entry=this.past.pop();this.future.push(entry);Object.assign(p,snapshot(entry.before));return true; }
+  redo(p) { if (!this.future.length)return false;const entry=this.future.pop();this.past.push(entry);Object.assign(p,snapshot(entry.after));return true; }
 }
 export function paint(p,x,y,color,brush=1,mirror=false) {
   const start=-Math.floor((brush-1)/2);
@@ -76,12 +100,16 @@ export function fill(p,x,y,color,mirror=false) {
 }
 export function resize(p,size) {
   if(!SIZES.includes(size))throw new Error('畫布大小不支援');
-  const pixels=Array(size*size).fill(null),offset=Math.floor((size-p.width)/2);
-  for(let y=0;y<p.height;y++)for(let x=0;x<p.width;x++) {
-    const nx=x+offset,ny=y+offset;
-    if(nx>=0&&ny>=0&&nx<size&&ny<size)pixels[ny*size+nx]=p.pixels[y*p.width+x];
-  }
-  p.width=size;p.height=size;p.pixels=pixels;
+  const offset=Math.floor((size-p.width)/2);
+  p.frames=p.frames.map(frame=>{
+    const pixels=Array(size*size).fill(null);
+    for(let y=0;y<p.height;y++)for(let x=0;x<p.width;x++) {
+      const nx=x+offset,ny=y+offset;
+      if(nx>=0&&ny>=0&&nx<size&&ny<size)pixels[ny*size+nx]=frame[y*p.width+x];
+    }
+    return pixels;
+  });
+  p.width=size;p.height=size;
 }
 // An original practice character; no external character images or network needed.
 export function sprout(size=32) {
