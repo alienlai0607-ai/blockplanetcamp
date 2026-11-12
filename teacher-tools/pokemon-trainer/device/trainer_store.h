@@ -1,11 +1,13 @@
 #pragma once
 #include "trainer_assets.h"
 
-// Exclusive raw artwork store in the existing, exactly matched ffat partition.
-// It may claim the partition ONLY if every byte is erased. Never formats a disk.
+// Raw artwork store in the first 140 KiB of the exactly matched ffat partition.
+// Claim ONLY erased reserved sectors; leave the rest of the partition untouched.
 namespace TrainerStore {
 constexpr uint32_t PARTITION_ADDRESS=0x610000, PARTITION_SIZE=0x9e0000;
 constexpr uint32_t FIRST=0x1000, SLOT_SIZE=0x11000, PAYLOAD=0x1000;
+constexpr uint32_t RESERVED_SIZE=FIRST+2*SLOT_SIZE;
+static_assert(RESERVED_SIZE==0x23000&&RESERVED_SIZE<=PARTITION_SIZE,"artwork bounds");
 inline void put32(uint8_t*p,uint32_t n){for(int i=0;i<4;i++)p[i]=uint8_t(n>>(i*8));}
 inline uint32_t checksum(const uint8_t*p,size_t n){uint32_t c=~0u;for(size_t i=0;i<n;i++){c^=p[i];for(int b=0;b<8;b++)c=(c>>1)^((c&1)?0xedb88320u:0);}return ~c;}
 struct Flash {
@@ -28,7 +30,7 @@ class Store {
   bool claim(){
     if(blocked)return false;if(owned)return true;
     uint8_t b[1024];
-    for(uint32_t offset=0;offset<PARTITION_SIZE;offset+=sizeof b){
+    for(uint32_t offset=0;offset<RESERVED_SIZE;offset+=sizeof b){
       if(!flash.read(offset,b,sizeof b)){blocked=true;return false;}
       for(uint8_t byte:b)if(byte!=0xff){blocked=true;return false;}
       flash.breathe();

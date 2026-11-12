@@ -9,9 +9,10 @@ class PartitionFlash:public TrainerStore::Flash {
  public:
   const esp_partition_t *partition=nullptr;
   bool range(uint32_t offset,size_t size){return partition&&offset<=partition->size&&size<=partition->size-offset;}
+  bool artworkRange(uint32_t offset,size_t size){return range(offset,size)&&offset<=TrainerStore::RESERVED_SIZE&&size<=TrainerStore::RESERVED_SIZE-offset;}
   bool read(uint32_t o,uint8_t*p,size_t n)override{return range(o,n)&&esp_partition_read(partition,o,p,n)==ESP_OK;}
-  bool erase(uint32_t o,size_t n)override{return range(o,n)&&esp_partition_erase_range(partition,o,n)==ESP_OK;}
-  bool write(uint32_t o,const uint8_t*p,size_t n)override{return range(o,n)&&esp_partition_write(partition,o,p,n)==ESP_OK;}
+  bool erase(uint32_t o,size_t n)override{return artworkRange(o,n)&&esp_partition_erase_range(partition,o,n)==ESP_OK;}
+  bool write(uint32_t o,const uint8_t*p,size_t n)override{return artworkRange(o,n)&&esp_partition_write(partition,o,p,n)==ESP_OK;}
   void breathe()override{delay(1);}
 } flash;
 TrainerStore::Store store(flash);

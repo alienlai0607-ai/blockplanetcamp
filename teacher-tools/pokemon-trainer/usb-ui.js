@@ -1,4 +1,4 @@
-import {ArtworkConnection} from './usb.js';
+import {ArtworkConnection} from './usb.js?v=4';
 import {FirmwareInstaller,latestBackup} from './firmware.js?v=3';
 
 export function mountDevicePanel({getArtwork,download,toast}){
@@ -7,6 +7,7 @@ export function mountDevicePanel({getArtwork,download,toast}){
   let diagnosticLines=[];
   function diagnostic(message){diagnosticLines.push(`${new Date().toISOString()} ${String(message).slice(0,600)}`);diagnosticLines=diagnosticLines.slice(-120);$('firmwareLog').textContent=diagnosticLines.join('\n');$('firmwareDownloadLog').disabled=firmwareBusy||!diagnosticLines.length;}
   const status=(text,error=false)=>{$('usbStatus').textContent=text;$('usbStatus').classList.toggle('error',error);};
+  const storageHelp=detail=>/^1\.18-SWdev11-/.test(detail?.fw||'')?'作品尚未寫入。請按下方「安裝／更新遊戲系統」，選「更新現有遊戲」更新到 SWdev12 作品區修正版，再重新連接傳送。':'作品儲存區未通過安全檢查，已停止寫入。請保留完整 USB 備份供檢查。';
   const firmwareStatus=(text,error=false)=>{$('firmwareStatus').textContent=text;$('firmwareStatus').classList.toggle('error',error);};
   function controls(){
     $('usbConnect').disabled=!supported||busy||!!connection||firmwareBusy;
@@ -35,7 +36,7 @@ export function mountDevicePanel({getArtwork,download,toast}){
       const port=await navigator.serial.requestPort();
       candidate=new ArtworkConnection(port,{onDisconnect:()=>{connection=null;info=null;controls();status('設備已離線，重新接上後可再連接。');}});
       info=await candidate.open();connection=candidate;
-      status(info.storage==='blocked'?'已連接，但作品區需要老師檢查；沒有清除任何資料。':`已連接 StopWatch · ${info.fw}${info.size?' · 已有自繪背景':''}`);
+      status(info.storage==='blocked'?storageHelp(info):`已連接 StopWatch · ${info.fw}${info.size?' · 已有自繪背景':''}`,info.storage==='blocked');
     }catch(error){if(candidate)await candidate.close();connection=null;info=null;status(error.name==='NotFoundError'?'已取消選擇設備。':error.message,true);}
     finally{busy=false;controls();}
   });
@@ -48,10 +49,10 @@ export function mountDevicePanel({getArtwork,download,toast}){
       info=await current.upload(bytes,{signal:controller.signal,onProgress:({phase,done,total})=>{
         $('usbProgress').hidden=false;$('usbProgress').value=done/total;
         if(phase==='sending')status(`正在傳送作品… ${Math.floor(done/total*100)}%`);
-        if(phase==='committing'){$('usbCancel').disabled=true;status('正在儲存與校驗。第一次建立作品區會稍久，請保持連線。');}
+        if(phase==='committing'){$('usbProgress').removeAttribute('value');$('usbCancel').disabled=true;status('正在儲存與校驗，請保持連線。');}
       }});
       status('作品已寫入並校驗成功！早、中、晚背景已套用，遊戲進度保留。');toast('新背景已放進遊戲機！');
-    }catch(error){status(error.message,true);}
+    }catch(error){$('usbProgress').hidden=true;if(error.code==='storage_blocked'){if(info)info.storage='blocked';status(storageHelp(info),true);}else status(error.message,true);}
     finally{busy=false;controller=null;controls();}
   });
   $('usbCancel').addEventListener('click',()=>{controller?.abort();$('usbCancel').disabled=true;status('正在取消傳送…');});

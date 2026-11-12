@@ -35,7 +35,7 @@ Morning 05:00–09:59; day 10:00–17:59; night 18:00–04:59, using the existin
 
 Character preview uses union bounds across all frames for stable anchoring, up to 6× integer scale. Home: ground 260, max 148 pixels tall (current home controls begin at 264); exploration: ground 306, max dimension 168. Character integration into individual pets, abilities and battle states is deliberately not automatic: this release enables the three backgrounds in the firmware; packages retain character frames for the later binding step. Original pet names, species, stats, animations and saves remain authoritative.
 
-## Web installation and USB artwork transfer (SWdev11)
+## Web installation and USB artwork transfer (SWdev12)
 
 The public website self-hosts the pinned esptool-js 0.7.1 bundle and precompiled StopWatch binaries. It needs HTTPS and desktop Web Serial (Chrome/Edge are the initial supported teaching setup). No Arduino SDK, Python or local compiler is required on the child's computer. Browser permission and a USB data cable remain necessary. Firmware and artwork operations are separate.
 
@@ -45,9 +45,11 @@ Update mode requires an exact match with the existing partition table and never 
 
 ### Artwork ownership and two slots
 
-No partition-table change is made. Only the existing `ffat` data/FAT partition at 0x610000, size 0x9e0000, may be used. This release uses it as an exclusively owned raw artwork partition; it must not be mounted/formatted as FAT by another firmware component. An encrypted, missing or differently placed partition is refused.
+No partition-table change is made. Only the existing `ffat` data/FAT partition at 0x610000, size 0x9e0000, may be used. This release reserves its first 0x23000 bytes (140 KiB), absolute [0x610000, 0x633000), for raw artwork. The entire partition must not be mounted/formatted as FAT by another firmware component. An encrypted, missing or differently placed partition is refused.
 
-On a partition with no ownership header, the receiver scans **every byte of the entire partition** and claims it only if all bytes are 0xff. Non-empty foreign data is never erased, reformatted or adopted. A partially written ownership header is refused rather than guessed. An established ownership record means subsequent updates may only write the two fixed slots below.
+On a partition with no ownership header, the receiver scans **every byte of the reserved 140 KiB** and claims that prefix only if all bytes are 0xff. Non-empty foreign data inside that prefix is refused. Data beyond 0x633000 is retained and never adopted, erased or formatted. The concrete flash adapter independently bounds all writes and erases to the reserved prefix. A partially written ownership header is refused rather than guessed. An established ownership record means subsequent updates may only write the two fixed slots below.
+
+SWdev11 scanned the entire partition; old FAT remnants far beyond the artwork slots therefore blocked a first upload even when every reserved artwork sector was empty. SWdev12 narrows the blank check without changing slot locations, headers, package format or existing artwork compatibility. The reported backup had an entirely erased artwork prefix and a legacy FAT boot sector at 0xa01000. Tests apply the real backup offline and assert that every byte beyond the reservation is preserved; the backup itself is never included in public source/tests.
 
 All offsets here are relative to that partition:
 

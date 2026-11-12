@@ -3,7 +3,7 @@
   "board": "stopwatch-c152",
   "chip": "ESP32-S3",
   "flashBytes": 16777216,
-  "version": "1.18-SWdev11-webusb",
+  "version": "1.18-SWdev12-artstore",
   "hardwareTested": false,
   "features": [
     "background-upload"
@@ -30,12 +30,12 @@
     {
       "file": "game.bin",
       "offset": 65536,
-      "bytes": 1592816,
-      "sha256": "39d2a34c92517ae26cd50f7edc839caf0e5f80c7706f75c1f3f7a13c47fdf05d"
+      "bytes": 1592896,
+      "sha256": "1fca2478196ed54662610a35327ba2d5da08f0e762409237e07b50dbd8afb028"
     }
   ],
   "source": {
     "file": "source.zip",
-    "sha256": "300c7ef1d18c832bda2c7db5dbcd2901ad6707c07f24ad57a220a33b64c8ba92"
+    "sha256": "42c5d5da84cbd5533e29da7e173c71e7792688cb9b1f0660dc04259fd7a6c3c0"
   }
 }

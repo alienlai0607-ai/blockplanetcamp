@@ -4,7 +4,7 @@
 +#include "trainer_transfer.h"
 @@ -38 +39 @@
 -#define FW_VERSION "1.18-SWdev10-background"
-+#define FW_VERSION "1.18-SWdev11-webusb"
++#define FW_VERSION "1.18-SWdev12-artstore"
 @@ -233,0 +235 @@
 +  trainerTransferBegin();
 @@ -467,5 +469,17 @@
