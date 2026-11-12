@@ -6,21 +6,21 @@ import {Window} from 'happy-dom';
 import {resolveObjectURL} from 'node:buffer';
 import {STORAGE_KEY,sprout} from '../model.js';
 
-test('editor controls, pointer stroke, undo, gallery, reload and export connect correctly',async()=>{
+for(const legacyVersion of [1,2])test(`editor, animation and background flow with v${legacyVersion} migration`,async()=>{
   const window=new Window({url:'https://blockplanetcamp.com/teacher-tools/pokemon-trainer/'});
   const document=window.document;
-  const legacy=JSON.stringify({version:1,activeId:'original',projects:[{id:'original',name:'芽芽（練習）',width:32,height:32,pixels:sprout(),createdAt:'2026-11-12',updatedAt:'2026-11-12'}]});
+  const legacy=JSON.stringify({version:legacyVersion,activeId:'original',projects:[{id:'original',name:'芽芽（練習）',width:32,height:32,...(legacyVersion===1?{pixels:sprout()}:{frames:[sprout()],activeFrame:0,fps:4}),createdAt:'2026-11-12',updatedAt:'2026-11-12'}]});
   window.localStorage.setItem(STORAGE_KEY,legacy);
   const html=await readFile(new URL('../index.html',import.meta.url),'utf8');
   document.write(html.replace(/<script[\s\S]*?<\/script>/g,''));
   const noop=()=>{};
   const canvasContext={clearRect:noop,fillRect:noop,beginPath:noop,moveTo:noop,lineTo:noop,stroke:noop,save:noop,restore:noop,setLineDash:noop,strokeRect:noop};
-  let previewPixel0=null,previewPaintCount=0;
+  let previewPixel0=null,previewPaintCount=0,backgroundPixel0=null;
   window.HTMLCanvasElement.prototype.getContext=function(){
     const target=this;
     return this.testContext ||= {...canvasContext,
-      clearRect(){if(target.id==='previewCanvas'){previewPixel0=null;previewPaintCount++;}},
-      fillRect(x,y){if(target.id==='previewCanvas'&&x===0&&y===0)previewPixel0=this.fillStyle;}
+      clearRect(){if(target.id==='previewCanvas'){previewPixel0=null;previewPaintCount++;}if(target.id==='previewBackground')backgroundPixel0=null;},
+      fillRect(x,y){if(x===0&&y===0){if(target.id==='previewCanvas')previewPixel0=this.fillStyle;if(target.id==='previewBackground')backgroundPixel0=this.fillStyle;}}
     };
   };
   window.HTMLCanvasElement.prototype.setPointerCapture=noop;
@@ -42,15 +42,16 @@ test('editor controls, pointer stroke, undo, gallery, reload and export connect 
   const collection=()=>JSON.parse(window.localStorage.getItem(STORAGE_KEY));
   const save=()=>window.dispatchEvent(new window.Event('pagehide'));
   try {
-    await import('../app.js?dom-test');
+    await import(`../app.js?dom-test-v${legacyVersion}`);
     assert.equal(document.querySelectorAll('.color-swatch').length,16);
     assert.equal(collection().projects.length,1);
-    assert.equal(collection().version,2);assert.equal(collection().activeId,'original');
-    assert.equal(window.localStorage.getItem(STORAGE_KEY+'.v1-backup'),legacy);
-    assert.deepEqual(collection().projects[0].frames[0],JSON.parse(legacy).projects[0].pixels);
+    assert.equal(collection().version,3);assert.equal(collection().activeId,'original');
+    assert.equal(window.localStorage.getItem(STORAGE_KEY+`.v${legacyVersion}-backup`),legacy);
+    assert.deepEqual(collection().projects[0].frames[0],sprout());
     assert.match($('saveStatus').textContent,/已儲存/);
     assert.match($('animationHint').textContent,/只有 1 格/);assert.equal($('playAnimation').disabled,false);
     $('playAnimation').click();assert.match($('toast').textContent,/第 2 格/);assert.equal($('playAnimation').getAttribute('aria-pressed'),'false');
+    document.querySelector('[data-mode="background"]').click();$('playAnimation').click();assert.match($('animationHint').textContent,/角色動畫/);assert.match($('toast').textContent,/第 2 格/);document.querySelector('[data-mode="character"]').click();
     $('newProject').click();assert($('newDialog').open);
     $('newName').value='測試小龍';$('newForm').dispatchEvent(new window.Event('submit',{cancelable:true}));
     assert.equal(collection().projects.length,2);assert.equal($('previewName').textContent,'測試小龍');
@@ -88,9 +89,45 @@ test('editor controls, pointer stroke, undo, gallery, reload and export connect 
     $('deleteFrame').click();$('confirmOk').click();await Promise.resolve();save();assert.equal(collection().projects[1].frames.length,3);
     $('undo').click();save();assert.equal(collection().projects[1].frames.length,4);
     $('exportScale').value='1';$('downloadSheet').click();assert.equal(pngCanvas.width,128);assert.equal(pngCanvas.height,32);
-    $('downloadProject').click();const exported=JSON.parse(await downloadBlobs.at(-1).text());assert.equal(exported.version,2);assert.equal(exported.frames.length,4);assert.equal(exported.fps,8);
+    $('downloadProject').click();const exported=JSON.parse(await downloadBlobs.at(-1).text());assert.equal(exported.version,3);assert.equal(exported.frames.length,4);assert.equal(exported.fps,8);
+    // Backgrounds use their own canvas size and undo stack for each time.
+    const originalAnimation=structuredClone(collection().projects[1].frames);
+    document.querySelector('[data-mode="background"]').click();
+    assert($('animationPanel').hidden);assert(!$('backgroundPanel').hidden);assert($('canvasSize').disabled);assert.equal($('canvasSize').value,'64');
+    document.querySelector('[data-time="morning"]').click();assert.match($('frameBadge').textContent,/早晨/);
+    const originalBackgrounds=structuredClone(collection().projects[1].backgrounds);
+    document.querySelector('[data-color="#ffffff"]').click();
+    const dot=()=>{canvas.dispatchEvent(new window.PointerEvent('pointerdown',{pointerId:4,button:0,clientX:4,clientY:4}));canvas.dispatchEvent(new window.PointerEvent('pointerup',{pointerId:4}));save();};
+    dot();assert.equal(collection().projects[1].backgrounds.morning[0],'#ffffff');assert.equal(backgroundPixel0,'#ffffff');
+    assert.deepEqual(collection().projects[1].frames,originalAnimation);assert.deepEqual(collection().projects[1].backgrounds.day,originalBackgrounds.day);assert.deepEqual(collection().projects[1].backgrounds.night,originalBackgrounds.night);
+    $('undo').click();save();assert.deepEqual(collection().projects[1].backgrounds,originalBackgrounds);
+    $('redo').click();save();assert.equal(backgroundPixel0,'#ffffff');
+    document.querySelector('[data-time="night"]').click();assert($('undo').disabled);assert.match($('dpadCaption').textContent,/時段/);assert(document.querySelector('.dpad-right').disabled);
+    $('copyBackgroundFrom').value='morning';$('copyBackground').click();$('confirmCancel').click();await Promise.resolve();save();assert.deepEqual(collection().projects[1].backgrounds.night,originalBackgrounds.night);
+    $('copyBackground').click();$('confirmOk').click();await Promise.resolve();save();assert.deepEqual(collection().projects[1].backgrounds.night,collection().projects[1].backgrounds.morning);
+    document.querySelector('[data-tool="eraser"]').click();dot();assert.equal(collection().projects[1].backgrounds.night[0],null);assert.equal(collection().projects[1].backgrounds.morning[0],'#ffffff');
+    $('fpsInput').value='6';$('fpsInput').dispatchEvent(new window.Event('change'));save();assert.equal(collection().projects[1].fps,6);
+    $('undo').click();save();assert.equal(collection().projects[1].backgrounds.night[0],'#ffffff');assert.equal(collection().projects[1].fps,6);
+    document.querySelector('[data-mode="character"]').click();$('undo').click();save();assert.equal(collection().projects[1].fps,8);assert.equal(collection().projects[1].backgrounds.night[0],'#ffffff');
+    document.querySelector('[data-mode="background"]').click();
+    const nightBeforeClear=collection().projects[1].backgrounds.night.slice();
+    $('clear').click();assert.match($('confirmTitle').textContent,/夜晚背景/);$('confirmOk').click();await Promise.resolve();save();
+    assert(collection().projects[1].backgrounds.night.every(v=>v===null));assert.deepEqual(collection().projects[1].frames,originalAnimation);
+    $('undo').click();save();assert.deepEqual(collection().projects[1].backgrounds.night,nightBeforeClear);
+    $('resetBackground').click();$('confirmOk').click();await Promise.resolve();save();assert.deepEqual(collection().projects[1].backgrounds.night,originalBackgrounds.night);
+    $('undo').click();save();assert.deepEqual(collection().projects[1].backgrounds.night,nightBeforeClear);
+    $('consoleA').click();document.querySelector('.time-buttons [data-time="day"]').click();assert.equal($('playAnimation').getAttribute('aria-pressed'),'true');assert.equal(backgroundPixel0,originalBackgrounds.day[0]);
+    await new Promise(resolve=>originalTimeout(resolve,140));assert.match($('playbackStatus').textContent,/白天 · 播放中/);$('consoleA').click();
+    document.querySelector('.dpad-left').click();assert.match($('frameBadge').textContent,/早晨/);
+    $('downloadPng').click();assert.equal(pngCanvas.width,64);assert.equal(pngCanvas.height,64);assert.match(downloads.at(-1),/早晨背景.png$/);
+    $('downloadProject').click();const scene=JSON.parse(await downloadBlobs.at(-1).text());assert.deepEqual(scene.backgrounds,collection().projects[1].backgrounds);assert.equal(scene.backgroundSize,64);assert.deepEqual(scene.frames,originalAnimation);
+    // Import through the UI, keeping the original project and its backgrounds.
+    const file=new window.File([JSON.stringify(scene)],'scene.tpsprite.json',{type:'application/json'});
+    Object.defineProperty($('importFile'),'files',{configurable:true,value:[file]});$('importFile').dispatchEvent(new window.Event('change'));await new Promise(resolve=>originalTimeout(resolve,0));save();
+    assert.equal(collection().projects.length,3);assert.deepEqual(collection().projects[2].backgrounds,scene.backgrounds);assert.deepEqual(collection().projects[2].frames,scene.frames);
+    assert(!$('canvasSize').disabled);assert.equal($('canvasSize').value,'32');assert.equal($('backgroundPanel').hidden,true);
     downloads.length=0;downloadBlobs.length=0;
-    $('openGallery').click();assert.equal(document.querySelectorAll('.gallery-card').length,2);
+    $('openGallery').click();assert.equal(document.querySelectorAll('.gallery-card').length,3);
     document.querySelector('.gallery-open').click();assert.equal($('previewName').textContent,'芽芽（練習）');
     $('canvasSize').value='16';$('canvasSize').dispatchEvent(new window.Event('change'));assert($('confirmDialog').open);
     $('confirmCancel').click();await Promise.resolve();assert.equal($('canvasSize').value,'32');
@@ -100,7 +137,7 @@ test('editor controls, pointer stroke, undo, gallery, reload and export connect 
     const secondWindow=new Window({url:window.location.href});
     const saved=window.localStorage.getItem(STORAGE_KEY);secondWindow.localStorage.setItem(STORAGE_KEY,saved);
     assert.equal(JSON.parse(secondWindow.localStorage.getItem(STORAGE_KEY)).activeId,collection().projects[0].id);
-    assert.equal(JSON.parse(saved).projects.length,2);
+    assert.equal(JSON.parse(saved).projects.length,3);
     await secondWindow.happyDOM.abort();
     globalThis.localStorage={getItem:window.localStorage.getItem.bind(window.localStorage),setItem:()=>{throw new Error('QuotaExceededError');}};
     $('nameInput').value='尚未保存的改名';$('nameInput').dispatchEvent(new window.Event('input'));save();

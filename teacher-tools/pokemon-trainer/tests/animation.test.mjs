@@ -28,7 +28,7 @@ test('v1 downloaded files migrate to a single frame without changing a pixel',()
  const pixels=Array(256).fill(null);pixels[51]='#FfAa11';const p=importSprite(JSON.stringify({format:'teampoke-sprite',version:1,name:'以前的小龍',width:16,height:16,pixels}));assert.equal(p.frames.length,1);assert.equal(p.pixels[51],'#ffaa11');assert.equal(p.fps,4);assert.equal(p.name,'以前的小龍');
 });
 test('v1 browser collection retains IDs, selected project and dates after migration',()=>{
- const old={version:1,activeId:'b',projects:['a','b'].map(id=>({id,name:id,width:16,height:16,pixels:Array(256).fill(id==='a'?'#ffffff':null),createdAt:'2026-11-12',updatedAt:'2026-11-12'}))};const c=readCollection(JSON.stringify(old));assert.equal(c.version,2);assert.equal(c.activeId,'b');assert.equal(c.projects[0].pixels[0],'#ffffff');assert.equal(c.projects[0].createdAt,'2026-11-12');assert.equal(c.projects[1].frames.length,1);
+ const old={version:1,activeId:'b',projects:['a','b'].map(id=>({id,name:id,width:16,height:16,pixels:Array(256).fill(id==='a'?'#ffffff':null),createdAt:'2026-11-12',updatedAt:'2026-11-12'}))};const c=readCollection(JSON.stringify(old));assert.equal(c.version,3);assert.equal(c.activeId,'b');assert.equal(c.projects[0].pixels[0],'#ffffff');assert.equal(c.projects[0].createdAt,'2026-11-12');assert.equal(c.projects[1].frames.length,1);
 });
 test('animation export and collection reload preserve all frames and playback speed',()=>{
  const p=makeProject('動畫小龍',64,true);addFrame(p);paint(p,0,0,'#ffffff');p.fps=8;const q=importSprite(serialize(p));assert.deepEqual(q.frames,p.frames);assert.equal(q.fps,8);assert.equal(q.activeFrame,0);assert.notEqual(q.id,p.id);

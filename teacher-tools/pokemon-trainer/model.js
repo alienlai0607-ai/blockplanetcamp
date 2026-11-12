@@ -4,6 +4,46 @@ export const STORAGE_KEY = 'teampoke.trainer.v1';
 export const MAX_PROJECTS = 40;
 export const MAX_FRAMES = 4;
 export const DEFAULT_FPS = 4;
+export const BACKGROUND_SIZE = 64;
+export const TIMES = ['morning','day','night'];
+export const TIME_NAMES = {morning:'早晨',day:'白天',night:'夜晚'};
+// Fixed-size backgrounds are independent of the character's canvas and animation.
+export function backgroundLayer(project,time) {
+  if(!TIMES.includes(time))throw new Error('不支援的背景時段');
+  return {width:BACKGROUND_SIZE,height:BACKGROUND_SIZE,activeFrame:0,fps:DEFAULT_FPS,
+    get frames(){return [project.backgrounds[time]];},
+    set frames(value){project.backgrounds[time]=value[0];},
+    get pixels(){return project.backgrounds[time];},
+    set pixels(value){project.backgrounds[time]=value;}
+  };
+}
+export function makeBackgrounds() { return Object.fromEntries(TIMES.map(time=>[time,backgroundTemplate(time)])); }
+// Original editable pixel scenery, created locally without external image assets.
+export function backgroundTemplate(time) {
+  if(!TIMES.includes(time))throw new Error('不支援的背景時段');
+  const colors={
+    morning:['#f3c3a4','#f8ddaf','#b6c68a','#8caa72','#6e9367','#fff0bf'],
+    day:['#83b5df','#b7dbdf','#bdd584','#82ad70','#527d56','#fff4bf'],
+    night:['#263449','#354a63','#577263','#3c544d','#28443e','#f4dfa1']
+  }[time];
+  const [sky,horizon,grass,shade,tree,light]=colors;
+  const p={width:64,height:64,pixels:Array(4096).fill(sky)};
+  const rect=(x,y,w,h,c)=>{for(let row=y;row<y+h;row++)for(let col=x;col<x+w;col++)paint(p,col,row,c);};
+  rect(0,26,64,13,horizon);rect(0,39,64,25,grass);rect(0,39,64,2,shade);
+  if(time==='night') {
+    rect(45,8,7,7,light);rect(48,7,5,6,sky);
+    for(const [x,y] of [[7,8],[21,5],[33,13],[57,21],[13,23],[39,4]])rect(x,y,1,1,light);
+  } else {
+    rect(46,10,7,7,light);rect(45,12,9,3,light);
+    for(const [x,y] of [[7,13],[29,21]]){rect(x,y,12,3,'#fff0df');rect(x+3,y-2,6,2,'#fff0df');}
+  }
+  for(const [x,y] of [[3,29],[52,32]]) {
+    rect(x+4,y+7,2,8,tree);rect(x+2,y,6,2,tree);rect(x,y+2,10,7,tree);
+    rect(x+2,y+1,5,2,shade);
+  }
+  for(const [x,y] of [[7,48],[51,47],[13,58],[44,57],[29,61]]){rect(x,y,3,1,shade);rect(x+1,y-1,1,1,shade);}
+  return p.pixels;
+}
 export function withFrames(p) {
   Object.defineProperty(p, 'pixels', {configurable:true, get(){return this.frames[this.activeFrame];}, set(value){this.frames[this.activeFrame]=value;}});
   return p;
@@ -13,19 +53,25 @@ export function validColor(value) { return value === null || (typeof value === '
 export function makeProject(name = '未命名夥伴', size = 32, sample = false) {
   if (!SIZES.includes(size)) throw new Error('畫布大小不支援');
   const now = new Date().toISOString();
-  return withFrames({id: crypto.randomUUID(), name: nameOf(name), width:size, height:size, frames:[sample ? sprout(size) : Array(size*size).fill(null)], activeFrame:0, fps:DEFAULT_FPS, createdAt:now, updatedAt:now});
+  return withFrames({id: crypto.randomUUID(), name: nameOf(name), width:size, height:size, frames:[sample ? sprout(size) : Array(size*size).fill(null)], activeFrame:0, fps:DEFAULT_FPS, backgroundSize:BACKGROUND_SIZE, backgrounds:makeBackgrounds(), createdAt:now, updatedAt:now});
 }
 export function validateSprite(raw) {
-  if (!raw || raw.format !== 'teampoke-sprite' || ![1,2].includes(raw.version)) throw new Error('這不是支援的作品檔，請選擇從本工具儲存的 JSON 檔。');
+  if (!raw || raw.format !== 'teampoke-sprite' || ![1,2,3].includes(raw.version)) throw new Error('這不是支援的作品檔，請選擇從本工具儲存的 JSON 檔。');
   const frames=raw.version===1?[raw.pixels]:raw.frames;
   if (!SIZES.includes(raw.width) || raw.height !== raw.width || !Array.isArray(frames) || frames.length<1 || frames.length>MAX_FRAMES || !frames.every(px=>Array.isArray(px) && px.length===raw.width*raw.height && px.every(validColor))) throw new Error('作品的畫布或畫格資料不完整。');
   const fps=raw.version===1?DEFAULT_FPS:raw.fps;
   if(!Number.isInteger(fps)||fps<1||fps>12)throw new Error('動畫速度必須是每秒 1～12 格。');
   if (typeof raw.name !== 'string') throw new Error('作品缺少名字。');
-  return {name:nameOf(raw.name), width:raw.width, height:raw.height, frames:frames.map(px=>px.map(c=>c?.toLowerCase()??null)), activeFrame:0, fps};
+  let backgrounds;
+  if(raw.version<3)backgrounds=makeBackgrounds();
+  else {
+    if(raw.backgroundSize!==BACKGROUND_SIZE || !raw.backgrounds || !TIMES.every(time=>Array.isArray(raw.backgrounds[time]) && raw.backgrounds[time].length===BACKGROUND_SIZE**2 && raw.backgrounds[time].every(validColor)))throw new Error('早晨、白天或夜晚的背景資料不完整。');
+    backgrounds=Object.fromEntries(TIMES.map(time=>[time,raw.backgrounds[time].map(c=>c?.toLowerCase()??null)]));
+  }
+  return {name:nameOf(raw.name), width:raw.width, height:raw.height, frames:frames.map(px=>px.map(c=>c?.toLowerCase()??null)), activeFrame:0, fps, backgroundSize:BACKGROUND_SIZE, backgrounds};
 }
 export function serialize(project) {
-  return JSON.stringify({format:'teampoke-sprite',version:2,name:nameOf(project.name),width:project.width,height:project.height,frames:project.frames,fps:project.fps});
+  return JSON.stringify({format:'teampoke-sprite',version:3,name:nameOf(project.name),width:project.width,height:project.height,frames:project.frames,fps:project.fps,backgroundSize:BACKGROUND_SIZE,backgrounds:project.backgrounds});
 }
 export function importSprite(text) {
   if (text.length > 524288) throw new Error('作品檔太大，請選擇小於 512 KB 的檔案。');
@@ -36,17 +82,17 @@ export function importSprite(text) {
 }
 export function readCollection(text) {
   const raw = JSON.parse(text);
-  if (!raw || ![1,2].includes(raw.version) || !Array.isArray(raw.projects) || raw.projects.length < 1 || raw.projects.length > MAX_PROJECTS) throw new Error('作品收藏格式不正確');
+  if (!raw || ![1,2,3].includes(raw.version) || !Array.isArray(raw.projects) || raw.projects.length < 1 || raw.projects.length > MAX_PROJECTS) throw new Error('作品收藏格式不正確');
   const ids = new Set();
   const projects = raw.projects.map(p => {
     const sprite = validateSprite({...p,format:'teampoke-sprite',version:raw.version});
     if (typeof p.id !== 'string' || !p.id || p.id.length>100 || ids.has(p.id)) throw new Error('作品編號不正確');
     ids.add(p.id);
-    const activeFrame=raw.version===2?p.activeFrame:0;
+    const activeFrame=raw.version>=2?p.activeFrame:0;
     if(!Number.isInteger(activeFrame)||activeFrame<0||activeFrame>=sprite.frames.length)throw new Error('目前畫格不正確');
     return withFrames({...sprite, activeFrame, id:p.id, createdAt:typeof p.createdAt==='string'?p.createdAt:'', updatedAt:typeof p.updatedAt==='string'?p.updatedAt:''});
   });
-  return {version:2,activeId:ids.has(raw.activeId)?raw.activeId:projects[0].id,projects};
+  return {version:3,activeId:ids.has(raw.activeId)?raw.activeId:projects[0].id,projects};
 }
 export function snapshot(p) { return {width:p.width,height:p.height,frames:p.frames.map(px=>px.slice()),activeFrame:p.activeFrame,fps:p.fps}; }
 function same(a,b) { return a.width===b.width && a.height===b.height && a.fps===b.fps && a.activeFrame===b.activeFrame && a.frames.length===b.frames.length && a.frames.every((px,f)=>px.every((v,i)=>v===b.frames[f][i])); }

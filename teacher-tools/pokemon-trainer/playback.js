@@ -1,4 +1,4 @@
-import {frameAt} from './model.js?v=2';
+import {frameAt} from './model.js?v=3';
 
 // Preview has its own clock: it never selects or edits a stored drawing frame.
 export class AnimationPlayer {
