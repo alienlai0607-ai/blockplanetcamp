@@ -1,4 +1,5 @@
 import {PALETTE, STORAGE_KEY, MAX_PROJECTS, MAX_FRAMES, makeProject, nameOf, readCollection, importSprite, serialize, History, stroke, fill, resize, addFrame, deleteFrame, moveFrame, previousPixels, sheetPixels, TIMES, TIME_NAMES, BACKGROUND_SIZE, backgroundLayer, backgroundTemplate} from './model.js?v=3';
+import {DEVICE,SCENES,encodeDevice,decodeDevice,drawDevice,spritePlacement,deviceWarnings,timeAtHour,rgb565,color565,FALLBACK} from './device.js?v=1';
 import {AnimationPlayer} from './playback.js?v=4';
 
 const $ = id => document.getElementById(id);
@@ -19,6 +20,7 @@ let pointer=null, last=null, saveTimer, toastTimer, dirty=!damagedStorage, keybo
 let confirmResolve=null;
 let onion=true;
 let renderedProjectId=null;
+let deviceScene='exploration',deviceArt=null,deviceBytes=null;
 const player=new AnimationPlayer(()=>renderPreview());
 
 function toast(message) { $('toast').textContent=message;$('toast').classList.add('visible');clearTimeout(toastTimer);toastTimer=setTimeout(()=>$('toast').classList.remove('visible'),4200); }
@@ -54,7 +56,7 @@ function render(updateAllFrames=true) {
   }
   if(mirror){ctx.save();ctx.strokeStyle='#dc835b';ctx.setLineDash([6,6]);ctx.beginPath();ctx.moveTo(256,0);ctx.lineTo(256,512);ctx.stroke();ctx.restore();}
   if(keyboardCursor){ctx.strokeStyle='#dc835b';ctx.lineWidth=3;ctx.strokeRect(keyboardCursor[0]*cell+1.5,keyboardCursor[1]*cell+1.5,cell-3,cell-3);}
-  renderPreview();renderFrames(updateAllFrames);renderBackgroundUI(updateAllFrames);
+  refreshDevice(updateAllFrames);renderPreview();renderFrames(updateAllFrames);renderBackgroundUI(updateAllFrames);
   $('previewName').textContent=nameOf(project.name);
   $('previewStats').textContent=`${project.width} × ${project.height} · ${project.frames.length} 格動畫`;
   $('canvasSize').value=String(target.width);$('canvasSize').disabled=mode==='background';
@@ -65,10 +67,34 @@ function render(updateAllFrames=true) {
 }
 function renderPreview() {
   const index=player.running?player.index:project.activeFrame;
+  if(deviceArt){const deviceFrame=player.running?player.index:project.activeFrame;drawDevice($('deviceCanvas'),deviceArt,time,deviceFrame,deviceScene);}
   renderSprite($('previewCanvas'),{...project,pixels:project.frames[index]});
   $('playbackStatus').textContent=TIME_NAMES[time]+' · '+(player.running?`播放中 ${index+1} / ${project.frames.length}`:`預覽第 ${index+1} 格`);
   for(const b of all('[data-frame]'))b.classList.toggle('is-playing',player.running&&Number(b.dataset.frame)===index);
 }
+function refreshDevice(full=true){
+  if(full||!deviceArt){
+    try{deviceBytes=encodeDevice(project);deviceArt=decodeDevice(deviceBytes);$('downloadDevice').disabled=false;
+      $('deviceBudget').textContent=`素材 ${(deviceBytes.length/1024).toFixed(1)} / 64 KiB · 解碼後 ${(deviceArt.decodedBytes/1024).toFixed(1)} KiB · ${deviceArt.fps} 格／秒`;
+    }catch(error){deviceArt=null;deviceBytes=null;$('downloadDevice').disabled=true;$('deviceBudget').textContent=error.message;}
+  }else{
+    if(mode==='background')deviceArt.backgrounds[time]=project.backgrounds[time].map(c=>color565(rgb565(c||FALLBACK[time])));
+    else deviceArt.frames[project.activeFrame]=project.pixels.map(c=>c===null?null:color565(rgb565(c)));
+    $('deviceBudget').textContent='繪製中，放開筆尖後更新容量';
+  }
+  $('deviceWarnings').replaceChildren(...deviceWarnings(project,deviceScene).map(message=>Object.assign(document.createElement('li'),{textContent:message})));
+  $('explorationOverlay').toggleAttribute('hidden',deviceScene!=='exploration');$('homeOverlay').toggleAttribute('hidden',deviceScene!=='home');
+  $('deviceUI').toggleAttribute('hidden',!$('deviceUIToggle').checked);
+  $('deviceGuides').toggleAttribute('hidden',mode!=='background'||!$('guideToggle').checked);
+  $('guideRegions').replaceChildren(...SCENES[deviceScene].regions.map(([x,y,w,h])=>{const rect=document.createElementNS('http://www.w3.org/2000/svg','rect');for(const [k,v]of Object.entries({x,y,width:w,height:h}))rect.setAttribute(k,v);return rect;}));
+  const p=spritePlacement(project,deviceScene);$('guideCharacter').toggleAttribute('hidden',!p);
+  if(p)for(const [k,v]of Object.entries({x:p.x+p.left*p.scale,y:p.y+p.top*p.scale,width:p.width,height:p.height}))$('guideCharacter').setAttribute(k,v);
+}
+$('previewMode').addEventListener('change',()=>{const playing=player.running;stopPlayback();$('previewStage').classList.toggle('device-mode',$('previewMode').value==='device');render();if(playing)togglePlayback();});
+$('deviceScene').addEventListener('change',()=>{deviceScene=$('deviceScene').value;render();});
+$('deviceUIToggle').addEventListener('change',()=>render());$('guideToggle').addEventListener('change',()=>render());
+$('previewHour').addEventListener('input',()=>{const hour=Number($('previewHour').value);selectTime(timeAtHour(hour));$('previewHour').value=hour;$('previewHourLabel').textContent=`${String(hour).padStart(2,'0')}:00 · ${TIME_NAMES[time]}`;});
+$('downloadDevice').addEventListener('click',()=>{finishStroke();refreshDevice();if(!deviceBytes)return;download(new Blob([deviceBytes],{type:'application/octet-stream'}),filename()+'.tpdevice');toast('已下載實機素材包；請保留完整作品檔供下次編輯。');});
 function renderFrames(updateAll=true) {
   const list=$('frameList');
   if(renderedProjectId!==project.id||list.children.length!==project.frames.length){
@@ -97,7 +123,7 @@ function renderFrames(updateAll=true) {
 function renderBackgroundUI(updateAll=true) {
   const editingBackground=mode==='background';
   $('animationPanel').hidden=editingBackground;$('backgroundPanel').hidden=!editingBackground;
-  $('drawingModeHint').textContent=editingBackground?`正在畫${TIME_NAMES[time]}背景 · 64 × 64 像素，角色會出現在右側預覽。`:'正在畫角色 · 透明的地方會透出背景。';
+  $('drawingModeHint').textContent=editingBackground?`正在畫${TIME_NAMES[time]}背景 · 64 × 64 像素，在「夥伴登場」查看角色與場景。`:'正在畫角色 · 透明的地方會透出背景。';
   $('coordinate').textContent=`${drawing().width} × ${drawing().height} 像素`;
   $('dpadCaption').textContent=editingBackground?'切換時段':'切換畫格';
   $('dpad').setAttribute('aria-label',editingBackground?'切換背景時段':'切換動畫畫格');
@@ -109,6 +135,9 @@ function renderBackgroundUI(updateAll=true) {
   });
   renderSprite($('previewBackground'),backgroundLayer(project,time));
   $('previewBackground').setAttribute('aria-label',`${TIME_NAMES[time]}自繪背景`);
+  $('deviceTimeLabel').textContent=TIME_NAMES[time];
+  $('previewHour').value={morning:7,day:12,night:21}[time];
+  $('previewHourLabel').textContent={morning:'早晨 05:00–09:59',day:'白天 10:00–17:59',night:'夜晚 18:00–04:59'}[time];
   $('copyBackgroundLabel').textContent=`複製到${TIME_NAMES[time]}`;
   for(const option of $('copyBackgroundFrom').options)option.disabled=option.value===time;
   if($('copyBackgroundFrom').value===time)$('copyBackgroundFrom').value=TIMES.find(t=>t!==time);
@@ -143,7 +172,7 @@ function syncPlayButtons() {
   if($('animationHint').textContent!==hint)$('animationHint').textContent=hint;
 }
 function stopPlayback() {player.stop();syncPlayButtons();renderPreview();}
-function togglePlayback() {finishStroke();if(project.frames.length<2){toast(mode==='background'?'先切回「角色動畫」，複製出第 2 格並改一點動作，就能播放。':'還需要第 2 格：先按「複製此格」，再改一點表情或動作。');return;}if(player.running)stopPlayback();else if(player.start(project))syncPlayButtons();}
+function togglePlayback() {finishStroke();if(project.frames.length<2){toast(mode==='background'?'先切回「角色動畫」，複製出第 2 格並改一點動作，就能播放。':'還需要第 2 格：先按「複製此格」，再改一點表情或動作。');return;}if(player.running)stopPlayback();else if(player.start({...project,fps:$('previewMode').value==='device'?Math.min(project.fps,DEVICE.maxFps):project.fps}))syncPlayButtons();}
 function selectFrame(index) {if(index<0||index>=project.frames.length)return;finishStroke();stopPlayback();project.activeFrame=index;dirty=true;persist();keyboardCursor=null;render();}
 function finishStroke() {
   if(pointer===null)return;

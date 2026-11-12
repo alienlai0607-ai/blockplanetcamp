@@ -5,6 +5,7 @@ import {readFile} from 'node:fs/promises';
 import {Window} from 'happy-dom';
 import {resolveObjectURL} from 'node:buffer';
 import {STORAGE_KEY,sprout} from '../model.js';
+import {decodeDevice} from '../device.js';
 
 for(const legacyVersion of [1,2])test(`editor, animation and background flow with v${legacyVersion} migration`,async()=>{
   const window=new Window({url:'https://blockplanetcamp.com/teacher-tools/pokemon-trainer/'});
@@ -121,6 +122,14 @@ for(const legacyVersion of [1,2])test(`editor, animation and background flow wit
     document.querySelector('.dpad-left').click();assert.match($('frameBadge').textContent,/早晨/);
     $('downloadPng').click();assert.equal(pngCanvas.width,64);assert.equal(pngCanvas.height,64);assert.match(downloads.at(-1),/早晨背景.png$/);
     $('downloadProject').click();const scene=JSON.parse(await downloadBlobs.at(-1).text());assert.deepEqual(scene.backgrounds,collection().projects[1].backgrounds);assert.equal(scene.backgroundSize,64);assert.deepEqual(scene.frames,originalAnimation);
+    assert($('previewStage').classList.contains('device-mode'));assert(!$('deviceGuides').hasAttribute('hidden'));
+    $('guideToggle').checked=false;$('guideToggle').dispatchEvent(new window.Event('change'));assert($('deviceGuides').hasAttribute('hidden'));
+    $('deviceUIToggle').checked=false;$('deviceUIToggle').dispatchEvent(new window.Event('change'));assert($('deviceUI').hasAttribute('hidden'));
+    $('deviceScene').value='home';$('deviceScene').dispatchEvent(new window.Event('change'));assert(!$('homeOverlay').hasAttribute('hidden'));assert($('explorationOverlay').hasAttribute('hidden'));
+    $('previewHour').value='5';$('previewHour').dispatchEvent(new window.Event('input'));assert.match($('previewHourLabel').textContent,/05:00 · 早晨/);assert.match($('deviceTimeLabel').textContent,/早晨/);
+    $('previewHour').value='18';$('previewHour').dispatchEvent(new window.Event('input'));assert.match($('deviceTimeLabel').textContent,/夜晚/);
+    $('downloadDevice').click();assert.match(downloads.at(-1),/\.tpdevice$/);const packageBytes=new Uint8Array(await downloadBlobs.at(-1).arrayBuffer());const packed=decodeDevice(packageBytes);assert.equal(packed.frames.length,4);assert.equal(packed.backgrounds.night.length,4096);assert.match($('deviceBudget').textContent,/64 KiB/);
+    $('previewMode').value='art';$('previewMode').dispatchEvent(new window.Event('change'));assert(!$('previewStage').classList.contains('device-mode'));
     // Import through the UI, keeping the original project and its backgrounds.
     const file=new window.File([JSON.stringify(scene)],'scene.tpsprite.json',{type:'application/json'});
     Object.defineProperty($('importFile'),'files',{configurable:true,value:[file]});$('importFile').dispatchEvent(new window.Event('change'));await new Promise(resolve=>originalTimeout(resolve,0));save();

@@ -1,0 +1,100 @@
+--- a/firmware/TamaPoke/TamaPoke.ino
++++ b/firmware/TamaPoke/TamaPoke.ino
+@@ -30,0 +31 @@
++#include "trainer_scene.h"
+@@ -37 +38 @@
+-#define FW_VERSION "1.18-SWdev9-xp"
++#define FW_VERSION "1.18-SWdev10-background"
+@@ -231,0 +233 @@
++  trainerSceneBegin();
+--- a/firmware/TamaPoke/exploration_ui.h
++++ b/firmware/TamaPoke/exploration_ui.h
+@@ -2,0 +3 @@
++  if(trainerSceneDraw(gfx,hour))return;  // Invalid/absent user art falls back to this park.
+--- a/tests/render_exploration_ui.py
++++ b/tests/render_exploration_ui.py
+@@ -78,0 +79,2 @@
++// These previews exercise the built-in fallback; the custom renderer has independent raster tests.
++template<class G>bool trainerSceneDraw(G*,int){return false;}
+--- a/tests/render_battle_ui.py
++++ b/tests/render_battle_ui.py
+@@ -89,0 +90,2 @@
++// These previews exercise the built-in fallback; the custom renderer has independent raster tests.
++template<class G>bool trainerSceneDraw(G*,int){return false;}
+--- a/tools/check_battle.py
++++ b/tools/check_battle.py
+@@ -10 +10 @@
+-    if not m or m[1]!='1.18-SWdev9-xp':raise RuntimeError('尚未確認戰鬥版韌體。')
++    if not m or m[1]!='1.18-SWdev10-background':raise RuntimeError('尚未確認戰鬥版韌體。')
+--- a/tools/check_chinese.py
++++ b/tools/check_chinese.py
+@@ -11 +11 @@
+-EXPECTED='1.18-SWdev9-xp'
++EXPECTED='1.18-SWdev10-background'
+--- a/tools/check_exploration.py
++++ b/tools/check_exploration.py
+@@ -8 +8 @@
+-    if 'DONE' not in text or 'EXPLOREINFO fw=1.18-SWdev9-xp ' not in text:raise RuntimeError('尚未收到探索版韌體的完整回覆。')
++    if 'DONE' not in text or 'EXPLOREINFO fw=1.18-SWdev10-background ' not in text:raise RuntimeError('尚未收到探索版韌體的完整回覆。')
+@@ -17 +17 @@
+-    status=dict(firmware='1.18-SWdev9-xp',status='not_verified',motion_gameplay_tested=False);fd=None
++    status=dict(firmware='1.18-SWdev10-background',status='not_verified',motion_gameplay_tested=False);fd=None
+--- a/tests/test_battle_check.py
++++ b/tests/test_battle_check.py
+@@ -5 +5 @@
+-GOOD='BATTLEINFO fw=1.18-SWdev9-xp types=18 moves=67 species=151 roster=3 capacity=24 ready=1 open=0 active=0 save_error=0\nBATTLEXP schema=2 level=1 xp=25 needed=60\nDONE\n'
++GOOD='BATTLEINFO fw=1.18-SWdev10-background types=18 moves=67 species=151 roster=3 capacity=24 ready=1 open=0 active=0 save_error=0\nBATTLEXP schema=2 level=1 xp=25 needed=60\nDONE\n'
+@@ -9 +9 @@
+-  for s in ['DONE',GOOD.replace('DONE',''),GOOD.replace('SWdev9-xp','SWdev6-explore')]:
++  for s in ['DONE',GOOD.replace('DONE',''),GOOD.replace('SWdev10-background','SWdev6-explore')]:
+--- a/tests/test_chinese_check.py
++++ b/tests/test_chinese_check.py
+@@ -10 +10 @@
+-REPLY='LANGINFO fw=1.18-SWdev9-xp lang=8 chinese=1 glyphs=660 strings=85 species=151 name=傑尼龜\nDONE\n'
++REPLY='LANGINFO fw=1.18-SWdev10-background lang=8 chinese=1 glyphs=660 strings=85 species=151 name=傑尼龜\nDONE\n'
+@@ -21 +21 @@
+-        with self.assertRaises(RuntimeError):parse_language(REPLY.replace('SWdev9-xp','SWdev4'))
++        with self.assertRaises(RuntimeError):parse_language(REPLY.replace('SWdev10-background','SWdev4'))
+--- a/tests/test_exploration_check.py
++++ b/tests/test_exploration_check.py
+@@ -6 +6 @@
+-VALID='MOTION ready=1 error=0 reads=0 errors=0 xyz=0.000,0.000,0.000\nSTEPS day=21000 count=1234 save_ok=1 mode=exploration\nEXPLOREINFO fw=1.18-SWdev9-xp open=0 running=0 pending=0 revealed=0 motion=0\nDONE\n'
++VALID='MOTION ready=1 error=0 reads=0 errors=0 xyz=0.000,0.000,0.000\nSTEPS day=21000 count=1234 save_ok=1 mode=exploration\nEXPLOREINFO fw=1.18-SWdev10-background open=0 running=0 pending=0 revealed=0 motion=0\nDONE\n'
+@@ -10 +10 @@
+-  for t in ['DONE',VALID.replace('ready=1','ready=0'),VALID.replace('error=0','error=-2'),VALID.replace('DONE',''),VALID.replace('SWdev9-xp','SWdev5-zhTW'),VALID.replace('save_ok=1','save_ok=0'),VALID.replace('count=1234','count=9999999'),VALID.replace('STEPS','MISSING')]:
++  for t in ['DONE',VALID.replace('ready=1','ready=0'),VALID.replace('error=0','error=-2'),VALID.replace('DONE',''),VALID.replace('SWdev10-background','SWdev5-zhTW'),VALID.replace('save_ok=1','save_ok=0'),VALID.replace('count=1234','count=9999999'),VALID.replace('STEPS','MISSING')]:
+--- a/tools/flash.py
++++ b/tools/flash.py
+@@ -15,0 +16,10 @@
++def verify_sources():
++    manifest=ROOT/'verification/built_source_sha256.json'
++    if not manifest.is_file():raise RuntimeError('缺少編譯來源校驗，請先重新編譯。')
++    expected=json.loads(manifest.read_text())
++    source=ROOT/'firmware/TamaPoke'
++    relevant=lambda path: Path(path).name!='.DS_Store' and not Path(path).name.startswith('._')
++    expected={name:value for name,value in expected.items() if relevant(name)}
++    actual={str(p.relative_to(source)):sha(p) for p in source.rglob('*') if p.is_file() and relevant(p)}
++    if not actual or actual!=expected:raise RuntimeError('原始碼或自繪素材已變更，請先執行 Build_StopWatch.command 重新編譯。')
++
+@@ -18,0 +29 @@
++    verify_sources()
+--- a/tests/test_flash_workflow.py
++++ b/tests/test_flash_workflow.py
+@@ -115,0 +116,17 @@
++class SourceGuard(unittest.TestCase):
++    def test_changed_or_missing_artwork_requires_rebuild(self):
++        with tempfile.TemporaryDirectory() as d:
++            root=Path(d);source=root/'firmware/TamaPoke';source.mkdir(parents=True);(root/'verification').mkdir()
++            artwork=source/'custom_scene_data.cpp';artwork.write_text('old artwork')
++            manifest=root/'verification/built_source_sha256.json'
++            manifest.write_text(json.dumps({'custom_scene_data.cpp':flash.sha(artwork)}))
++            with patch.object(flash,'ROOT',root):
++                flash.verify_sources()
++                artwork.write_text('new artwork')
++                with self.assertRaisesRegex(RuntimeError,'重新編譯'):flash.verify_sources()
++                artwork.unlink()
++                with self.assertRaises(RuntimeError):flash.verify_sources()
++    def test_missing_manifest_requires_rebuild(self):
++        with tempfile.TemporaryDirectory() as d,patch.object(flash,'ROOT',Path(d)):
++            with self.assertRaisesRegex(RuntimeError,'重新編譯'):flash.verify_sources()
++
