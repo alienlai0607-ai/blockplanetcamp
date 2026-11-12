@@ -5,19 +5,23 @@
 namespace {
 uint16_t *backgrounds=nullptr;
 }
-bool trainerSceneBegin(){
-  free(backgrounds);backgrounds=nullptr;
-  if(!CUSTOM_SCENE_SIZE)return false;
+uint16_t *trainerScenePrepare(const uint8_t *data,size_t size){
   TrainerAssets::Package package;
-  if(!package.load(CUSTOM_SCENE_DATA,CUSTOM_SCENE_SIZE)){
-    Serial.println("TRAINER assets invalid; using built-in scenery");return false;
-  }
+  if(!package.load(data,size))return nullptr;
   auto *candidate=static_cast<uint16_t*>(ps_malloc(3u*64u*64u*sizeof(uint16_t)));
-  if(!candidate){Serial.println("TRAINER PSRAM unavailable; using built-in scenery");return false;}
+  if(!candidate)return nullptr;
   for(unsigned time=0;time<3;time++)if(!package.decode(package.frames+time,candidate+time*4096,4096)){
-    free(candidate);Serial.println("TRAINER decode failed; using built-in scenery");return false;
+    free(candidate);return nullptr;
   }
-  backgrounds=candidate;
+  return candidate;
+}
+void trainerScenePublish(uint16_t *candidate){free(backgrounds);backgrounds=candidate;}
+bool trainerSceneBegin(){
+  trainerScenePublish(nullptr);
+  if(!CUSTOM_SCENE_SIZE)return false;
+  auto *candidate=trainerScenePrepare(CUSTOM_SCENE_DATA,CUSTOM_SCENE_SIZE);
+  if(!candidate)return false;
+  trainerScenePublish(candidate);
   Serial.printf("TRAINER backgrounds ready bytes=%u psram=24576 character_binding=pending\n",unsigned(CUSTOM_SCENE_SIZE));
   return true;
 }

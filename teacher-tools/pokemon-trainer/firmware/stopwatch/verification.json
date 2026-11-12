@@ -1,0 +1,21 @@
+{
+  "firmware_version": "1.18-SWdev11-webusb",
+  "compiled": true,
+  "flashed": false,
+  "hardware_tested": false,
+  "browser_hardware_tested": false,
+  "browser_dom_tested": true,
+  "web_and_contract_tests": 55,
+  "device_check_tests": 12,
+  "local_flash_workflow_tests": 18,
+  "partition_table_unchanged": true,
+  "background_upload": true,
+  "character_binding": false,
+  "source_hashes_match_build": true,
+  "release_kind": "test",
+  "storage": "exact existing ffat partition; full blank scan before ownership; two committed slots",
+  "web_update": "full backup + verified browser storage + user download acknowledgement + bounded writes + readback",
+  "checked_at": "2026-11-12",
+  "gameplay_integration_checks": 3,
+  "browser_tool_available": false
+}

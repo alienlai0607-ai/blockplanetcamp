@@ -58,3 +58,20 @@ dialog{color:var(--ink);background:#eeeedb;border:4px solid #36463c;padding:24px
 .device-export{border-top:1px solid #a3b18c;padding-top:12px;margin-top:12px}.device-export details{font-size:10px;line-height:1.7;color:#52663f}.device-export summary{cursor:pointer;min-height:30px;padding-top:5px}.device-export ul{padding-left:16px;margin:5px 0}.device-export p{margin:7px 0}
 @media(max-width:800px){.device-controls{grid-column:1;grid-row:2}.preview-stage{grid-row:3/5}.playback-status{grid-column:1;grid-row:5}.preview-name{grid-row:6}.background-row{grid-row:7}.playback-panel{grid-column:2;grid-row:1/4}.export-panel{grid-column:2;grid-row:4/8}.preview-stage.custom-scene{grid-row:3/5}}
 @media(max-width:580px){.device-controls{font-size:9px;gap:5px;grid-template-columns:1fr}.device-controls select{font-size:9px;width:100%}.device-ui-toggle{font-size:9px}.device-export details{font-size:9px}.device-clock{font-size:9px}.playback-status{font-size:9px}.preview-stage.custom-scene{grid-row:3/5}}
+
+/* USB artwork and firmware controls. */
+.usb-panel{border-top:3px solid #214d40;margin-top:20px;padding-top:18px;display:grid;gap:10px}
+.usb-panel h2{font-size:20px;margin:0}.usb-intro{font-size:13px;line-height:1.6;margin:0;color:#36584b}
+.usb-status{padding:12px;border:2px solid #bdd584;background:#f0f2dc;color:#214d40;font-size:13px;line-height:1.7;margin:0;overflow-wrap:anywhere}
+.usb-status.error{border-color:#b65c4c;background:#fff2e6;color:#7a3329}
+.usb-panel progress,.firmware-dialog progress{width:100%;height:16px;accent-color:#4d7655}
+.usb-small-actions{display:flex;gap:16px;flex-wrap:wrap}
+.firmware-dialog{width:min(620px,calc(100vw - 28px));max-height:90dvh;overflow-y:auto;padding:24px}
+.firmware-dialog .button{margin-top:12px}.firmware-dialog .usb-status{margin-top:14px}
+.firmware-dialog .field-label{margin-top:16px}.usb-check{display:flex;align-items:flex-start;gap:10px;margin:14px 0;font-size:14px;line-height:1.7;text-align:left}
+.usb-check input{flex:0 0 auto;width:18px;height:18px;margin-top:3px;accent-color:#3a6850}
+.usb-warning{padding:12px;background:#fff2dc;border:2px solid #d3a455;font-size:14px;line-height:1.7}
+.usb-warning p{margin:0}.firmware-steps{padding-left:24px;font-size:14px;line-height:1.9}
+.firmware-help{margin-top:20px;font-size:13px;line-height:1.8}.firmware-help summary{cursor:pointer;font-weight:700}
+.usb-panel [hidden],.firmware-dialog [hidden]{display:none!important}
+@media(max-width:520px){.firmware-dialog{padding:18px}.firmware-dialog h2{font-size:22px}}

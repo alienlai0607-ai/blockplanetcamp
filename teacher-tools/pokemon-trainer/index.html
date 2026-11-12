@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="theme-color" content="#26354a"><meta name="description" content="一格一格畫出想像，創造你的原創寶可夢。寶可夢訓練家計劃的像素繪圖工具，讓孩子自由畫、存作品、分享圖片。">
-  <title>寶可夢訓練家計劃 · 像素夥伴製造機</title><link rel="icon" href="./favicon.svg" type="image/svg+xml"><link rel="stylesheet" href="./style.css?v=20261112-device">
+  <title>寶可夢訓練家計劃 · 像素夥伴製造機</title><link rel="icon" href="./favicon.svg" type="image/svg+xml"><link rel="stylesheet" href="./style.css?v=20261112-usb">
 </head>
 <body>
 <svg class="icon-defs" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><defs>
@@ -82,7 +82,19 @@
       <div class="preview-name"><span class="mini-ball" aria-hidden="true"></span><div><h3 id="previewName">芽芽（練習）</h3><p id="previewStats">32 × 32 · 1 格動畫</p></div></div>
       <div class="playback-panel"><button class="button play-button full" id="playAnimation" aria-pressed="false"><svg><use id="playIcon" href="#i-play"/></svg><span id="playLabel">播放動畫</span></button><p id="animationHint" class="playback-hint" role="status"></p><div class="speed-heading"><label for="fpsInput">動畫速度</label><output id="fpsValue" for="fpsInput">4 格 / 秒</output></div><input id="fpsInput" type="range" min="1" max="12" value="4" step="1"><div class="speed-labels"><span>慢慢動</span><span>活力滿滿</span></div></div>
       <div class="background-row time-preview"><span>預覽時段</span><div class="time-buttons" role="group" aria-label="切換預覽背景"><button data-time="morning" aria-pressed="false">早晨</button><button data-time="day" class="active" aria-pressed="true">白天</button><button data-time="night" aria-pressed="false">夜晚</button></div><div class="device-clock"><label for="previewHour">試試一天的變化</label><input id="previewHour" type="range" min="0" max="23" value="12"><output id="previewHourLabel" for="previewHour">白天 10:00–17:59</output></div></div>
-      <div class="export-panel"><div class="download-size"><label for="exportScale">PNG 尺寸</label><select id="exportScale"><option value="8">放大 8 倍</option><option value="1">原始像素尺寸</option></select></div><button class="button primary full" id="downloadProject"><svg><use href="#i-save"/></svg>儲存完整作品檔</button><p class="export-note">包含角色動畫＋早、中、晚背景</p><div class="export-images"><button class="button secondary full" id="downloadPng"><svg><use href="#i-download"/></svg><span id="downloadPngLabel">此格 PNG</span></button><button class="button secondary full" id="downloadSheet"><svg><use href="#i-film"/></svg>逐格圖集</button></div><p class="export-note">圖集將全部畫格排成一張靜態 PNG</p><div class="device-export"><button class="button secondary full" id="downloadDevice"><svg><use href="#i-download"/></svg>下載實機素材包</button><p id="deviceBudget" class="export-note" role="status"></p><details><summary>上機前檢查</summary><ul id="deviceWarnings"></ul><p>這是版面與色彩模擬，還不代表已在實機測試。64 KiB 是單件素材上限。素材包需搭配新版韌體；目前由電腦打包編譯，尚無網頁直接傳輸。角色圖先供預覽與封裝，遊戲中的個體綁定另行接入。</p></details></div><button class="text-button import-button" id="importProject"><svg><use href="#i-upload"/></svg>開啟作品檔</button><input type="file" id="importFile" accept=".json,.tpsprite,application/json" hidden></div>
+      <div class="export-panel"><div class="download-size"><label for="exportScale">PNG 尺寸</label><select id="exportScale"><option value="8">放大 8 倍</option><option value="1">原始像素尺寸</option></select></div><button class="button primary full" id="downloadProject"><svg><use href="#i-save"/></svg>儲存完整作品檔</button><p class="export-note">包含角色動畫＋早、中、晚背景</p><div class="export-images"><button class="button secondary full" id="downloadPng"><svg><use href="#i-download"/></svg><span id="downloadPngLabel">此格 PNG</span></button><button class="button secondary full" id="downloadSheet"><svg><use href="#i-film"/></svg>逐格圖集</button></div><p class="export-note">圖集將全部畫格排成一張靜態 PNG</p><div class="device-export"><button class="button secondary full" id="downloadDevice"><svg><use href="#i-download"/></svg>下載實機素材包</button><p id="deviceBudget" class="export-note" role="status"></p><details><summary>上機前檢查</summary><ul id="deviceWarnings"></ul><p>這是版面與色彩模擬，還不代表已在實機測試。64 KiB 是單件素材上限。素材可透過下方 USB 連線傳到新版遊戲。目前會套用早、中、晚背景；角色動畫會一併保存，成為可培養夥伴的功能尚待加入。</p></details></div><button class="text-button import-button" id="importProject"><svg><use href="#i-upload"/></svg>開啟作品檔</button><input type="file" id="importFile" accept=".json,.tpsprite,application/json" hidden></div>
+      <section class="usb-panel" aria-labelledby="usbTitle">
+       <span class="eyebrow">MY POCKET WORLD</span><h2 id="usbTitle">放進我的遊戲機</h2>
+       <p class="usb-intro">畫好 → 插上 USB → 連接 → 傳送</p>
+       <p id="usbStatus" class="usb-status" role="status" aria-live="polite">先接上你的 StopWatch，再按下方連接。</p>
+       <progress id="usbProgress" max="1" value="0" aria-label="作品傳輸進度" hidden></progress>
+       <button id="usbConnect" class="button secondary full">連接遊戲機</button>
+       <button id="usbSend" class="button primary full" disabled>傳送我的作品</button>
+       <div class="usb-small-actions"><button id="usbCancel" class="text-button" hidden>取消傳送</button><button id="usbDisconnect" class="text-button" hidden>中斷連接</button></div>
+       <p class="export-note">本次套用早、中、晚背景；角色動畫會一併保存，夥伴功能準備中。</p>
+       <button id="openFirmware" class="button secondary full">安裝／更新遊戲系統</button>
+       <p class="export-note">USB 寫入測試版 · 請先由老師驗證實機<br>Windows／Mac 電腦 + Chrome／Edge + 資料傳輸線</p>
+      </section>
      </aside>
     </div>
     <div class="game-message"><span aria-hidden="true">▶</span><p><strong>角色動畫</strong> 畫夥伴 → <strong>背景製造</strong> 畫早、中、晚 → 按 <strong>A</strong> 看牠在你的世界裡動起來！</p></div>
@@ -101,6 +113,23 @@
 <dialog id="galleryDialog" class="gallery-dialog" aria-labelledby="galleryTitle"><div class="dialog-top"><div><span class="eyebrow">MY CREATIONS</span><h2 id="galleryTitle">我的夥伴作品</h2></div><button class="icon-button" data-close="galleryDialog" aria-label="關閉我的作品"><svg><use href="#i-close"/></svg></button></div><p class="dialog-description">每個點子，都值得好好收藏。點選作品繼續畫。</p><div id="galleryGrid" class="gallery-grid"></div><div class="dialog-footer"><span>保存在此瀏覽器，下載作品檔可帶到其他裝置。</span><button class="button primary" id="galleryNew"><svg><use href="#i-plus"/></svg>新增夥伴</button></div></dialog>
 <dialog id="newDialog" aria-labelledby="newTitle"><div class="dialog-top"><div><span class="eyebrow">A NEW FRIEND</span><h2 id="newTitle">新夥伴，準備誕生！</h2></div><button class="icon-button" data-close="newDialog" aria-label="取消新增"><svg><use href="#i-close"/></svg></button></div><form id="newForm"><label class="field-label" for="newName">先幫牠取個名字</label><input class="field-input" id="newName" maxlength="24" placeholder="例如：棉花小龍" autocomplete="off"><label class="field-label" for="newSize">選擇畫布</label><select class="field-input" id="newSize"><option value="16">16 × 16 · 小小練習</option><option value="32" selected>32 × 32 · 角色創作</option><option value="64">64 × 64 · 更多細節</option></select><fieldset class="start-options"><legend>從哪裡開始？</legend><label><input type="radio" name="start" value="blank" checked><span>空白畫布<small>自由畫出你的想像</small></span></label><label><input type="radio" name="start" value="sprout"><span>芽芽範例<small>試著改造練習角色</small></span></label></fieldset><div class="form-actions"><button type="submit" class="button primary full"><svg><use href="#i-pencil"/></svg>開始創作</button></div></form></dialog>
 <dialog id="confirmDialog" class="confirm-dialog" aria-labelledby="confirmTitle"><h2 id="confirmTitle"></h2><p id="confirmText"></p><div class="confirm-actions"><button class="button secondary" id="confirmCancel">取消</button><button class="button primary" id="confirmOk">確定</button></div></dialog>
+<dialog id="firmwareDialog" class="firmware-dialog" aria-labelledby="firmwareTitle">
+ <div class="dialog-top"><div><span class="eyebrow">GAME SYSTEM</span><h2 id="firmwareTitle">安裝／更新遊戲系統</h2></div><button id="firmwareClose" class="icon-button" aria-label="關閉系統更新">✕</button></div>
+ <p class="dialog-description">由網站準備好遊戲，電腦不需要安裝開發套件。只有新增功能或第一次使用時才需要更新系統。</p>
+ <p id="firmwareVersion" class="usb-intro">StopWatch C152 專用 · USB 寫入測試版，尚待實機驗證</p>
+ <label class="field-label" for="firmwareMode">這次要做什麼？</label>
+ <select id="firmwareMode" class="field-input"><option value="update">更新現有 TamaPoke 遊戲（保留進度與作品）</option><option value="install">第一次安裝（替換原系統並清除資料）</option></select>
+ <label class="usb-check"><input type="checkbox" id="confirmStopWatch">我確認手上的設備是 M5Stack StopWatch C152。</label>
+ <div id="firstInstallNotice" class="usb-warning" hidden><p>第一次安裝會清除設備原有系統與資料。若已有本遊戲的進度，請改選「更新現有遊戲」。寫入前會先備份整台設備。</p><label class="usb-check"><input type="checkbox" id="confirmErase">我要第一次安裝，了解原系統與資料會被清除。</label></div>
+ <ol class="firmware-steps"><li>接上 USB 資料線。若無法連接，依下方說明進入下載模式。</li><li>按「連接並備份」，在瀏覽器選擇 StopWatch。</li><li>下載 16 MB 還原備份，保存後開始寫入。</li></ol>
+ <button id="firmwareConnect" class="button secondary full" disabled>連接並備份設備</button>
+ <p id="firmwareStatus" class="usb-status" role="status" aria-live="polite">系統會先辨識晶片、容量，再備份與校驗；這一步尚不寫入韌體。</p>
+ <progress id="firmwareProgress" max="1" value="0" aria-label="系統更新進度" hidden></progress>
+ <button id="firmwareBackup" class="button secondary full" disabled>下載這次還原備份</button>
+ <label class="usb-check"><input type="checkbox" id="confirmBackup" disabled>我已確認還原備份檔下載完成並妥善保存。</label>
+ <button id="firmwareInstall" class="button primary full" disabled>開始寫入遊戲系統</button>
+ <details class="firmware-help"><summary>找不到設備、黑畫面或更新中斷？</summary><p>請關閉 Arduino 序列監控或其他占用 USB 的程式。用可傳資料的 USB 線連接 StopWatch，長按電源／重置鍵直到綠燈閃爍後放開，再按「連接並備份」。若更新中斷，保留下載的備份，重新進入下載模式再試；不要改選第一次安裝來處理既有進度。</p><p>完成「讀回校驗」表示檔案已寫入；還需要重新開機、回到創作頁按「連接遊戲機」，才能確認遊戲正常回應。</p><button id="firmwarePreviousBackup" class="text-button">下載此瀏覽器最近一次備份</button><p><a href="./firmware/stopwatch/source.zip">本版韌體原始碼</a> · <a href="./firmware/stopwatch/TamaPoke-CREDITS.md">程式與素材致謝</a> · <a href="./vendor/NOTICE.md">瀏覽器工具來源</a></p></details>
+</dialog>
 <noscript><div class="noscript">請開啟瀏覽器的 JavaScript，才能使用像素繪圖工具。</div></noscript>
-<script type="module" src="./app.js?v=20261112-device"></script>
+<script type="module" src="./app.js?v=20261112-usb"></script>
 </body></html>

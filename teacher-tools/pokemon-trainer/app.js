@@ -1,6 +1,7 @@
 import {PALETTE, STORAGE_KEY, MAX_PROJECTS, MAX_FRAMES, makeProject, nameOf, readCollection, importSprite, serialize, History, stroke, fill, resize, addFrame, deleteFrame, moveFrame, previousPixels, sheetPixels, TIMES, TIME_NAMES, BACKGROUND_SIZE, backgroundLayer, backgroundTemplate} from './model.js?v=3';
 import {DEVICE,SCENES,encodeDevice,decodeDevice,drawDevice,spritePlacement,deviceWarnings,timeAtHour,rgb565,color565,FALLBACK} from './device.js?v=1';
 import {AnimationPlayer} from './playback.js?v=4';
+import {mountDevicePanel} from './usb-ui.js?v=1';
 
 const $ = id => document.getElementById(id);
 const all = selector => [...document.querySelectorAll(selector)];
@@ -305,5 +306,6 @@ window.addEventListener('pagehide',()=>{finishStroke();stopPlayback();persist();
 document.addEventListener('visibilitychange',()=>{if(document.hidden){finishStroke();stopPlayback();persist();}});
 window.addEventListener('beforeunload',e=>{finishStroke();if(dirty&&!persist()){e.preventDefault();e.returnValue='';}});
 $('nameInput').value=project.name;selectColor(color);render();
+mountDevicePanel({getArtwork:()=>{finishStroke();refreshDevice();return deviceBytes?.slice();},download,toast});
 if(storageError){saveStatus('未能讀取舊作品，請先下載備份',true);toast('瀏覽器儲存無法讀取。新作品仍可下載；原有資料會先保留。');}
 else{if(!dirty)saveStatus('已儲存在此瀏覽器');else persist();}

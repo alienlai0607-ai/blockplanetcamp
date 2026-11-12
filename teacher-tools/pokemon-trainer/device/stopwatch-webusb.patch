@@ -1,0 +1,69 @@
+--- a/firmware/TamaPoke/TamaPoke.ino
++++ b/firmware/TamaPoke/TamaPoke.ino
+@@ -31,0 +32 @@
++#include "trainer_transfer.h"
+@@ -38 +39 @@
+-#define FW_VERSION "1.18-SWdev10-background"
++#define FW_VERSION "1.18-SWdev11-webusb"
+@@ -233,0 +235 @@
++  trainerTransferBegin();
+@@ -467,5 +469,17 @@
+-  if (!Serial.available()) return;
+-  String line = Serial.readStringUntil('\n');
+-  line.trim();
+-  if (line.length() == 0) return;
+-  if (sdSerialCommand(line)) return;
++  trainerTransferTick(millis());
++  static char buffer[640];static size_t used=0;static bool overflow=false;
++  bool complete=false;
++  for(unsigned budget=0;budget<768&&Serial.available();budget++){
++    char c=char(Serial.read());
++    if(c=='\r')continue;
++    if(c=='\n'){
++      if(overflow){used=0;overflow=false;return;}
++      buffer[used]=0;complete=true;break;
++    }
++    if(used<sizeof(buffer)-1&&!overflow)buffer[used++]=c;else overflow=true;
++  }
++  if(!complete)return;
++  String line(buffer);used=0;line.trim();
++  if(!line.length())return;
++  if(trainerTransferCommand(line,FW_VERSION))return;
++  if(sdSerialCommand(line))return;
+--- a/firmware/TamaPoke/trainer_scene.cpp
++++ b/firmware/TamaPoke/trainer_scene.cpp
+@@ -7,0 +8,11 @@
++uint16_t *trainerScenePrepare(const uint8_t *data,size_t size){
++  TrainerAssets::Package package;
++  if(!package.load(data,size))return nullptr;
++  auto *candidate=static_cast<uint16_t*>(ps_malloc(3u*64u*64u*sizeof(uint16_t)));
++  if(!candidate)return nullptr;
++  for(unsigned time=0;time<3;time++)if(!package.decode(package.frames+time,candidate+time*4096,4096)){
++    free(candidate);return nullptr;
++  }
++  return candidate;
++}
++void trainerScenePublish(uint16_t *candidate){free(backgrounds);backgrounds=candidate;}
+@@ -9 +20 @@
+-  free(backgrounds);backgrounds=nullptr;
++  trainerScenePublish(nullptr);
+@@ -11,10 +22,3 @@
+-  TrainerAssets::Package package;
+-  if(!package.load(CUSTOM_SCENE_DATA,CUSTOM_SCENE_SIZE)){
+-    Serial.println("TRAINER assets invalid; using built-in scenery");return false;
+-  }
+-  auto *candidate=static_cast<uint16_t*>(ps_malloc(3u*64u*64u*sizeof(uint16_t)));
+-  if(!candidate){Serial.println("TRAINER PSRAM unavailable; using built-in scenery");return false;}
+-  for(unsigned time=0;time<3;time++)if(!package.decode(package.frames+time,candidate+time*4096,4096)){
+-    free(candidate);Serial.println("TRAINER decode failed; using built-in scenery");return false;
+-  }
+-  backgrounds=candidate;
++  auto *candidate=trainerScenePrepare(CUSTOM_SCENE_DATA,CUSTOM_SCENE_SIZE);
++  if(!candidate)return false;
++  trainerScenePublish(candidate);
+--- a/firmware/TamaPoke/trainer_scene.h
++++ b/firmware/TamaPoke/trainer_scene.h
+@@ -3,0 +4,3 @@
++// Prepare before persistent commit; publish is allocation-free and cannot fail.
++uint16_t *trainerScenePrepare(const uint8_t *data,size_t size);
++void trainerScenePublish(uint16_t *candidate);

@@ -1,0 +1,21 @@
+[
+  {
+    "name": "esptool-js",
+    "version": "0.7.1",
+    "source": "https://github.com/espressif/esptool-js",
+    "tarball": "https://registry.npmjs.org/esptool-js/-/esptool-js-0.7.1.tgz",
+    "integrity": "sha512-vw1isT5ROHgpRmMG3y6B81dceeZ7O1WhF1x05qFbAlH8N0N/pOQqODzJLA+36lCbOXCw06iA4CWctyrQQ7VeSA==",
+    "file": "esptool-js-0.7.1.js",
+    "sha256": "d6a4b0b7c9b747a7370cfa976164a962f56332d5faa7c3b45cdb95a2a8b1d456"
+  },
+  {
+    "name": "spark-md5",
+    "version": "3.0.2",
+    "source": "https://github.com/satazor/js-spark-md5",
+    "tarball": "https://registry.npmjs.org/spark-md5/-/spark-md5-3.0.2.tgz",
+    "integrity": "sha512-wcFzz9cDfbuqe0FZzfi2or1sgyIrsDwmPwfZC4hiNidPdPINjeUwNfv5kldczoEAcjl9Y1L3SM7Uz2PUEQzxQw==",
+    "file": "spark-md5-3.0.2.js",
+    "sha256": "84f960fdec61a21422df3ad340b0d800c084dccfe62c5a3504bc512c78f253f3",
+    "changes": "UMD wrapper replaced with ESM export; algorithm unchanged"
+  }
+]

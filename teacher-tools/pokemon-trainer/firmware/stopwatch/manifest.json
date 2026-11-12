@@ -1,0 +1,41 @@
+{
+  "schema": 1,
+  "board": "stopwatch-c152",
+  "chip": "ESP32-S3",
+  "flashBytes": 16777216,
+  "version": "1.18-SWdev11-webusb",
+  "hardwareTested": false,
+  "features": [
+    "background-upload"
+  ],
+  "files": [
+    {
+      "file": "bootloader.bin",
+      "offset": 0,
+      "bytes": 19984,
+      "sha256": "b41be55ae9a52aeeb21645c51b86c14027f84c2c91bf67bee6aa0e1b15d18e8b"
+    },
+    {
+      "file": "partitions.bin",
+      "offset": 32768,
+      "bytes": 3072,
+      "sha256": "ace02503447d0f470692e65fa76002f2d77a92dc81cd3813d8aa66718d716da9"
+    },
+    {
+      "file": "boot_app0.bin",
+      "offset": 57344,
+      "bytes": 8192,
+      "sha256": "f94c5d786a7a8fab06ac5d10e33bf37711a6697636dc037559ea19cc410a17f0"
+    },
+    {
+      "file": "game.bin",
+      "offset": 65536,
+      "bytes": 1592816,
+      "sha256": "39d2a34c92517ae26cd50f7edc839caf0e5f80c7706f75c1f3f7a13c47fdf05d"
+    }
+  ],
+  "source": {
+    "file": "source.zip",
+    "sha256": "300c7ef1d18c832bda2c7db5dbcd2901ad6707c07f24ad57a220a33b64c8ba92"
+  }
+}
