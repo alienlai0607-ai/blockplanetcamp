@@ -53,6 +53,14 @@ test('an interrupted application can be reinstalled in update mode without erasi
 test('readback failure is not reported as a successful installation',async()=>{
  const f=fixture({failure:'readback'});await f.installer.connect({}, {boardConfirmed:true});await assert.rejects(f.installer.install({backupSaved:true}),/讀回/);assert(!f.phases.some(([phase])=>phase==='verified'));assert(f.disconnected());
 });
+test('a USB read failure reports the backup phase and address, releases the port, and never enables writing',async()=>{
+ const f=fixture(),logs=[];f.installer.log=message=>logs.push(message);
+ const originalRead=f.loader.readFlash;
+ f.loader.readFlash=async(address,size)=>{if(address>=0x200000)throw new Error('Serial data stream stopped: Possible serial noise or corruption.');return originalRead(address,size);};
+ await assert.rejects(f.installer.connect({}, {boardConfirmed:true}),/讀取備份時 USB 通訊中斷，尚未寫入韌體/);
+ assert(logs.some(line=>line.includes('0x200000')&&line.includes('Serial data stream stopped')));
+ assert.equal(f.installer.ready,false);assert.equal(f.writes.length,0);assert(f.disconnected());
+});
 test('backup database commits and verifies bytes; latest backup is indexed by time and corruption is refused',async()=>{
  const db=new IDBFactory(),bytes=new Uint8Array([1,2,3]);
  const first={id:'a',createdAt:'2026-11-12T01:00:00Z',bytes,sha256:await sha256(bytes)};await saveBackup(first,db);assert.deepEqual((await latestBackup(db)).bytes,bytes);

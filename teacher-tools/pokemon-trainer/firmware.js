@@ -1,4 +1,5 @@
 import SparkMD5 from './vendor/spark-md5-3.0.2.js';
+import {installFlashReadFix} from './esp-flash-read.js';
 
 export const FLASH_BYTES=16*1024*1024;
 const LOCATIONS=[0,0x8000,0xe000,0x10000],LIMITS=[0x8000,0x1000,0x2000,0x300000];
@@ -51,22 +52,23 @@ export async function latestBackup(indexedDB=globalThis.indexedDB){
   try{const record=await new Promise((resolve,reject)=>{const r=db.transaction('backups').objectStore('backups').index('createdAt').openCursor(null,'prev');r.onsuccess=()=>resolve(r.result?.value||null);r.onerror=reject;});if(record)check(await sha256(record.bytes)===record.sha256,'備份校驗失敗，請使用先前下載的備份檔。');return record;}finally{db.close();}
 }
 export class FirmwareInstaller {
-  constructor({progress=()=>{},persist=saveBackup,load=loadFirmware,loaderFactory}={}){this.progress=progress;this.persist=persist;this.load=load;this.loaderFactory=loaderFactory;this.ready=false;this.writing=false;this.backup=null;this.transport=null;}
+  constructor({progress=()=>{},persist=saveBackup,load=loadFirmware,loaderFactory,log=()=>{}}={}){this.progress=progress;this.persist=persist;this.load=load;this.loaderFactory=loaderFactory;this.ready=false;this.writing=false;this.backup=null;this.transport=null;this.log=log;this.stage='準備';this.readAddress=0;}
   async connect(port,{mode='update',boardConfirmed=false}={}){
     check(boardConfirmed,'請先確認設備是 M5Stack StopWatch C152。');check(mode==='update'||mode==='install','操作模式錯誤。');this.mode=mode;this.ready=false;this.backup=null;
     try{
-      this.release=await this.load();
+      this.stage='下載韌體';this.release=await this.load();
       const library=this.loaderFactory?await this.loaderFactory(port):await import('./vendor/esptool-js-0.7.1.js');
       if(this.loaderFactory){this.loader=library.loader;this.transport=library.transport;}
-      else{this.transport=new library.Transport(port,false);this.loader=new library.ESPLoader({transport:this.transport,baudrate:115200,terminal:{clean(){},write(){},writeLine(){}}});}
-      this.progress('connecting',0);await this.loader.detectChip('usb_reset',3);
+      else{this.transport=new library.Transport(port,false);this.loader=installFlashReadFix(new library.ESPLoader({transport:this.transport,baudrate:115200,serialOptions:{bufferSize:65536},terminal:{clean(){},write:message=>this.log(message),writeLine:message=>this.log(message)}}));}
+      this.stage='辨識設備';this.progress('connecting',0);await this.loader.detectChip('usb_reset',3);
       check(this.loader.chip?.CHIP_NAME==='ESP32-S3','這台設備不是 ESP32-S3，未進行寫入。');
       const security=await this.loader.getSecurityInfo();
       check(!this.loader.secureDownloadMode&&!security.parsedFlags?.SECURE_BOOT_EN&&!security.parsedFlags?.SECURE_DOWNLOAD_ENABLE&&security.flashCryptCnt===0,'這台設備啟用了安全開機或加密，網頁更新不適用，未進行寫入。');
-      await this.loader.runStub();check(this.loader.IS_STUB,'設備未能啟動更新工具，未進行寫入。');
+      this.stage='啟動備份工具';await this.loader.runStub();check(this.loader.IS_STUB,'設備未能啟動更新工具，未進行寫入。');
       check(await this.loader.detectFlashSize()==='16MB','設備儲存容量不是 16 MB，未進行寫入。');
       this.mac=await this.loader.chip.readMac(this.loader);
-      this.progress('backup',0);const bytes=await this.read(0,FLASH_BYTES,p=>this.progress('backup',p));
+      this.stage='讀取備份';this.progress('backup',0);const bytes=await this.read(0,FLASH_BYTES,p=>this.progress('backup',p));
+      this.stage='校驗備份';this.progress('checkingBackup',1);
       check(md5(bytes)===(await this.loader.flashMd5sum(0,FLASH_BYTES)).toLowerCase(),'原設備備份校驗失敗，未進行寫入。');
       if(mode==='update'){
         check(equal(bytes.subarray(0x8000,0x8c00),this.release.images[1].data),'設備分割配置不同。若是原廠設備，請使用「第一次安裝」；已有遊戲進度請先找老師檢查。');
@@ -75,12 +77,17 @@ export class FirmwareInstaller {
       }
       const digest=await sha256(bytes),createdAt=new Date().toISOString();
       const record={id:`${this.mac}-${createdAt}`,createdAt,board:'stopwatch-c152',mac:this.mac,sha256:digest,bytes,mode,version:this.release.manifest.version};
-      await this.persist(record);this.backup=record;this.ready=true;this.progress('ready',1);return record;
-    }catch(error){await this.close();throw error;}
+      this.stage='保存備份';await this.persist(record);this.backup=record;this.ready=true;this.progress('ready',1);return record;
+    }catch(error){
+      this.log(`${this.stage}${this.stage==='讀取備份'?` · 0x${this.readAddress.toString(16)}`:''}: ${error.message}`);
+      await this.close();
+      if(/Serial data stream stopped|No serial data|Invalid head of packet|SLIP|NetworkError|device has been lost/i.test(error.message))throw new Error(`${this.stage}時 USB 通訊中斷，尚未寫入韌體。請關閉此視窗，重新讓設備進入下載模式後再連接；若仍失敗，下載下方診斷記錄。`,{cause:error});
+      throw error;
+    }
   }
   async read(address,size,onProgress=()=>{}){
     const bytes=new Uint8Array(size);
-    for(let offset=0;offset<size;offset+=65536){const count=Math.min(65536,size-offset),part=await this.loader.readFlash(address+offset,count);check(part instanceof Uint8Array&&part.length===count,'設備讀回長度不符，已停止。');bytes.set(part,offset);onProgress((offset+count)/size);}
+    for(let offset=0;offset<size;offset+=65536){this.readAddress=address+offset;const count=Math.min(65536,size-offset),part=await this.loader.readFlash(address+offset,count);check(part instanceof Uint8Array&&part.length===count,'設備讀回長度不符，已停止。');bytes.set(part,offset);onProgress((offset+count)/size);}
     return bytes;
   }
   async install({backupSaved=false,eraseConfirmed=false}={}){

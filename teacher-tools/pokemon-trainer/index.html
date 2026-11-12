@@ -128,8 +128,10 @@
  <button id="firmwareBackup" class="button secondary full" disabled>下載這次還原備份</button>
  <label class="usb-check"><input type="checkbox" id="confirmBackup" disabled>我已確認還原備份檔下載完成並妥善保存。</label>
  <button id="firmwareInstall" class="button primary full" disabled>開始寫入遊戲系統</button>
- <details class="firmware-help"><summary>找不到設備、黑畫面或更新中斷？</summary><p>請關閉 Arduino 序列監控或其他占用 USB 的程式。用可傳資料的 USB 線連接 StopWatch，長按電源／重置鍵直到綠燈閃爍後放開，再按「連接並備份」。若更新中斷，保留下載的備份，重新進入下載模式再試；不要改選第一次安裝來處理既有進度。</p><p>完成「讀回校驗」表示檔案已寫入；還需要重新開機、回到創作頁按「連接遊戲機」，才能確認遊戲正常回應。</p><button id="firmwarePreviousBackup" class="text-button">下載此瀏覽器最近一次備份</button><p><a href="./firmware/stopwatch/source.zip">本版韌體原始碼</a> · <a href="./firmware/stopwatch/TamaPoke-CREDITS.md">程式與素材致謝</a> · <a href="./vendor/NOTICE.md">瀏覽器工具來源</a></p></details>
+ <button id="firmwareDownloadLog" class="text-button" disabled>下載 USB 診斷記錄</button>
+ <details class="firmware-help"><summary>找不到設備、黑畫面或更新中斷？</summary><p>請關閉 Arduino 序列監控或其他占用 USB 的程式。用可傳資料的 USB 線連接 StopWatch，長按電源／重置鍵約 2 秒，直到綠燈亮起後放開，再按「連接並備份」，選擇「USB JTAG/serial debug unit」（Mac 名稱通常含 cu.usbmodem）。若更新中斷，保留下載的備份，重新進入下載模式再試；不要改選第一次安裝來處理既有進度。</p><p>完成「讀回校驗」表示檔案已寫入；還需要重新開機、回到創作頁按「連接遊戲機」，才能確認遊戲正常回應。</p><button id="firmwarePreviousBackup" class="text-button">下載此瀏覽器最近一次備份</button><p><a href="./firmware/stopwatch/source.zip">本版韌體原始碼</a> · <a href="./firmware/stopwatch/TamaPoke-CREDITS.md">程式與素材致謝</a> · <a href="./vendor/NOTICE.md">瀏覽器工具來源</a></p></details>
+ <details class="firmware-help"><summary>USB 連線詳細記錄</summary><pre id="firmwareLog" style="white-space:pre-wrap;overflow-wrap:anywhere;font-size:12px">尚未連接。</pre></details>
 </dialog>
 <noscript><div class="noscript">請開啟瀏覽器的 JavaScript，才能使用像素繪圖工具。</div></noscript>
-<script type="module" src="./app.js?v=20261112-usb"></script>
+<script type="module" src="./app.js?v=20261112-usb2"></script>
 </body></html>

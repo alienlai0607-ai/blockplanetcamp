@@ -1,9 +1,11 @@
 import {ArtworkConnection} from './usb.js';
-import {FirmwareInstaller,latestBackup} from './firmware.js';
+import {FirmwareInstaller,latestBackup} from './firmware.js?v=2';
 
 export function mountDevicePanel({getArtwork,download,toast}){
   const $=id=>document.getElementById(id),supported=globalThis.isSecureContext&&!!navigator.serial;
   let connection=null,info=null,busy=false,controller=null,installer=null,firmwareBusy=false,backup=null,downloaded=false;
+  let diagnosticLines=[];
+  function diagnostic(message){diagnosticLines.push(`${new Date().toISOString()} ${String(message).slice(0,600)}`);diagnosticLines=diagnosticLines.slice(-120);$('firmwareLog').textContent=diagnosticLines.join('\n');$('firmwareDownloadLog').disabled=firmwareBusy||!diagnosticLines.length;}
   const status=(text,error=false)=>{$('usbStatus').textContent=text;$('usbStatus').classList.toggle('error',error);};
   const firmwareStatus=(text,error=false)=>{$('firmwareStatus').textContent=text;$('firmwareStatus').classList.toggle('error',error);};
   function controls(){
@@ -17,6 +19,7 @@ export function mountDevicePanel({getArtwork,download,toast}){
     $('firmwareInstall').disabled=firmwareBusy||!installer?.ready||!downloaded||!$('confirmBackup').checked||($('firmwareMode').value==='install'&&!$('confirmErase').checked);
     $('firmwareBackup').disabled=!backup||firmwareBusy;
     $('firmwarePreviousBackup').disabled=firmwareBusy;
+    $('firmwareDownloadLog').disabled=firmwareBusy||!diagnosticLines.length;
     $('firmwareClose').disabled=firmwareBusy;
     $('firmwareMode').disabled=firmwareBusy||!!installer?.ready;
     $('confirmStopWatch').disabled=firmwareBusy||!!installer?.ready;
@@ -61,16 +64,17 @@ export function mountDevicePanel({getArtwork,download,toast}){
   $('firmwareClose').addEventListener('click',closeFirmware);
   $('firmwareDialog').addEventListener('cancel',event=>{event.preventDefault();if(!firmwareBusy)closeFirmware();});
   for(const id of ['confirmStopWatch','confirmBackup','confirmErase','firmwareMode'])$(id).addEventListener('change',flashControls);
-  const phases={connecting:'正在辨識設備…',backup:'正在讀取並備份原設備…',ready:'備份已校驗並保存在此瀏覽器。請下載備份，確認後開始寫入。',writing:'正在寫入遊戲系統，請勿拔線或關閉分頁…',verifying:'正在讀回校驗韌體…',verified:'韌體寫入與讀回校驗完成。',failed:'更新未完成。請保留備份，重新進入下載模式後再試。'};
+  const phases={connecting:'正在辨識設備…',backup:'正在讀取並備份原設備…',checkingBackup:'16 MB 已讀完，正在校驗備份…',ready:'備份已校驗並保存在此瀏覽器。請下載備份，確認後開始寫入。',writing:'正在寫入遊戲系統，請勿拔線或關閉分頁…',verifying:'正在讀回校驗韌體…',verified:'韌體寫入與讀回校驗完成。',failed:'更新未完成。請保留備份，重新進入下載模式後再試。'};
   $('firmwareConnect').addEventListener('click',async()=>{
     if(firmwareBusy||installer?.ready||!supported||!$('confirmStopWatch').checked)return;
-    firmwareBusy=true;downloaded=false;backup=null;$('confirmBackup').checked=false;flashControls();controls();
+    firmwareBusy=true;downloaded=false;backup=null;$('confirmBackup').checked=false;diagnosticLines=[];diagnostic('USB installer read-fix 2 · '+$('firmwareMode').value);$('firmwareProgress').hidden=true;$('firmwareProgress').value=0;flashControls();controls();
     try{
       const port=await navigator.serial.requestPort();
-      installer=new FirmwareInstaller({progress:(phase,p)=>{firmwareStatus(phases[phase]+(['backup','writing','verifying'].includes(phase)?` ${Math.floor(p*100)}%`:''));$('firmwareProgress').hidden=false;$('firmwareProgress').value=p;}});
+      let lastStep='';
+      installer=new FirmwareInstaller({log:diagnostic,progress:(phase,p)=>{firmwareStatus(phases[phase]+(['backup','writing','verifying'].includes(phase)?` ${Math.floor(p*100)}%`:''));$('firmwareProgress').hidden=false;$('firmwareProgress').value=p;const step=`${phase} ${Math.floor(p*10)*10}%`;if(step!==lastStep){diagnostic(step);lastStep=step;}}});
       backup=await installer.connect(port,{mode:$('firmwareMode').value,boardConfirmed:$('confirmStopWatch').checked});
       $('firmwareVersion').textContent=`將安裝 ${installer.release.manifest.version} · 僅適用 StopWatch C152`;
-    }catch(error){await installer?.close();installer=null;firmwareStatus(error.name==='NotFoundError'?'已取消選擇設備。':error.message,true);}
+    }catch(error){diagnostic(error.message);await installer?.close();installer=null;firmwareStatus(error.name==='NotFoundError'?'已取消選擇設備。':error.message,true);}
     finally{firmwareBusy=false;flashControls();controls();}
   });
   function downloadBackup(record){
@@ -84,10 +88,11 @@ export function mountDevicePanel({getArtwork,download,toast}){
     try{const previous=await latestBackup();if(!previous){firmwareStatus('這個瀏覽器尚無設備備份。');return;}downloadBackup(previous);}
     catch{firmwareStatus('無法讀取瀏覽器備份，請使用先前下載的備份檔。',true);}
   });
+  $('firmwareDownloadLog').addEventListener('click',()=>{if(firmwareBusy||!diagnosticLines.length)return;download(new Blob([diagnosticLines.join('\n')],{type:'text/plain;charset=utf-8'}),'StopWatch-USB-diagnostic.txt');});
   $('firmwareInstall').addEventListener('click',async()=>{
     if($('firmwareInstall').disabled)return;firmwareBusy=true;flashControls();controls();
     try{const result=await installer.install({backupSaved:downloaded&&$('confirmBackup').checked,eraseConfirmed:$('confirmErase').checked});firmwareStatus(`${result.version} 已寫入並通過讀回校驗。請確認設備重新開機，再關閉此視窗並按「連接遊戲機」驗證回應。`);}
-    catch(error){firmwareStatus(error.message+' 若設備停在黑畫面，請依下方說明重新進入下載模式再試。',true);}
+    catch(error){diagnostic(error.message);firmwareStatus(error.message+' 若設備停在黑畫面，請依下方說明重新進入下載模式再試。',true);}
     finally{firmwareBusy=false;flashControls();controls();}
   });
   window.addEventListener('beforeunload',event=>{if(busy||firmwareBusy){event.preventDefault();event.returnValue='';}});

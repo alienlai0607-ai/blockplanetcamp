@@ -5,7 +5,7 @@
   "hardware_tested": false,
   "browser_hardware_tested": false,
   "browser_dom_tested": true,
-  "web_and_contract_tests": 55,
+  "web_and_contract_tests": 59,
   "device_check_tests": 12,
   "local_flash_workflow_tests": 18,
   "partition_table_unchanged": true,
@@ -17,5 +17,10 @@
   "web_update": "full backup + verified browser storage + user download acknowledgement + bounded writes + readback",
   "checked_at": "2026-11-12",
   "gameplay_integration_checks": 3,
-  "browser_tool_available": false
+  "browser_tool_available": false,
+  "web_installer_revision": "read-fix-2",
+  "read_flash_regression_reproduced": true,
+  "read_flash_md5_trailer_verified": true,
+  "read_flash_max_unacked_packets": 1,
+  "firmware_binaries_unchanged_by_read_fix": true
 }

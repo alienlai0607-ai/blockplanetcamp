@@ -14,6 +14,14 @@
 
 詳細格式、儲存配置、USB 指令與驗證範圍見 device/FORMAT.md。網站 tests/ 可用 Node 24 執行 npm test；native C++ 合約測試需 c++ 與 Python 3。
 
+## USB 備份中斷修正（read-fix 2）
+
+使用者回報備份約 12% 時出現 `Serial data stream stopped`。已在實際 esptool-js 0.7.1 + Transport + Web Streams 的模擬設備測試中重現：原版 `readFlash()` 讀完資料就返回，未接收 stub 最後的 16-byte MD5；下一個讀取命令可能在 stub 返回命令模式前送出而遺失。
+
+`esp-flash-read.js` 保留原廠套件不變，只替換讀取函式：每包 4096 bytes、最多一包未確認、嚴格檢查長度，並在下一命令前收完及驗證 MD5。USB 接收緩衝設為 64 KiB。完整 16 MB 備份仍另做全區 MD5、SHA-256 和 IndexedDB 讀回校驗；備份失敗不開放寫入。遵循 [Espressif READ_FLASH 通訊規格](https://docs.espressif.com/projects/esptool/en/latest/esp32s3/advanced-topics/serial-protocol.html#reading-flash)。
+
+備份失敗現在會顯示階段及重連方式，並可下載 `StopWatch-USB-diagnostic.txt`（不含備份內容）。連續讀取、延遲校驗封包、截短／錯誤／缺失封包及備份失敗禁止寫入等回歸測試通過；完整測試共 59 項通過。未修改韌體二進位檔，未燒錄設備。這次直接開啟本機 USB 埠被執行環境拒絕，且無可用的瀏覽器控制工具，因此仍須以使用者 Chrome／StopWatch 確認實機結果。
+
 ---
 
 # 寶可夢訓練家計劃 · 像素夥伴製造機
@@ -81,7 +89,7 @@
 - 角色使用透明遮罩，黑色不會誤變透明。背景透明區匯出時補上相應時段底色；不做模糊縮放。
 - 區塊壓縮、CRC、版本、尺寸、長度、索引與解碼界限都會檢查。資料錯誤或記憶體不足時，韌體退回原場景。
 
-初期流程是下載素材包 → 電腦驗證／放入韌體原始碼 → 編譯 → 既有更新流程。尚未加入網頁直接 USB／Wi-Fi 傳送。**本次韌體接入自繪背景；角色動畫先完成封裝與預覽，尚未建立新物種、綁定特定夥伴或取代戰鬥動作。** 不改原有夥伴資料、養成數值或存檔分割區。
+可透過網頁 USB 傳送素材；下列電腦驗證／放入原始碼流程保留給開發者使用，尚未加入 Wi-Fi 傳送。**本次韌體接入自繪背景；角色動畫先完成封裝與預覽，尚未建立新物種、綁定特定夥伴或取代戰鬥動作。** 不改原有夥伴資料、養成數值或存檔分割區。
 
 通用編碼器在 `device.js`，韌體讀取與繪圖在 `device/`；完整規格見 [device/FORMAT.md](device/FORMAT.md)。韌體背景只在開機解碼一次，額外使用 24,576 bytes PSRAM；沿用既有全螢幕緩衝，不另建一份。
 
@@ -96,7 +104,7 @@ python3 device/prepare_scene.py your-art.tpdevice --firmware /path/to/firmware/T
 
 ## 部署與開發
 
-純靜態 HTML / CSS / ES modules，沒有第三方執行時依賴。目錄 `teacher-tools/pokemon-trainer/`；老師選單在 `camp2027/camp-data.js`。使用既有 GitHub Pages main 分支部署，不需修改 Apps Script。
+純靜態 HTML / CSS / ES modules，USB 寫入所需第三方依賴固定版本並由網站提供。目錄 `teacher-tools/pokemon-trainer/`；老師選單在 `camp2027/camp-data.js`。使用既有 GitHub Pages main 分支部署，不需修改 Apps Script。
 
 Node.js 22+：
 
@@ -108,7 +116,7 @@ node --check app.js
 
 41 項測試通過：繪圖、填色邊界、對稱、獨立畫格、排序、跨畫格復原、裁切還原、舊版收藏／檔案轉換、動畫檔往返、播放時鐘與停止、PNG 圖集排列、儲存錯誤、背景獨立編輯／複製／復原、完整檔案往返，以及 v1／v2 升級的 DOM 操作整合。新增 JavaScript／C++／Python 同檔交叉驗證、實際韌體背景繪圖的逐像素比較、ASan／UBSan、容量最壞情況、CRC 與損壞區塊測試。DOM 測試使用 happy-dom 和畫布替身，不代表真實排版、圖片輸出或觸控手感已驗證。本次環境沒有可用的瀏覽器控制連線，桌機與手機實機驗證仍待完成。
 
-操作概念參考 [MakeCode Arcade 精靈教學](https://arcade.makecode.com/courses/csintro1/intro/sprites)。程式、介面與「芽芽」練習角色由本專案製作。自繪絕招及傳送到遊戲機尚未加入。
+操作概念參考 [MakeCode Arcade 精靈教學](https://arcade.makecode.com/courses/csintro1/intro/sprites)。程式、介面與「芽芽」練習角色由本專案製作。自繪絕招尚未加入。
 
 ### 播放相容性修正
 
