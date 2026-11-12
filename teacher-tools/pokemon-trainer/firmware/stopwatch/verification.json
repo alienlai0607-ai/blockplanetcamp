@@ -5,7 +5,7 @@
   "hardware_tested": false,
   "browser_hardware_tested": false,
   "browser_dom_tested": true,
-  "web_and_contract_tests": 59,
+  "web_and_contract_tests": 67,
   "device_check_tests": 12,
   "local_flash_workflow_tests": 18,
   "partition_table_unchanged": true,
@@ -18,9 +18,16 @@
   "checked_at": "2026-11-12",
   "gameplay_integration_checks": 3,
   "browser_tool_available": false,
-  "web_installer_revision": "read-fix-2",
+  "web_installer_revision": "read-fix-3",
   "read_flash_regression_reproduced": true,
   "read_flash_md5_trailer_verified": true,
   "read_flash_max_unacked_packets": 1,
-  "firmware_binaries_unchanged_by_read_fix": true
+  "firmware_binaries_unchanged_by_read_fix": true,
+  "read_flash_packet_bytes": 1024,
+  "read_flash_recovery_packet_bytes": 512,
+  "read_flash_recovery_limit": 2,
+  "read_flash_recovery_verifies_identity_and_prefix": true,
+  "simulated_full_16mb_read_verified": true,
+  "user_reported_length_error_address": "0xad0000",
+  "length_error_root_cause_confirmed_on_hardware": false
 }

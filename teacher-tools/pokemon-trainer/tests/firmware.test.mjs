@@ -4,6 +4,7 @@ import {readFile} from 'node:fs/promises';
 import {createHash} from 'node:crypto';
 import {IDBFactory} from 'fake-indexeddb';
 import {loadFirmware,FirmwareInstaller,FLASH_BYTES,sha256,saveBackup,latestBackup} from '../firmware.js';
+import {FlashReadError} from '../esp-flash-read.js';
 
 const localFetch=async url=>{
  const bytes=await readFile(url);return {ok:true,json:async()=>JSON.parse(bytes.toString()),arrayBuffer:async()=>bytes.buffer.slice(bytes.byteOffset,bytes.byteOffset+bytes.byteLength)};
@@ -60,6 +61,40 @@ test('a USB read failure reports the backup phase and address, releases the port
  await assert.rejects(f.installer.connect({}, {boardConfirmed:true}),/讀取備份時 USB 通訊中斷，尚未寫入韌體/);
  assert(logs.some(line=>line.includes('0x200000')&&line.includes('Serial data stream stopped')));
  assert.equal(f.installer.ready,false);assert.equal(f.writes.length,0);assert(f.disconnected());
+ assert.equal(f.installer.readRecoveries,2);
+});
+test('backup resumes at the failed 0xad0000 block only after reconnect, identity and previous-prefix verification',async()=>{
+ const f=fixture(),read=f.loader.readFlash,md5=f.loader.flashMd5sum,reads=[],checks=[];let failed=false,opens=0;
+ const factory=f.installer.loaderFactory;f.installer.loaderFactory=async port=>{opens++;return factory(port);};
+ f.loader.readFlash=async(address,size)=>{reads.push(address);if(address===0xad0000&&!failed){failed=true;throw new FlashReadError('預期 1024，收到 0 bytes');}return read(address,size);};
+ f.loader.flashMd5sum=async(address,size)=>{checks.push([address,size]);return md5(address,size);};
+ const backup=await f.installer.connect({}, {boardConfirmed:true});
+ assert.equal(opens,2);assert.equal(f.installer.readRecoveries,1);assert.deepEqual(backup.bytes,f.flash);
+ assert(checks.some(([address,size])=>address===0&&size===0xad0000));
+ assert.equal(reads.filter(address=>address===0).length,1);assert.equal(reads.filter(address=>address===0xad0000).length,2);
+ assert(f.installer.ready);assert.equal(f.writes.length,0);assert(f.phases.some(([phase])=>phase==='recovering'));
+});
+test('recovery stops on a changed device, changed prefix, or failed reconnect without saving a mixed backup',async()=>{
+ for(const scenario of ['device','prefix','reconnect']){
+   let persisted=false,opens=0;
+   const f=fixture({persist:async()=>{persisted=true;}}),factory=f.installer.loaderFactory,read=f.loader.readFlash;
+   f.installer.loaderFactory=async port=>{opens++;if(opens===2){if(scenario==='reconnect')throw Error('Port disappeared');if(scenario==='device')f.loader.chip.readMac=async()=>'other-device';if(scenario==='prefix')f.flash[0x11000]^=1;}return factory(port);};
+   f.loader.readFlash=async(address,size)=>{if(address===0x20000)throw new FlashReadError('truncated');return read(address,size);};
+   await assert.rejects(f.installer.connect({}, {boardConfirmed:true}),scenario==='device'?/設備不同/:scenario==='prefix'?/內容改變/:/Port disappeared/);
+   assert.equal(persisted,false);assert.equal(f.installer.ready,false);assert.equal(f.writes.length,0);assert(f.disconnected());assert.equal(opens,2);
+ }
+});
+test('persistent malformed packets stop after two reconnects and cannot enable firmware writing',async()=>{
+ let persisted=false;const f=fixture({persist:async()=>{persisted=true;}});
+ f.loader.readFlash=async()=>{throw new FlashReadError('length mismatch');};
+ await assert.rejects(f.installer.connect({}, {boardConfirmed:true}),/length mismatch/);
+ assert.equal(f.installer.readRecoveries,2);assert.equal(persisted,false);assert.equal(f.installer.ready,false);assert.equal(f.writes.length,0);assert(f.disconnected());
+});
+test('post-write readback can recover its connection without repeating firmware writes or erasing saves',async()=>{
+ const f=fixture(),read=f.loader.readFlash;let failed=false;
+ f.loader.readFlash=async(address,size)=>{if(f.writes.length&&address===0x20000&&!failed){failed=true;throw new FlashReadError('packet truncated');}return read(address,size);};
+ await f.installer.connect({}, {boardConfirmed:true});
+ const result=await f.installer.install({backupSaved:true});assert(result.readbackVerified);assert.equal(f.writes.length,1);assert.equal(f.writes[0].eraseAll,false);assert.equal(f.installer.readRecoveries,1);assert(f.disconnected());
 });
 test('backup database commits and verifies bytes; latest backup is indexed by time and corruption is refused',async()=>{
  const db=new IDBFactory(),bytes=new Uint8Array([1,2,3]);

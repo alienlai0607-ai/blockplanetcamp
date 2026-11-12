@@ -1,5 +1,5 @@
 import {ArtworkConnection} from './usb.js';
-import {FirmwareInstaller,latestBackup} from './firmware.js?v=2';
+import {FirmwareInstaller,latestBackup} from './firmware.js?v=3';
 
 export function mountDevicePanel({getArtwork,download,toast}){
   const $=id=>document.getElementById(id),supported=globalThis.isSecureContext&&!!navigator.serial;
@@ -64,10 +64,10 @@ export function mountDevicePanel({getArtwork,download,toast}){
   $('firmwareClose').addEventListener('click',closeFirmware);
   $('firmwareDialog').addEventListener('cancel',event=>{event.preventDefault();if(!firmwareBusy)closeFirmware();});
   for(const id of ['confirmStopWatch','confirmBackup','confirmErase','firmwareMode'])$(id).addEventListener('change',flashControls);
-  const phases={connecting:'正在辨識設備…',backup:'正在讀取並備份原設備…',checkingBackup:'16 MB 已讀完，正在校驗備份…',ready:'備份已校驗並保存在此瀏覽器。請下載備份，確認後開始寫入。',writing:'正在寫入遊戲系統，請勿拔線或關閉分頁…',verifying:'正在讀回校驗韌體…',verified:'韌體寫入與讀回校驗完成。',failed:'更新未完成。請保留備份，重新進入下載模式後再試。'};
+  const phases={connecting:'正在辨識設備…',backup:'正在讀取並備份原設備…',recovering:'USB 讀取中斷，正在重新連接並校驗已讀資料，請保持接線…',checkingBackup:'16 MB 已讀完，正在校驗備份…',ready:'備份已校驗並保存在此瀏覽器。請下載備份，確認後開始寫入。',writing:'正在寫入遊戲系統，請勿拔線或關閉分頁…',verifying:'正在讀回校驗韌體…',verified:'韌體寫入與讀回校驗完成。',failed:'更新未完成。請保留備份，重新進入下載模式後再試。'};
   $('firmwareConnect').addEventListener('click',async()=>{
     if(firmwareBusy||installer?.ready||!supported||!$('confirmStopWatch').checked)return;
-    firmwareBusy=true;downloaded=false;backup=null;$('confirmBackup').checked=false;diagnosticLines=[];diagnostic('USB installer read-fix 2 · '+$('firmwareMode').value);$('firmwareProgress').hidden=true;$('firmwareProgress').value=0;flashControls();controls();
+    firmwareBusy=true;downloaded=false;backup=null;$('confirmBackup').checked=false;diagnosticLines=[];diagnostic('USB installer read-fix 3 · '+$('firmwareMode').value);$('firmwareProgress').hidden=true;$('firmwareProgress').value=0;flashControls();controls();
     try{
       const port=await navigator.serial.requestPort();
       let lastStep='';
