@@ -1,5 +1,5 @@
 import {PALETTE, STORAGE_KEY, MAX_PROJECTS, MAX_FRAMES, makeProject, nameOf, readCollection, importSprite, serialize, History, stroke, fill, resize, addFrame, deleteFrame, moveFrame, previousPixels, sheetPixels} from './model.js?v=2';
-import {AnimationPlayer} from './playback.js?v=2';
+import {AnimationPlayer} from './playback.js?v=3';
 
 const $ = id => document.getElementById(id);
 const all = selector => [...document.querySelectorAll(selector)];
@@ -94,10 +94,13 @@ function syncPlayButtons() {
   $('playAnimation').setAttribute('aria-pressed',String(player.running));$('consoleA').setAttribute('aria-pressed',String(player.running));
   $('playLabel').textContent=player.running?'暫停動畫':'播放動畫';$('playIcon').setAttribute('href',player.running?'#i-pause':'#i-play');
   $('consoleA').setAttribute('aria-label',player.running?'A：暫停動畫':'A：播放動畫');
-  $('playAnimation').disabled=$('consoleA').disabled=project.frames.length<2;
+  $('playAnimation').disabled=$('consoleA').disabled=false;
+  const identical=project.frames.length>1&&project.frames.every(frame=>frame.every((pixel,i)=>pixel===project.frames[0][i]));
+  const hint=project.frames.length<2?'目前只有 1 格。按「複製此格」，改一點動作後就能播放。':identical?'每格圖案目前相同，播放時會像靜止；修改其中一格就能看見動作。':'動畫會在上方「夥伴登場」預覽中播放。';
+  if($('animationHint').textContent!==hint)$('animationHint').textContent=hint;
 }
 function stopPlayback() {player.stop();syncPlayButtons();renderPreview();}
-function togglePlayback() {finishStroke();if(player.running)stopPlayback();else if(player.start(project))syncPlayButtons();}
+function togglePlayback() {finishStroke();if(project.frames.length<2){toast('還需要第 2 格：先按「複製此格」，再改一點表情或動作。');return;}if(player.running)stopPlayback();else if(player.start(project))syncPlayButtons();}
 function selectFrame(index) {if(index<0||index>=project.frames.length)return;finishStroke();stopPlayback();project.activeFrame=index;dirty=true;persist();keyboardCursor=null;render();}
 function finishStroke() {
   if(pointer===null)return;

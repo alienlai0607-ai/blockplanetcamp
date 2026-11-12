@@ -15,7 +15,14 @@ test('editor controls, pointer stroke, undo, gallery, reload and export connect 
   document.write(html.replace(/<script[\s\S]*?<\/script>/g,''));
   const noop=()=>{};
   const canvasContext={clearRect:noop,fillRect:noop,beginPath:noop,moveTo:noop,lineTo:noop,stroke:noop,save:noop,restore:noop,setLineDash:noop,strokeRect:noop};
-  window.HTMLCanvasElement.prototype.getContext=()=>canvasContext;
+  let previewPixel0=null,previewPaintCount=0;
+  window.HTMLCanvasElement.prototype.getContext=function(){
+    const target=this;
+    return this.testContext ||= {...canvasContext,
+      clearRect(){if(target.id==='previewCanvas'){previewPixel0=null;previewPaintCount++;}},
+      fillRect(x,y){if(target.id==='previewCanvas'&&x===0&&y===0)previewPixel0=this.fillStyle;}
+    };
+  };
   window.HTMLCanvasElement.prototype.setPointerCapture=noop;
   window.HTMLCanvasElement.prototype.hasPointerCapture=()=>false;
   window.HTMLCanvasElement.prototype.releasePointerCapture=noop;
@@ -42,6 +49,8 @@ test('editor controls, pointer stroke, undo, gallery, reload and export connect 
     assert.equal(window.localStorage.getItem(STORAGE_KEY+'.v1-backup'),legacy);
     assert.deepEqual(collection().projects[0].frames[0],JSON.parse(legacy).projects[0].pixels);
     assert.match($('saveStatus').textContent,/已儲存/);
+    assert.match($('animationHint').textContent,/只有 1 格/);assert.equal($('playAnimation').disabled,false);
+    $('playAnimation').click();assert.match($('toast').textContent,/第 2 格/);assert.equal($('playAnimation').getAttribute('aria-pressed'),'false');
     $('newProject').click();assert($('newDialog').open);
     $('newName').value='測試小龍';$('newForm').dispatchEvent(new window.Event('submit',{cancelable:true}));
     assert.equal(collection().projects.length,2);assert.equal($('previewName').textContent,'測試小龍');
@@ -56,16 +65,22 @@ test('editor controls, pointer stroke, undo, gallery, reload and export connect 
     assert.equal($('previewName').children.length,0);assert.match($('previewName').textContent,/<img/);
     // Copy, erase only in the copied frame, then use the physical B button to undo.
     $('duplicateFrame').click();save();assert.equal(collection().projects[1].frames.length,2);
+    assert.match($('animationHint').textContent,/圖案目前相同/);
     document.querySelector('[data-tool="eraser"]').click();
     canvas.dispatchEvent(new window.PointerEvent('pointerdown',{pointerId:2,button:0,clientX:8,clientY:8}));
     canvas.dispatchEvent(new window.PointerEvent('pointerup',{pointerId:2}));save();
     assert.equal(collection().projects[1].frames[0][0],'#214d40');assert.equal(collection().projects[1].frames[1][0],null);
     $('consoleB').click();save();assert.equal(collection().projects[1].frames[1][0],'#214d40');
+    $('redo').click();save();assert.equal(collection().projects[1].frames[1][0],null);
+    assert.doesNotMatch($('animationHint').textContent,/圖案目前相同/);
     $('fpsInput').value='8';$('fpsInput').dispatchEvent(new window.Event('change'));save();
     assert.equal(collection().projects[1].fps,8);const beforePreview=window.localStorage.getItem(STORAGE_KEY);
     $('consoleA').click();assert.equal($('playAnimation').getAttribute('aria-pressed'),'true');
+    const paintCountAtStart=previewPaintCount;assert.equal(previewPixel0,'#214d40');
     await new Promise(resolve=>originalTimeout(resolve,140));
     assert.match($('playbackStatus').textContent,/播放中/);assert.equal(window.localStorage.getItem(STORAGE_KEY),beforePreview);
+    const displayedFrame=Number($('playbackStatus').textContent.match(/播放中 (\d+)/)[1])-1;
+    assert(previewPaintCount>paintCountAtStart);assert.equal(previewPixel0,collection().projects[1].frames[displayedFrame][0]);
     $('consoleA').click();assert.equal($('playAnimation').getAttribute('aria-pressed'),'false');
     document.querySelector('.dpad-left').click();save();assert.equal(collection().projects[1].activeFrame,0);assert($('onionToggle').disabled);
     document.querySelector('.dpad-right').click();assert(!$('onionToggle').disabled);

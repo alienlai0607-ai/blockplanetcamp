@@ -2,7 +2,9 @@ import {frameAt} from './model.js?v=2';
 
 // Preview has its own clock: it never selects or edits a stored drawing frame.
 export class AnimationPlayer {
-  constructor(onFrame, {setTimer=setTimeout, clearTimer=clearTimeout, now=()=>performance.now()}={}) {
+  // Keep native Window timer calls on their global receiver. Calling a stored
+  // native function as this.setTimer(...) throws Illegal invocation in browsers.
+  constructor(onFrame, {setTimer=(callback,delay)=>globalThis.setTimeout(callback,delay), clearTimer=id=>globalThis.clearTimeout(id), now=()=>performance.now()}={}) {
     Object.assign(this,{onFrame,setTimer,clearTimer,now});this.running=false;this.timer=null;this.index=0;
   }
   start(project) {
