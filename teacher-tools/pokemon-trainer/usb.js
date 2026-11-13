@@ -1,4 +1,5 @@
-import {decodeDevice} from './device.js?v=1';
+import {BOARDS} from './boards.js?v=1';
+import {decodeDevice} from './device.js?v=2';
 
 export class DeviceError extends Error {constructor(code,message){super(message);this.code=code;}}
 const messages={storage_blocked:'作品儲存區未通過安全檢查，已停止寫入。請保留備份供檢查。',storage_write:'設備未能確認儲存結果。請重新連接，檢查作品狀態後再試。',memory:'設備記憶體不足，請重新開機再試。',busy:'設備正在接收另一份作品，請稍後再試。',invalid_package:'作品資料校驗失敗，原作品仍保留。',incomplete:'作品尚未傳完整，原作品仍保留。',no_session:'傳輸已逾時，請重新傳送。'};
@@ -6,7 +7,7 @@ export const newToken=()=>crypto.getRandomValues(new Uint32Array(1))[0].toString
 const hex=bytes=>Array.from(bytes,b=>b.toString(16).padStart(2,'0')).join('');
 export function parseInfo(line){
   const fields=Object.fromEntries(line.trim().split(/\s+/).map(x=>x.split('=')));
-  if(fields.protocol!=='1'||fields.board!=='stopwatch-c152'||!fields.fw?.startsWith('1.18-SWdev')||fields.max!=='65536'||fields.chunk!=='256'||!fields.capabilities?.split(',').includes('backgrounds')||!['ready','unclaimed','blocked'].includes(fields.storage)||!/^\d+$/.test(fields.size)||!/^\d+$/.test(fields.generation)||! /^[a-f0-9]{8}$/.test(fields.crc))throw new DeviceError('incompatible','這台設備尚未支援作品傳輸，請先安裝／更新遊戲系統。');
+  if(fields.protocol!=='1'||!Object.hasOwn(BOARDS,fields.board)||!BOARDS[fields.board]?.version.test(fields.fw||'')||fields.max!=='65536'||fields.chunk!=='256'||!fields.capabilities?.split(',').includes('backgrounds')||!['ready','unclaimed','blocked'].includes(fields.storage)||!/^\d+$/.test(fields.size)||!/^\d+$/.test(fields.generation)||! /^[a-f0-9]{8}$/.test(fields.crc))throw new DeviceError('incompatible','這台設備尚未支援作品傳輸，請先安裝／更新遊戲系統。');
   const result={...fields,size:Number(fields.size),generation:Number(fields.generation),max:65536,chunk:256};
   if(result.size>65536||result.generation>0xffffffff)throw new DeviceError('incompatible','設備回應格式不符。');
   return result;

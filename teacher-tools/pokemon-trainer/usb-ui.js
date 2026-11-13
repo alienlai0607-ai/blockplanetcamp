@@ -1,10 +1,17 @@
-import {ArtworkConnection} from './usb.js?v=4';
-import {FirmwareInstaller,latestBackup} from './firmware.js?v=3';
+import {boardProfile} from './boards.js?v=1';
+import {ArtworkConnection} from './usb.js?v=5';
+import {FirmwareInstaller,latestBackup} from './firmware.js?v=4';
 
 export function mountDevicePanel({getArtwork,download,toast}){
   const $=id=>document.getElementById(id),supported=globalThis.isSecureContext&&!!navigator.serial;
   let connection=null,info=null,busy=false,controller=null,installer=null,firmwareBusy=false,backup=null,downloaded=false;
   let diagnosticLines=[];
+  try{const requested=new URLSearchParams(window.location.search).get('board');if(requested)$('firmwareBoard').value=boardProfile(requested).id;}catch{}
+
+  const selectedBoard=()=>boardProfile($('firmwareBoard').value);
+  function showBoard(){const board=selectedBoard();$('boardConfirmation').textContent=`我確認手上的設備是 ${board.name}。`;$('firmwareVersion').textContent=`${board.name} 專用 · USB 寫入測試版，尚待實機驗證`;$('boardDownloadHelp').textContent=board.help;$('firmwareSource').href=`./firmware/${board.directory}/source.zip`;$('firmwareCredits').href=`./firmware/${board.directory}/TamaPoke-CREDITS.md`;}
+  showBoard();
+  $('firmwareBoard').addEventListener('change',()=>{if(firmwareBusy||installer?.ready)return;$('confirmStopWatch').checked=false;backup=null;downloaded=false;$('confirmBackup').checked=false;$('confirmErase').checked=false;$('firmwareProgress').hidden=true;firmwareStatus('請確認板型，連接後會先備份與校驗。');showBoard();flashControls();});
   function diagnostic(message){diagnosticLines.push(`${new Date().toISOString()} ${String(message).slice(0,600)}`);diagnosticLines=diagnosticLines.slice(-120);$('firmwareLog').textContent=diagnosticLines.join('\n');$('firmwareDownloadLog').disabled=firmwareBusy||!diagnosticLines.length;}
   const status=(text,error=false)=>{$('usbStatus').textContent=text;$('usbStatus').classList.toggle('error',error);};
   const storageHelp=detail=>/^1\.18-SWdev11-/.test(detail?.fw||'')?'作品尚未寫入。請按下方「安裝／更新遊戲系統」，選「更新現有遊戲」更新到 SWdev12 作品區修正版，再重新連接傳送。':'作品儲存區未通過安全檢查，已停止寫入。請保留完整 USB 備份供檢查。';
@@ -22,6 +29,7 @@ export function mountDevicePanel({getArtwork,download,toast}){
     $('firmwarePreviousBackup').disabled=firmwareBusy;
     $('firmwareDownloadLog').disabled=firmwareBusy||!diagnosticLines.length;
     $('firmwareClose').disabled=firmwareBusy;
+    $('firmwareBoard').disabled=firmwareBusy||!!installer?.ready;
     $('firmwareMode').disabled=firmwareBusy||!!installer?.ready;
     $('confirmStopWatch').disabled=firmwareBusy||!!installer?.ready;
     $('confirmBackup').disabled=firmwareBusy||!downloaded;
@@ -30,13 +38,13 @@ export function mountDevicePanel({getArtwork,download,toast}){
   }
   $('usbConnect').addEventListener('click',async()=>{
     if(busy||connection||firmwareBusy||!supported)return;
-    busy=true;controls();status('請在瀏覽器視窗選擇你的 StopWatch。');
+    busy=true;controls();status('請在瀏覽器視窗選擇你的遊戲機（USB JTAG/serial debug unit）。');
     let candidate;
     try{
       const port=await navigator.serial.requestPort();
       candidate=new ArtworkConnection(port,{onDisconnect:()=>{connection=null;info=null;controls();status('設備已離線，重新接上後可再連接。');}});
       info=await candidate.open();connection=candidate;
-      status(info.storage==='blocked'?storageHelp(info):`已連接 StopWatch · ${info.fw}${info.size?' · 已有自繪背景':''}`,info.storage==='blocked');
+      status(info.storage==='blocked'?storageHelp(info):`已連接 ${boardProfile(info.board).shortName} · ${info.fw}${info.size?' · 已有自繪背景':''}`,info.storage==='blocked');
     }catch(error){if(candidate)await candidate.close();connection=null;info=null;status(error.name==='NotFoundError'?'已取消選擇設備。':error.message,true);}
     finally{busy=false;controls();}
   });
@@ -58,6 +66,7 @@ export function mountDevicePanel({getArtwork,download,toast}){
   $('usbCancel').addEventListener('click',()=>{controller?.abort();$('usbCancel').disabled=true;status('正在取消傳送…');});
   $('openFirmware').addEventListener('click',async()=>{
     if(busy||firmwareBusy)return;
+    if(info?.board){$('firmwareBoard').value=info.board;$('confirmStopWatch').checked=false;showBoard();}
     const old=connection;connection=null;info=null;await old?.close();controls();
     $('firmwareDialog').showModal();flashControls();
   });
@@ -72,14 +81,14 @@ export function mountDevicePanel({getArtwork,download,toast}){
     try{
       const port=await navigator.serial.requestPort();
       let lastStep='';
-      installer=new FirmwareInstaller({log:diagnostic,progress:(phase,p)=>{firmwareStatus(phases[phase]+(['backup','writing','verifying'].includes(phase)?` ${Math.floor(p*100)}%`:''));$('firmwareProgress').hidden=false;$('firmwareProgress').value=p;const step=`${phase} ${Math.floor(p*10)*10}%`;if(step!==lastStep){diagnostic(step);lastStep=step;}}});
+      installer=new FirmwareInstaller({board:selectedBoard().id,log:diagnostic,progress:(phase,p)=>{firmwareStatus(phases[phase]+(['backup','writing','verifying'].includes(phase)?` ${Math.floor(p*100)}%`:''));$('firmwareProgress').hidden=false;$('firmwareProgress').value=p;const step=`${phase} ${Math.floor(p*10)*10}%`;if(step!==lastStep){diagnostic(step);lastStep=step;}}});
       backup=await installer.connect(port,{mode:$('firmwareMode').value,boardConfirmed:$('confirmStopWatch').checked});
-      $('firmwareVersion').textContent=`將安裝 ${installer.release.manifest.version} · 僅適用 StopWatch C152`;
+      $('firmwareVersion').textContent=`將安裝 ${installer.release.manifest.version} · 僅適用 ${selectedBoard().name}`;
     }catch(error){diagnostic(error.message);await installer?.close();installer=null;firmwareStatus(error.name==='NotFoundError'?'已取消選擇設備。':error.message,true);}
     finally{firmwareBusy=false;flashControls();controls();}
   });
   function downloadBackup(record){
-    const stamp=record.createdAt.replace(/[^0-9]/g,'').slice(0,14),name=`StopWatch-backup-${stamp}`;
+    const stamp=record.createdAt.replace(/[^0-9]/g,'').slice(0,14),name=`${boardProfile(record.board).backupName}-backup-${stamp}`;
     download(new Blob([record.bytes],{type:'application/octet-stream'}),name+'.bin');
     // Keep metadata in the same durable database; one click produces one download.
     firmwareStatus(`已開始下載 ${name}.bin（16 MB）。請確認檔案已存好，再勾選下方確認。`);
@@ -89,7 +98,7 @@ export function mountDevicePanel({getArtwork,download,toast}){
     try{const previous=await latestBackup();if(!previous){firmwareStatus('這個瀏覽器尚無設備備份。');return;}downloadBackup(previous);}
     catch{firmwareStatus('無法讀取瀏覽器備份，請使用先前下載的備份檔。',true);}
   });
-  $('firmwareDownloadLog').addEventListener('click',()=>{if(firmwareBusy||!diagnosticLines.length)return;download(new Blob([diagnosticLines.join('\n')],{type:'text/plain;charset=utf-8'}),'StopWatch-USB-diagnostic.txt');});
+  $('firmwareDownloadLog').addEventListener('click',()=>{if(firmwareBusy||!diagnosticLines.length)return;download(new Blob([diagnosticLines.join('\n')],{type:'text/plain;charset=utf-8'}),selectedBoard().backupName+'-USB-diagnostic.txt');});
   $('firmwareInstall').addEventListener('click',async()=>{
     if($('firmwareInstall').disabled)return;firmwareBusy=true;flashControls();controls();
     try{const result=await installer.install({backupSaved:downloaded&&$('confirmBackup').checked,eraseConfirmed:$('confirmErase').checked});firmwareStatus(`${result.version} 已寫入並通過讀回校驗。請確認設備重新開機，再關閉此視窗並按「連接遊戲機」驗證回應。`);}

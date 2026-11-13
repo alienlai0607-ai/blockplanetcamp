@@ -1,7 +1,7 @@
 import {validateSprite,serialize,TIMES} from './model.js?v=3';
 
 // The same integer geometry and RGB565 conversion are used by device/trainer_assets.h.
-export const DEVICE={id:1,name:'M5Stack StopWatch',width:466,height:466,maxBytes:65536,maxFps:8,backgroundSize:64};
+export const DEVICE={id:1,name:'StopWatch / Waveshare 1.75G',width:466,height:466,maxBytes:65536,maxFps:8,backgroundSize:64};
 export const HEADER_BYTES=144;
 export const FALLBACK={morning:'#f3c3a4',day:'#83b5df',night:'#263449'};
 export const SCENES={

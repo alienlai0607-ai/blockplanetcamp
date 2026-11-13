@@ -1,3 +1,4 @@
+import {boardProfile,existingBoard} from './boards.js?v=1';
 import SparkMD5 from './vendor/spark-md5-3.0.2.js';
 import {installFlashReadFix} from './esp-flash-read.js?v=3';
 
@@ -7,15 +8,16 @@ export const sha256=async bytes=>Array.from(new Uint8Array(await crypto.subtle.d
 const md5=bytes=>SparkMD5.ArrayBuffer.hash(bytes.buffer.slice(bytes.byteOffset,bytes.byteOffset+bytes.byteLength));
 const equal=(a,b)=>a.length===b.length&&a.every((x,i)=>x===b[i]);
 function check(condition,message){if(!condition)throw new Error(message);}
-export async function loadFirmware(fetcher=fetch){
+export async function loadFirmware(fetcher=fetch,board='stopwatch-c152'){
+  const profile=boardProfile(board);
   const get=async(url,kind)=>{
     const controller=new AbortController(),timer=setTimeout(()=>controller.abort(),60000);
     try{const response=await fetcher(url,{cache:'no-store',signal:controller.signal});check(response.ok,'暫時無法下載遊戲系統，請稍後再試。');return await response[kind]();}
     catch(error){if(controller.signal.aborted)throw new Error('韌體下載逾時，請確認網路後重試；尚未寫入設備。');throw error;}
     finally{clearTimeout(timer);}
   };
-  const base=new URL('./firmware/stopwatch/',import.meta.url),manifest=await get(new URL('manifest.json',base),'json');
-  check(manifest.schema===1&&manifest.board==='stopwatch-c152'&&manifest.chip==='ESP32-S3'&&manifest.flashBytes===FLASH_BYTES&&/^1\.18-SWdev\d+-[a-z]+$/.test(manifest.version)&&Array.isArray(manifest.files)&&manifest.files.length===4,'韌體清單格式不符，已停止。');
+  const base=new URL(`./firmware/${profile.directory}/`,import.meta.url),manifest=await get(new URL('manifest.json',base),'json');
+  check(manifest.schema===1&&manifest.board===profile.id&&manifest.chip==='ESP32-S3'&&manifest.flashBytes===FLASH_BYTES&&profile.version.test(manifest.version)&&Array.isArray(manifest.files)&&manifest.files.length===4,'韌體清單格式不符，已停止。');
   const images=[];
   for(let i=0;i<4;i++){
     const f=manifest.files[i];
@@ -52,7 +54,7 @@ export async function latestBackup(indexedDB=globalThis.indexedDB){
   try{const record=await new Promise((resolve,reject)=>{const r=db.transaction('backups').objectStore('backups').index('createdAt').openCursor(null,'prev');r.onsuccess=()=>resolve(r.result?.value||null);r.onerror=reject;});if(record)check(await sha256(record.bytes)===record.sha256,'備份校驗失敗，請使用先前下載的備份檔。');return record;}finally{db.close();}
 }
 export class FirmwareInstaller {
-  constructor({progress=()=>{},persist=saveBackup,load=loadFirmware,loaderFactory,log=()=>{}}={}){this.progress=progress;this.persist=persist;this.load=load;this.loaderFactory=loaderFactory;this.ready=false;this.writing=false;this.backup=null;this.transport=null;this.log=log;this.stage='準備';this.readAddress=0;this.readRecoveries=0;}
+  constructor({progress=()=>{},persist=saveBackup,load,board='stopwatch-c152',loaderFactory,log=()=>{}}={}){this.progress=progress;this.persist=persist;this.profile=boardProfile(board);this.load=load||(()=>loadFirmware(fetch,this.profile.id));this.loaderFactory=loaderFactory;this.ready=false;this.writing=false;this.backup=null;this.transport=null;this.log=log;this.stage='準備';this.readAddress=0;this.readRecoveries=0;}
   async openLoader(packetSize=1024){
     const library=this.loaderFactory?await this.loaderFactory(this.port):await import('./vendor/esptool-js-0.7.1.js');
     if(this.loaderFactory){this.loader=library.loader;this.transport=library.transport;}
@@ -67,20 +69,22 @@ export class FirmwareInstaller {
     return this.loader.chip.readMac(this.loader);
   }
   async connect(port,{mode='update',boardConfirmed=false}={}){
-    check(boardConfirmed,'請先確認設備是 M5Stack StopWatch C152。');check(mode==='update'||mode==='install','操作模式錯誤。');this.mode=mode;this.ready=false;this.backup=null;this.port=port;this.readRecoveries=0;
+    check(boardConfirmed,`請先確認設備是 ${this.profile.name}。`);check(mode==='update'||mode==='install','操作模式錯誤。');this.mode=mode;this.ready=false;this.backup=null;this.port=port;this.readRecoveries=0;
     try{
-      this.stage='下載韌體';this.release=await this.load();
+      this.stage='下載韌體';this.release=await this.load();check(this.release.manifest.board===this.profile.id&&this.profile.version.test(this.release.manifest.version),'韌體與所選板型不符，已停止。');
       this.stage='辨識設備與啟動備份工具';this.progress('connecting',0);this.mac=await this.openLoader();
       this.stage='讀取備份';this.progress('backup',0);const bytes=await this.read(0,FLASH_BYTES,p=>this.progress('backup',p));
       this.stage='校驗備份';this.progress('checkingBackup',1);
       check(md5(bytes)===(await this.loader.flashMd5sum(0,FLASH_BYTES)).toLowerCase(),'原設備備份校驗失敗，未進行寫入。');
+      const installedBoard=existingBoard(bytes);
+      check(!installedBoard||installedBoard===this.profile.id,'設備內已有另一款板型的遊戲，與目前選擇不同，已停止寫入；請核對板型。');
       if(mode==='update'){
         check(equal(bytes.subarray(0x8000,0x8c00),this.release.images[1].data),'設備分割配置不同。若是原廠設備，請使用「第一次安裝」；已有遊戲進度請先找老師檢查。');
         // A previous interrupted update may have erased the application's version string.
         // Matching the exact partition table is sufficient for a data-preserving retry.
       }
       const digest=await sha256(bytes),createdAt=new Date().toISOString();
-      const record={id:`${this.mac}-${createdAt}`,createdAt,board:'stopwatch-c152',mac:this.mac,sha256:digest,bytes,mode,version:this.release.manifest.version};
+      const record={id:`${this.mac}-${createdAt}`,createdAt,board:this.profile.id,mac:this.mac,sha256:digest,bytes,mode,version:this.release.manifest.version};
       this.stage='保存備份';await this.persist(record);this.backup=record;this.ready=true;this.progress('ready',1);return record;
     }catch(error){
       this.log(`${this.stage}${this.stage==='讀取備份'?` · 0x${this.readAddress.toString(16)}`:''}: ${error.message}`);

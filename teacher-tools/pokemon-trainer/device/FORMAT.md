@@ -86,3 +86,8 @@ This release applies morning/day/night backgrounds to the home/exploration rende
 Automated validation covers browser DOM behavior, the real C++ receiver connected to the JS client through a simulated serial stream, retries/cancel/reboot, checksums, interrupted writes, the renderer, backup persistence, and guarded flash/readback with a fake ESP transport. A complete Arduino ESP32 build is required. These checks do not replace Windows/macOS browser, native USB reconnect, on-device display, or power-interruption tests with actual hardware; this release is marked as a test version until those are performed.
 
 The existing local flash tool retains its source hash guard and backup/readback behavior. No direct serial or flash operation is performed merely by loading the website.
+
+
+## 1.75G 相容設定（2026-11-13）
+
+TPD1 profile 1 的 466 × 466 圓形 RGB565 配置也適用 Waveshare ESP32-S3-Touch-AMOLED-1.75G；素材格式不變，舊素材可直接傳送。USB 握手使用獨立 board=waveshare-175g、韌體 1.18-WSdev1-175g，不能當作 StopWatch 韌體燒錄。網站依握手辨識作品接收端，依使用者確認的板型選取安裝檔。兩款皆使用前 140 KiB 作品保留區，且不掛載 ffat。GPS 與 SD 卡功能尚未啟用。

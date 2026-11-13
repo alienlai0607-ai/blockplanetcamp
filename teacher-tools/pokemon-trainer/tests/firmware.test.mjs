@@ -10,12 +10,13 @@ const localFetch=async url=>{
  const bytes=await readFile(url);return {ok:true,json:async()=>JSON.parse(bytes.toString()),arrayBuffer:async()=>bytes.buffer.slice(bytes.byteOffset,bytes.byteOffset+bytes.byteLength)};
 };
 const release=await loadFirmware(localFetch);
-function fixture({mode='update',persist=async()=>{},failure}={}){
+const waveshareRelease=await loadFirmware(localFetch,'waveshare-175g');
+function fixture({mode='update',persist=async()=>{},failure,board='stopwatch-c152'}={}){
  const flash=new Uint8Array(FLASH_BYTES).fill(255),writes=[],phases=[];
  flash.set(release.images[1].data,0x8000);flash.set(new TextEncoder().encode('1.18-SWdev10-background'),0x11000);flash.fill(0x5a,0x9000,0xe000);flash.fill(0x7c,0x610000,0x633000);
  let disconnected=false;
  const loader={IS_STUB:true,secureDownloadMode:false,chip:{CHIP_NAME:'ESP32-S3',readMac:async()=>'aa:bb:cc:11:22:33'},async detectChip(){},async getSecurityInfo(){return {flashCryptCnt:0,parsedFlags:{}};},async runStub(){},async detectFlashSize(){return '16MB';},async readFlash(address,size){const data=flash.slice(address,address+size);if(failure==='readback'&&writes.length&&address===0x10000)data[30]^=1;return data;},async flashMd5sum(address,size){return failure==='backup'?'0'.repeat(32):createHash('md5').update(flash.subarray(address,address+size)).digest('hex');},async writeFlash(options){writes.push(options);if(options.eraseAll)flash.fill(255);for(const f of options.fileArray){assert.equal(options.calculateMD5Hash(f.data),createHash('md5').update(f.data).digest('hex'));flash.set(f.data,f.address);}},async after(){}};
- const installer=new FirmwareInstaller({load:async()=>release,loaderFactory:async()=>({loader,transport:{async disconnect(){disconnected=true;}}}),persist,progress:(phase,p)=>phases.push([phase,p])});
+ const installer=new FirmwareInstaller({board,load:async()=>board==='stopwatch-c152'?release:waveshareRelease,loaderFactory:async()=>({loader,transport:{async disconnect(){disconnected=true;}}}),persist,progress:(phase,p)=>phases.push([phase,p])});
  return {installer,flash,writes,loader,phases,mode,disconnected:()=>disconnected};
 }
 test('published firmware manifest and all four binaries match their hashes, chip and allowed regions',async()=>{
@@ -102,4 +103,40 @@ test('backup database commits and verifies bytes; latest backup is indexed by ti
  const second={...first,id:'b',createdAt:'2026-11-12T02:00:00Z'};await saveBackup(second,db);assert.equal((await latestBackup(db)).id,'b');
  await assert.rejects(saveBackup({...first,id:'bad',sha256:'0'.repeat(64)},db),/讀回/);
  await assert.rejects(saveBackup(first,null),/無法保存/);
+});
+
+test('Waveshare update refuses existing StopWatch firmware even with an identical partition table',async()=>{
+ const f=fixture({board:'waveshare-175g'});
+ await assert.rejects(f.installer.connect({}, {boardConfirmed:true}),/另一款板型/);
+ assert.equal(f.writes.length,0);assert(!f.installer.ready);
+});
+test('Waveshare updates preserve its NVS and artworks and label its backup correctly',async()=>{
+ const f=fixture({board:'waveshare-175g'});f.flash.fill(255,0x10000,0x310000);
+ f.flash.set(new TextEncoder().encode('1.18-WSdev1-175g'),0x11000);
+ const before=f.flash.slice();const backup=await f.installer.connect({}, {boardConfirmed:true});
+ assert.equal(backup.board,'waveshare-175g');await f.installer.install({backupSaved:true});
+ assert.deepEqual(f.flash.subarray(0x9000,0xe000),before.subarray(0x9000,0xe000));
+ assert.deepEqual(f.flash.subarray(0x610000),before.subarray(0x610000));assert.equal(f.writes[0].eraseAll,false);
+});
+test('StopWatch selection refuses a Waveshare game; wrong manifest fails before the port opens',async()=>{
+ const f=fixture();f.flash.fill(255,0x10000,0x310000);f.flash.set(new TextEncoder().encode('1.18-WSdev1-175g'),0x11000);
+ await assert.rejects(f.installer.connect({}, {boardConfirmed:true}),/另一款板型/);assert.equal(f.writes.length,0);
+ const g=fixture({board:'waveshare-175g'});g.installer.load=async()=>release;
+ g.installer.loaderFactory=async()=>{throw new Error('MUST NOT OPEN');};
+ await assert.rejects(g.installer.connect({}, {boardConfirmed:true}),/韌體與所選板型不符/);
+ assert.throws(()=>new FirmwareInstaller({board:'waveshare-175c'}),/尚未支援/);
+});
+
+test('published Waveshare binaries match their manifest and carry a distinct application identity',async()=>{
+ assert.equal(waveshareRelease.manifest.board,'waveshare-175g');assert.equal(waveshareRelease.manifest.hardwareTested,false);
+ assert.deepEqual(waveshareRelease.images[1].data,release.images[1].data);
+ const app=Buffer.from(waveshareRelease.images[3].data);assert(app.includes(Buffer.from(waveshareRelease.manifest.version)));assert(!app.includes(Buffer.from('1.18-SWdev')));
+ await assert.rejects(loadFirmware(async url=>url.pathname.endsWith('manifest.json')?{ok:true,json:async()=>release.manifest}:localFetch(url),'waveshare-175g'),/清單格式/);
+});
+test('factory Waveshare install backs up factory bytes and uses only the selected board images',async()=>{
+ const f=fixture({board:'waveshare-175g'});f.flash.fill(0x42,0x10000,0x310000);const original=f.flash.slice();
+ const backup=await f.installer.connect({}, {mode:'install',boardConfirmed:true});assert.deepEqual(backup.bytes,original);assert.equal(backup.board,'waveshare-175g');
+ await assert.rejects(f.installer.install({backupSaved:true}),/確認/);assert.equal(f.writes.length,0);
+ const result=await f.installer.install({backupSaved:true,eraseConfirmed:true});assert.equal(result.version,waveshareRelease.manifest.version);assert.equal(f.writes[0].eraseAll,true);
+ assert.deepEqual(f.flash.subarray(0x10000,0x10000+waveshareRelease.images[3].data.length),waveshareRelease.images[3].data);
 });

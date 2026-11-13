@@ -13,10 +13,12 @@ test('device identity, version and bounded capability replies are checked',()=>{
  assert.equal(parseInfo(line).generation,1);
  for(const [a,b]of [['board=stopwatch-c152','board=other'],['max=65536','max=999999'],['chunk=256','chunk=4096'],['protocol=1','protocol=2'],['size=144','size=65537'],['generation=1','generation=4294967296'],['capabilities=backgrounds','capabilities=none']])assert.throws(()=>parseInfo(line.replace(a,b)));
 });
-test('browser client talks to the real C++ receiver: retries, cancellation, restart, malformed data and disconnect',async()=>{
- const dir=await mkdtemp(join(tmpdir(),'trainer-usb-'));let child,client;
+for(const board of ['stopwatch-c152','waveshare-175g'])test(`browser talks to the real ${board} C++ receiver: retries, cancellation, restart and disconnect`,async()=>{
+ const dir=await mkdtemp(join(tmpdir(),'trainer-usb-'));let child,client,diagnostic="";
  try{
   const device=new URL('../device/',import.meta.url).pathname;
+  const firmwareVersion=board==='waveshare-175g'?'1.18-WSdev1-175g':'1.18-SWdev11-webusb';
+  const receiver=join(device,board==='waveshare-175g'?'waveshare/trainer_transfer.cpp':'trainer_transfer.cpp');
   await writeFile(join(dir,'Arduino.h'),`#pragma once
 #include <string>
 #include <stdint.h>
@@ -57,14 +59,15 @@ int main(){trainerSceneBegin();trainerTransferBegin();std::string line;while(std
  if(line.find("TESTREBOOT")!=std::string::npos){clockMs+=30001;trainerTransferTick(clockMs);trainerSceneBegin();trainerTransferBegin();std::cout<<line.substr(0,11)<<" RESET ok"<<std::endl;}
  else if(line.find("TESTMEMFAIL")!=std::string::npos){allocationFails=true;std::cout<<line.substr(0,11)<<" TEST ok"<<std::endl;}
  else if(line.find("TESTMEMOK")!=std::string::npos){allocationFails=false;std::cout<<line.substr(0,11)<<" TEST ok"<<std::endl;}
- else {trainerTransferTick(clockMs);trainerTransferCommand(String(line.c_str()),"1.18-SWdev11-webusb");}
+ else {trainerTransferTick(clockMs);trainerTransferCommand(String(line.c_str()),"${firmwareVersion}");}
  }return 0;}
 `);
-  execFileSync('c++',['-std=c++17','-O1','-fsanitize=address,undefined','-fno-omit-frame-pointer','-I'+dir,'-I'+device,join(dir,'host.cpp'),join(device,'trainer_transfer.cpp'),join(device,'trainer_scene.cpp'),join(device,'custom_scene_data.cpp'),'-o',join(dir,'host')],{timeout:30000});
-  child=spawn(join(dir,'host'),[],{stdio:['pipe','pipe','pipe']});let errors='';child.stderr.on('data',b=>errors+=b);let stream,dropAck=true,dropCommit=true,closed=false,output='';
-  const port={async open(){},async setSignals(){},async close(){closed=true;child.stdin.end();},readable:new ReadableStream({start(c){stream=c;},cancel(){closed=true;}}),writable:new WritableStream({write(bytes){child.stdin.write(bytes);}})};
-  child.stdout.on('data',bytes=>{output+=bytes.toString();let at;while((at=output.indexOf('\n'))>=0){const line=output.slice(0,at+1);output=output.slice(at+1);if(dropAck&&line.includes(' ACK ')){dropAck=false;continue;}if(dropCommit&&line.includes(' STORED ')){dropCommit=false;continue;}if(!closed){const b=new TextEncoder().encode(line);stream.enqueue(b.slice(0,5));stream.enqueue(b.slice(5));}}});
-  client=new ArtworkConnection(port,{timeout:300,commitTimeout:1000});const initial=await client.open();assert.equal(initial.storage,'unclaimed');
+  execFileSync('c++',['-std=c++17','-O1','-fsanitize=address,undefined','-fno-omit-frame-pointer','-I'+dir,'-I'+device,join(dir,'host.cpp'),receiver,join(device,'trainer_scene.cpp'),join(device,'custom_scene_data.cpp'),'-o',join(dir,'host')],{timeout:30000});
+  child=spawn(join(dir,'host'),[],{stdio:['pipe','pipe','pipe']});let errors='';child.stderr.on('data',b=>{errors+=b;diagnostic+=b;});child.on('exit',(code,signal)=>{diagnostic+=` exit=${code} signal=${signal}`;});let stream,dropAck=true,dropCommit=true,closed=false,output='';
+  const port={async open(){},async setSignals(){},async close(){closed=true;child.stdin.end();},readable:new ReadableStream({start(c){stream=c;},cancel(){closed=true;}}),writable:new WritableStream({write(bytes){diagnostic=`sending ${new TextDecoder().decode(bytes).slice(0,80)}`;child.stdin.write(bytes);}})};
+  child.stdout.on('data',bytes=>{diagnostic+=' reply='+bytes.toString().slice(0,150);output+=bytes.toString();let at;while((at=output.indexOf('\n'))>=0){const line=output.slice(0,at+1);output=output.slice(at+1);if(dropAck&&line.includes(' ACK ')){dropAck=false;continue;}if(dropCommit&&line.includes(' STORED ')){dropCommit=false;continue;}if(!closed){const b=new TextEncoder().encode(line);stream.enqueue(b.slice(0,5));stream.enqueue(b.slice(5));}}});
+  // Allow sanitizer startup on macOS; command retry tests use 300 ms after HELLO.
+  client=new ArtworkConnection(port,{timeout:3000,commitTimeout:1000});const initial=await client.open();client.timeout=300;assert.equal(initial.storage,'unclaimed');assert.equal(initial.board,board);
   const p=makeProject('',16,true),first=encodeDevice(p),result=await client.upload(first);assert.equal(dropAck,false);assert.equal(dropCommit,false);assert.equal(result.generation,1);assert.equal(result.size,first.length);
   await client.request('TESTREBOOT',kind=>kind==='RESET');assert.equal((await client.info()).crc,result.crc);
   p.backgrounds.day[0]='#ff0000';const second=encodeDevice(p),abort=new AbortController();
@@ -82,7 +85,7 @@ int main(){trainerSceneBegin();trainerTransferBegin();std::string line;while(std
   await client.request('COMMIT',(kind,body)=>kind==='STORED'&&body.endsWith(final.crc));assert.equal((await client.info()).generation,2);
   await client.request('TESTREBOOT',kind=>kind==='RESET');assert.equal((await client.info()).crc,final.crc);
   await client.close();assert.equal(client.closed,true);await assert.rejects(client.info(),{code:'disconnected'});assert.equal(errors,'');
- }finally{await client?.close();child?.kill();await rm(dir,{recursive:true,force:true});}
+ }catch(error){error.message+=` [${diagnostic}]`;throw error;}finally{await client?.close();child?.kill();await rm(dir,{recursive:true,force:true});}
 });
 test('a stalled browser write still respects the command timeout',async()=>{
  const client=new ArtworkConnection({close:async()=>{}},{timeout:20});client.closed=false;client.writer={write:()=>new Promise(()=>{}),releaseLock(){}};
@@ -92,4 +95,11 @@ test('an unexpected USB stream failure releases the port so the user can reconne
  let stream,closeCount=0,disconnectCount=0;
  const port={async open(){},async setSignals(){},async close(){closeCount++;},readable:new ReadableStream({start(c){stream=c;}}),writable:new WritableStream({write(bytes){const token=new TextDecoder().decode(bytes).split(' ')[1];stream.enqueue(new TextEncoder().encode(`TP ${token} INFO protocol=1 board=stopwatch-c152 fw=1.18-SWdev11-webusb max=65536 chunk=256 storage=ready size=0 crc=00000000 generation=0 capabilities=backgrounds\n`));}})};
  const client=new ArtworkConnection(port,{onDisconnect:()=>disconnectCount++});await client.open();stream.error(new Error('unplugged'));await new Promise(resolve=>setTimeout(resolve,10));assert.equal(disconnectCount,1);assert.equal(client.closed,true);assert.equal(client.writer,null);assert.equal(client.reader,null);assert(closeCount>0);
+});
+
+test('artwork handshake identifies the matching firmware family for each board',()=>{
+ const line='protocol=1 board=waveshare-175g fw=1.18-WSdev1-175g max=65536 chunk=256 storage=unclaimed size=0 crc=00000000 generation=0 capabilities=backgrounds';
+ assert.equal(parseInfo(line).board,'waveshare-175g');
+ assert.throws(()=>parseInfo(line.replace('1.18-WSdev1-175g','1.18-SWdev12-artstore')));
+ assert.throws(()=>parseInfo(line.replace('waveshare-175g','waveshare-175c')));
 });

@@ -7,8 +7,8 @@ import {makeProject} from '../model.js';
 import {encodeDevice} from '../device.js';
 const until=async predicate=>{for(let i=0;i<100;i++){if(predicate())return;await new Promise(resolve=>setTimeout(resolve,5));}throw Error('UI timeout');};
 
-for(const {supported,blocked=false,version='1.18-SWdev11-webusb'} of [{supported:true},{supported:false},{supported:true,blocked:true},{supported:true,blocked:true,version:'1.18-SWdev12-artstore'}])test(`device controls preserve editor and enforce explicit connection/install choices (${supported?'supported':'unsupported'} ${blocked?'blocked '+version:'normal'})`,async()=>{
- const window=new Window({url:'https://blockplanetcamp.com/teacher-tools/pokemon-trainer/'});window.document.write((await readFile(new URL('../index.html',import.meta.url),'utf8')).replace(/<script[\s\S]*?<\/script>/g,''));
+for(const {supported,blocked=false,version='1.18-SWdev11-webusb',board='stopwatch-c152'} of [{supported:true,board:'waveshare-175g'},{supported:true},{supported:false},{supported:true,blocked:true},{supported:true,blocked:true,version:'1.18-SWdev12-artstore'}])test(`device controls preserve editor and enforce explicit connection/install choices (${supported?'supported':'unsupported'} ${blocked?'blocked '+version:'normal'})`,async()=>{
+ const window=new Window({url:`https://blockplanetcamp.com/teacher-tools/pokemon-trainer/?board=${board}`});window.document.write((await readFile(new URL('../index.html',import.meta.url),'utf8')).replace(/<script[\s\S]*?<\/script>/g,''));
  window.HTMLDialogElement.prototype.showModal=function(){this.setAttribute('open','');};window.HTMLDialogElement.prototype.close=function(){this.removeAttribute('open');};
  let ctrl,closed=false,size=0,crc='00000000',generation=0,offset=0,requests=0;
  const port={async open(){},async setSignals(){},async close(){closed=true;},readable:new ReadableStream({start(c){ctrl=c;},cancel(){closed=true;}}),writable:new WritableStream({write(bytes){const [_,token,cmd,a,b]=new TextDecoder().decode(bytes).trim().split(' ');let response='';
@@ -22,7 +22,7 @@ for(const {supported,blocked=false,version='1.18-SWdev11-webusb'} of [{supported
  const descriptors={};for(const [name,value]of Object.entries({window,document:window.document,isSecureContext:true,navigator:{serial:supported?{requestPort:async()=>{requests++;return port;}}:undefined}})){descriptors[name]=Object.getOwnPropertyDescriptor(globalThis,name);Object.defineProperty(globalThis,name,{value,writable:true,configurable:true});}
  try{
    const $=id=>window.document.getElementById(id);let artReads=0;mountDevicePanel({getArtwork:()=>{artReads++;return encodeDevice(makeProject('',16,true));},download(){},toast(){}});
-   assert.equal($('usbSend').disabled,true);assert.equal(requests,0);assert.equal($('firmwareMode').value,'update');assert.equal($('confirmErase').checked,false);assert.equal($('firmwareInstall').disabled,true);
+   assert.equal($('usbSend').disabled,true);assert.equal(requests,0);assert.equal($('firmwareBoard').value,board);assert.equal($('confirmStopWatch').checked,false);assert.equal($('firmwareMode').value,'update');assert.equal($('confirmErase').checked,false);assert.equal($('firmwareInstall').disabled,true);
    if(supported){
      $('usbConnect').click();$('usbConnect').click();await until(()=>$('usbSend').disabled===false);assert.equal(requests,1);assert.match($('usbStatus').textContent,/已連接/);
      $('usbSend').click();$('usbSend').click();
@@ -33,6 +33,7 @@ for(const {supported,blocked=false,version='1.18-SWdev11-webusb'} of [{supported
    $('openFirmware').click();await until(()=>$('firmwareDialog').open);assert.equal($('firmwareConnect').disabled,true);assert.equal($('firstInstallNotice').hidden,true);
    $('firmwareMode').value='install';$('firmwareMode').dispatchEvent(new window.Event('change'));assert.equal($('firstInstallNotice').hidden,false);assert.equal($('firmwareInstall').disabled,true);
    $('confirmStopWatch').checked=true;$('confirmStopWatch').dispatchEvent(new window.Event('change'));assert.equal($('firmwareConnect').disabled,!supported);assert.equal($('firmwareInstall').disabled,true);
+   $('firmwareBoard').value='waveshare-175g';$('firmwareBoard').dispatchEvent(new window.Event('change'));assert.equal($('confirmStopWatch').checked,false);assert.equal($('firmwareConnect').disabled,true);assert.match($('boardConfirmation').textContent,/1.75G/);assert.match($('boardDownloadHelp').textContent,/BOOT/);assert.match($('firmwareSource').href,/waveshare-175g/);
    $('firmwareClose').click();await until(()=>!$('firmwareDialog').open);assert.equal(requests,supported?1:0);
  }finally{for(const [name,descriptor]of Object.entries(descriptors)){if(descriptor)Object.defineProperty(globalThis,name,descriptor);else delete globalThis[name];}await window.happyDOM.abort();}
 });
