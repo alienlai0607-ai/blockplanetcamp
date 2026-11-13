@@ -1,110 +1,50 @@
 {
-  "status": "compiled_host_tested_device_button_verified_user_confirmed",
+  "status": "compiled_host_tested_pending_device_av_check",
   "board": "waveshare-175g",
-  "version": "1.18-WSdev5-175g",
-  "based_on": "1.18-WSdev4-175g",
-  "flashed": true,
+  "version": "1.18-WSdev6-175g",
+  "based_on": "1.18-WSdev5-175g",
+  "flashed": false,
   "hardware_tested": false,
-  "touch_hardware_verified": true,
-  "root_cause": "Raw CST9217 coordinates bypassed the vendor-required X/Y mirror for CO5300 rotation 0; input and displayed hit targets were opposite.",
-  "official_reference": "https://github.com/waveshareteam/ESP32-S3-Touch-AMOLED-1.75/blob/main/examples/arduino/06_LVGL_Widgets/06_LVGL_Widgets.ino",
-  "official_panel_rotation": 0,
-  "official_touch_max": [
-    466,
-    466
-  ],
-  "official_touch_mirror": [
-    true,
-    true
-  ],
-  "transform": "min(465,466-raw) on each validated axis, applied once before UI queue",
-  "previous_version_user_report": "WSdev4 still unusable; balanced sensor events were insufficient proof of UI usability",
-  "regressions": {
-    "raw_packets_to_actual_game_button_dispatch": "passed ASan/UBSan; Explore, Partners, Link, feed, play, light, bath; reproduces old mis-hit",
-    "captured_raw_positions": "passed: raw (315,53) maps to feeding button, raw (137,53) maps to bath button",
-    "swipe_direction_and_bounds": "passed",
-    "gesture_handling": "passed ASan/UBSan",
-    "decoder_stream_errors_overflow": "passed ASan/UBSan"
-  },
-  "checked_at": "2026-11-13T09:24:59.685269+00:00",
-  "cross_board_radio_tested": false,
-  "imu_startup_fix_retained": true,
+  "checked_at": "2026-11-13T09:48:33.864852+00:00",
   "partition_unchanged": true,
-  "hardware_boot_verified": true,
-  "user_confirmed_usable": true,
-  "application_readback_verified": true,
-  "system_and_artwork_headers_preserved": true,
-  "ui_button_evidence": {
-    "action": "explore",
-    "before": {
-      "version": "1.18-WSdev5-175g",
-      "taps": 0,
-      "tap_x": -1,
-      "tap_y": -1,
-      "explore": 0,
-      "roster": 0,
-      "link": 0,
-      "battle": 0,
-      "feed": 0,
-      "clock": 0,
-      "gallery": 0,
-      "dim": 0,
-      "off": 0,
-      "blocked": 0,
-      "coordinates": {
-        "raw_x": 0,
-        "raw_y": 0,
-        "screen_x": 0,
-        "screen_y": 0
-      }
-    },
-    "after": {
-      "version": "1.18-WSdev5-175g",
-      "taps": 1,
-      "tap_x": 156,
-      "tap_y": 294,
-      "explore": 1,
-      "roster": 0,
-      "link": 0,
-      "battle": 0,
-      "feed": 0,
-      "clock": 0,
-      "gallery": 0,
-      "dim": 0,
-      "off": 0,
-      "blocked": 0,
-      "coordinates": {
-        "raw_x": 310,
-        "raw_y": 172,
-        "screen_x": 156,
-        "screen_y": 294
-      }
-    },
-    "matched_display_target": true
+  "cross_board_radio_tested": false,
+  "changes": [
+    "original battle chiptune + nonblocking SFX mix",
+    "18 type charge/travel/impact effects",
+    "smooth HP and hit recoil",
+    "pixel ball throw/absorb/3 shakes/breakout",
+    "capture success sparkle + companion reveal"
+  ],
+  "regressions": {
+    "capture": "success, failure, NVS failure, roster full, duplicate taps, delayed frame, millis wrap",
+    "battle": "XP and level up exactly once; no rewards on catch/loss/draw/escape",
+    "audio": "actual audio task host harness: mix, mute, sleep, idle, battle exit, amplitude bounds",
+    "visual": "actual UI + real species thumbnails on host; 151 layouts; 18 types both directions; circular text bounds"
   },
   "remaining_checks": [
-    "Cross-board radio battle",
-    "Battery and power behavior",
-    "Extended soak testing"
+    "Physical speaker volume and clipping",
+    "Device animation performance",
+    "Cross-board radio battle"
   ],
+  "touch_fix_retained": true,
   "build": {
     "target": "Waveshare ESP32-S3-Touch-AMOLED-1.75G",
     "status": "compiled",
     "fqbn": "esp32:esp32:esp32s3:CDCOnBoot=cdc,FlashSize=16M,PSRAM=opi,PartitionScheme=app3M_fat9M_16MB",
     "flashed": false,
     "hardware_tested": false,
-    "started_at": "2026-11-13T08:30:45.297883+00:00",
+    "started_at": "2026-11-13T09:47:32.874071+00:00",
     "exit_code": 0,
-    "elapsed_seconds": 45.8,
+    "elapsed_seconds": 36.7,
     "summary": [
-      "Sketch uses 2136515 bytes (67%) of program storage space. Maximum is 3145728 bytes.",
-      "Global variables use 65572 bytes (20%) of dynamic memory, leaving 262108 bytes for local variables. Maximum is 327680 bytes."
+      "Sketch uses 2142291 bytes (68%) of program storage space. Maximum is 3145728 bytes.",
+      "Global variables use 65620 bytes (20%) of dynamic memory, leaving 262060 bytes for local variables. Maximum is 327680 bytes."
     ],
     "binaries": [
       {
         "file": "TamaPoke.ino.bin",
-        "bytes": 2136752,
-        "sha256": "e213037b3c3512e0cbcbfaea64774445fb6e96271a7e76e4293fecd4770e733d"
+        "bytes": 2142528,
+        "sha256": "1a63cc37ad452e1716ab5c0a8ba5bb21bf87899d15ea43d23c2521e446c24894"
       },
       {
         "file": "TamaPoke.ino.bootloader.bin",
@@ -114,7 +54,7 @@
       {
         "file": "TamaPoke.ino.merged.bin",
         "bytes": 16777216,
-        "sha256": "599fff3598ded4c339e5187eceacb8913091dae507bb2598a9c805ede5b1db36"
+        "sha256": "10c015b6bef338cd7deebcdc0ce68579f3090661b8344716e41c99b0b0929878"
       },
       {
         "file": "TamaPoke.ino.partitions.bin",
@@ -123,21 +63,24 @@
       }
     ]
   },
-  "source_files_verified": 52,
+  "source_files_verified": 55,
   "source_sha256": {
     "LICENSE": "c92bedde60ca87f27221971af47d517c017cc31a62cc952e6f83ea664dc31ac5",
-    "TamaPoke.ino": "7db3ee569ce69ebb0f6bbb5feeeed4b214f91e8eeb8e6ba40e0785756dafe0a9",
+    "TamaPoke.ino": "b09ff3a8d78a615a3ca44e1bcd5ff2f1f63cdd93fe984fe984310c3a4dad3d3e",
     "activity_steps.h": "294c7f0ad6deae54203e52b980ded421a1077581e69091239dd9eb233e7bd4af",
     "asset_data.cpp": "5cf2e7cb0d8e09406ca0df257fbc4278050cc3923402fe4b65c3a550b55f0604",
     "asset_data.h": "4a5dcbc3a40365e8762dc93db4755a5545ed0d24cecf08f5b46e428db94451a8",
-    "audio.cpp": "baa047f837638fc2080ed40ab1f897239bc5bc0f68dd01435925668b8e2159fe",
-    "audio.h": "cf8fb0b60397969e7103c6302669f1f0cc80b63536cd2b723ab06c3e2fbfc981",
+    "audio.cpp": "643dee0e6d10da5c37cb63cff7406f85dd430984e163c9ffe441aa4e94664e61",
+    "audio.h": "6fd0187bcd10eed69e391322a0d67097d9811818e95f1cb206ba13cdbaa6c6da",
     "batcurve.h": "b3102a1e70ee27bbc5a5d8f891584d1718c0361b76f66d8b965537fdef3f875a",
     "battle_core.h": "926ddbcfe5058fe00a759844fe9bc6dd2809e8ce22931abc5e8edace56f9c442",
     "battle_data.h": "d4261104a1571dfff4b163d56f398a217ede94c7c309c1c974cfc247938c79a2",
+    "battle_fx.h": "7dbb0f083820894a0b51e32a25bc3ffcd977476dcc801e38d56d95bff48d624c",
+    "battle_music.h": "627b291f00667b2fd6cfa283b6dd837045fb801ae12fb1845610baf600b54126",
+    "battle_presentation.h": "768aa9028321b2c1e56e35255a08cc792ce58eaf8d995058a35a28817949cdb4",
     "battle_progress.h": "483235b4e6370a39b82baa7f49fd7455dfc0b6ffebd178fbf56c8d55c95d5b5c",
-    "battle_state.h": "1bfe3747867f7305813f8de32062ec92813262f18457826536d98155bef18adc",
-    "battle_ui.h": "44c9f2a2e9c16f3b402d36abfbb498a62b6ed2b6bb52ee680e6f81f39b119e15",
+    "battle_state.h": "a6153ec3ef083608d0a18cec7adfbdb75e4143d63110cb25ee2fbee6a68ce995",
+    "battle_ui.h": "0e538d8de51d4ba3eddcf9588d3df62d834efe98e82be162099ecf023545dd65",
     "blit.h": "42d761bd5f2eb9caa29eb7b2316be35191aeb1bc04ba16d3b0bd349562508dd0",
     "board.cpp": "241914e62c588dc3d2658cd0d79d15244aceb0822021be1a13e607a934a9e71c",
     "board.h": "c9b7541852e3afb27dc5cb2031e394b5c056a894f1ac9fc69fc717dca5ffa91c",
@@ -157,7 +100,7 @@
     "link_core.h": "eab5aa33b79ecb19d417c4b991ab9208392448a4cdc125cf7e4fa8c6a1d0a267",
     "link_radio.cpp": "af403385a985ac15e58301ee0173dca90ed6fd2c7a90871615f10ba5d025b943",
     "link_radio.h": "fbdd0f4af23f61daef511b311ebebd141236ed3699ef8a7ac00bc8004e020ecd",
-    "link_ui.h": "f506913edd2035469acc3ba4397b527d5a97a8bf53db522312c9131d749c429f",
+    "link_ui.h": "167f210d5819e16b1c140d9e2ba630ea1bb22ecca525f4f0f20f748f32f6ddda",
     "motion.cpp": "fe1afda5c3c4ff2efffa1b778af8fce663c812bdeae411c2bd159329db4bd47b",
     "motion.h": "9443dcd95a5644f5835ce91c84067c2f6e2e37b31bdebc1f1b6cb0ad7d4b73bb",
     "pet.cpp": "0a205807b2cea19efabb10b1f4787d9479a99e9603d23f8010704fd23a239c2c",

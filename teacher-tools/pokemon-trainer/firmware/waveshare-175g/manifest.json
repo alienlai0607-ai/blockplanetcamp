@@ -3,11 +3,14 @@
   "board": "waveshare-175g",
   "chip": "ESP32-S3",
   "flashBytes": 16777216,
-  "version": "1.18-WSdev5-175g",
+  "version": "1.18-WSdev6-175g",
   "hardwareTested": false,
   "features": [
     "background-upload",
-    "local-friendly-battle"
+    "local-friendly-battle",
+    "battle-music",
+    "type-effects",
+    "capture-animation"
   ],
   "linkBattle": {
     "protocol": 1,
@@ -37,12 +40,12 @@
     {
       "file": "game.bin",
       "offset": 65536,
-      "bytes": 2136752,
-      "sha256": "e213037b3c3512e0cbcbfaea64774445fb6e96271a7e76e4293fecd4770e733d"
+      "bytes": 2142528,
+      "sha256": "1a63cc37ad452e1716ab5c0a8ba5bb21bf87899d15ea43d23c2521e446c24894"
     }
   ],
   "source": {
     "file": "source.zip",
-    "sha256": "91dd562487a5c540d6715c9d90dceef4cec0cbc849c95cdcc65a780f1543aab8"
+    "sha256": "3597910b851e7ca3d3a7e3dde3f79af0727c64132f98e6983a2ae0a0683b81b4"
   }
 }

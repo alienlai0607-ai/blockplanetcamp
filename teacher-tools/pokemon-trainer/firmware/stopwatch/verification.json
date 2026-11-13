@@ -1,43 +1,50 @@
 {
-  "status": "compiled_host_tested",
+  "status": "compiled_host_tested_pending_device_av_check",
   "board": "stopwatch-c152",
-  "version": "1.18-SWdev13-link",
-  "hardware_tested": false,
-  "cross_board_radio_tested": false,
+  "version": "1.18-SWdev14-battle",
+  "based_on": "1.18-SWdev13-link",
   "flashed": false,
-  "gps_enabled": false,
-  "sd_required": false,
-  "link_protocol": 1,
-  "link_rules": "314c5031",
-  "friend_level": 50,
-  "lossy_battles": 160,
-  "protocol_assertions": 564,
-  "protocol_sanitizers": "ASan/UBSan",
-  "ui_screens": 9,
-  "ui_text_pixels_clipped": 0,
-  "existing_battle_and_roster_layouts_tested": 151,
-  "native_ui_wild_battle_xp_regression": "passed",
-  "web_tests": 78,
-  "checked_at": "2026-11-13T05:49:10.317710+00:00",
-  "web_test_failures": 0,
+  "hardware_tested": false,
+  "checked_at": "2026-11-13T09:48:33.866106+00:00",
+  "partition_unchanged": true,
+  "cross_board_radio_tested": false,
+  "changes": [
+    "original battle chiptune + nonblocking SFX mix",
+    "18 type charge/travel/impact effects",
+    "smooth HP and hit recoil",
+    "pixel ball throw/absorb/3 shakes/breakout",
+    "capture success sparkle + companion reveal"
+  ],
+  "regressions": {
+    "capture": "success, failure, NVS failure, roster full, duplicate taps, delayed frame, millis wrap",
+    "battle": "XP and level up exactly once; no rewards on catch/loss/draw/escape",
+    "audio": "actual audio task host harness: mix, mute, sleep, idle, battle exit, amplitude bounds",
+    "visual": "actual UI + real species thumbnails on host; 151 layouts; 18 types both directions; circular text bounds"
+  },
+  "remaining_checks": [
+    "Physical speaker volume and clipping",
+    "Device animation performance",
+    "Cross-board radio battle"
+  ],
+  "touch_fix_retained": false,
   "build": {
     "target": "M5Stack StopWatch C152",
     "status": "compiled",
     "fqbn": "esp32:esp32:esp32s3:CDCOnBoot=cdc,FlashSize=16M,PSRAM=opi,PartitionScheme=app3M_fat9M_16MB",
     "flashed": false,
     "hardware_tested": false,
-    "started_at": "2026-11-13T05:38:43.352315+00:00",
+    "started_at": "2026-11-13T09:48:51.553036+00:00",
     "exit_code": 0,
-    "elapsed_seconds": 472.6,
+    "elapsed_seconds": 397.0,
     "summary": [
-      "Sketch uses 2167271 bytes (68%) of program storage space. Maximum is 3145728 bytes.",
-      "Global variables use 65828 bytes (20%) of dynamic memory, leaving 261852 bytes for local variables. Maximum is 327680 bytes."
+      "Sketch uses 2173091 bytes (69%) of program storage space. Maximum is 3145728 bytes.",
+      "Global variables use 65876 bytes (20%) of dynamic memory, leaving 261804 bytes for local variables. Maximum is 327680 bytes."
     ],
     "binaries": [
       {
         "file": "TamaPoke.ino.bin",
-        "bytes": 2167520,
-        "sha256": "a815de6d8ab307b0705b4a3473eff300dd3174538c65852a77867ac4a729785e"
+        "bytes": 2173328,
+        "sha256": "c89e380546406ec7aac5aca1dd3de56549931520069370f2440fb821665a7260"
       },
       {
         "file": "TamaPoke.ino.bootloader.bin",
@@ -47,7 +54,7 @@
       {
         "file": "TamaPoke.ino.merged.bin",
         "bytes": 16777216,
-        "sha256": "9877a6da5771b1d660818b806726ab6de254bc427eab2f328e864338b7584163"
+        "sha256": "cddb5747959328ac4c94b0c624f8a7eaf48ab2744dd0ce2391fa3b35a0dc7ed4"
       },
       {
         "file": "TamaPoke.ino.partitions.bin",
@@ -56,21 +63,24 @@
       }
     ]
   },
-  "source_files_verified": 62,
+  "source_files_verified": 65,
   "source_sha256": {
     "LICENSE": "c92bedde60ca87f27221971af47d517c017cc31a62cc952e6f83ea664dc31ac5",
-    "TamaPoke.ino": "d6a88d4caf88f9caafe46dce1307b802c46f38082f86f4dd90fcb5c60bb8d6ad",
+    "TamaPoke.ino": "8f2427299d7be785efda9b0c3018fa4e5720f7a59f34db4b73af743561d864dd",
     "activity_steps.h": "294c7f0ad6deae54203e52b980ded421a1077581e69091239dd9eb233e7bd4af",
     "asset_data.cpp": "5cf2e7cb0d8e09406ca0df257fbc4278050cc3923402fe4b65c3a550b55f0604",
     "asset_data.h": "4a5dcbc3a40365e8762dc93db4755a5545ed0d24cecf08f5b46e428db94451a8",
-    "audio.cpp": "fe9409a45c60c2abb18c457857246a643d7ccfbdbe4f9fb00410714612ff6c33",
-    "audio.h": "cf8fb0b60397969e7103c6302669f1f0cc80b63536cd2b723ab06c3e2fbfc981",
+    "audio.cpp": "ab3dcf4be14961709fe17331a3e736fbcac67e27ca92deb32883dd2ee84014ff",
+    "audio.h": "6fd0187bcd10eed69e391322a0d67097d9811818e95f1cb206ba13cdbaa6c6da",
     "batcurve.h": "b3102a1e70ee27bbc5a5d8f891584d1718c0361b76f66d8b965537fdef3f875a",
     "battle_core.h": "926ddbcfe5058fe00a759844fe9bc6dd2809e8ce22931abc5e8edace56f9c442",
     "battle_data.h": "d4261104a1571dfff4b163d56f398a217ede94c7c309c1c974cfc247938c79a2",
+    "battle_fx.h": "7dbb0f083820894a0b51e32a25bc3ffcd977476dcc801e38d56d95bff48d624c",
+    "battle_music.h": "627b291f00667b2fd6cfa283b6dd837045fb801ae12fb1845610baf600b54126",
+    "battle_presentation.h": "768aa9028321b2c1e56e35255a08cc792ce58eaf8d995058a35a28817949cdb4",
     "battle_progress.h": "483235b4e6370a39b82baa7f49fd7455dfc0b6ffebd178fbf56c8d55c95d5b5c",
-    "battle_state.h": "1bfe3747867f7305813f8de32062ec92813262f18457826536d98155bef18adc",
-    "battle_ui.h": "44c9f2a2e9c16f3b402d36abfbb498a62b6ed2b6bb52ee680e6f81f39b119e15",
+    "battle_state.h": "a6153ec3ef083608d0a18cec7adfbdb75e4143d63110cb25ee2fbee6a68ce995",
+    "battle_ui.h": "0e538d8de51d4ba3eddcf9588d3df62d834efe98e82be162099ecf023545dd65",
     "blit.h": "42d761bd5f2eb9caa29eb7b2316be35191aeb1bc04ba16d3b0bd349562508dd0",
     "companion_roster.h": "36baba153e4827e91d155441a3d736d907de00893979eb6fc06367e394f8b2c5",
     "companion_state.h": "9945dbffeb0747fa966f55573919db571e5634b9b381b825687b1ccbbdf9a2ad",
@@ -87,7 +97,7 @@
     "link_core.h": "eab5aa33b79ecb19d417c4b991ab9208392448a4cdc125cf7e4fa8c6a1d0a267",
     "link_radio.cpp": "af403385a985ac15e58301ee0173dca90ed6fd2c7a90871615f10ba5d025b943",
     "link_radio.h": "fbdd0f4af23f61daef511b311ebebd141236ed3699ef8a7ac00bc8004e020ecd",
-    "link_ui.h": "f506913edd2035469acc3ba4397b527d5a97a8bf53db522312c9131d749c429f",
+    "link_ui.h": "167f210d5819e16b1c140d9e2ba630ea1bb22ecca525f4f0f20f748f32f6ddda",
     "pet.cpp": "0a205807b2cea19efabb10b1f4787d9479a99e9603d23f8010704fd23a239c2c",
     "pet.h": "34bebbfea05592d8805435cd635d1c96d160e41cff82af75bd76fbc72488520f",
     "pin_config.h": "1c4d804493e96a4f2a580990cf90a12b01fd95474164fab3ff9d98b44251f5f2",
