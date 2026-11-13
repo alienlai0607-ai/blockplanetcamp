@@ -15,7 +15,7 @@ for(const legacyVersion of [1,2])test(`editor, animation and background flow wit
   const html=await readFile(new URL('../index.html',import.meta.url),'utf8');
   document.write(html.replace(/<script[\s\S]*?<\/script>/g,''));
   const noop=()=>{};
-  const canvasContext={clearRect:noop,fillRect:noop,beginPath:noop,moveTo:noop,lineTo:noop,stroke:noop,save:noop,restore:noop,setLineDash:noop,strokeRect:noop};
+  const canvasContext={fillText:noop,getImageData:()=>({data:new Uint8ClampedArray(96*16*4)}),clearRect:noop,fillRect:noop,beginPath:noop,moveTo:noop,lineTo:noop,stroke:noop,save:noop,restore:noop,setLineDash:noop,strokeRect:noop};
   let previewPixel0=null,previewPaintCount=0,backgroundPixel0=null;
   window.HTMLCanvasElement.prototype.getContext=function(){
     const target=this;
@@ -44,6 +44,17 @@ for(const legacyVersion of [1,2])test(`editor, animation and background flow wit
   const save=()=>window.dispatchEvent(new window.Event('pagehide'));
   try {
     await import(`../app.js?dom-test-v${legacyVersion}`);
+    assert(!$('trainerPanel').hidden);assert($('animationPanel').hidden);assert.equal($('canvasSize').value,'32');assert($('canvasSize').disabled);
+    const originalCollection=window.localStorage.getItem(STORAGE_KEY);
+    $('nameInput').value='外星人';$('nameInput').dispatchEvent(new window.Event('input'));$('nameInput').dispatchEvent(new window.Event('blur'));
+    $('drawingCanvas').dispatchEvent(new window.PointerEvent('pointerdown',{pointerId:88,button:0,clientX:8,clientY:8}));$('drawingCanvas').dispatchEvent(new window.PointerEvent('pointerup',{pointerId:88}));save();
+    assert.equal(JSON.parse(window.localStorage.getItem('teampoke.trainer-profile.v1')).name,'外星人');
+    assert.equal(JSON.parse(window.localStorage.getItem('teampoke.trainer-profile.v1')).pixels[0],'#214d40');
+    $('consoleB').click();save();assert.equal(JSON.parse(window.localStorage.getItem('teampoke.trainer-profile.v1')).pixels[0],null);
+    assert.deepEqual(JSON.parse(window.localStorage.getItem(STORAGE_KEY)).projects[0].frames,JSON.parse(originalCollection).projects[0].frames);
+    $('downloadProject').click();const identityExport=JSON.parse(await downloadBlobs.at(-1).text());assert.equal(identityExport.name,'外星人');assert.equal(identityExport.pixels.length,1024);assert(downloads.at(-1).endsWith('.trainer.json'));downloads.length=0;downloadBlobs.length=0;
+    $('consoleA').click();assert.equal($('playAnimation').getAttribute('aria-pressed'),'true');$('consoleA').click();assert.equal($('playAnimation').getAttribute('aria-pressed'),'false');
+    document.querySelector('[data-mode=character]').click();
     assert.equal(document.querySelectorAll('.color-swatch').length,16);
     assert.equal(collection().projects.length,1);
     assert.equal(collection().version,3);assert.equal(collection().activeId,'original');

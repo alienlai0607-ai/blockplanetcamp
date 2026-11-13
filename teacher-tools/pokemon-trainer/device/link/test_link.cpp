@@ -31,8 +31,8 @@ struct Net {
 int main(){
   unsigned checks=0;
   {Packet p;p.type=Turn;p.session=~0ULL;p.guest=0x123456789abcdefULL;p.seed=123;p.round=99;p.moves[0]=33;p.moves[1]=165;p.species[0]=25;p.species[1]=151;p.hash=234;p.before=99;
-   uint8_t b[WIRE_BYTES];encode(p,b);Packet out;assert(decode(b,64,out)&&out.guest==p.guest&&out.species[1]==151);for(unsigned i=0;i<64;i++){b[i]^=1;assert(!decode(b,64,out));b[i]^=1;}assert(!decode(b,63,out));b[8]^=2;put32(b+60,crc(b,60));assert(!decode(b,64,out));checks+=67;}
-  {Net n;n.setup();for(int i=0;i<15;i++)n.step();assert(n.b.join(0,99,n.now));for(int i=0;i<25;i++)n.step();assert(n.a.phase==Pairing&&n.b.phase==Pairing);n.a.confirm(n.now);for(int i=0;i<25;i++)n.step();assert(n.a.phase==Pairing&&n.b.phase==Pairing);n.b.confirm(n.now);for(int i=0;i<25;i++)n.step();assert(n.a.phase==Battle&&n.b.phase==Battle);checks+=3;}
+   uint8_t b[WIRE_BYTES];encode(p,b);Packet out;assert(decode(b,WIRE_BYTES,out)&&out.guest==p.guest&&out.species[1]==151);for(unsigned i=0;i<WIRE_BYTES;i++){b[i]^=1;assert(!decode(b,WIRE_BYTES,out));b[i]^=1;}assert(!decode(b,63,out));b[8]^=2;put32(b+236,crc(b,236));assert(!decode(b,WIRE_BYTES,out));checks+=243;}
+  {Net n;n.setup();for(int i=0;i<15;i++)n.step();assert(n.b.join(0,99,n.now));for(int i=0;i<60;i++)n.step();assert(n.a.phase==Pairing&&n.b.phase==Pairing);n.a.confirm(n.now);for(int i=0;i<25;i++)n.step();assert(n.a.phase==Pairing&&n.b.phase==Pairing);n.b.confirm(n.now);for(int i=0;i<25;i++)n.step();assert(n.a.phase==Battle&&n.b.phase==Battle);checks+=3;}
   {Net n;n.setup();n.pair();auto p=n.b.packet(Move);p.moves[1]=33;p.guest++;n.a.receive(n.mac[1],p,n.now);assert(!n.a.remoteChoice);p.guest--;p.moves[1]=65535;n.a.receive(n.mac[1],p,n.now);assert(!n.a.remoteChoice);uint8_t stranger[6]={4,1,2,3,4,5};p=n.b.packet(Quit);n.a.receive(stranger,p,n.now);assert(n.a.phase==Battle);checks+=3;}
   {Net n;n.setup();n.pair();n.dropType=TurnAck;n.select(n.a);n.select(n.b);for(int i=0;i<100;i++)n.step();assert(n.a.engine.rounds==1&&n.b.engine.rounds==1&&n.a.awaitAck);assert(digest(n.a.engine)==digest(n.b.engine));n.dropType=0;for(int i=0;i<25;i++)n.step();assert(!n.a.awaitAck&&n.a.engine.rounds==1);checks+=3;}
   {Net n;n.setup();n.pair();n.connected=false;for(int i=0;i<100;i++)n.step();assert(n.a.paused(n.now)&&n.b.paused(n.now));assert(!n.a.choose(33,n.now));n.connected=true;for(int i=0;i<30;i++)n.step();assert(!n.a.paused(n.now)&&n.a.phase==Battle&&n.b.phase==Battle);n.connected=false;for(int i=0;i<510;i++)n.step();assert(n.a.phase==Failed&&n.b.phase==Failed&&n.a.error==Timeout);checks+=4;}
@@ -49,6 +49,17 @@ int main(){
     }
     assert(digest(n.a.engine)==digest(n.b.engine));assert(n.a.engine.rounds==n.b.engine.rounds);assert(n.a.engine.f[0].level==50&&n.a.engine.f[1].level==50);checks+=3;
   }
+  // Distinct portraits/names transfer exactly, with missing/duplicate/reordered chunks.
+  {uint8_t one[TrainerProfile::BYTES],two[TrainerProfile::BYTES];TrainerProfile::makeDefault(one);TrainerProfile::makeDefault(two);one[64]=17;two[65]=91;memset(one+16,0,32);one[8]=6;memcpy(one+16,"小魚",6);two[16]='B';for(unsigned i=2240;i<TrainerProfile::BYTES;i++){one[i]=uint8_t(i*17);two[i]=uint8_t(i*31);}
+   Net n(987);assert(n.a.setProfile(one)&&n.b.setProfile(two));n.loss=35;n.duplicates=40;n.maxDelay=450;n.setup();n.pair();assert(n.a.profilesReady()&&n.b.profilesReady());assert(!memcmp(n.a.peerProfile,two,sizeof(two)));assert(!memcmp(n.b.peerProfile,one,sizeof(one)));assert(!n.a.setProfile(two));checks+=5;}
+  // A missing profile must block both confirmations. No battle with a blank/mixed identity.
+  {Net n;n.setup();n.dropType=ProfileData;for(int i=0;i<160;i++){n.step();if(n.b.phase==Searching&&n.b.rooms[0].session)n.b.join(0,55,n.now);n.a.confirm(n.now);n.b.confirm(n.now);}assert(n.a.phase==Pairing&&n.b.phase==Pairing&&!n.a.confirmed&&!n.b.confirmed);n.dropType=0;n.pair();checks++;}
+  // CRC-valid malformed profile data cannot change an established identity.
+  {Net n;n.setup();n.pair();auto before=n.a.rxMask;auto p=n.b.packet(ProfileData);p.hash=n.b.localHash;p.before=TrainerProfile::BYTES;p.round=0xffffffff;p.moves[0]=176;n.a.receive(n.mac[1],p,n.now);assert(n.a.rxMask==before&&n.a.phase==Battle);p.round=0;p.profileHash^=1;n.a.receive(n.mac[1],p,n.now);assert(n.a.phase==Battle);checks+=2;}
+  // Even a profile with a matching transport CRC must pass strict UTF-8 validation.
+  {Net n;n.setup();n.pair();uint8_t broken[TrainerProfile::BYTES];TrainerProfile::makeDefault(broken);broken[16]=0xc0;n.a.rxMask=0;n.a.peerReady=false;n.a.peerHash=crc(broken,sizeof(broken));
+   for(unsigned i=0;i<Session::CHUNKS;i++){auto p=n.b.packet(ProfileData);p.profileHash=p.hash=n.a.peerHash;p.round=i;p.before=TrainerProfile::BYTES;unsigned offset=i*Session::CHUNK,amount=TrainerProfile::BYTES-offset;if(amount>Session::CHUNK)amount=Session::CHUNK;p.moves[0]=amount;memcpy(p.data,broken+offset,amount);n.a.receive(n.mac[1],p,n.now);}
+   assert(n.a.phase==Failed&&n.a.error==Desync&&!n.a.peerReady);checks++;}
   // A malformed but CRC-valid peer result must never change battle state.
   {Net n;n.setup();n.pair();n.select(n.b);auto before=digest(n.b.engine);Packet p=n.a.packet(Turn);p.round=1;p.moves[0]=33;p.moves[1]=n.b.choice;p.before=before;p.hash=123;n.b.receive(n.mac[0],p,n.now);assert(n.b.phase==Failed&&digest(n.b.engine)==before);checks++;}
   std::printf("Link protocol tests passed: %u assertions plus 160 complete lossy/duplicate/reordered battles.\n",checks);

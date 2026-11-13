@@ -1,4 +1,12 @@
-# TPD1 v1 — StopWatch device artwork package
+# TPD1 v2 — trainer identity extension (SWdev15 / WSdev7)
+
+Version 2 retains the v1 layout below except: version at offset 4 is 2, header length is 160, there are eight section-entry slots, section count is frames + 4, and the final section is kind 4 (trainer), index 0, raw encoding 0, mask flag 0, color length 2,432, mask length 0. Decoded-length accounting includes those 2,432 bytes. Worst-case four 64×64 character frames plus backgrounds and trainer occupy 61,984 bytes, still within 64 KiB. Profile 1 is shared by the supported StopWatch and Waveshare round 466×466 displays; it does not authorize cross-board firmware installation.
+
+The trainer section is a fixed TPR1 record: magic at 0, u16 version 1 at 4, width/height 32 at 6/7, UTF-8 name byte length at 8 (1–32, at most eight codepoints), reserved zeros at 9–15, zero-padded name at 16–47, reserved zeros at 48–63. RGB565 pixels occupy 64–2111; a 128-byte LSB-first opacity mask follows. Bytes 2240–2431 contain a 96×16 LSB-first monochrome name raster. Names reject controls, bidi controls and malformed UTF-8. The raster allows Chinese names without adding every glyph to the firmware font.
+
+New firmware accepts both v1 and v2. Loading v1 uses the default trainer. USB HELLO advertises `trainer-v1`; the browser rejects a trainer upload to older firmware before starting a write. Both the trainer and backgrounds become active only after the complete package passes validation and the existing two-slot store commits. Source JSON uses a separate trainer identity file and local-storage key; existing Pokémon JSON is unchanged.
+
+# TPD1 v1 — original artwork package (still accepted)
 
 Little-endian, at most 65,536 bytes, no executable code or filesystem paths. One character animation (16/32/64 square, 1–4 frames), three 64×64 backgrounds. RGB565 colors, opaque-character bitmask, optional lossless run compression after RGB565 conversion. Profile 1 means StopWatch C152, 466×466 round panel. Other boards need an explicitly verified profile.
 

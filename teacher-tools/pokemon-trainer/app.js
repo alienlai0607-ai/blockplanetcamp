@@ -1,7 +1,10 @@
+import {drawStatusPreview} from './status-preview.js?v=1';
 import {PALETTE, STORAGE_KEY, MAX_PROJECTS, MAX_FRAMES, makeProject, nameOf, readCollection, importSprite, serialize, History, stroke, fill, resize, addFrame, deleteFrame, moveFrame, previousPixels, sheetPixels, TIMES, TIME_NAMES, BACKGROUND_SIZE, backgroundLayer, backgroundTemplate} from './model.js?v=3';
-import {DEVICE,SCENES,encodeDevice,decodeDevice,drawDevice,spritePlacement,deviceWarnings,timeAtHour,rgb565,color565,FALLBACK} from './device.js?v=3';
+import {DEVICE,SCENES,encodeDevice,decodeDevice,drawDevice,spritePlacement,deviceWarnings,timeAtHour,rgb565,color565,FALLBACK} from './device.js?v=4';
 import {AnimationPlayer} from './playback.js?v=4';
-import {mountDevicePanel} from './usb-ui.js?v=6';
+import {mountDevicePanel} from './usb-ui.js?v=7';
+
+import {TRAINER_KEY,makeTrainer,readTrainer,serializeTrainer,trainerName,drawTrainerIntro} from './trainer.js?v=1';
 
 const $ = id => document.getElementById(id);
 const all = selector => [...document.querySelectorAll(selector)];
@@ -13,9 +16,12 @@ try {
 } catch { storageError=true;damagedStorage=true; }
 if(!collection) { const p=makeProject('芽芽（練習）',32,true); collection={version:3,activeId:p.id,projects:[p]}; }
 let project=collection.projects.find(p=>p.id===collection.activeId), history=new History();
-let mode='character',time='day',histories={character:history};
-const drawing=()=>mode==='character'?project:backgroundLayer(project,time);
-const historyKey=()=>mode==='character'?'character':time;
+let trainer=makeTrainer(),trainerSaved=false,trainerDamaged=false;
+try{const saved=localStorage.getItem(TRAINER_KEY);if(saved){trainer=readTrainer(saved);trainerSaved=true;}}catch{trainerDamaged=true;}
+const trainerHistory=new History();let introTimer=null,introStarted=0;
+let mode=trainerSaved?'character':'trainer',time='day',histories={character:history,trainer:trainerHistory};if(mode==='trainer')history=trainerHistory;
+const drawing=()=>mode==='trainer'?trainer:mode==='character'?project:backgroundLayer(project,time);
+const historyKey=()=>mode==='trainer'?'trainer':mode==='character'?'character':time;
 let tool='pencil', color=PALETTE[0], brush=1, grid=true, mirror=false;
 let pointer=null, last=null, saveTimer, toastTimer, dirty=!damagedStorage, keyboardCursor=null;
 let confirmResolve=null;
@@ -33,10 +39,12 @@ function persist() {
     if(legacyBackup){const old=localStorage.getItem(STORAGE_KEY),key=STORAGE_KEY+`.v${legacyBackup}-backup`;if(old&&!localStorage.getItem(key))localStorage.setItem(key,old);legacyBackup=0;}
     // Preserve an unreadable previous collection before writing new work.
     if(damagedStorage) { const old=localStorage.getItem(STORAGE_KEY);if(old)localStorage.setItem(STORAGE_KEY+'.recovery',old);damagedStorage=false; }
+    if(trainerDamaged){const old=localStorage.getItem(TRAINER_KEY);if(old)localStorage.setItem(TRAINER_KEY+'.recovery',old);trainerDamaged=false;}
+    localStorage.setItem(TRAINER_KEY,serializeTrainer(trainer));
     localStorage.setItem(STORAGE_KEY,JSON.stringify(collection));dirty=false;storageError=false;saveStatus('已儲存在此瀏覽器');return true;
   } catch { storageError=true;saveStatus('尚未儲存，請下載作品檔',true);return false; }
 }
-function changed() { project.updatedAt=new Date().toISOString();dirty=true;saveStatus('正在儲存…');clearTimeout(saveTimer);saveTimer=setTimeout(persist,300); }
+function changed() { if(mode!=='trainer')project.updatedAt=new Date().toISOString();dirty=true;saveStatus('正在儲存…');clearTimeout(saveTimer);saveTimer=setTimeout(persist,300); }
 function renderSprite(target,p,scale=1) {
   target.width=p.width*scale;target.height=p.height*scale;
   const c=target.getContext('2d');c.clearRect(0,0,target.width,target.height);c.imageSmoothingEnabled=false;
@@ -58,34 +66,35 @@ function render(updateAllFrames=true) {
   if(mirror){ctx.save();ctx.strokeStyle='#dc835b';ctx.setLineDash([6,6]);ctx.beginPath();ctx.moveTo(256,0);ctx.lineTo(256,512);ctx.stroke();ctx.restore();}
   if(keyboardCursor){ctx.strokeStyle='#dc835b';ctx.lineWidth=3;ctx.strokeRect(keyboardCursor[0]*cell+1.5,keyboardCursor[1]*cell+1.5,cell-3,cell-3);}
   refreshDevice(updateAllFrames);renderPreview();renderFrames(updateAllFrames);renderBackgroundUI(updateAllFrames);
-  $('previewName').textContent=nameOf(project.name);
-  $('previewStats').textContent=`${project.width} × ${project.height} · ${project.frames.length} 格動畫`;
-  $('canvasSize').value=String(target.width);$('canvasSize').disabled=mode==='background';
+  $('previewName').textContent=mode==='trainer'?trainerName(trainer.name):nameOf(project.name);
+  $('previewStats').textContent=mode==='trainer'?'我的身分卡 · 32 × 32':`${project.width} × ${project.height} · ${project.frames.length} 格動畫`;
+  $('canvasSize').value=String(target.width);$('canvasSize').disabled=mode!=='character';
   $('canvasSizeLabel').textContent=mode==='background'?'背景畫布':'角色畫布';
   $('undo').disabled=!history.past.length;$('consoleB').disabled=!history.past.length;$('redo').disabled=!history.future.length;
   $('projectCount').textContent=collection.projects.length;
   $('projectNumber').textContent=String(collection.projects.indexOf(project)+1).padStart(3,'0');
 }
 function renderPreview() {
+  if(mode==='trainer'){drawTrainerIntro($('deviceCanvas'),trainer,project,introTimer?performance.now()-introStarted:0);drawStatusPreview($('deviceCanvas'),Number($('previewHour').value));$('playbackStatus').textContent=introTimer?'訓練家出場預覽':'我的訓練家 · 按下出場預覽';return;}
   const index=player.running?player.index:project.activeFrame;
-  if(deviceArt){const deviceFrame=player.running?player.index:project.activeFrame;drawDevice($('deviceCanvas'),deviceArt,time,deviceFrame,deviceScene);}
+  if(deviceArt){const deviceFrame=player.running?player.index:project.activeFrame;drawDevice($('deviceCanvas'),deviceArt,time,deviceFrame,deviceScene);if($('deviceUIToggle').checked)drawStatusPreview($('deviceCanvas'),Number($('previewHour').value));}
   renderSprite($('previewCanvas'),{...project,pixels:project.frames[index]});
   $('playbackStatus').textContent=TIME_NAMES[time]+' · '+(player.running?`播放中 ${index+1} / ${project.frames.length}`:`預覽第 ${index+1} 格`);
   for(const b of all('[data-frame]'))b.classList.toggle('is-playing',player.running&&Number(b.dataset.frame)===index);
 }
 function refreshDevice(full=true){
   if(full||!deviceArt){
-    try{deviceBytes=encodeDevice(project);deviceArt=decodeDevice(deviceBytes);$('downloadDevice').disabled=false;
+    try{deviceBytes=encodeDevice(project,trainer);deviceArt=decodeDevice(deviceBytes);$('downloadDevice').disabled=false;
       $('deviceBudget').textContent=`素材 ${(deviceBytes.length/1024).toFixed(1)} / 64 KiB · 解碼後 ${(deviceArt.decodedBytes/1024).toFixed(1)} KiB · ${deviceArt.fps} 格／秒`;
     }catch(error){deviceArt=null;deviceBytes=null;$('downloadDevice').disabled=true;$('deviceBudget').textContent=error.message;}
   }else{
     if(mode==='background')deviceArt.backgrounds[time]=project.backgrounds[time].map(c=>color565(rgb565(c||FALLBACK[time])));
-    else deviceArt.frames[project.activeFrame]=project.pixels.map(c=>c===null?null:color565(rgb565(c)));
+    else if(mode==='character')deviceArt.frames[project.activeFrame]=project.pixels.map(c=>c===null?null:color565(rgb565(c)));
     $('deviceBudget').textContent='繪製中，放開筆尖後更新容量';
   }
   $('deviceWarnings').replaceChildren(...deviceWarnings(project,deviceScene).map(message=>Object.assign(document.createElement('li'),{textContent:message})));
   $('explorationOverlay').toggleAttribute('hidden',deviceScene!=='exploration');$('homeOverlay').toggleAttribute('hidden',deviceScene!=='home');
-  $('deviceUI').toggleAttribute('hidden',!$('deviceUIToggle').checked);
+  $('deviceUI').toggleAttribute('hidden',mode==='trainer'||!$('deviceUIToggle').checked);
   $('deviceGuides').toggleAttribute('hidden',mode!=='background'||!$('guideToggle').checked);
   $('guideRegions').replaceChildren(...SCENES[deviceScene].regions.map(([x,y,w,h])=>{const rect=document.createElementNS('http://www.w3.org/2000/svg','rect');for(const [k,v]of Object.entries({x,y,width:w,height:h}))rect.setAttribute(k,v);return rect;}));
   const p=spritePlacement(project,deviceScene);$('guideCharacter').toggleAttribute('hidden',!p);
@@ -118,13 +127,17 @@ function renderFrames(updateAll=true) {
   all('[data-frame-step]').forEach(b=>{const n=(mode==='character'?project.activeFrame:TIMES.indexOf(time))+Number(b.dataset.frameStep);b.disabled=n<0||n>=(mode==='character'?project.frames.length:TIMES.length);});
   $('onionToggle').disabled=project.activeFrame===0;
   $('fpsInput').value=project.fps;$('fpsValue').textContent=`${project.fps} 格 / 秒`;
-  $('downloadSheet').disabled=project.frames.length<2;
+  $('downloadSheet').disabled=mode==='trainer'||project.frames.length<2;
   syncPlayButtons();
 }
 function renderBackgroundUI(updateAll=true) {
-  const editingBackground=mode==='background';
-  $('animationPanel').hidden=editingBackground;$('backgroundPanel').hidden=!editingBackground;
-  $('drawingModeHint').textContent=editingBackground?`正在畫${TIME_NAMES[time]}背景 · 64 × 64 像素，在「夥伴登場」查看角色與場景。`:'正在畫角色 · 透明的地方會透出背景。';
+  const editingBackground=mode==='background',editingTrainer=mode==='trainer';
+  document.querySelector('.workspace').classList.toggle('trainer-mode',editingTrainer);$('trainerPanel').hidden=!editingTrainer;$('previewStage').classList.toggle('trainer-preview',editingTrainer);
+  $('nameInput').maxLength=editingTrainer?16:24;$('nameInput').placeholder=editingTrainer?'為自己取個名字（最多 8 字）':'為夥伴取個名字';document.querySelector('label[for=nameInput]').textContent=editingTrainer?'訓練家名字':'寶可夢名字';
+  $('downloadProject').lastChild.textContent=editingTrainer?'保存訓練家檔':'保存夥伴與背景';$('importProject').lastChild.textContent=editingTrainer?'開啟訓練家檔':'開啟作品檔';$('fpsInput').disabled=editingTrainer;$('deviceScene').disabled=editingTrainer;
+  if(editingTrainer){$('frameBadge').textContent='TRAINER · 32 × 32';all('[data-frame-step]').forEach(b=>b.disabled=true);}
+  $('animationPanel').hidden=mode!=='character';$('backgroundPanel').hidden=!editingBackground;
+  $('drawingModeHint').textContent=editingTrainer?'正在畫自己 · 一張造型就能完成丟球出場動畫。':editingBackground?`正在畫${TIME_NAMES[time]}背景 · 64 × 64 像素，在「夥伴登場」查看角色與場景。`:'正在畫角色 · 透明的地方會透出背景。';
   $('coordinate').textContent=`${drawing().width} × ${drawing().height} 像素`;
   $('dpadCaption').textContent=editingBackground?'切換時段':'切換畫格';
   $('dpad').setAttribute('aria-label',editingBackground?'切換背景時段':'切換動畫畫格');
@@ -147,8 +160,8 @@ function renderBackgroundUI(updateAll=true) {
   $('downloadPngLabel').textContent=editingBackground?'背景 PNG':'此格 PNG';
 }
 function selectMode(next) {
-  if(!['character','background'].includes(next))return;
-  finishStroke();stopPlayback();mode=next;history=histories[historyKey()] ||= new History();keyboardCursor=null;render();
+  if(!['trainer','character','background'].includes(next))return;
+  finishStroke();stopPlayback();mode=next;$('nameInput').value=mode==='trainer'?trainer.name:project.name;history=histories[historyKey()] ||= new History();keyboardCursor=null;render();
 }
 function selectTime(next) {
   if(!TIMES.includes(next))return;
@@ -164,6 +177,7 @@ $('resetBackground').addEventListener('click',async()=>{
   if(mode==='background'&&await ask(`載入${TIME_NAMES[time]}範例？`,'會替換目前這張背景，仍可按復原找回。','載入範例'))action(()=>{drawing().pixels=backgroundTemplate(time);});
 });
 function syncPlayButtons() {
+  if(mode==='trainer'){$('playLabel').textContent=introTimer?'停止預覽':'出場預覽';$('playAnimation').setAttribute('aria-pressed',String(!!introTimer));$('consoleA').setAttribute('aria-pressed',String(!!introTimer));$('animationHint').textContent='畫一張自己的造型，遊戲會帶動丟球、夥伴登場。';$('consoleA').setAttribute('aria-label','A：訓練家出場預覽');return;}
   $('playAnimation').setAttribute('aria-pressed',String(player.running));$('consoleA').setAttribute('aria-pressed',String(player.running));
   $('playLabel').textContent=player.running?'暫停動畫':'播放動畫';$('playIcon').setAttribute('href',player.running?'#i-pause':'#i-play');
   $('consoleA').setAttribute('aria-label',player.running?'A：暫停動畫':'A：播放動畫');
@@ -172,8 +186,8 @@ function syncPlayButtons() {
   const hint=project.frames.length<2?(mode==='background'?'角色目前只有 1 格。切回「角色動畫」，複製此格並改一點動作，就能搭配背景播放。':'目前只有 1 格。按「複製此格」，改一點動作後就能播放。'):identical?'每格圖案目前相同，播放時會像靜止；修改其中一格就能看見動作。':'動畫會在上方「夥伴登場」預覽中播放。';
   if($('animationHint').textContent!==hint)$('animationHint').textContent=hint;
 }
-function stopPlayback() {player.stop();syncPlayButtons();renderPreview();}
-function togglePlayback() {finishStroke();if(project.frames.length<2){toast(mode==='background'?'先切回「角色動畫」，複製出第 2 格並改一點動作，就能播放。':'還需要第 2 格：先按「複製此格」，再改一點表情或動作。');return;}if(player.running)stopPlayback();else if(player.start({...project,fps:$('previewMode').value==='device'?Math.min(project.fps,DEVICE.maxFps):project.fps}))syncPlayButtons();}
+function stopPlayback() {if(introTimer){clearInterval(introTimer);introTimer=null;}player.stop();syncPlayButtons();renderPreview();}
+function togglePlayback() {finishStroke();if(mode==='trainer'){if(introTimer){stopPlayback();return;}introStarted=performance.now();introTimer=setInterval(()=>{renderPreview();if(performance.now()-introStarted>=2800){clearInterval(introTimer);introTimer=null;syncPlayButtons();}},33);syncPlayButtons();renderPreview();return;}if(project.frames.length<2){toast(mode==='background'?'先切回「角色動畫」，複製出第 2 格並改一點動作，就能播放。':'還需要第 2 格：先按「複製此格」，再改一點表情或動作。');return;}if(player.running)stopPlayback();else if(player.start({...project,fps:$('previewMode').value==='device'?Math.min(project.fps,DEVICE.maxFps):project.fps}))syncPlayButtons();}
 function selectFrame(index) {if(index<0||index>=project.frames.length)return;finishStroke();stopPlayback();project.activeFrame=index;dirty=true;persist();keyboardCursor=null;render();}
 function finishStroke() {
   if(pointer===null)return;
@@ -182,7 +196,7 @@ function finishStroke() {
   if(history.commit(drawing()))changed();render();
 }
 function action(callback,target=drawing(),undoHistory=history) { finishStroke();stopPlayback();undoHistory.begin(target);callback();if(undoHistory.commit(target))changed();render(); }
-function selectProject(p) { finishStroke();player.stop();persist();project=p;collection.activeId=p.id;mode='character';time='day';history=new History();histories={character:history};keyboardCursor=null;$('nameInput').value=p.name;dirty=true;persist();render(); }
+function selectProject(p) { finishStroke();stopPlayback();persist();project=p;collection.activeId=p.id;mode='character';time='day';history=new History();histories={character:history,trainer:trainerHistory};keyboardCursor=null;$('nameInput').value=p.name;dirty=true;persist();render(); }
 function selectTool(value) {
   tool=value;all('[data-tool]').forEach(b=>{const on=b.dataset.tool===tool;b.classList.toggle('active',on);b.setAttribute('aria-pressed',String(on));});
   $('toolHint').textContent=({pencil:'畫筆 · 按住拖曳就能畫',eraser:'橡皮擦 · 擦掉的地方會變透明',fill:'填色 · 點一下，填滿相連區域',picker:'吸色 · 點一下畫布，選取那個顏色'})[tool];
@@ -226,8 +240,8 @@ for(const c of PALETTE) { const b=document.createElement('button');b.className='
 $('customColor').addEventListener('input',e=>selectColor(e.target.value));$('transparentColor').addEventListener('click',()=>selectColor(null));
 function toggle(id,value) { $(id).classList.toggle('active',value);$(id).setAttribute('aria-pressed',String(value));render(); }
 $('gridToggle').addEventListener('click',()=>toggle('gridToggle',grid=!grid));$('mirrorToggle').addEventListener('click',()=>toggle('mirrorToggle',mirror=!mirror));
-$('nameInput').addEventListener('input',e=>{project.name=e.target.value;changed();$('previewName').textContent=nameOf(project.name);});
-$('nameInput').addEventListener('blur',()=>{project.name=nameOf(project.name);$('nameInput').value=project.name;changed();});
+$('nameInput').addEventListener('input',e=>{if(mode==='trainer'){trainer.name=e.target.value;changed();$('previewName').textContent=trainerName(trainer.name);renderPreview();return;}project.name=e.target.value;changed();$('previewName').textContent=mode==='trainer'?trainerName(trainer.name):nameOf(project.name);});
+$('nameInput').addEventListener('blur',()=>{if(mode==='trainer'){trainer.name=trainerName(trainer.name);$('nameInput').value=trainer.name;changed();render();return;}project.name=nameOf(project.name);$('nameInput').value=project.name;changed();});
 function ask(title,message,ok='確定') {
   finishStroke();stopPlayback();
   if(confirmResolve)confirmResolve(false);
@@ -278,13 +292,16 @@ $('openGallery').addEventListener('click',()=>{finishStroke();stopPlayback();per
 $('consoleSelect').addEventListener('click',()=>$('openGallery').click());$('consoleStart').addEventListener('click',newDialog);
 function filename() { return nameOf(project.name).replace(/[<>:"/\\|?*\u0000-\u001f]/g,'_'); }
 function download(blob,name) { const url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download=name;document.body.append(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),30000); }
-$('downloadProject').addEventListener('click',()=>{finishStroke();download(new Blob([serialize(project)],{type:'application/json'}),filename()+'.tpsprite.json');toast('角色動畫與早、中、晚背景都已存入作品檔。');});
+$('downloadProject').addEventListener('click',()=>{if(mode==='trainer'){$('saveTrainer').click();return;}finishStroke();download(new Blob([serialize(project)],{type:'application/json'}),filename()+'.tpsprite.json');toast('角色動畫與早、中、晚背景都已存入作品檔。');});
 $('downloadPng').addEventListener('click',()=>{
   finishStroke();const image=document.createElement('canvas');renderSprite(image,drawing(),Number($('exportScale').value));
   const bg=mode==='background',name=filename()+(bg?`-${TIME_NAMES[time]}背景.png`:`-第${project.activeFrame+1}格.png`);image.toBlob(blob=>{if(blob){download(blob,name);toast(bg?'已下載目前時段的背景 PNG。':'已下載目前畫格的透明背景 PNG。');}else toast('圖片匯出失敗，請再試一次。');},'image/png');
 });
 $('downloadSheet').addEventListener('click',()=>{finishStroke();const image=document.createElement('canvas');renderSprite(image,sheetPixels(project),Number($('exportScale').value));const name=filename()+'-逐格圖集.png';image.toBlob(blob=>{if(blob){download(blob,name);toast('全部畫格已橫向排成一張 PNG 圖集。');}else toast('圖集匯出失敗，請再試一次。');},'image/png');});
-$('importProject').addEventListener('click',()=>{if(canAdd())$('importFile').click();});
+$('saveTrainer').addEventListener('click',()=>{finishStroke();download(new Blob([serializeTrainer(trainer)],{type:'application/json'}),trainerName(trainer.name).replace(/[<>:"/\\|?*]/g,'_')+'.trainer.json');toast('訓練家身分已保存；換電腦時開啟此檔即可。');});
+$('openTrainer').addEventListener('click',()=>$('trainerFile').click());
+$('trainerFile').addEventListener('change',async e=>{const file=e.target.files?.[0];if(!file)return;try{if(file.size>32768)throw Error('訓練家檔太大。');const next=readTrainer(await file.text());if(!await ask('開啟這位訓練家？','會替換目前訓練家，寶可夢與背景保持原樣。請先保存原本的訓練家檔。','開啟訓練家'))return;selectMode('trainer');action(()=>{trainer.frames=[next.pixels.slice()];trainer.name=next.name;});$('nameInput').value=trainer.name;persist();toast('訓練家準備好了！');}catch(error){toast(error.message);}finally{e.target.value='';}});
+$('importProject').addEventListener('click',()=>{if(mode==='trainer'){$('trainerFile').click();return;}if(canAdd())$('importFile').click();});
 $('importFile').addEventListener('change',async e=>{
   const file=e.target.files?.[0];if(!file)return;
   try { if(file.size>524288)throw new Error('作品檔太大，請選擇小於 512 KB 的檔案。');const p=importSprite(await file.text());if(!canAdd())return;collection.projects.push(p);selectProject(p);toast('作品已開啟，可以接著畫了！'); }
@@ -305,7 +322,7 @@ document.addEventListener('keydown',e=>{
 window.addEventListener('pagehide',()=>{finishStroke();stopPlayback();persist();});
 document.addEventListener('visibilitychange',()=>{if(document.hidden){finishStroke();stopPlayback();persist();}});
 window.addEventListener('beforeunload',e=>{finishStroke();if(dirty&&!persist()){e.preventDefault();e.returnValue='';}});
-$('nameInput').value=project.name;selectColor(color);render();
+$('nameInput').value=mode==='trainer'?trainer.name:project.name;selectColor(color);render();
 mountDevicePanel({getArtwork:()=>{finishStroke();refreshDevice();return deviceBytes?.slice();},download,toast});
 if(storageError){saveStatus('未能讀取舊作品，請先下載備份',true);toast('瀏覽器儲存無法讀取。新作品仍可下載；原有資料會先保留。');}
 else{if(!dirty)saveStatus('已儲存在此瀏覽器');else persist();}

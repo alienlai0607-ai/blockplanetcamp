@@ -1,3 +1,4 @@
+import {PROFILE_BYTES,encodeProfile,decodeProfile} from './trainer.js?v=1';
 import {validateSprite,serialize,TIMES} from './model.js?v=3';
 
 // The same integer geometry and RGB565 conversion are used by device/trainer_assets.h.
@@ -5,7 +6,7 @@ export const DEVICE={id:1,name:'StopWatch / Waveshare 1.75G',width:466,height:46
 export const HEADER_BYTES=144;
 export const FALLBACK={morning:'#f3c3a4',day:'#83b5df',night:'#263449'};
 export const SCENES={
-  exploration:{name:'探索畫面',ground:306,limit:168,regions:[[175,36,116,36],[95,84,276,48],[0,330,466,136]]},
+  exploration:{name:'探索畫面',ground:306,limit:168,regions:[[142,20,182,33],[175,56,116,24],[95,84,276,48],[0,330,466,136]]},
   home:{name:'主畫面',ground:260,limit:148,regions:[[65,26,336,82],[90,264,92,46],[188,264,92,46],[286,264,92,46],[0,312,466,154]]}
 };
 export function timeAtHour(hour){return hour>=5&&hour<10?'morning':hour>=10&&hour<18?'day':'night';}
@@ -17,19 +18,21 @@ function encodeWords(words){
   const runs=[];for(let i=0;i<words.length;){let end=i+1;while(end<words.length&&words[end]===words[i])end++;runs.push(end-i,words[i]);i=end;}
   return runs.length<words.length?{encoding:1,bytes:wordsBytes(runs)}:{encoding:0,bytes:wordsBytes(words)};
 }
-export function encodeDevice(project){
+export function encodeDevice(project,trainer=null){
   const p=validateSprite(JSON.parse(serialize(project))),sections=[];
   p.frames.forEach((pixels,index)=>{
     const mask=new Uint8Array(Math.ceil(pixels.length/8));pixels.forEach((c,i)=>{if(c!==null)mask[i>>>3]|=1<<(i&7);});
     sections.push({kind:0,index,...encodeWords(pixels.map(c=>c===null?0:rgb565(c))),mask});
   });
   TIMES.forEach((time,index)=>sections.push({kind:index+1,index:0,...encodeWords(p.backgrounds[time].map(c=>rgb565(c||FALLBACK[time]))),mask:new Uint8Array()}));
-  const total=HEADER_BYTES+sections.reduce((sum,s)=>sum+s.bytes.length+s.mask.length,0);
+  const header=trainer?160:HEADER_BYTES;
+  if(trainer)sections.push({kind:4,index:0,encoding:0,bytes:encodeProfile(trainer),mask:new Uint8Array()});
+  const total=header+sections.reduce((sum,s)=>sum+s.bytes.length+s.mask.length,0);
   if(total>DEVICE.maxBytes)throw new Error('作品超過實機素材包容量。');
-  const bytes=new Uint8Array(total),v=new DataView(bytes.buffer);bytes.set([84,80,68,49]);v.setUint16(4,1,true);v.setUint16(6,HEADER_BYTES,true);v.setUint32(8,total,true);v.setUint16(16,DEVICE.id,true);
+  const bytes=new Uint8Array(total),v=new DataView(bytes.buffer);bytes.set([84,80,68,49]);v.setUint16(4,trainer?2:1,true);v.setUint16(6,header,true);v.setUint32(8,total,true);v.setUint16(16,DEVICE.id,true);
   bytes[18]=p.width;bytes[19]=p.height;bytes[20]=p.frames.length;bytes[21]=Math.min(p.fps,DEVICE.maxFps);bytes[22]=64;bytes[23]=sections.length;
-  v.setUint32(28,p.frames.length*(p.width*p.height*2+Math.ceil(p.width*p.height/8))+3*8192,true);
-  let offset=HEADER_BYTES;
+  v.setUint32(28,p.frames.length*(p.width*p.height*2+Math.ceil(p.width*p.height/8))+3*8192+(trainer?PROFILE_BYTES:0),true);
+  let offset=header;
   sections.forEach((s,i)=>{const at=32+i*16;bytes[at]=s.kind;bytes[at+1]=s.index;bytes[at+2]=s.encoding;bytes[at+3]=s.mask.length?1:0;v.setUint32(at+4,offset,true);v.setUint32(at+8,s.bytes.length,true);v.setUint32(at+12,s.mask.length,true);bytes.set(s.bytes,offset);offset+=s.bytes.length;bytes.set(s.mask,offset);offset+=s.mask.length;});
   v.setUint32(12,crc32(bytes),true);return bytes;
 }
@@ -37,12 +40,14 @@ export function encodeDevice(project){
 export function decodeDevice(input){
   const b=input instanceof Uint8Array?input:new Uint8Array(input),bad=()=>{throw new Error('實機素材包格式或校驗不正確。');};
   if(b.length<HEADER_BYTES||b.length>DEVICE.maxBytes)bad();const v=new DataView(b.buffer,b.byteOffset,b.byteLength);
-  if(b[0]!==84||b[1]!==80||b[2]!==68||b[3]!==49||v.getUint16(4,true)!==1||v.getUint16(6,true)!==HEADER_BYTES||v.getUint32(8,true)!==b.length||v.getUint32(12,true)!==crc32(b)||v.getUint16(16,true)!==1||![16,32,64].includes(b[18])||b[19]!==b[18]||b[20]<1||b[20]>4||b[21]<1||b[21]>8||b[22]!==64||b[23]!==b[20]+3||v.getUint32(24,true)!==0)bad();
-  const decoded=b[20]*(b[18]*b[19]*2+Math.ceil(b[18]*b[19]/8))+3*8192;
+  const schema=v.getUint16(4,true),header=schema===2?160:HEADER_BYTES;if(b.length<header)bad();
+  if(b[0]!==84||b[1]!==80||b[2]!==68||b[3]!==49||![1,2].includes(schema)||v.getUint16(6,true)!==header||v.getUint32(8,true)!==b.length||v.getUint32(12,true)!==crc32(b)||v.getUint16(16,true)!==1||![16,32,64].includes(b[18])||b[19]!==b[18]||b[20]<1||b[20]>4||b[21]<1||b[21]>8||b[22]!==64||b[23]!==b[20]+(schema===2?4:3)||v.getUint32(24,true)!==0)bad();
+  const decoded=b[20]*(b[18]*b[19]*2+Math.ceil(b[18]*b[19]/8))+3*8192+(schema===2?PROFILE_BYTES:0);
   if(v.getUint32(28,true)!==decoded)bad();
-  const result={width:b[18],height:b[19],fps:b[21],frames:[],backgrounds:{},bytes:b.length,decodedBytes:decoded};let offset=HEADER_BYTES;
-  for(let i=0;i<7;i++){
+  const result={schema,trainer:null,width:b[18],height:b[19],fps:b[21],frames:[],backgrounds:{},bytes:b.length,decodedBytes:decoded};let offset=header;
+  for(let i=0;i<(schema===2?8:7);i++){
     const at=32+i*16;if(i>=b[23]){if(b.slice(at,at+16).some(Boolean))bad();continue;}
+    if(schema===2&&i===b[20]+3){if(b[at]!==4||b[at+1]||b[at+2]||b[at+3]||v.getUint32(at+4,true)!==offset||v.getUint32(at+8,true)!==PROFILE_BYTES||v.getUint32(at+12,true)||offset+PROFILE_BYTES>b.length)bad();result.trainer=decodeProfile(b.slice(offset,offset+PROFILE_BYTES));offset+=PROFILE_BYTES;continue;}
     const sprite=i<b[20],kind=sprite?0:i-b[20]+1,n=sprite?b[18]*b[19]:4096,maskSize=sprite?Math.ceil(n/8):0,colorSize=v.getUint32(at+8,true),encoding=b[at+2];
     if(b[at]!==kind||b[at+1]!== (sprite?i:0)||encoding>1||b[at+3]!==Number(sprite)||v.getUint32(at+4,true)!==offset||v.getUint32(at+12,true)!==maskSize||!colorSize||colorSize>b.length-offset||maskSize>b.length-offset-colorSize)bad();
     const words=[];const end=offset+colorSize;

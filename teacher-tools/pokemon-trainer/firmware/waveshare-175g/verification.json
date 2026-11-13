@@ -1,30 +1,35 @@
 {
-  "status": "compiled_host_tested_pending_device_av_check",
+  "status": "compiled_host_tested_pending_device_check",
   "board": "waveshare-175g",
-  "version": "1.18-WSdev6-175g",
-  "based_on": "1.18-WSdev5-175g",
+  "version": "1.18-WSdev7-175g",
+  "based_on": "1.18-WSdev6-175g",
   "flashed": false,
   "hardware_tested": false,
-  "checked_at": "2026-11-13T09:48:33.864852+00:00",
+  "checked_at": "2026-11-13T12:17:17.692977+00:00",
   "partition_unchanged": true,
   "cross_board_radio_tested": false,
   "changes": [
-    "original battle chiptune + nonblocking SFX mix",
-    "18 type charge/travel/impact effects",
-    "smooth HP and hit recoil",
-    "pixel ball throw/absorb/3 shakes/breakout",
-    "capture success sparkle + companion reveal"
+    "Independent 32x32 trainer identity and UTF-8 name raster",
+    "TPD1 v2 transactional artwork with backward-compatible v1 load",
+    "Bounded profile chunk exchange, CRC, retransmission and confirmation gating",
+    "Trainer pairing cards and nonblocking throw / partner entrance in wild and friendly battles",
+    "Pixel clock + percentage / low battery / charging / USB indicator; home clock tap opens settings",
+    "Settings software shutdown: verified saves before off, USB quiet standby, power-button restart, touch cannot wake"
   ],
   "regressions": {
-    "capture": "success, failure, NVS failure, roster full, duplicate taps, delayed frame, millis wrap",
-    "battle": "XP and level up exactly once; no rewards on catch/loss/draw/escape",
-    "audio": "actual audio task host harness: mix, mute, sleep, idle, battle exit, amplitude bounds",
-    "visual": "actual UI + real species thumbnails on host; 151 layouts; 18 types both directions; circular text bounds"
+    "link": "749 assertions + 160 completed lossy, duplicate, reordered battles; profile transfer missing chunks, blocked confirmation, distinct identities",
+    "artwork": "Browser to both actual C++ receivers; old-to-new power-loss storage; exact JS/C++/Python format agreement",
+    "ui": "Actual firmware renderer, 151 layouts, intro input gate, no clipped text, original battle/capture/XP flows",
+    "status": "264 clock / battery / charging / USB / night combinations fit round screen",
+    "shutdown": "Actual functions: cancel, failed saves, save-before-power, USB standby, ignored touch, physical restart and USB removal",
+    "website": "64 focused integration/contract tests passed; relocated controls also passed 7 DOM integration tests"
   },
   "remaining_checks": [
-    "Physical speaker volume and clipping",
-    "Device animation performance",
-    "Cross-board radio battle"
+    "Physical USB upload on both boards",
+    "Physical cross-board profile exchange and battle",
+    "Device animation timing and sound",
+    "Desktop and mobile real-browser visual review",
+    "Physical PMU shutdown / USB standby / power-button restart"
   ],
   "touch_fix_retained": true,
   "build": {
@@ -33,18 +38,18 @@
     "fqbn": "esp32:esp32:esp32s3:CDCOnBoot=cdc,FlashSize=16M,PSRAM=opi,PartitionScheme=app3M_fat9M_16MB",
     "flashed": false,
     "hardware_tested": false,
-    "started_at": "2026-11-13T09:47:32.874071+00:00",
+    "started_at": "2026-11-13T12:06:03.765156+00:00",
     "exit_code": 0,
-    "elapsed_seconds": 36.7,
+    "elapsed_seconds": 660.7,
     "summary": [
-      "Sketch uses 2142291 bytes (68%) of program storage space. Maximum is 3145728 bytes.",
-      "Global variables use 65620 bytes (20%) of dynamic memory, leaving 262060 bytes for local variables. Maximum is 327680 bytes."
+      "Sketch uses 2148703 bytes (68%) of program storage space. Maximum is 3145728 bytes.",
+      "Global variables use 73172 bytes (22%) of dynamic memory, leaving 254508 bytes for local variables. Maximum is 327680 bytes."
     ],
     "binaries": [
       {
         "file": "TamaPoke.ino.bin",
-        "bytes": 2142528,
-        "sha256": "1a63cc37ad452e1716ab5c0a8ba5bb21bf87899d15ea43d23c2521e446c24894"
+        "bytes": 2148944,
+        "sha256": "f5169db834724e8bf91dfa58e6ec01a0141f6de6d668f3a2e5fd1f6958d36554"
       },
       {
         "file": "TamaPoke.ino.bootloader.bin",
@@ -54,7 +59,7 @@
       {
         "file": "TamaPoke.ino.merged.bin",
         "bytes": 16777216,
-        "sha256": "10c015b6bef338cd7deebcdc0ce68579f3090661b8344716e41c99b0b0929878"
+        "sha256": "c745899f8a0ecf496bd86ae3674c084febc54299262b9b7163175cab33ed09e5"
       },
       {
         "file": "TamaPoke.ino.partitions.bin",
@@ -63,10 +68,10 @@
       }
     ]
   },
-  "source_files_verified": 55,
+  "source_files_verified": 59,
   "source_sha256": {
     "LICENSE": "c92bedde60ca87f27221971af47d517c017cc31a62cc952e6f83ea664dc31ac5",
-    "TamaPoke.ino": "b09ff3a8d78a615a3ca44e1bcd5ff2f1f63cdd93fe984fe984310c3a4dad3d3e",
+    "TamaPoke.ino": "a180fbed1cd84af4392b13a0603c1049a44b203d5d3b4be63c75844a25da4a61",
     "activity_steps.h": "294c7f0ad6deae54203e52b980ded421a1077581e69091239dd9eb233e7bd4af",
     "asset_data.cpp": "5cf2e7cb0d8e09406ca0df257fbc4278050cc3923402fe4b65c3a550b55f0604",
     "asset_data.h": "4a5dcbc3a40365e8762dc93db4755a5545ed0d24cecf08f5b46e428db94451a8",
@@ -79,8 +84,8 @@
     "battle_music.h": "627b291f00667b2fd6cfa283b6dd837045fb801ae12fb1845610baf600b54126",
     "battle_presentation.h": "768aa9028321b2c1e56e35255a08cc792ce58eaf8d995058a35a28817949cdb4",
     "battle_progress.h": "483235b4e6370a39b82baa7f49fd7455dfc0b6ffebd178fbf56c8d55c95d5b5c",
-    "battle_state.h": "a6153ec3ef083608d0a18cec7adfbdb75e4143d63110cb25ee2fbee6a68ce995",
-    "battle_ui.h": "0e538d8de51d4ba3eddcf9588d3df62d834efe98e82be162099ecf023545dd65",
+    "battle_state.h": "cf4d10c9286508467acc705374488ab61906f46cb98e58a9d7a5cdd2d1925f08",
+    "battle_ui.h": "0f9f17b2ffa7d19b4d059312deea9e437957dea333221161ef785dc0f7ab6798",
     "blit.h": "42d761bd5f2eb9caa29eb7b2316be35191aeb1bc04ba16d3b0bd349562508dd0",
     "board.cpp": "241914e62c588dc3d2658cd0d79d15244aceb0822021be1a13e607a934a9e71c",
     "board.h": "c9b7541852e3afb27dc5cb2031e394b5c056a894f1ac9fc69fc717dca5ffa91c",
@@ -92,15 +97,15 @@
     "dex.h": "7ed2d4720f83b6e1e2bbe5c45eff48dd13a64af9ffb8e48e149b6b9cf48e187b",
     "dex_zh_tw.h": "b83b74f8219cbc1a498d9eaa73bf550dfd9e82b05715dc959de1d05aa9457a6d",
     "exploration.h": "8904b0befe5bdd9c84f4c6e0122a08c57f3b7f4c79782278bf4b49072961c423",
-    "exploration_ui.h": "14513f4aee7e549872a6af38221405509e55139429d040b82cb4053d47db7567",
+    "exploration_ui.h": "b21517b1be1863148ec4f2e8867b578fc1c1ce586be14d4faf1e92fd59fdf10a",
     "flash_assets.cpp": "b5e927f32c7542612266f8f1aa741066cf2e46232d7cfde81381a4ea298bd1fd",
     "flash_assets.h": "559bcca547411cf6cd3160ae43349cb8b5503bd219a9f5b8e4d42c89144313f9",
     "i18n.cpp": "f10bb05615d3753859d1605d24d3773ea3f59a113ade4f82293deab2a9b88064",
     "i18n.h": "2e9595bd55af172c0dc93c297fb40d292988e1fc97f33c0a84cf7870ca8969f7",
-    "link_core.h": "eab5aa33b79ecb19d417c4b991ab9208392448a4cdc125cf7e4fa8c6a1d0a267",
-    "link_radio.cpp": "af403385a985ac15e58301ee0173dca90ed6fd2c7a90871615f10ba5d025b943",
+    "link_core.h": "3f9753b48f282465645725b733b98537dbb4cb1d383afbdbe07c2f8a73985105",
+    "link_radio.cpp": "a124d7273b7770fd7725ec58928a16e50bc14e8105f447d20e77a3624b0aa49a",
     "link_radio.h": "fbdd0f4af23f61daef511b311ebebd141236ed3699ef8a7ac00bc8004e020ecd",
-    "link_ui.h": "167f210d5819e16b1c140d9e2ba630ea1bb22ecca525f4f0f20f748f32f6ddda",
+    "link_ui.h": "1d670acfc999e6b75c6734c028241f24e152ce26623351f0a9cb866f352e3e29",
     "motion.cpp": "fe1afda5c3c4ff2efffa1b778af8fce663c812bdeae411c2bd159329db4bd47b",
     "motion.h": "9443dcd95a5644f5835ce91c84067c2f6e2e37b31bdebc1f1b6cb0ad7d4b73bb",
     "pet.cpp": "0a205807b2cea19efabb10b1f4787d9479a99e9603d23f8010704fd23a239c2c",
@@ -111,13 +116,17 @@
     "rtcbat.h": "880c95598b2839a49adf28283728d72fe3dfbddc9985099a68640b0082b188f1",
     "sdmon.cpp": "9bc78965e81576c815285c36dbd2361c86d9187ef230e5ca6d792cb551090b2f",
     "sdmon.h": "6d2a66fe0f5792379e60398e4ec28e6ebd1403135ee31649ea77880f57dde92b",
+    "shutdown_ui.h": "ad1c86b2167efdf9dab92a3f059bc914de3b1411863f207ee166685d31ec511c",
     "species.h": "5eac3ba6a80967284a4f9abcffa731f1b1ecdd55bafd0982f2533638971392fe",
+    "status_bar.h": "0d39aea99e6edbabbecadc94b27388ce910652048c6d459f9adc19235231ec73",
     "touch_stream.h": "26cc0298f0061a363b74ba5474473977e137987b6c4f928f327e71927c2af6ef",
-    "trainer_assets.h": "694091315ad73a343a4e75a0c14f9131590a0943985544343217208ebad6fbcf",
-    "trainer_scene.cpp": "9b286e3bf92b11f9f518227e5d46cb7ddf7ace658185a8c825099940c1f8e861",
-    "trainer_scene.h": "770f079f4ef967ded2ac7b0c15b734de2b1f90391fb8bd8ed3cdcefba0e26c63",
+    "trainer_assets.h": "e364157d2dc6092da39552697bf81f4cbc347e7ac7874bd8a38c1ba6ffe935ad",
+    "trainer_intro.h": "535327cf5f5b7ac675e6ce04eefeb07b6001e5591b0b0281aefc9d6ed8bfe229",
+    "trainer_profile.h": "1384e53c6d08a1caa9b18bf9c66252b9ee8508a208944acae9e84379dcb852b0",
+    "trainer_scene.cpp": "4bf10d716af1cd6fb6baa34c52735443550aa045f13558ddfd2957b04013c735",
+    "trainer_scene.h": "e4f883675a5004bc54091e51d01407e5d552d064f8da8b7774ad299430f3f4bc",
     "trainer_store.h": "e28f169b7d9e45e820728ad25bf3ad26d550e219bf1db4f516a5be73ec20aac4",
-    "trainer_transfer.cpp": "a831a4dcd97ea3bd02a835bb8331084d8d336299609284ca2f8950a7f89edafa",
+    "trainer_transfer.cpp": "b4c68137cdc1d03da2a2a3255817dc0b4edd531d532d1ead601dd2489c4757f1",
     "trainer_transfer.h": "f690f25d4363a76ebc0924c759c0bf78588402ae7cfef2d5c0752bd99a7bfc04",
     "zh_tw_font.h": "e466590caa71a5b370b268b26ca57b54a22303f3694594bbe684f00795668a34"
   }

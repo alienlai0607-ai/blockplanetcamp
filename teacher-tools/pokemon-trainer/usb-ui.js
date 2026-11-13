@@ -1,5 +1,5 @@
 import {boardProfile} from './boards.js?v=1';
-import {ArtworkConnection} from './usb.js?v=6';
+import {ArtworkConnection} from './usb.js?v=7';
 import {FirmwareInstaller,latestBackup} from './firmware.js?v=4';
 
 export function mountDevicePanel({getArtwork,download,toast}){

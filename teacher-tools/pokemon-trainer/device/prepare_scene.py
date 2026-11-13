@@ -9,20 +9,30 @@ def inspect(data):
     if len(data)<HEADER or len(data)>65536 or data[:4]!=b'TPD1':bad()
     u16=lambda at:struct.unpack_from('<H',data,at)[0]
     u32=lambda at:struct.unpack_from('<I',data,at)[0]
-    if u16(4)!=1 or u16(6)!=HEADER or u32(8)!=len(data) or u16(16)!=1 or u32(24):bad()
+    schema=u16(4);header=160 if schema==2 else HEADER
+    if len(data)<header:bad()
+    if schema not in (1,2) or u16(6)!=header or u32(8)!=len(data) or u16(16)!=1 or u32(24):bad()
     if zlib.crc32(data[:12]+b'\0'*4+data[16:])!=u32(12):bad()
     w,h,frames,fps,bg,count=data[18:24]
-    if w not in (16,32,64) or w!=h or not 1<=frames<=4 or not 1<=fps<=8 or bg!=64 or count!=frames+3:bad()
-    decoded=frames*(w*h*2+w*h//8)+24576
+    if w not in (16,32,64) or w!=h or not 1<=frames<=4 or not 1<=fps<=8 or bg!=64 or count!=frames+(4 if schema==2 else 3):bad()
+    decoded=frames*(w*h*2+w*h//8)+24576+(2432 if schema==2 else 0)
     if u32(28)!=decoded:bad()
-    offset=HEADER
-    for i in range(7):
+    offset=header
+    for i in range(8 if schema==2 else 7):
         at=32+i*16
         if i>=count:
             if any(data[at:at+16]):bad()
             continue
         kind,index,encoding,mask=data[at:at+4]
         start,colors,maskbytes=struct.unpack_from('<III',data,at+4)
+        if schema==2 and i==frames+3:
+            if (kind,index,encoding,mask,start,colors,maskbytes)!=(4,0,0,0,offset,2432,0) or offset+2432>len(data):bad()
+            profile=data[offset:offset+2432]
+            if profile[:8]!=b'TPR1\x01\x00  ' or not 1<=profile[8]<=32 or any(profile[9:16]) or any(profile[16+profile[8]:64]):bad()
+            try:name=profile[16:16+profile[8]].decode('utf-8')
+            except UnicodeDecodeError:bad()
+            if len(name)>8 or any(ord(c)<32 or 127<=ord(c)<=159 or 0x200b<=ord(c)<=0x200f or 0x202a<=ord(c)<=0x202e or 0x2060<=ord(c)<=0x206f for c in name):bad()
+            offset+=2432;continue
         sprite=i<frames;n=w*h if sprite else 4096
         if kind!=(0 if sprite else i-frames+1) or index!=(i if sprite else 0) or encoding not in (0,1) or mask!=int(sprite) or start!=offset or maskbytes!=(n//8 if sprite else 0) or not colors or colors+maskbytes>len(data)-offset:bad()
         if encoding==0:

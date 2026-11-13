@@ -8,11 +8,12 @@ uint16_t *backgrounds=nullptr;
 uint16_t *trainerScenePrepare(const uint8_t *data,size_t size){
   TrainerAssets::Package package;
   if(!package.load(data,size))return nullptr;
-  auto *candidate=static_cast<uint16_t*>(ps_malloc(3u*64u*64u*sizeof(uint16_t)));
+  auto *candidate=static_cast<uint16_t*>(ps_malloc(3u*64u*64u*sizeof(uint16_t)+TrainerProfile::BYTES));
   if(!candidate)return nullptr;
   for(unsigned time=0;time<3;time++)if(!package.decode(package.frames+time,candidate+time*4096,4096)){
     free(candidate);return nullptr;
   }
+  memcpy(reinterpret_cast<uint8_t*>(candidate+3*4096),package.profile?package.profile:TrainerProfile::fallback(),TrainerProfile::BYTES);
   return candidate;
 }
 void trainerScenePublish(uint16_t *candidate){free(backgrounds);backgrounds=candidate;}
@@ -36,3 +37,5 @@ bool trainerSceneDraw(Arduino_GFX *gfx,int hour){
   }
   return true;
 }
+
+const uint8_t *trainerProfileData(){return backgrounds?reinterpret_cast<const uint8_t*>(backgrounds+3*4096):TrainerProfile::fallback();}

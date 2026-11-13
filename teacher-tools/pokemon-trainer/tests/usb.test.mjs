@@ -1,3 +1,4 @@
+import {makeTrainer} from '../trainer.js';
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {mkdtemp,writeFile,rm} from 'node:fs/promises';
@@ -68,9 +69,9 @@ int main(){trainerSceneBegin();trainerTransferBegin();std::string line;while(std
   child.stdout.on('data',bytes=>{diagnostic+=' reply='+bytes.toString().slice(0,150);output+=bytes.toString();let at;while((at=output.indexOf('\n'))>=0){const line=output.slice(0,at+1);output=output.slice(at+1);if(dropAck&&line.includes(' ACK ')){dropAck=false;continue;}if(dropCommit&&line.includes(' STORED ')){dropCommit=false;continue;}if(!closed){const b=new TextEncoder().encode(line);stream.enqueue(b.slice(0,5));stream.enqueue(b.slice(5));}}});
   // Allow sanitizer startup on macOS; command retry tests use 300 ms after HELLO.
   client=new ArtworkConnection(port,{timeout:3000,commitTimeout:1000});const initial=await client.open();client.timeout=300;assert.equal(initial.storage,'unclaimed');assert.equal(initial.board,board);
-  const p=makeProject('',16,true),first=encodeDevice(p),result=await client.upload(first);assert.equal(dropAck,false);assert.equal(dropCommit,false);assert.equal(result.generation,1);assert.equal(result.size,first.length);
+  const p=makeProject('',16,true),first=encodeDevice(p,makeTrainer()),result=await client.upload(first);assert.equal(dropAck,false);assert.equal(dropCommit,false);assert.equal(result.generation,1);assert.equal(result.size,first.length);
   await client.request('TESTREBOOT',kind=>kind==='RESET');assert.equal((await client.info()).crc,result.crc);
-  p.backgrounds.day[0]='#ff0000';const second=encodeDevice(p),abort=new AbortController();
+  p.backgrounds.day[0]='#ff0000';const second=encodeDevice(p,makeTrainer()),abort=new AbortController();
   await assert.rejects(client.upload(second,{signal:abort.signal,onProgress:()=>abort.abort()}),{code:'cancelled'});assert.equal((await client.info()).crc,result.crc);
   await client.request('TESTREBOOT',kind=>kind==='RESET');assert.equal((await client.info()).crc,result.crc);
   const broken=second.slice();broken[150]^=1;await assert.rejects(client.upload(broken));assert.equal((await client.info()).generation,1);
@@ -102,4 +103,11 @@ test('artwork handshake identifies the matching firmware family for each board',
  assert.equal(parseInfo(line).board,'waveshare-175g');
  assert.throws(()=>parseInfo(line.replace('1.18-WSdev1-175g','1.18-SWdev12-artstore')));
  assert.throws(()=>parseInfo(line.replace('waveshare-175g','waveshare-175c')));
+});
+
+test('old firmware is refused before BEGIN when a trainer identity is attached',async()=>{
+ const connection=new ArtworkConnection({});let began=false;
+ connection.info=async()=>({storage:'ready',capabilities:'backgrounds'});
+ connection.request=async command=>{if(command.startsWith('BEGIN'))began=true;return {type:'ABORTED'};};
+ await assert.rejects(connection.upload(encodeDevice(makeProject('',32,true),makeTrainer())),error=>error.code==='incompatible');assert.equal(began,false);assert.equal(connection.uploading,false);
 });

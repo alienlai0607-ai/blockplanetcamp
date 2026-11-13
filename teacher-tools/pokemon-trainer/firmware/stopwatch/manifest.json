@@ -3,18 +3,23 @@
   "board": "stopwatch-c152",
   "chip": "ESP32-S3",
   "flashBytes": 16777216,
-  "version": "1.18-SWdev14-battle",
+  "version": "1.18-SWdev15-trainer",
   "hardwareTested": false,
   "features": [
     "background-upload",
     "local-friendly-battle",
     "battle-music",
     "type-effects",
-    "capture-animation"
+    "capture-animation",
+    "trainer-profile",
+    "trainer-intro",
+    "peer-trainer-card",
+    "clock-battery-status",
+    "software-shutdown"
   ],
   "linkBattle": {
-    "protocol": 1,
-    "rules": "314c5031",
+    "protocol": 2,
+    "rules": "324c5031",
     "level": 50,
     "mode": "local-1v1"
   },
@@ -40,12 +45,12 @@
     {
       "file": "game.bin",
       "offset": 65536,
-      "bytes": 2173328,
-      "sha256": "c89e380546406ec7aac5aca1dd3de56549931520069370f2440fb821665a7260"
+      "bytes": 2179408,
+      "sha256": "6d88d83bd5fddc067205fc042d694b7587dcf6398fb7171c1670a0fd0d7453c8"
     }
   ],
   "source": {
     "file": "source.zip",
-    "sha256": "bcdc287a3767154966c96b48bf616414dd88f6ce880209e1bd0f705f06658597"
+    "sha256": "2f3e29b8d04e5a7624cf8510880b27b44d62cff25f822dd18638e6e87780c2a9"
   }
 }

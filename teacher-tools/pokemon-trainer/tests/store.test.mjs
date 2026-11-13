@@ -6,13 +6,14 @@ import {join} from 'node:path';
 import {execFileSync} from 'node:child_process';
 import {makeProject,addFrame} from '../model.js';
 import {encodeDevice} from '../device.js';
+import {makeTrainer} from '../trainer.js';
 
 test('firmware dual-slot storage survives every interrupted erase/write, rejects foreign data, and recovers older valid art',async()=>{
  const dir=await mkdtemp(join(tmpdir(),'trainer-store-'));
  try{
   const p=makeProject('',64,true);for(let i=0;i<3;i++)addFrame(p,false);
   for(const pixels of [...p.frames,...Object.values(p.backgrounds)])pixels.forEach((_,i)=>pixels[i]='#'+((i*1234567)&0xffffff).toString(16).padStart(6,'0'));
-  const a=encodeDevice(p);p.backgrounds.day[100]='#ffffff';const b=encodeDevice(p);
+  const a=encodeDevice(p);p.backgrounds.day[100]='#ffffff';const b=encodeDevice(p,makeTrainer());
   await writeFile(join(dir,'a'),a);await writeFile(join(dir,'b'),b);
   await writeFile(join(dir,'test.cpp'),`#include "trainer_store.h"
 #include <vector>

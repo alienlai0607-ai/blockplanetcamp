@@ -2,6 +2,7 @@
 #include <stdint.h>
 #include <stddef.h>
 #include <string.h>
+#include "trainer_profile.h"
 // Transport-independent TPD1 decoder. No allocation, filesystem or game-state writes.
 namespace TrainerAssets {
 constexpr size_t HEADER=144,MAX_BYTES=65536;
@@ -11,17 +12,19 @@ inline uint32_t crc32(const uint8_t*p,size_t n){uint32_t crc=0xffffffffu;for(siz
 struct Section {const uint8_t*colors=nullptr;const uint8_t*mask=nullptr;uint32_t colorBytes=0,maskBytes=0;uint16_t pixels=0;uint8_t encoding=0;};
 class Package {
  public:
-  uint8_t width=0,height=0,frames=0,fps=0;uint32_t decodedBytes=0;Section sections[7];bool valid=false;
+  uint8_t width=0,height=0,frames=0,fps=0;uint32_t decodedBytes=0;const uint8_t*profile=nullptr;Section sections[7];bool valid=false;
   bool load(const uint8_t*b,size_t size){
     *this=Package();
-    if(!b||size<HEADER||size>MAX_BYTES||memcmp(b,"TPD1",4)||u16(b+4)!=1||u16(b+6)!=HEADER||u32(b+8)!=size||u32(b+12)!=crc32(b,size)||u16(b+16)!=1)return false;
-    if((b[18]!=16&&b[18]!=32&&b[18]!=64)||b[19]!=b[18]||b[20]<1||b[20]>4||b[21]<1||b[21]>8||b[22]!=64||b[23]!=b[20]+3||u32(b+24))return false;
-    width=b[18];height=b[19];frames=b[20];fps=b[21];decodedBytes=frames*(width*height*2u+width*height/8u)+3*8192u;
+    if(!b||size<HEADER||size>MAX_BYTES||memcmp(b,"TPD1",4)||(u16(b+4)!=1&&u16(b+4)!=2)||u16(b+6)!=(u16(b+4)==2?160:HEADER)||u32(b+8)!=size||u32(b+12)!=crc32(b,size)||u16(b+16)!=1)return false;
+    bool modern=u16(b+4)==2;if(size<(modern?160:HEADER))return false;
+    if((b[18]!=16&&b[18]!=32&&b[18]!=64)||b[19]!=b[18]||b[20]<1||b[20]>4||b[21]<1||b[21]>8||b[22]!=64||b[23]!=b[20]+(modern?4:3)||u32(b+24))return false;
+    width=b[18];height=b[19];frames=b[20];fps=b[21];decodedBytes=frames*(width*height*2u+width*height/8u)+3*8192u+(modern?TrainerProfile::BYTES:0);
     if(u32(b+28)!=decodedBytes)return false;
-    size_t offset=HEADER;
-    for(unsigned i=0;i<7;i++){
+    size_t offset=modern?160:HEADER;
+    for(unsigned i=0;i<(modern?8u:7u);i++){
       const uint8_t*d=b+32+i*16;
       if(i>=b[23]){for(int k=0;k<16;k++)if(d[k])return false;continue;}
+      if(modern&&i==unsigned(frames)+3){if(d[0]!=4||d[1]||d[2]||d[3]||u32(d+4)!=offset||u32(d+8)!=TrainerProfile::BYTES||u32(d+12)||TrainerProfile::BYTES>size-offset||!TrainerProfile::valid(b+offset))return false;profile=b+offset;offset+=TrainerProfile::BYTES;continue;}
       bool sprite=i<frames;uint32_t pixels=sprite?width*height:4096,maskBytes=sprite?pixels/8:0,colorBytes=u32(d+8);
       if(d[0]!=(sprite?0:i-frames+1)||d[1]!=(sprite?i:0)||d[2]>1||d[3]!=unsigned(sprite)||u32(d+4)!=offset||u32(d+12)!=maskBytes||!colorBytes||colorBytes>size-offset||maskBytes>size-offset-colorBytes)return false;
       Section s;s.colors=b+offset;s.mask=b+offset+colorBytes;s.colorBytes=colorBytes;s.maskBytes=maskBytes;s.pixels=pixels;s.encoding=d[2];

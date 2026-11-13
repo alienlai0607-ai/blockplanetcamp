@@ -29,7 +29,7 @@ bool number(const char*s,uint32_t&value,int base=10){
 bool tokenOK(const char*s){uint32_t ignored;return s&&strlen(s)==8&&number(s,ignored,16);}
 void reply(const char*token,const char*kind,const char*message){Serial.printf("TP %s %s %s\n",token,kind,message);}
 void info(const char*token,const char*version){
-  Serial.printf("TP %s INFO protocol=1 board=stopwatch-c152 fw=%s max=65536 chunk=256 storage=%s size=%lu crc=%08lx generation=%lu capabilities=backgrounds\n",token,version,
+  Serial.printf("TP %s INFO protocol=1 board=stopwatch-c152 fw=%s max=65536 chunk=256 storage=%s size=%lu crc=%08lx generation=%lu capabilities=backgrounds,trainer-v1\n",token,version,
     partitionOK&&storageLoaded?store.state():"blocked",(unsigned long)store.active.size,(unsigned long)store.active.crc,(unsigned long)store.active.sequence);
 }
 }
