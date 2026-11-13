@@ -1,81 +1,110 @@
 {
-  "status": "compiled_host_tested_device_touch_events_verified",
+  "status": "compiled_host_tested_device_button_verified_user_confirmed",
   "board": "waveshare-175g",
-  "version": "1.18-WSdev4-175g",
-  "based_on": "1.18-WSdev3-175g",
-  "hardware_tested": false,
+  "version": "1.18-WSdev5-175g",
+  "based_on": "1.18-WSdev4-175g",
   "flashed": true,
-  "touch_hardware_verified": false,
+  "hardware_tested": false,
+  "touch_hardware_verified": true,
+  "root_cause": "Raw CST9217 coordinates bypassed the vendor-required X/Y mirror for CO5300 rotation 0; input and displayed hit targets were opposite.",
+  "official_reference": "https://github.com/waveshareteam/ESP32-S3-Touch-AMOLED-1.75/blob/main/examples/arduino/06_LVGL_Widgets/06_LVGL_Widgets.ino",
+  "official_panel_rotation": 0,
+  "official_touch_max": [
+    466,
+    466
+  ],
+  "official_touch_mirror": [
+    true,
+    true
+  ],
+  "transform": "min(465,466-raw) on each validated axis, applied once before UI queue",
+  "previous_version_user_report": "WSdev4 still unusable; balanced sensor events were insufficient proof of UI usability",
+  "regressions": {
+    "raw_packets_to_actual_game_button_dispatch": "passed ASan/UBSan; Explore, Partners, Link, feed, play, light, bath; reproduces old mis-hit",
+    "captured_raw_positions": "passed: raw (315,53) maps to feeding button, raw (137,53) maps to bath button",
+    "swipe_direction_and_bounds": "passed",
+    "gesture_handling": "passed ASan/UBSan",
+    "decoder_stream_errors_overflow": "passed ASan/UBSan"
+  },
+  "checked_at": "2026-11-13T09:24:59.685269+00:00",
   "cross_board_radio_tested": false,
-  "checked_at": "2026-11-13T08:13:33.464006+00:00",
-  "diagnostic_evidence": {
-    "version": "1.18-WSdev3-175g",
-    "ready": 1,
-    "reads_delta": 472,
-    "errors_delta": 44,
-    "multiple_coordinates_observed": true,
-    "up_events_not_available_in_old_firmware": true
-  },
-  "fixes": [
-    "Recognize ACK-only replies before coordinate-frame footer validation",
-    "Debounce clean ACK-only no-contact reports with three reads over 60 ms",
-    "Poll idle controller every 50 ms to rearm after cancelled gestures",
-    "Add down/up/cancel and raw packet diagnostics"
-  ],
-  "tests": {
-    "decoder_and_stream": "passed ASan/UBSan: 100 taps, holds, swipes, disconnect/rearm, timestamp wrap, queue overflow",
-    "production_gesture_handler": "passed ASan/UBSan: 101 taps, swipe, error recovery, wake-only touch, long hold"
-  },
-  "limitations": [
-    "Touch coordinates and balanced press/release events verified on one Waveshare device; perceived responsiveness still needs user confirmation",
-    "Invalid controller reads are rejected; 664 of 6298 reads were invalid during this capture, with no gesture cancels or queue overflows",
-    "Cross-board radio battle and battery/power behavior are not yet fully verified"
-  ],
-  "source_reference": "SensorLib 0.5.1 src/touch/TouchDrvCST92xx.cpp getTouchPoints",
-  "partitions_unchanged": true,
-  "bootloader_unchanged": true,
   "imu_startup_fix_retained": true,
+  "partition_unchanged": true,
   "hardware_boot_verified": true,
+  "user_confirmed_usable": true,
   "application_readback_verified": true,
-  "save_and_artwork_headers_preserved": true,
-  "touch_hardware_events_verified": true,
-  "touch_evidence": {
-    "version": "1.18-WSdev4-175g",
-    "samples": 198,
-    "down": 195,
-    "up": 195,
-    "cancel": 0,
-    "overflow": 0,
-    "reads": 6298,
-    "invalid_reads": 664,
-    "max_read_ms": 5,
-    "max_touch_handler_ms": 35,
-    "max_render_ms": 87,
-    "exploration_open_at_end": true,
-    "steps_at_end": 61,
-    "imu_ready": true,
-    "imu_errors": 0,
-    "debounced_up": 0
+  "system_and_artwork_headers_preserved": true,
+  "ui_button_evidence": {
+    "action": "explore",
+    "before": {
+      "version": "1.18-WSdev5-175g",
+      "taps": 0,
+      "tap_x": -1,
+      "tap_y": -1,
+      "explore": 0,
+      "roster": 0,
+      "link": 0,
+      "battle": 0,
+      "feed": 0,
+      "clock": 0,
+      "gallery": 0,
+      "dim": 0,
+      "off": 0,
+      "blocked": 0,
+      "coordinates": {
+        "raw_x": 0,
+        "raw_y": 0,
+        "screen_x": 0,
+        "screen_y": 0
+      }
+    },
+    "after": {
+      "version": "1.18-WSdev5-175g",
+      "taps": 1,
+      "tap_x": 156,
+      "tap_y": 294,
+      "explore": 1,
+      "roster": 0,
+      "link": 0,
+      "battle": 0,
+      "feed": 0,
+      "clock": 0,
+      "gallery": 0,
+      "dim": 0,
+      "off": 0,
+      "blocked": 0,
+      "coordinates": {
+        "raw_x": 310,
+        "raw_y": 172,
+        "screen_x": 156,
+        "screen_y": 294
+      }
+    },
+    "matched_display_target": true
   },
-  "root_cause_status": "Previous capture lacked release events; exact trigger not proven. WSdev4 now records complete explicit press/release events. ACK debounce did not fire in this run.",
+  "remaining_checks": [
+    "Cross-board radio battle",
+    "Battery and power behavior",
+    "Extended soak testing"
+  ],
   "build": {
     "target": "Waveshare ESP32-S3-Touch-AMOLED-1.75G",
     "status": "compiled",
     "fqbn": "esp32:esp32:esp32s3:CDCOnBoot=cdc,FlashSize=16M,PSRAM=opi,PartitionScheme=app3M_fat9M_16MB",
     "flashed": false,
     "hardware_tested": false,
-    "started_at": "2026-11-13T07:52:10.637670+00:00",
+    "started_at": "2026-11-13T08:30:45.297883+00:00",
     "exit_code": 0,
     "elapsed_seconds": 45.8,
     "summary": [
-      "Sketch uses 2136035 bytes (67%) of program storage space. Maximum is 3145728 bytes.",
+      "Sketch uses 2136515 bytes (67%) of program storage space. Maximum is 3145728 bytes.",
       "Global variables use 65572 bytes (20%) of dynamic memory, leaving 262108 bytes for local variables. Maximum is 327680 bytes."
     ],
     "binaries": [
       {
         "file": "TamaPoke.ino.bin",
-        "bytes": 2136272,
-        "sha256": "ce002f034c973673f69b7fd07776faee89e3945fbe85f271d0d46fdfc87934a4"
+        "bytes": 2136752,
+        "sha256": "e213037b3c3512e0cbcbfaea64774445fb6e96271a7e76e4293fecd4770e733d"
       },
       {
         "file": "TamaPoke.ino.bootloader.bin",
@@ -85,7 +114,7 @@
       {
         "file": "TamaPoke.ino.merged.bin",
         "bytes": 16777216,
-        "sha256": "a1e07623c90cfccfba76762113368266905e4d206e6192820672c49df53190ca"
+        "sha256": "599fff3598ded4c339e5187eceacb8913091dae507bb2598a9c805ede5b1db36"
       },
       {
         "file": "TamaPoke.ino.partitions.bin",
@@ -97,7 +126,7 @@
   "source_files_verified": 52,
   "source_sha256": {
     "LICENSE": "c92bedde60ca87f27221971af47d517c017cc31a62cc952e6f83ea664dc31ac5",
-    "TamaPoke.ino": "a62d2ae33d5d5a7932ba68ae3fd64817b2d657219d90fb28c732ba0e624cb81d",
+    "TamaPoke.ino": "7db3ee569ce69ebb0f6bbb5feeeed4b214f91e8eeb8e6ba40e0785756dafe0a9",
     "activity_steps.h": "294c7f0ad6deae54203e52b980ded421a1077581e69091239dd9eb233e7bd4af",
     "asset_data.cpp": "5cf2e7cb0d8e09406ca0df257fbc4278050cc3923402fe4b65c3a550b55f0604",
     "asset_data.h": "4a5dcbc3a40365e8762dc93db4755a5545ed0d24cecf08f5b46e428db94451a8",
@@ -110,9 +139,9 @@
     "battle_state.h": "1bfe3747867f7305813f8de32062ec92813262f18457826536d98155bef18adc",
     "battle_ui.h": "44c9f2a2e9c16f3b402d36abfbb498a62b6ed2b6bb52ee680e6f81f39b119e15",
     "blit.h": "42d761bd5f2eb9caa29eb7b2316be35191aeb1bc04ba16d3b0bd349562508dd0",
-    "board.cpp": "e7d41b07aacb76791846c6209be4903e4ef9f068e11fad204b014b4080cdaeb1",
+    "board.cpp": "241914e62c588dc3d2658cd0d79d15244aceb0822021be1a13e607a934a9e71c",
     "board.h": "c9b7541852e3afb27dc5cb2031e394b5c056a894f1ac9fc69fc717dca5ffa91c",
-    "board_touch.h": "4ec7dadff624012c3232a035435f38b470e865d7fe9669663c7542f9e7ee1c02",
+    "board_touch.h": "951d16582137239b617b612c6cc95c0e80de4ad0362b6cc0562ef2685f1983fe",
     "companion_roster.h": "36baba153e4827e91d155441a3d736d907de00893979eb6fc06367e394f8b2c5",
     "companion_state.h": "9945dbffeb0747fa966f55573919db571e5634b9b381b825687b1ccbbdf9a2ad",
     "custom_scene_data.cpp": "6dcc8de3462dde02a3ef16f90776b174b55d748334fe6d7fa32abe2a8422625f",

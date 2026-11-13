@@ -1,14 +1,16 @@
-# 1.18-WSdev4-175g 觸控修正與連線友誼賽
+# 1.18-WSdev5-175g 觸控座標修正
 
-調整 CST9217 中斷腳位上拉、待機補讀與放開事件處理，避免失去放開狀態後無法接收下一次點擊。ACK-only 回覆先辨識，再以連續三次、至少 60 ms 的有效空資料確認放開；通訊或封包錯誤不當成點擊。新增按下／放開／取消計數與原始封包診斷。
+修正微雪 CO5300 螢幕 rotation=0 下，原始 CST9217 觸控座標與畫面方向相反的問題。依官方設定反轉 X/Y，且只在進入 UI 事件佇列前轉換一次。保留 WSdev3 的 QMI8658 開機修復與 WSdev4 的觸控取樣／診斷改進。
 
-單台微雪實機已完成程式寫入與讀回校驗，開機／NVS 與作品標頭區更新前後一致。實機記錄收到 195 次按下、195 次放開、零取消、零佇列溢出；探索畫面已開啟、步數累積至 61。6298 次讀取中有 664 次無效資料被拒絕，這次未觸發 ACK 放開補判；因此尚不能認定前版問題唯一來自 ACK 處理。使用手感、雙機對戰與電池／電源行為仍需進一步確認。
+已在微雪實機完成寫入與讀回校驗，開機／NVS 及作品標頭區更新前後一致。實際點擊的原始座標 (310,172) 轉為畫面 (156,294)，命中探索按鈕，探索頁由關閉變成開啟；使用者已確認可以正常操作。這項驗證包含實際按鈕動作，不只計算觸控事件。
 
-保留 WSdev3 的 QMI8658 開機修復：統一使用 SensorLib 新版宣告與實作，加速度維持 g 單位、±4g 範圍。
+主機測試使用真正的解碼器、事件串流、遊戲手勢與 onTap 函式，涵蓋探索、夥伴、連線、餵食、遊戲、燈光、洗澡、滑動方向及邊界；ASan/UBSan 通過。跨機型無線對戰、電池／電源行為與長時間測試仍待完成。
+
+[Waveshare 官方觸控方向設定](https://github.com/waveshareteam/ESP32-S3-Touch-AMOLED-1.75/blob/main/examples/arduino/06_LVGL_Widgets/06_LVGL_Widgets.ino)
 
 # 連線友誼賽（2026-11-13）
 
-StopWatch `1.18-SWdev13-link` 與微雪 1.75G `1.18-WSdev4-175g` 使用相同 ESP-NOW 通訊與戰鬥規則，可進行跨機型的一對一友誼賽。每位玩家派一隻目前出戰夥伴，不是每邊兩隻的雙打。微雪單台觸控事件已有實機記錄；跨機型射頻連線與電力表現仍待雙機驗證。
+StopWatch `1.18-SWdev13-link` 與微雪 1.75G `1.18-WSdev5-175g` 使用相同 ESP-NOW 通訊與戰鬥規則，可進行跨機型的一對一友誼賽。每位玩家派一隻目前出戰夥伴，不是每邊兩隻的雙打。微雪單台實際按鈕操作已驗證，使用者確認正常；跨機型射頻連線與電力表現仍待雙機驗證。
 
 1. 兩台都透過網站更新各自板型的韌體。已有遊戲選「更新現有遊戲」，保留進度與作品；先完成完整備份。
 2. 在「夥伴」選擇出戰，再回主畫面按「連線」。
@@ -29,6 +31,7 @@ StopWatch `1.18-SWdev13-link` 與微雪 1.75G `1.18-WSdev4-175g` 使用相同 ES
 執行 `python3 tools/build.py`（Apple Silicon Mac）可重新建置，只編譯不燒錄。
 連線核心測試：`c++ -std=c++17 -I firmware/TamaPoke tests/link_tests.cpp -o /tmp/tamapoke-link-test && /tmp/tamapoke-link-test`。
 觸控解碼／佇列測試：`c++ -std=c++17 tests/touch_tests.cpp -o /tmp/tamapoke-touch-test && /tmp/tamapoke-touch-test`。
+觸控座標到實際按鈕測試：`python3 tests/check_touch_buttons.py`。
 實際遊戲手勢函式測試：`python3 tests/check_touch_gestures.py`。
 字型授權與可重建 BDF 在 localization/font。
 
