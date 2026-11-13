@@ -4,7 +4,7 @@ import {DEVICE,SCENES,encodeDevice,decodeDevice,drawDevice,spritePlacement,devic
 import {AnimationPlayer} from './playback.js?v=4';
 import {mountDevicePanel} from './usb-ui.js?v=7';
 
-import {TRAINER_KEY,makeTrainer,readTrainer,serializeTrainer,trainerName,drawTrainerIntro} from './trainer.js?v=1';
+import {TRAINER_KEY,makeTrainer,upgradeTrainerExample,readTrainer,serializeTrainer,trainerName,drawTrainerIntro} from './trainer.js?v=2';
 
 const $ = id => document.getElementById(id);
 const all = selector => [...document.querySelectorAll(selector)];
@@ -16,8 +16,8 @@ try {
 } catch { storageError=true;damagedStorage=true; }
 if(!collection) { const p=makeProject('芽芽（練習）',32,true); collection={version:3,activeId:p.id,projects:[p]}; }
 let project=collection.projects.find(p=>p.id===collection.activeId), history=new History();
-let trainer=makeTrainer(),trainerSaved=false,trainerDamaged=false;
-try{const saved=localStorage.getItem(TRAINER_KEY);if(saved){trainer=readTrainer(saved);trainerSaved=true;}}catch{trainerDamaged=true;}
+let trainer=makeTrainer(),trainerSaved=false,trainerDamaged=false,trainerLegacyBackup=null;
+try{const saved=localStorage.getItem(TRAINER_KEY);if(saved){trainer=readTrainer(saved);trainerSaved=true;if(upgradeTrainerExample(trainer))trainerLegacyBackup=saved;}}catch{trainerDamaged=true;}
 const trainerHistory=new History();let introTimer=null,introStarted=0;
 let mode=trainerSaved?'character':'trainer',time='day',histories={character:history,trainer:trainerHistory};if(mode==='trainer')history=trainerHistory;
 const drawing=()=>mode==='trainer'?trainer:mode==='character'?project:backgroundLayer(project,time);
@@ -40,6 +40,7 @@ function persist() {
     // Preserve an unreadable previous collection before writing new work.
     if(damagedStorage) { const old=localStorage.getItem(STORAGE_KEY);if(old)localStorage.setItem(STORAGE_KEY+'.recovery',old);damagedStorage=false; }
     if(trainerDamaged){const old=localStorage.getItem(TRAINER_KEY);if(old)localStorage.setItem(TRAINER_KEY+'.recovery',old);trainerDamaged=false;}
+    if(trainerLegacyBackup){const key=TRAINER_KEY+'.side-example-backup';if(!localStorage.getItem(key))localStorage.setItem(key,trainerLegacyBackup);trainerLegacyBackup=null;}
     localStorage.setItem(TRAINER_KEY,serializeTrainer(trainer));
     localStorage.setItem(STORAGE_KEY,JSON.stringify(collection));dirty=false;storageError=false;saveStatus('已儲存在此瀏覽器');return true;
   } catch { storageError=true;saveStatus('尚未儲存，請下載作品檔',true);return false; }
@@ -75,7 +76,7 @@ function render(updateAllFrames=true) {
   $('projectNumber').textContent=String(collection.projects.indexOf(project)+1).padStart(3,'0');
 }
 function renderPreview() {
-  if(mode==='trainer'){drawTrainerIntro($('deviceCanvas'),trainer,project,introTimer?performance.now()-introStarted:0);drawStatusPreview($('deviceCanvas'),Number($('previewHour').value));$('playbackStatus').textContent=introTimer?'訓練家出場預覽':'我的訓練家 · 按下出場預覽';return;}
+  if(mode==='trainer'){drawTrainerIntro($('deviceCanvas'),trainer,project,introTimer?performance.now()-introStarted:null);drawStatusPreview($('deviceCanvas'),Number($('previewHour').value));$('playbackStatus').textContent=introTimer?'訓練家出場預覽':'我的訓練家 · 正面造型';return;}
   const index=player.running?player.index:project.activeFrame;
   if(deviceArt){const deviceFrame=player.running?player.index:project.activeFrame;drawDevice($('deviceCanvas'),deviceArt,time,deviceFrame,deviceScene);if($('deviceUIToggle').checked)drawStatusPreview($('deviceCanvas'),Number($('previewHour').value));}
   renderSprite($('previewCanvas'),{...project,pixels:project.frames[index]});
@@ -299,6 +300,7 @@ $('downloadPng').addEventListener('click',()=>{
 });
 $('downloadSheet').addEventListener('click',()=>{finishStroke();const image=document.createElement('canvas');renderSprite(image,sheetPixels(project),Number($('exportScale').value));const name=filename()+'-逐格圖集.png';image.toBlob(blob=>{if(blob){download(blob,name);toast('全部畫格已橫向排成一張 PNG 圖集。');}else toast('圖集匯出失敗，請再試一次。');},'image/png');});
 $('saveTrainer').addEventListener('click',()=>{finishStroke();download(new Blob([serializeTrainer(trainer)],{type:'application/json'}),trainerName(trainer.name).replace(/[<>:"/\\|?*]/g,'_')+'.trainer.json');toast('訓練家身分已保存；換電腦時開啟此檔即可。');});
+$('trainerExample').addEventListener('click',async()=>{finishStroke();if(await ask('載入正面範例？','會替換訓練家造型，名字和其他作品保持原樣。可用「復原」找回。','載入範例'))action(()=>{trainer.pixels=makeTrainer().pixels;});});
 $('openTrainer').addEventListener('click',()=>$('trainerFile').click());
 $('trainerFile').addEventListener('change',async e=>{const file=e.target.files?.[0];if(!file)return;try{if(file.size>32768)throw Error('訓練家檔太大。');const next=readTrainer(await file.text());if(!await ask('開啟這位訓練家？','會替換目前訓練家，寶可夢與背景保持原樣。請先保存原本的訓練家檔。','開啟訓練家'))return;selectMode('trainer');action(()=>{trainer.frames=[next.pixels.slice()];trainer.name=next.name;});$('nameInput').value=trainer.name;persist();toast('訓練家準備好了！');}catch(error){toast(error.message);}finally{e.target.value='';}});
 $('importProject').addEventListener('click',()=>{if(mode==='trainer'){$('trainerFile').click();return;}if(canAdd())$('importFile').click();});

@@ -1,12 +1,30 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {mkdtemp,writeFile,rm} from 'node:fs/promises';
+import {mkdtemp,writeFile,readFile,rm} from 'node:fs/promises';
 import {tmpdir} from 'node:os';
 import {join} from 'node:path';
 import {execFileSync} from 'node:child_process';
-import {makeTrainer,trainerName,serializeTrainer,readTrainer,encodeProfile,decodeProfile,PROFILE_BYTES} from '../trainer.js';
+import {makeTrainer,upgradeTrainerExample,drawTrainerIntro,trainerName,serializeTrainer,readTrainer,encodeProfile,decodeProfile,PROFILE_BYTES} from '../trainer.js';
 import {makeProject,addFrame,serialize} from '../model.js';
 import {encodeDevice,decodeDevice,crc32} from '../device.js';
+test('only the untouched old example upgrades; custom drawings and names survive',async()=>{
+ const saved=await readFile(new URL('./fixtures/trainer-side-example.json',import.meta.url),'utf8');
+ const old=readTrainer(saved);old.name='小魚';assert(upgradeTrainerExample(old));assert.equal(old.name,'小魚');assert.deepEqual(old.pixels,makeTrainer().pixels);assert(!upgradeTrainerExample(old));
+ const drawn=readTrainer(saved);drawn.pixels[0]='#ff0000';const before=serializeTrainer(drawn);assert(!upgradeTrainerExample(drawn));assert.equal(serializeTrainer(drawn),before);
+ const pixels=makeTrainer().pixels;assert.equal(new Set(pixels.filter(Boolean)).size,7);
+ for(let y=0;y<32;y+=2)for(let x=0;x<32;x+=2){const c=pixels[y*32+x];assert.equal(pixels[y*32+x+1],c);assert.equal(pixels[(y+1)*32+x],c);assert.equal(pixels[(y+1)*32+x+1],c);}
+});
+test('trainer name stays below status; even a full 64-pixel partner cannot cover it',()=>{
+ const trainer=makeTrainer();trainer.name='布拉克星球訓練家';trainer.pixels.fill('#123456');
+ const partner={width:64,height:64,pixels:Array(4096).fill('#abcdef')};
+ for(const elapsed of [null,0,500,1400,1600,2000,2800]){
+  const rects=[],texts=[],g={fillRect(x,y,w,h){rects.push({x,y,w,h,color:this.fillStyle});},fillText(text,x,y,maxWidth){texts.push({text,x,y,maxWidth,baseline:this.textBaseline});}};
+  drawTrainerIntro({getContext:()=>g},trainer,partner,elapsed);
+  const name=texts.find(p=>p.text===trainer.name);assert.equal(name.baseline,'middle');assert(name.y-10>53);assert(name.y+10<114);assert.equal(name.maxWidth,180);
+  for(const p of rects.filter(p=>p.color==='#abcdef')){assert(p.y>=166);assert(p.y+p.h<=310);}
+  if(elapsed===null){const body=rects.filter(p=>p.color==='#123456');assert.equal(Math.min(...body.map(p=>p.x)),137);assert.equal(Math.max(...body.map(p=>p.x+p.w)),329);}
+ }
+});
 test('trainer identity is independent, bounded and preserves transparent black pixels',()=>{
  const p=makeTrainer();p.name='外星人小隊';p.pixels[0]='#000000';p.pixels[1]=null;const old=serializeTrainer(p),bits=new Uint8Array(192);bits[0]=13;bits[191]=255;
  const b=encodeProfile(p,bits),q=decodeProfile(b);assert.equal(b.length,2432);assert.equal(q.name,p.name);assert.equal(q.pixels[0],'#000000');assert.equal(q.pixels[1],null);assert.deepEqual(b.slice(2240),bits);assert.equal(serializeTrainer(p),old);

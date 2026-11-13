@@ -12,6 +12,7 @@ for(const legacyVersion of [1,2])test(`editor, animation and background flow wit
   const document=window.document;
   const legacy=JSON.stringify({version:legacyVersion,activeId:'original',projects:[{id:'original',name:'芽芽（練習）',width:32,height:32,...(legacyVersion===1?{pixels:sprout()}:{frames:[sprout()],activeFrame:0,fps:4}),createdAt:'2026-11-12',updatedAt:'2026-11-12'}]});
   window.localStorage.setItem(STORAGE_KEY,legacy);
+  if(legacyVersion===2)window.localStorage.setItem('teampoke.trainer-profile.v1',await readFile(new URL('./fixtures/trainer-side-example.json',import.meta.url),'utf8'));
   const html=await readFile(new URL('../index.html',import.meta.url),'utf8');
   document.write(html.replace(/<script[\s\S]*?<\/script>/g,''));
   const noop=()=>{};
@@ -44,12 +45,17 @@ for(const legacyVersion of [1,2])test(`editor, animation and background flow wit
   const save=()=>window.dispatchEvent(new window.Event('pagehide'));
   try {
     await import(`../app.js?dom-test-v${legacyVersion}`);
+    if(legacyVersion===2)document.querySelector('[data-mode=trainer]').click();
     assert(!$('trainerPanel').hidden);assert($('animationPanel').hidden);assert.equal($('canvasSize').value,'32');assert($('canvasSize').disabled);
     const originalCollection=window.localStorage.getItem(STORAGE_KEY);
     $('nameInput').value='外星人';$('nameInput').dispatchEvent(new window.Event('input'));$('nameInput').dispatchEvent(new window.Event('blur'));
     $('drawingCanvas').dispatchEvent(new window.PointerEvent('pointerdown',{pointerId:88,button:0,clientX:8,clientY:8}));$('drawingCanvas').dispatchEvent(new window.PointerEvent('pointerup',{pointerId:88}));save();
     assert.equal(JSON.parse(window.localStorage.getItem('teampoke.trainer-profile.v1')).name,'外星人');
     assert.equal(JSON.parse(window.localStorage.getItem('teampoke.trainer-profile.v1')).pixels[0],'#214d40');
+    if(legacyVersion===2)assert(window.localStorage.getItem('teampoke.trainer-profile.v1.side-example-backup'));
+    $('trainerExample').click();$('confirmCancel').click();await Promise.resolve();save();assert.equal(JSON.parse(window.localStorage.getItem('teampoke.trainer-profile.v1')).pixels[0],'#214d40');
+    $('trainerExample').click();$('confirmOk').click();await Promise.resolve();save();assert.equal(JSON.parse(window.localStorage.getItem('teampoke.trainer-profile.v1')).pixels[0],null);
+    $('consoleB').click();save();assert.equal(JSON.parse(window.localStorage.getItem('teampoke.trainer-profile.v1')).pixels[0],'#214d40');
     $('consoleB').click();save();assert.equal(JSON.parse(window.localStorage.getItem('teampoke.trainer-profile.v1')).pixels[0],null);
     assert.deepEqual(JSON.parse(window.localStorage.getItem(STORAGE_KEY)).projects[0].frames,JSON.parse(originalCollection).projects[0].frames);
     $('downloadProject').click();const identityExport=JSON.parse(await downloadBlobs.at(-1).text());assert.equal(identityExport.name,'外星人');assert.equal(identityExport.pixels.length,1024);assert(downloads.at(-1).endsWith('.trainer.json'));downloads.length=0;downloadBlobs.length=0;
