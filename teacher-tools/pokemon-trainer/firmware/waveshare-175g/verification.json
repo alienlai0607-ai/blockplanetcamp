@@ -1,47 +1,81 @@
 {
-  "status": "compiled_host_tested_boot_user_confirmed",
+  "status": "compiled_host_tested_device_touch_events_verified",
   "board": "waveshare-175g",
-  "version": "1.18-WSdev3-175g",
+  "version": "1.18-WSdev4-175g",
+  "based_on": "1.18-WSdev3-175g",
   "hardware_tested": false,
-  "cross_board_radio_tested": false,
   "flashed": true,
-  "gps_enabled": false,
-  "sd_required": false,
-  "link_protocol": 1,
-  "link_rules": "314c5031",
-  "friend_level": 50,
-  "lossy_battles": 160,
-  "protocol_assertions": 564,
-  "protocol_sanitizers": "ASan/UBSan",
-  "ui_screens": 9,
-  "ui_text_pixels_clipped": 0,
-  "existing_battle_and_roster_layouts_tested": 151,
-  "native_ui_wild_battle_xp_regression": "passed",
-  "web_tests": 78,
-  "checked_at": "2026-11-13T07:36:00.650933+00:00",
-  "web_test_failures": 0,
-  "hardware_boot_user_confirmed": true,
+  "touch_hardware_verified": false,
+  "cross_board_radio_tested": false,
+  "checked_at": "2026-11-13T08:13:33.464006+00:00",
+  "diagnostic_evidence": {
+    "version": "1.18-WSdev3-175g",
+    "ready": 1,
+    "reads_delta": 472,
+    "errors_delta": 44,
+    "multiple_coordinates_observed": true,
+    "up_events_not_available_in_old_firmware": true
+  },
+  "fixes": [
+    "Recognize ACK-only replies before coordinate-frame footer validation",
+    "Debounce clean ACK-only no-contact reports with three reads over 60 ms",
+    "Poll idle controller every 50 ms to rearm after cancelled gestures",
+    "Add down/up/cancel and raw packet diagnostics"
+  ],
+  "tests": {
+    "decoder_and_stream": "passed ASan/UBSan: 100 taps, holds, swipes, disconnect/rearm, timestamp wrap, queue overflow",
+    "production_gesture_handler": "passed ASan/UBSan: 101 taps, swipe, error recovery, wake-only touch, long hold"
+  },
+  "limitations": [
+    "Touch coordinates and balanced press/release events verified on one Waveshare device; perceived responsiveness still needs user confirmation",
+    "Invalid controller reads are rejected; 664 of 6298 reads were invalid during this capture, with no gesture cancels or queue overflows",
+    "Cross-board radio battle and battery/power behavior are not yet fully verified"
+  ],
+  "source_reference": "SensorLib 0.5.1 src/touch/TouchDrvCST92xx.cpp getTouchPoints",
+  "partitions_unchanged": true,
+  "bootloader_unchanged": true,
+  "imu_startup_fix_retained": true,
+  "hardware_boot_verified": true,
   "application_readback_verified": true,
-  "save_and_artwork_regions_preserved": true,
-  "imu_driver_vtable_verified": true,
+  "save_and_artwork_headers_preserved": true,
+  "touch_hardware_events_verified": true,
+  "touch_evidence": {
+    "version": "1.18-WSdev4-175g",
+    "samples": 198,
+    "down": 195,
+    "up": 195,
+    "cancel": 0,
+    "overflow": 0,
+    "reads": 6298,
+    "invalid_reads": 664,
+    "max_read_ms": 5,
+    "max_touch_handler_ms": 35,
+    "max_render_ms": 87,
+    "exploration_open_at_end": true,
+    "steps_at_end": 61,
+    "imu_ready": true,
+    "imu_errors": 0,
+    "debounced_up": 0
+  },
+  "root_cause_status": "Previous capture lacked release events; exact trigger not proven. WSdev4 now records complete explicit press/release events. ACK debounce did not fire in this run.",
   "build": {
     "target": "Waveshare ESP32-S3-Touch-AMOLED-1.75G",
     "status": "compiled",
     "fqbn": "esp32:esp32:esp32s3:CDCOnBoot=cdc,FlashSize=16M,PSRAM=opi,PartitionScheme=app3M_fat9M_16MB",
     "flashed": false,
     "hardware_tested": false,
-    "started_at": "2026-11-13T07:28:52.456869+00:00",
+    "started_at": "2026-11-13T07:52:10.637670+00:00",
     "exit_code": 0,
-    "elapsed_seconds": 43.1,
+    "elapsed_seconds": 45.8,
     "summary": [
-      "Sketch uses 2135379 bytes (67%) of program storage space. Maximum is 3145728 bytes.",
-      "Global variables use 65492 bytes (19%) of dynamic memory, leaving 262188 bytes for local variables. Maximum is 327680 bytes."
+      "Sketch uses 2136035 bytes (67%) of program storage space. Maximum is 3145728 bytes.",
+      "Global variables use 65572 bytes (20%) of dynamic memory, leaving 262108 bytes for local variables. Maximum is 327680 bytes."
     ],
     "binaries": [
       {
         "file": "TamaPoke.ino.bin",
-        "bytes": 2135616,
-        "sha256": "a2d2be5e11c58cb145dde9d5be1fe1bbd799571b199306b4dba58cfd0bd0d997"
+        "bytes": 2136272,
+        "sha256": "ce002f034c973673f69b7fd07776faee89e3945fbe85f271d0d46fdfc87934a4"
       },
       {
         "file": "TamaPoke.ino.bootloader.bin",
@@ -51,7 +85,7 @@
       {
         "file": "TamaPoke.ino.merged.bin",
         "bytes": 16777216,
-        "sha256": "3b486c6f5bbdbbf02752b70fe149c1c8524ba000c1cf87974f22da209afd76de"
+        "sha256": "a1e07623c90cfccfba76762113368266905e4d206e6192820672c49df53190ca"
       },
       {
         "file": "TamaPoke.ino.partitions.bin",
@@ -63,7 +97,7 @@
   "source_files_verified": 52,
   "source_sha256": {
     "LICENSE": "c92bedde60ca87f27221971af47d517c017cc31a62cc952e6f83ea664dc31ac5",
-    "TamaPoke.ino": "7ce93592f8f69d82b2c7aff13ba5d40e22d0766c8ff619942753c7754eb5b81e",
+    "TamaPoke.ino": "a62d2ae33d5d5a7932ba68ae3fd64817b2d657219d90fb28c732ba0e624cb81d",
     "activity_steps.h": "294c7f0ad6deae54203e52b980ded421a1077581e69091239dd9eb233e7bd4af",
     "asset_data.cpp": "5cf2e7cb0d8e09406ca0df257fbc4278050cc3923402fe4b65c3a550b55f0604",
     "asset_data.h": "4a5dcbc3a40365e8762dc93db4755a5545ed0d24cecf08f5b46e428db94451a8",
@@ -76,9 +110,9 @@
     "battle_state.h": "1bfe3747867f7305813f8de32062ec92813262f18457826536d98155bef18adc",
     "battle_ui.h": "44c9f2a2e9c16f3b402d36abfbb498a62b6ed2b6bb52ee680e6f81f39b119e15",
     "blit.h": "42d761bd5f2eb9caa29eb7b2316be35191aeb1bc04ba16d3b0bd349562508dd0",
-    "board.cpp": "5211e002ea810bc02c93ecb5b99608cbfcaba5a878270e9bdd16cc57069be548",
-    "board.h": "1e814f85c3816c1551921288eb1e4a1dda513cdac2224b4f5e22246c96e6ef1d",
-    "board_touch.h": "c5856bf0326ccc5d8581571cff8adf81008575e0081973fab0fbfce306faa518",
+    "board.cpp": "e7d41b07aacb76791846c6209be4903e4ef9f068e11fad204b014b4080cdaeb1",
+    "board.h": "c9b7541852e3afb27dc5cb2031e394b5c056a894f1ac9fc69fc717dca5ffa91c",
+    "board_touch.h": "4ec7dadff624012c3232a035435f38b470e865d7fe9669663c7542f9e7ee1c02",
     "companion_roster.h": "36baba153e4827e91d155441a3d736d907de00893979eb6fc06367e394f8b2c5",
     "companion_state.h": "9945dbffeb0747fa966f55573919db571e5634b9b381b825687b1ccbbdf9a2ad",
     "custom_scene_data.cpp": "6dcc8de3462dde02a3ef16f90776b174b55d748334fe6d7fa32abe2a8422625f",
@@ -106,7 +140,7 @@
     "sdmon.cpp": "9bc78965e81576c815285c36dbd2361c86d9187ef230e5ca6d792cb551090b2f",
     "sdmon.h": "6d2a66fe0f5792379e60398e4ec28e6ebd1403135ee31649ea77880f57dde92b",
     "species.h": "5eac3ba6a80967284a4f9abcffa731f1b1ecdd55bafd0982f2533638971392fe",
-    "touch_stream.h": "20d7b97f08a6eea5d40c6bfac244d83d0e7d328040ae38d67a01ca248d73df67",
+    "touch_stream.h": "26cc0298f0061a363b74ba5474473977e137987b6c4f928f327e71927c2af6ef",
     "trainer_assets.h": "694091315ad73a343a4e75a0c14f9131590a0943985544343217208ebad6fbcf",
     "trainer_scene.cpp": "9b286e3bf92b11f9f518227e5d46cb7ddf7ace658185a8c825099940c1f8e861",
     "trainer_scene.h": "770f079f4ef967ded2ac7b0c15b734de2b1f90391fb8bd8ed3cdcefba0e26c63",

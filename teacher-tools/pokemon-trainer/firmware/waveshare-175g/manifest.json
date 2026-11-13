@@ -3,7 +3,7 @@
   "board": "waveshare-175g",
   "chip": "ESP32-S3",
   "flashBytes": 16777216,
-  "version": "1.18-WSdev3-175g",
+  "version": "1.18-WSdev4-175g",
   "hardwareTested": false,
   "features": [
     "background-upload",
@@ -37,12 +37,12 @@
     {
       "file": "game.bin",
       "offset": 65536,
-      "bytes": 2135616,
-      "sha256": "a2d2be5e11c58cb145dde9d5be1fe1bbd799571b199306b4dba58cfd0bd0d997"
+      "bytes": 2136272,
+      "sha256": "ce002f034c973673f69b7fd07776faee89e3945fbe85f271d0d46fdfc87934a4"
     }
   ],
   "source": {
     "file": "source.zip",
-    "sha256": "e0379553ab5da2e551410ccf6bc74793b269a3dcd825c242bd933b28d00b1a37"
+    "sha256": "7058d86955513470380da819d59fc71748e63d30a8ffa5264ca2aff19532b62b"
   }
 }
