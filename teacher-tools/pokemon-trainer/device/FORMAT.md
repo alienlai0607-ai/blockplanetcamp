@@ -41,7 +41,7 @@ Background mapping: nearest-neighbor, no interpolation. Source pixel boundaries 
 
 Morning 05:00–09:59; day 10:00–17:59; night 18:00–04:59, using the existing board clock. Home sleeping behavior still forces night. Background decoding occurs once at boot into 24,576 bytes of PSRAM, not every frame. Failed CRC, shape checks, unsupported version or allocation failure use the existing scenery.
 
-Character preview uses union bounds across all frames for stable anchoring, up to 6× integer scale. Home: ground 260, max 148 pixels tall (current home controls begin at 264); exploration: ground 306, max dimension 168. Character integration into individual pets, abilities and battle states is deliberately not automatic: this release enables the three backgrounds in the firmware; packages retain character frames for the later binding step. Original pet names, species, stats, animations and saves remain authoritative.
+Character preview uses union bounds across all frames for stable anchoring, up to 6× integer scale. Home: ground 260, max 132 pixels tall (current home controls begin at 264); exploration: ground 306, max dimension 168. Character integration into individual pets, abilities and battle states is deliberately not automatic: this release enables the three backgrounds in the firmware; packages retain character frames for the later binding step. Original pet names, species, stats, animations and saves remain authoritative.
 
 ## Web installation and USB artwork transfer (SWdev12)
 

@@ -13,12 +13,16 @@ inline bool valid(const uint8_t*p,size_t n=BYTES){
 }
 inline void makeDefault(uint8_t*p){memset(p,0,BYTES);memcpy(p,"TPR1",4);p[4]=1;p[6]=p[7]=32;p[8]=7;memcpy(p+16,"TRAINER",7);
  auto rect=[&](int x,int y,int w,int h,uint16_t c){for(int j=y;j<y+h;j++)for(int i=x;i<x+w;i++){unsigned k=j*32+i;p[64+2*k]=c;p[65+2*k]=c>>8;p[2112+k/8]|=1<<(k%8);}};
- rect(11,3,10,5,0x2989);rect(10,5,13,3,0xb1aa);rect(12,8,9,8,0xf634);rect(11,8,2,6,0x2989);rect(18,10,2,2,0x2989);rect(10,16,12,9,0xb1aa);rect(8,17,3,7,0xf634);rect(22,17,3,7,0xf634);rect(12,17,7,3,0xf779);rect(11,25,4,5,0x2989);rect(18,25,4,5,0x2989);rect(9,29,6,2,0x53aa);rect(18,29,6,2,0x53aa);
+ const char*rows[16]={"................",".....KKKKKK.....","....KRRWWRRK....","...KRRRRRRRRK...","...KRWWWWWWRK...","..KHHHHHHHHHHK..","...KHHSHHSHHK...","...KHSSSSSSHK...","...KSSKSSKSSK...","....KSSSSSSK....",".....KWKKWK.....","....KTRWWRTK....","...KSTRKKRTSK...","....KKNNNNKK....",".....KNNNNK.....",".....KK..KK....."};
+ for(int y=0;y<16;y++)for(int x=0;x<16;x++){uint16_t c=0;switch(rows[y][x]){case 'K':c=0x21a9;break;case 'R':c=0xc9ea;break;case 'W':c=0xff98;break;case 'H':c=0x7225;break;case 'S':c=0xf5f1;break;case 'T':c=0x2cf2;break;case 'N':c=0x5354;break;default:continue;}rect(x*2,y*2,2,2,c);}
+ const uint8_t letters[7][5]={{1,1,127,1,1},{127,9,25,41,70},{126,9,9,9,126},{0,65,127,65,0},{127,4,8,16,127},{127,73,73,73,65},{127,9,25,41,70}};
+ for(int n=0;n<7;n++)for(int x=0;x<5;x++)for(int y=0;y<7;y++)if(letters[n][x]&(1<<y)){unsigned i=(y+4)*96+27+n*6+x;p[2240+i/8]|=1<<(i%8);}
+
 }
 inline const uint8_t* fallback(){static uint8_t p[BYTES]={};if(!p[0])makeDefault(p);return p;}
 template<class G> void draw(G*g,const uint8_t*p,int cx,int ground,int scale,bool mirror=false){if(!p)p=fallback();for(int y=0;y<32;y++)for(int x=0;x<32;x++){unsigned i=y*32+x;if(p[2112+i/8]&(1<<(i%8))){uint16_t c=p[64+i*2]|uint16_t(p[65+i*2])<<8;g->fillRect(cx-16*scale+(mirror?31-x:x)*scale,ground-32*scale+y*scale,scale,scale,c);}}}
 template<class G> void name(G*g,const uint8_t*p,int cx,int y,uint16_t color,int scale=1){if(!p)p=fallback();bool any=false;for(int i=0;i<192;i++)any|=p[2240+i]!=0;
- if(!any){g->setTextColor(color);g->setTextSize(1);g->setCursor(cx-21,y+4);g->print("TRAINER");return;}
+ if(!any)p=fallback();
  for(int j=0;j<16;j++)for(int x=0;x<96;x++){unsigned i=j*96+x;if(p[2240+i/8]&(1<<(i%8)))g->fillRect(cx-48*scale+x*scale,y+j*scale,scale,scale,color);}
 }
 }

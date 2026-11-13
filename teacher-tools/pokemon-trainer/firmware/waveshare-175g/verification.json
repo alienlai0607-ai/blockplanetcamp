@@ -1,35 +1,32 @@
 {
   "status": "compiled_host_tested_pending_device_check",
   "board": "waveshare-175g",
-  "version": "1.18-WSdev7-175g",
-  "based_on": "1.18-WSdev6-175g",
+  "version": "1.18-WSdev8-175g",
+  "based_on": "1.18-WSdev7-175g",
   "flashed": false,
   "hardware_tested": false,
-  "checked_at": "2026-11-13T12:17:17.692977+00:00",
+  "checked_at": "2026-11-13T12:53:14.840051+00:00",
   "partition_unchanged": true,
   "cross_board_radio_tested": false,
   "changes": [
-    "Independent 32x32 trainer identity and UTF-8 name raster",
-    "TPD1 v2 transactional artwork with backward-compatible v1 load",
-    "Bounded profile chunk exchange, CRC, retransmission and confirmation gating",
-    "Trainer pairing cards and nonblocking throw / partner entrance in wild and friendly battles",
-    "Pixel clock + percentage / low battery / charging / USB indicator; home clock tap opens settings",
-    "Settings software shutdown: verified saves before off, USB quiet standby, power-button restart, touch cannot wake"
+    "Nonblocking 3.8-second startup: current trainer, ball throw, flash, selected companion / egg reveal, home transition",
+    "Front-facing 16x16 / seven-color fallback; custom trainer unchanged",
+    "Separate clock/battery row from home Pok\u00e9mon name and status; preserve room for the portrait",
+    "Existing saves, touch fixes, USB, shutdown and protocol 2 retained"
   ],
   "regressions": {
     "link": "749 assertions + 160 completed lossy, duplicate, reordered battles; profile transfer missing chunks, blocked confirmation, distinct identities",
     "artwork": "Browser to both actual C++ receivers; old-to-new power-loss storage; exact JS/C++/Python format agreement",
-    "ui": "Actual firmware renderer, 151 layouts, intro input gate, no clipped text, original battle/capture/XP flows",
+    "ui": "Both board renderers: original 151 battle/roster layouts plus boot keyframes, 151 partners, egg, header spacing; zero clipped text pixels",
     "status": "264 clock / battery / charging / USB / night combinations fit round screen",
     "shutdown": "Actual functions: cancel, failed saves, save-before-power, USB standby, ignored touch, physical restart and USB removal",
-    "website": "64 focused integration/contract tests passed; relocated controls also passed 7 DOM integration tests"
+    "website": "Prior 84 tests passed; final packaged release checks recorded separately",
+    "boot": "Actual functions: 3.8-second completion, one-shot cues, rollover, cancellation, stalled frames, invalid-save bypass; 151 partner renders + egg, roster unchanged",
+    "touch": "Production event handler blocks a gesture begun during the intro from activating home after it ends"
   },
   "remaining_checks": [
-    "Physical USB upload on both boards",
-    "Physical cross-board profile exchange and battle",
-    "Device animation timing and sound",
-    "Desktop and mobile real-browser visual review",
-    "Physical PMU shutdown / USB standby / power-button restart"
+    "Physical startup visuals, sound and timing on both boards",
+    "Physical USB upload, cross-board battle and power-off/wake"
   ],
   "touch_fix_retained": true,
   "build": {
@@ -38,18 +35,18 @@
     "fqbn": "esp32:esp32:esp32s3:CDCOnBoot=cdc,FlashSize=16M,PSRAM=opi,PartitionScheme=app3M_fat9M_16MB",
     "flashed": false,
     "hardware_tested": false,
-    "started_at": "2026-11-13T12:06:03.765156+00:00",
+    "started_at": "2026-11-13T12:51:24.518815+00:00",
     "exit_code": 0,
-    "elapsed_seconds": 660.7,
+    "elapsed_seconds": 80.5,
     "summary": [
-      "Sketch uses 2148703 bytes (68%) of program storage space. Maximum is 3145728 bytes.",
-      "Global variables use 73172 bytes (22%) of dynamic memory, leaving 254508 bytes for local variables. Maximum is 327680 bytes."
+      "Sketch uses 2150459 bytes (68%) of program storage space. Maximum is 3145728 bytes.",
+      "Global variables use 73180 bytes (22%) of dynamic memory, leaving 254500 bytes for local variables. Maximum is 327680 bytes."
     ],
     "binaries": [
       {
         "file": "TamaPoke.ino.bin",
-        "bytes": 2148944,
-        "sha256": "f5169db834724e8bf91dfa58e6ec01a0141f6de6d668f3a2e5fd1f6958d36554"
+        "bytes": 2150704,
+        "sha256": "03c086effe16521eb7295bea59a2cdb83012af22028a073bdb0c1508c576e1f6"
       },
       {
         "file": "TamaPoke.ino.bootloader.bin",
@@ -59,7 +56,7 @@
       {
         "file": "TamaPoke.ino.merged.bin",
         "bytes": 16777216,
-        "sha256": "c745899f8a0ecf496bd86ae3674c084febc54299262b9b7163175cab33ed09e5"
+        "sha256": "3a766b34c3363aee7b75c8c5430a960c70194fade4f905cc225b9ef848326588"
       },
       {
         "file": "TamaPoke.ino.partitions.bin",
@@ -71,7 +68,7 @@
   "source_files_verified": 59,
   "source_sha256": {
     "LICENSE": "c92bedde60ca87f27221971af47d517c017cc31a62cc952e6f83ea664dc31ac5",
-    "TamaPoke.ino": "a180fbed1cd84af4392b13a0603c1049a44b203d5d3b4be63c75844a25da4a61",
+    "TamaPoke.ino": "5e4511df8965b8d2a093fec8f7645c07cadc1c7994efd099e0a81b4199e79e4d",
     "activity_steps.h": "294c7f0ad6deae54203e52b980ded421a1077581e69091239dd9eb233e7bd4af",
     "asset_data.cpp": "5cf2e7cb0d8e09406ca0df257fbc4278050cc3923402fe4b65c3a550b55f0604",
     "asset_data.h": "4a5dcbc3a40365e8762dc93db4755a5545ed0d24cecf08f5b46e428db94451a8",
@@ -121,8 +118,8 @@
     "status_bar.h": "0d39aea99e6edbabbecadc94b27388ce910652048c6d459f9adc19235231ec73",
     "touch_stream.h": "26cc0298f0061a363b74ba5474473977e137987b6c4f928f327e71927c2af6ef",
     "trainer_assets.h": "e364157d2dc6092da39552697bf81f4cbc347e7ac7874bd8a38c1ba6ffe935ad",
-    "trainer_intro.h": "535327cf5f5b7ac675e6ce04eefeb07b6001e5591b0b0281aefc9d6ed8bfe229",
-    "trainer_profile.h": "1384e53c6d08a1caa9b18bf9c66252b9ee8508a208944acae9e84379dcb852b0",
+    "trainer_intro.h": "066b7a8180e2f5ad902e54f427916a2bd08bbe40267775a4ee6958b690750a08",
+    "trainer_profile.h": "6c87d2d8b98af221c5ce51d0fe1324b2d156f5b9d22ec227c5e5e0efe77a29a7",
     "trainer_scene.cpp": "4bf10d716af1cd6fb6baa34c52735443550aa045f13558ddfd2957b04013c735",
     "trainer_scene.h": "e4f883675a5004bc54091e51d01407e5d552d064f8da8b7774ad299430f3f4bc",
     "trainer_store.h": "e28f169b7d9e45e820728ad25bf3ad26d550e219bf1db4f516a5be73ec20aac4",

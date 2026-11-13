@@ -7,7 +7,7 @@ export const HEADER_BYTES=144;
 export const FALLBACK={morning:'#f3c3a4',day:'#83b5df',night:'#263449'};
 export const SCENES={
   exploration:{name:'探索畫面',ground:306,limit:168,regions:[[142,20,182,33],[175,56,116,24],[95,84,276,48],[0,330,466,136]]},
-  home:{name:'主畫面',ground:260,limit:148,regions:[[65,26,336,82],[90,264,92,46],[188,264,92,46],[286,264,92,46],[0,312,466,154]]}
+  home:{name:'主畫面',ground:260,limit:132,regions:[[142,20,182,33],[65,70,336,54],[90,264,92,46],[188,264,92,46],[286,264,92,46],[0,312,466,154]]}
 };
 export function timeAtHour(hour){return hour>=5&&hour<10?'morning':hour>=10&&hour<18?'day':'night';}
 export function rgb565(color){const n=parseInt(color.slice(1),16);return ((n>>>19)<<11)|(((n>>>10)&63)<<5)|((n>>>3)&31);}

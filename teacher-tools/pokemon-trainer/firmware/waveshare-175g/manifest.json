@@ -3,7 +3,7 @@
   "board": "waveshare-175g",
   "chip": "ESP32-S3",
   "flashBytes": 16777216,
-  "version": "1.18-WSdev7-175g",
+  "version": "1.18-WSdev8-175g",
   "hardwareTested": false,
   "features": [
     "background-upload",
@@ -15,7 +15,8 @@
     "trainer-intro",
     "peer-trainer-card",
     "clock-battery-status",
-    "software-shutdown"
+    "software-shutdown",
+    "boot-trainer-intro"
   ],
   "linkBattle": {
     "protocol": 2,
@@ -45,12 +46,12 @@
     {
       "file": "game.bin",
       "offset": 65536,
-      "bytes": 2148944,
-      "sha256": "f5169db834724e8bf91dfa58e6ec01a0141f6de6d668f3a2e5fd1f6958d36554"
+      "bytes": 2150704,
+      "sha256": "03c086effe16521eb7295bea59a2cdb83012af22028a073bdb0c1508c576e1f6"
     }
   ],
   "source": {
     "file": "source.zip",
-    "sha256": "dfd56d576b4ca273e83b1aad708ad81da1b75308fd8a21c95e360e323f186e23"
+    "sha256": "b1f466fbb0271ceee0cc9929fb452c70161f3aeef19e4d55044b30df373ddcea"
   }
 }
