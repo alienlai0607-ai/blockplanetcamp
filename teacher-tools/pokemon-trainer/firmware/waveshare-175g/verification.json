@@ -1,42 +1,43 @@
 {
-  "version": "1.18-WSdev1-175g",
-  "board": "waveshare-175g",
   "status": "compiled_host_tested",
-  "game_base": "1.18-SWdev12-artstore",
+  "board": "waveshare-175g",
+  "version": "1.18-WSdev2-175g",
   "hardware_tested": false,
+  "cross_board_radio_tested": false,
   "flashed": false,
   "gps_enabled": false,
   "sd_required": false,
-  "source_board_confirmed_by_user": "1.75g",
-  "game_tests": 162,
-  "game_assertions": 65849,
-  "asset_files_verified": 152,
-  "character_frames_verified": 6867,
-  "touch_packet_and_queue_test": "passed (host ASan/UBSan)",
-  "checked_at": "2026-11-13T03:53:29.348511+00:00",
-  "web_tests": 77,
+  "link_protocol": 1,
+  "link_rules": "314c5031",
+  "friend_level": 50,
+  "lossy_battles": 160,
+  "protocol_assertions": 564,
+  "protocol_sanitizers": "ASan/UBSan",
+  "ui_screens": 9,
+  "ui_text_pixels_clipped": 0,
+  "existing_battle_and_roster_layouts_tested": 151,
+  "native_ui_wild_battle_xp_regression": "passed",
+  "web_tests": 78,
+  "checked_at": "2026-11-13T05:49:13.309346+00:00",
   "web_test_failures": 0,
-  "browser_hardware_tested": false,
-  "browser_visual_tested": false,
   "build": {
     "target": "Waveshare ESP32-S3-Touch-AMOLED-1.75G",
     "status": "compiled",
     "fqbn": "esp32:esp32:esp32s3:CDCOnBoot=cdc,FlashSize=16M,PSRAM=opi,PartitionScheme=app3M_fat9M_16MB",
     "flashed": false,
     "hardware_tested": false,
-    "started_at": "2026-11-13T03:42:27Z",
-    "elapsed_seconds": 384.7,
-    "compiled_objects": 407,
+    "started_at": "2026-11-13T05:36:37.986967+00:00",
     "exit_code": 0,
+    "elapsed_seconds": 516.7,
     "summary": [
-      "Sketch uses 1555030 bytes (49%) of program storage space. Maximum is 3145728 bytes.",
-      "Global variables use 42484 bytes (12%) of dynamic memory, leaving 285196 bytes for local variables. Maximum is 327680 bytes."
+      "Sketch uses 2129807 bytes (67%) of program storage space. Maximum is 3145728 bytes.",
+      "Global variables use 65148 bytes (19%) of dynamic memory, leaving 262532 bytes for local variables. Maximum is 327680 bytes."
     ],
     "binaries": [
       {
         "file": "TamaPoke.ino.bin",
-        "bytes": 1555280,
-        "sha256": "0cc145175acec7f229f834778a329968a0671515a2a831fd895b400c92f4f25c"
+        "bytes": 2130048,
+        "sha256": "46941b646ccfb044e6060974d5722c95088a5fda9345c0a32561e6ed681e0cbd"
       },
       {
         "file": "TamaPoke.ino.bootloader.bin",
@@ -46,7 +47,7 @@
       {
         "file": "TamaPoke.ino.merged.bin",
         "bytes": 16777216,
-        "sha256": "d12316c79700980011f47db031e81fd36e81fd8ec44af82cfba16a98c17345f2"
+        "sha256": "ecec6ca2b4d3778a53f467b1f02247b91c3627969fcae634f618a196f136d0d7"
       },
       {
         "file": "TamaPoke.ino.partitions.bin",
@@ -55,10 +56,10 @@
       }
     ]
   },
-  "source_files_verified": 48,
+  "source_files_verified": 52,
   "source_sha256": {
     "LICENSE": "c92bedde60ca87f27221971af47d517c017cc31a62cc952e6f83ea664dc31ac5",
-    "TamaPoke.ino": "4dc115837c96e93695160c9bb696546d31e339d43c8a9a846f7648daf6689bc6",
+    "TamaPoke.ino": "9c6d13f5ad385c5cf704a216a3d45544c0ec2aeffc1e8292beea7ae1750d41b6",
     "activity_steps.h": "294c7f0ad6deae54203e52b980ded421a1077581e69091239dd9eb233e7bd4af",
     "asset_data.cpp": "5cf2e7cb0d8e09406ca0df257fbc4278050cc3923402fe4b65c3a550b55f0604",
     "asset_data.h": "4a5dcbc3a40365e8762dc93db4755a5545ed0d24cecf08f5b46e428db94451a8",
@@ -69,7 +70,7 @@
     "battle_data.h": "d4261104a1571dfff4b163d56f398a217ede94c7c309c1c974cfc247938c79a2",
     "battle_progress.h": "483235b4e6370a39b82baa7f49fd7455dfc0b6ffebd178fbf56c8d55c95d5b5c",
     "battle_state.h": "1bfe3747867f7305813f8de32062ec92813262f18457826536d98155bef18adc",
-    "battle_ui.h": "31bf431490e2db7aac2ae9c51346d1ddc77dcc17b4dc6d8401dcb137857282a1",
+    "battle_ui.h": "44c9f2a2e9c16f3b402d36abfbb498a62b6ed2b6bb52ee680e6f81f39b119e15",
     "blit.h": "42d761bd5f2eb9caa29eb7b2316be35191aeb1bc04ba16d3b0bd349562508dd0",
     "board.cpp": "5211e002ea810bc02c93ecb5b99608cbfcaba5a878270e9bdd16cc57069be548",
     "board.h": "1e814f85c3816c1551921288eb1e4a1dda513cdac2224b4f5e22246c96e6ef1d",
@@ -81,11 +82,15 @@
     "dex.h": "7ed2d4720f83b6e1e2bbe5c45eff48dd13a64af9ffb8e48e149b6b9cf48e187b",
     "dex_zh_tw.h": "b83b74f8219cbc1a498d9eaa73bf550dfd9e82b05715dc959de1d05aa9457a6d",
     "exploration.h": "8904b0befe5bdd9c84f4c6e0122a08c57f3b7f4c79782278bf4b49072961c423",
-    "exploration_ui.h": "d8cac43f3e9bfeb47b5f339371310d712f1b364862485046e3ecd53f346c85bc",
+    "exploration_ui.h": "14513f4aee7e549872a6af38221405509e55139429d040b82cb4053d47db7567",
     "flash_assets.cpp": "b5e927f32c7542612266f8f1aa741066cf2e46232d7cfde81381a4ea298bd1fd",
     "flash_assets.h": "559bcca547411cf6cd3160ae43349cb8b5503bd219a9f5b8e4d42c89144313f9",
     "i18n.cpp": "f10bb05615d3753859d1605d24d3773ea3f59a113ade4f82293deab2a9b88064",
     "i18n.h": "2e9595bd55af172c0dc93c297fb40d292988e1fc97f33c0a84cf7870ca8969f7",
+    "link_core.h": "eab5aa33b79ecb19d417c4b991ab9208392448a4cdc125cf7e4fa8c6a1d0a267",
+    "link_radio.cpp": "af403385a985ac15e58301ee0173dca90ed6fd2c7a90871615f10ba5d025b943",
+    "link_radio.h": "fbdd0f4af23f61daef511b311ebebd141236ed3699ef8a7ac00bc8004e020ecd",
+    "link_ui.h": "f506913edd2035469acc3ba4397b527d5a97a8bf53db522312c9131d749c429f",
     "motion.cpp": "ca0cc4b3227eb407f79db439c6a7b4a33d1c42f230aa999ff52bd5b1a2414ddc",
     "motion.h": "9443dcd95a5644f5835ce91c84067c2f6e2e37b31bdebc1f1b6cb0ad7d4b73bb",
     "pet.cpp": "0a205807b2cea19efabb10b1f4787d9479a99e9603d23f8010704fd23a239c2c",
@@ -104,6 +109,6 @@
     "trainer_store.h": "e28f169b7d9e45e820728ad25bf3ad26d550e219bf1db4f516a5be73ec20aac4",
     "trainer_transfer.cpp": "a831a4dcd97ea3bd02a835bb8331084d8d336299609284ca2f8950a7f89edafa",
     "trainer_transfer.h": "f690f25d4363a76ebc0924c759c0bf78588402ae7cfef2d5c0752bd99a7bfc04",
-    "zh_tw_font.h": "67d1988789fb8d92f979d47c488a6ccd3dcd345e3b9290dbd8da01f56fbc5fda"
+    "zh_tw_font.h": "e466590caa71a5b370b268b26ca57b54a22303f3694594bbe684f00795668a34"
   }
 }

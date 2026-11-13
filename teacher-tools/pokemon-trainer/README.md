@@ -1,3 +1,9 @@
+# 連線友誼賽更新（2026-11-13）
+
+StopWatch SWdev13 與微雪 WSdev2 新增附近一對一友誼賽，兩款須各自更新，對戰規則可互通。操作與限制見 [LINK-BATTLE.md](LINK-BATTLE.md)。已保留中文、探索、捕捉、培養與自繪背景；GPS 玩法仍未啟用。雙機實測尚待完成。
+
+---
+
 # 微雪 1.75G 支援（2026-11-13）
 
 新增 Waveshare ESP32-S3-Touch-AMOLED-1.75-G（GPS 版）。網站選板型後載入獨立的 `firmware/waveshare-175g/manifest.json`，保留 StopWatch 韌體。新板第一次安裝需備份完整 16 MB、確認清除原廠資料；之後更新保留 NVS 與前 140 KiB 作品區。已知另一板型的遊戲會拒絕寫入；ESP32-S3 ROM 本身無法辨識廠牌，所以首次安裝仍須由使用者核對型號。

@@ -3,11 +3,18 @@
   "board": "stopwatch-c152",
   "chip": "ESP32-S3",
   "flashBytes": 16777216,
-  "version": "1.18-SWdev12-artstore",
+  "version": "1.18-SWdev13-link",
   "hardwareTested": false,
   "features": [
-    "background-upload"
+    "background-upload",
+    "local-friendly-battle"
   ],
+  "linkBattle": {
+    "protocol": 1,
+    "rules": "314c5031",
+    "level": 50,
+    "mode": "local-1v1"
+  },
   "files": [
     {
       "file": "bootloader.bin",
@@ -30,12 +37,12 @@
     {
       "file": "game.bin",
       "offset": 65536,
-      "bytes": 1592896,
-      "sha256": "1fca2478196ed54662610a35327ba2d5da08f0e762409237e07b50dbd8afb028"
+      "bytes": 2167520,
+      "sha256": "a815de6d8ab307b0705b4a3473eff300dd3174538c65852a77867ac4a729785e"
     }
   ],
   "source": {
     "file": "source.zip",
-    "sha256": "42c5d5da84cbd5533e29da7e173c71e7792688cb9b1f0660dc04259fd7a6c3c0"
+    "sha256": "ce9d67da6d47a884c3b6dabf080cde1f2ccdca30137090ff7bf5daaa693533fd"
   }
 }

@@ -1,5 +1,5 @@
 import {boardProfile} from './boards.js?v=1';
-import {ArtworkConnection} from './usb.js?v=5';
+import {ArtworkConnection} from './usb.js?v=6';
 import {FirmwareInstaller,latestBackup} from './firmware.js?v=4';
 
 export function mountDevicePanel({getArtwork,download,toast}){
@@ -9,12 +9,12 @@ export function mountDevicePanel({getArtwork,download,toast}){
   try{const requested=new URLSearchParams(window.location.search).get('board');if(requested)$('firmwareBoard').value=boardProfile(requested).id;}catch{}
 
   const selectedBoard=()=>boardProfile($('firmwareBoard').value);
-  function showBoard(){const board=selectedBoard();$('boardConfirmation').textContent=`我確認手上的設備是 ${board.name}。`;$('firmwareVersion').textContent=`${board.name} 專用 · USB 寫入測試版，尚待實機驗證`;$('boardDownloadHelp').textContent=board.help;$('firmwareSource').href=`./firmware/${board.directory}/source.zip`;$('firmwareCredits').href=`./firmware/${board.directory}/TamaPoke-CREDITS.md`;}
+  function showBoard(){const board=selectedBoard();$('boardConfirmation').textContent=`我確認手上的設備是 ${board.name}。`;$('firmwareVersion').textContent=`${board.name} 專用 · 連線友誼賽測試版，尚待雙機驗證`;$('boardDownloadHelp').textContent=board.help;$('firmwareSource').href=`./firmware/${board.directory}/source.zip`;$('firmwareCredits').href=`./firmware/${board.directory}/TamaPoke-CREDITS.md`;}
   showBoard();
   $('firmwareBoard').addEventListener('change',()=>{if(firmwareBusy||installer?.ready)return;$('confirmStopWatch').checked=false;backup=null;downloaded=false;$('confirmBackup').checked=false;$('confirmErase').checked=false;$('firmwareProgress').hidden=true;firmwareStatus('請確認板型，連接後會先備份與校驗。');showBoard();flashControls();});
   function diagnostic(message){diagnosticLines.push(`${new Date().toISOString()} ${String(message).slice(0,600)}`);diagnosticLines=diagnosticLines.slice(-120);$('firmwareLog').textContent=diagnosticLines.join('\n');$('firmwareDownloadLog').disabled=firmwareBusy||!diagnosticLines.length;}
   const status=(text,error=false)=>{$('usbStatus').textContent=text;$('usbStatus').classList.toggle('error',error);};
-  const storageHelp=detail=>/^1\.18-SWdev11-/.test(detail?.fw||'')?'作品尚未寫入。請按下方「安裝／更新遊戲系統」，選「更新現有遊戲」更新到 SWdev12 作品區修正版，再重新連接傳送。':'作品儲存區未通過安全檢查，已停止寫入。請保留完整 USB 備份供檢查。';
+  const storageHelp=detail=>/^1\.18-SWdev11-/.test(detail?.fw||'')?'作品尚未寫入。請按下方「安裝／更新遊戲系統」，選「更新現有遊戲」更新到最新版（含作品區修正），再重新連接傳送。':'作品儲存區未通過安全檢查，已停止寫入。請保留完整 USB 備份供檢查。';
   const firmwareStatus=(text,error=false)=>{$('firmwareStatus').textContent=text;$('firmwareStatus').classList.toggle('error',error);};
   function controls(){
     $('usbConnect').disabled=!supported||busy||!!connection||firmwareBusy;

@@ -77,7 +77,7 @@
       <div class="device-controls"><label for="previewMode">預覽方式</label><select id="previewMode"><option value="device">466 × 466 圓形實機</option value="art">完整畫布</option></select><label for="deviceScene">使用畫面</label><select id="deviceScene"><option value="exploration">探索畫面</option><option value="home">主畫面</option></select><label class="device-ui-toggle"><input id="deviceUIToggle" type="checkbox" checked>顯示介面遮擋</label></div>
       <div class="preview-stage custom-scene device-mode" id="previewStage"><canvas id="previewBackground" width="64" height="64" aria-label="白天自繪背景"></canvas><canvas id="previewCanvas" width="32" height="32" aria-label="寶可夢動畫預覽"></canvas><canvas id="deviceCanvas" width="466" height="466" aria-label="466 × 466 圓形螢幕模擬"></canvas><svg id="deviceUI" class="device-ui" viewBox="0 0 466 466" aria-hidden="true">
        <g id="explorationOverlay"><g fill="#f1f0db"><rect x="175" y="36" width="116" height="36" rx="10"/><rect x="95" y="84" width="276" height="48" rx="12"/><rect x="0" y="330" width="466" height="136"/></g><g fill="#214d40" text-anchor="middle"><text id="deviceTimeLabel" x="233" y="61" font-size="20">白天</text><text x="233" y="118" font-size="30">探索中</text><text x="233" y="349" font-size="18">今日步數　123 步</text><text x="233" y="370" font-size="16">走走看看，會遇見誰呢？</text></g><rect x="104" y="378" width="124" height="48" rx="12" fill="#f2cf67"/><rect x="238" y="378" width="124" height="48" rx="12" fill="#bdd584"/><g fill="#214d40" text-anchor="middle" font-size="27"><text x="166" y="412">暫停</text><text x="300" y="412">返回</text></g></g>
-       <g id="homeOverlay" hidden><g fill="#214d40" text-anchor="middle"><text x="233" y="70" font-size="27">夥伴名稱 Lv.5</text><text x="233" y="105" font-size="18">今天也很有精神！</text><text x="233" y="35" font-size="15">▰ 電量</text></g><g fill="#f2cf67"><rect x="96" y="264" width="150" height="44" rx="10"/><rect x="254" y="264" width="116" height="44" rx="10"/></g><rect x="0" y="312" width="466" height="154" fill="#f1f0db"/><g fill="#214d40" font-size="22" text-anchor="middle"><text x="171" y="294">探索</text><text x="312" y="294">夥伴</text><text x="233" y="339">飽足 ▰▰▰　心情 ▰▰▰</text><text x="233" y="367">體力 ▰▰▰　清潔 ▰▰▰</text><text x="233" y="412">餵食　遊戲　燈光　洗澡</text></g></g>
+       <g id="homeOverlay" hidden><g fill="#214d40" text-anchor="middle"><text x="233" y="70" font-size="27">夥伴名稱 Lv.5</text><text x="233" y="105" font-size="18">今天也很有精神！</text><text x="233" y="35" font-size="15">▰ 電量</text></g><g fill="#f2cf67"><rect x="90" y="264" width="92" height="46" rx="10"/><rect x="188" y="264" width="92" height="46" rx="10"/><rect x="286" y="264" width="92" height="46" rx="10"/></g><rect x="0" y="312" width="466" height="154" fill="#f1f0db"/><g fill="#214d40" font-size="22" text-anchor="middle"><text x="136" y="294">探索</text><text x="234" y="294">夥伴</text><text x="332" y="294">連線</text><text x="233" y="339">飽足 ▰▰▰　心情 ▰▰▰</text><text x="233" y="367">體力 ▰▰▰　清潔 ▰▰▰</text><text x="233" y="412">餵食　遊戲　燈光　洗澡</text></g></g>
       </svg></div><p class="playback-status" id="playbackStatus">白天 · 預覽第 1 格</p>
       <div class="preview-name"><span class="mini-ball" aria-hidden="true"></span><div><h3 id="previewName">芽芽（練習）</h3><p id="previewStats">32 × 32 · 1 格動畫</p></div></div>
       <div class="playback-panel"><button class="button play-button full" id="playAnimation" aria-pressed="false"><svg><use id="playIcon" href="#i-play"/></svg><span id="playLabel">播放動畫</span></button><p id="animationHint" class="playback-hint" role="status"></p><div class="speed-heading"><label for="fpsInput">動畫速度</label><output id="fpsValue" for="fpsInput">4 格 / 秒</output></div><input id="fpsInput" type="range" min="1" max="12" value="4" step="1"><div class="speed-labels"><span>慢慢動</span><span>活力滿滿</span></div></div>
@@ -116,10 +116,11 @@
 <dialog id="firmwareDialog" class="firmware-dialog" aria-labelledby="firmwareTitle">
  <div class="dialog-top"><div><span class="eyebrow">GAME SYSTEM</span><h2 id="firmwareTitle">安裝／更新遊戲系統</h2></div><button id="firmwareClose" class="icon-button" aria-label="關閉系統更新">✕</button></div>
  <p class="dialog-description">由網站準備好遊戲，電腦不需要安裝開發套件。只有新增功能或第一次使用時才需要更新系統。</p>
- <p id="firmwareVersion" class="usb-intro">StopWatch C152 專用 · SWdev12 作品區修正版，尚待實機驗證</p>
+ <p id="firmwareVersion" class="usb-intro">StopWatch／微雪 1.75G 連線友誼賽測試版，尚待雙機驗證</p>
  <label class="field-label" for="firmwareBoard">你的遊戲機是哪一款？</label>
  <select id="firmwareBoard" class="field-input"><option value="stopwatch-c152">M5Stack StopWatch C152</option><option value="waveshare-175g">微雪 Waveshare 1.75G（GPS 版）</option></select>
  <p class="export-note">兩款韌體不同，請核對板上或包裝的完整型號。1.75C 不適用。</p>
+ <p class="export-note">附近連線友誼賽：兩台都更新後，在遊戲主畫面按「連線」。支援 StopWatch 與微雪 1.75G 互相對戰，各派一隻夥伴；仍待實機驗證。</p>
  <label class="field-label" for="firmwareMode">這次要做什麼？</label>
  <select id="firmwareMode" class="field-input"><option value="update">更新現有 TamaPoke 遊戲（保留進度與作品）</option><option value="install">第一次安裝（替換原系統並清除資料）</option></select>
  <label class="usb-check"><input type="checkbox" id="confirmStopWatch"><span id="boardConfirmation">我確認手上的設備是 M5Stack StopWatch C152。</span></label>
@@ -136,5 +137,5 @@
  <details class="firmware-help"><summary>USB 連線詳細記錄</summary><pre id="firmwareLog" style="white-space:pre-wrap;overflow-wrap:anywhere;font-size:12px">尚未連接。</pre></details>
 </dialog>
 <noscript><div class="noscript">請開啟瀏覽器的 JavaScript，才能使用像素繪圖工具。</div></noscript>
-<script type="module" src="./app.js?v=20261113-waveshare"></script>
+<script type="module" src="./app.js?v=20261113-link"></script>
 </body></html>

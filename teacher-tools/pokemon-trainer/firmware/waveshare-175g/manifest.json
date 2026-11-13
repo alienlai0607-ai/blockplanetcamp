@@ -3,8 +3,18 @@
   "board": "waveshare-175g",
   "chip": "ESP32-S3",
   "flashBytes": 16777216,
-  "version": "1.18-WSdev1-175g",
+  "version": "1.18-WSdev2-175g",
   "hardwareTested": false,
+  "features": [
+    "background-upload",
+    "local-friendly-battle"
+  ],
+  "linkBattle": {
+    "protocol": 1,
+    "rules": "314c5031",
+    "level": 50,
+    "mode": "local-1v1"
+  },
   "files": [
     {
       "file": "bootloader.bin",
@@ -27,8 +37,12 @@
     {
       "file": "game.bin",
       "offset": 65536,
-      "bytes": 1555280,
-      "sha256": "0cc145175acec7f229f834778a329968a0671515a2a831fd895b400c92f4f25c"
+      "bytes": 2130048,
+      "sha256": "46941b646ccfb044e6060974d5722c95088a5fda9345c0a32561e6ed681e0cbd"
     }
-  ]
+  ],
+  "source": {
+    "file": "source.zip",
+    "sha256": "b0c63d39146622001ce625fb84ef41a86c627d573c945997824f1d6dcdd9efdc"
+  }
 }

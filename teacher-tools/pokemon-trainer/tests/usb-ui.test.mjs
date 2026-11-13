@@ -26,7 +26,7 @@ for(const {supported,blocked=false,version='1.18-SWdev11-webusb',board='stopwatc
    if(supported){
      $('usbConnect').click();$('usbConnect').click();await until(()=>$('usbSend').disabled===false);assert.equal(requests,1);assert.match($('usbStatus').textContent,/已連接/);
      $('usbSend').click();$('usbSend').click();
-     if(blocked){await until(()=>$('usbSend').disabled&&$('usbStatus').classList.contains('error'));assert.equal(generation,0);assert.equal($('usbProgress').hidden,true);assert.match($('usbStatus').textContent,version.includes('dev11')?/更新到 SWdev12/:/安全檢查/);$('usbSend').click();assert.equal(artReads,1);}
+     if(blocked){await until(()=>$('usbSend').disabled&&$('usbStatus').classList.contains('error'));assert.equal(generation,0);assert.equal($('usbProgress').hidden,true);assert.match($('usbStatus').textContent,version.includes('dev11')?/更新到最新版/:/安全檢查/);$('usbSend').click();assert.equal(artReads,1);}
      else{await until(()=>$('usbStatus').textContent.includes('校驗成功'));assert.equal(generation,1);}
      assert.equal(artReads,1);assert.equal($('usbCancel').hidden,true);
    }else{assert.equal($('usbConnect').disabled,true);assert.match($('usbStatus').textContent,/Chrome/);$('usbConnect').click();assert.equal(requests,0);}

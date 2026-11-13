@@ -1,5 +1,5 @@
 import {BOARDS} from './boards.js?v=1';
-import {decodeDevice} from './device.js?v=2';
+import {decodeDevice} from './device.js?v=3';
 
 export class DeviceError extends Error {constructor(code,message){super(message);this.code=code;}}
 const messages={storage_blocked:'作品儲存區未通過安全檢查，已停止寫入。請保留備份供檢查。',storage_write:'設備未能確認儲存結果。請重新連接，檢查作品狀態後再試。',memory:'設備記憶體不足，請重新開機再試。',busy:'設備正在接收另一份作品，請稍後再試。',invalid_package:'作品資料校驗失敗，原作品仍保留。',incomplete:'作品尚未傳完整，原作品仍保留。',no_session:'傳輸已逾時，請重新傳送。'};
