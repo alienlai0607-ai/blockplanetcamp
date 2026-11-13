@@ -1,10 +1,10 @@
 {
-  "status": "compiled_host_tested",
+  "status": "compiled_host_tested_boot_user_confirmed",
   "board": "waveshare-175g",
-  "version": "1.18-WSdev2-175g",
+  "version": "1.18-WSdev3-175g",
   "hardware_tested": false,
   "cross_board_radio_tested": false,
-  "flashed": false,
+  "flashed": true,
   "gps_enabled": false,
   "sd_required": false,
   "link_protocol": 1,
@@ -18,26 +18,30 @@
   "existing_battle_and_roster_layouts_tested": 151,
   "native_ui_wild_battle_xp_regression": "passed",
   "web_tests": 78,
-  "checked_at": "2026-11-13T05:49:13.309346+00:00",
+  "checked_at": "2026-11-13T07:36:00.650933+00:00",
   "web_test_failures": 0,
+  "hardware_boot_user_confirmed": true,
+  "application_readback_verified": true,
+  "save_and_artwork_regions_preserved": true,
+  "imu_driver_vtable_verified": true,
   "build": {
     "target": "Waveshare ESP32-S3-Touch-AMOLED-1.75G",
     "status": "compiled",
     "fqbn": "esp32:esp32:esp32s3:CDCOnBoot=cdc,FlashSize=16M,PSRAM=opi,PartitionScheme=app3M_fat9M_16MB",
     "flashed": false,
     "hardware_tested": false,
-    "started_at": "2026-11-13T05:36:37.986967+00:00",
+    "started_at": "2026-11-13T07:28:52.456869+00:00",
     "exit_code": 0,
-    "elapsed_seconds": 516.7,
+    "elapsed_seconds": 43.1,
     "summary": [
-      "Sketch uses 2129807 bytes (67%) of program storage space. Maximum is 3145728 bytes.",
-      "Global variables use 65148 bytes (19%) of dynamic memory, leaving 262532 bytes for local variables. Maximum is 327680 bytes."
+      "Sketch uses 2135379 bytes (67%) of program storage space. Maximum is 3145728 bytes.",
+      "Global variables use 65492 bytes (19%) of dynamic memory, leaving 262188 bytes for local variables. Maximum is 327680 bytes."
     ],
     "binaries": [
       {
         "file": "TamaPoke.ino.bin",
-        "bytes": 2130048,
-        "sha256": "46941b646ccfb044e6060974d5722c95088a5fda9345c0a32561e6ed681e0cbd"
+        "bytes": 2135616,
+        "sha256": "a2d2be5e11c58cb145dde9d5be1fe1bbd799571b199306b4dba58cfd0bd0d997"
       },
       {
         "file": "TamaPoke.ino.bootloader.bin",
@@ -47,7 +51,7 @@
       {
         "file": "TamaPoke.ino.merged.bin",
         "bytes": 16777216,
-        "sha256": "ecec6ca2b4d3778a53f467b1f02247b91c3627969fcae634f618a196f136d0d7"
+        "sha256": "3b486c6f5bbdbbf02752b70fe149c1c8524ba000c1cf87974f22da209afd76de"
       },
       {
         "file": "TamaPoke.ino.partitions.bin",
@@ -59,7 +63,7 @@
   "source_files_verified": 52,
   "source_sha256": {
     "LICENSE": "c92bedde60ca87f27221971af47d517c017cc31a62cc952e6f83ea664dc31ac5",
-    "TamaPoke.ino": "9c6d13f5ad385c5cf704a216a3d45544c0ec2aeffc1e8292beea7ae1750d41b6",
+    "TamaPoke.ino": "7ce93592f8f69d82b2c7aff13ba5d40e22d0766c8ff619942753c7754eb5b81e",
     "activity_steps.h": "294c7f0ad6deae54203e52b980ded421a1077581e69091239dd9eb233e7bd4af",
     "asset_data.cpp": "5cf2e7cb0d8e09406ca0df257fbc4278050cc3923402fe4b65c3a550b55f0604",
     "asset_data.h": "4a5dcbc3a40365e8762dc93db4755a5545ed0d24cecf08f5b46e428db94451a8",
@@ -91,7 +95,7 @@
     "link_radio.cpp": "af403385a985ac15e58301ee0173dca90ed6fd2c7a90871615f10ba5d025b943",
     "link_radio.h": "fbdd0f4af23f61daef511b311ebebd141236ed3699ef8a7ac00bc8004e020ecd",
     "link_ui.h": "f506913edd2035469acc3ba4397b527d5a97a8bf53db522312c9131d749c429f",
-    "motion.cpp": "ca0cc4b3227eb407f79db439c6a7b4a33d1c42f230aa999ff52bd5b1a2414ddc",
+    "motion.cpp": "fe1afda5c3c4ff2efffa1b778af8fce663c812bdeae411c2bd159329db4bd47b",
     "motion.h": "9443dcd95a5644f5835ce91c84067c2f6e2e37b31bdebc1f1b6cb0ad7d4b73bb",
     "pet.cpp": "0a205807b2cea19efabb10b1f4787d9479a99e9603d23f8010704fd23a239c2c",
     "pet.h": "34bebbfea05592d8805435cd635d1c96d160e41cff82af75bd76fbc72488520f",
