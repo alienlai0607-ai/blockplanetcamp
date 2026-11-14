@@ -1,3 +1,4 @@
+import {drawTogether,TOGETHER_SCENES} from './trainer-motion.js?v=1';
 import {drawStatusPreview} from './status-preview.js?v=1';
 import {PALETTE, STORAGE_KEY, MAX_PROJECTS, MAX_FRAMES, makeProject, nameOf, readCollection, importSprite, serialize, History, stroke, fill, resize, addFrame, deleteFrame, moveFrame, previousPixels, sheetPixels, TIMES, TIME_NAMES, BACKGROUND_SIZE, backgroundLayer, backgroundTemplate} from './model.js?v=3';
 import {DEVICE,SCENES,encodeDevice,decodeDevice,drawDevice,spritePlacement,deviceWarnings,timeAtHour,rgb565,color565,FALLBACK} from './device.js?v=5';
@@ -76,7 +77,13 @@ function render(updateAllFrames=true) {
   $('projectNumber').textContent=String(collection.projects.indexOf(project)+1).padStart(3,'0');
 }
 function renderPreview() {
-  if(mode==='trainer'){drawTrainerIntro($('deviceCanvas'),trainer,project,introTimer?performance.now()-introStarted:null);drawStatusPreview($('deviceCanvas'),Number($('previewHour').value));$('playbackStatus').textContent=introTimer?'訓練家出場預覽':'我的訓練家 · 正面造型';return;}
+  if(mode==='trainer'){
+    const scene=$('trainerScene').value,elapsed=introTimer?performance.now()-introStarted:0;
+    if(scene==='intro')drawTrainerIntro($('deviceCanvas'),trainer,project,introTimer?elapsed:null);
+    else drawTogether($('deviceCanvas'),trainer,project,scene,elapsed,project.backgrounds[time]);
+    drawStatusPreview($('deviceCanvas'),Number($('previewHour').value));
+    $('playbackStatus').textContent=(scene==='intro'?'丟球出場':TOGETHER_SCENES[scene])+(introTimer?' · 播放中':' · 按播放鍵試試');return;
+  }
   const index=player.running?player.index:project.activeFrame;
   if(deviceArt){const deviceFrame=player.running?player.index:project.activeFrame;drawDevice($('deviceCanvas'),deviceArt,time,deviceFrame,deviceScene);if($('deviceUIToggle').checked)drawStatusPreview($('deviceCanvas'),Number($('previewHour').value));}
   renderSprite($('previewCanvas'),{...project,pixels:project.frames[index]});
@@ -102,6 +109,7 @@ function refreshDevice(full=true){
   if(p)for(const [k,v]of Object.entries({x:p.x+p.left*p.scale,y:p.y+p.top*p.scale,width:p.width,height:p.height}))$('guideCharacter').setAttribute(k,v);
 }
 $('previewMode').addEventListener('change',()=>{const playing=player.running;stopPlayback();$('previewStage').classList.toggle('device-mode',$('previewMode').value==='device');render();if(playing)togglePlayback();});
+$('trainerScene').addEventListener('change',()=>{stopPlayback();renderPreview();});
 $('deviceScene').addEventListener('change',()=>{deviceScene=$('deviceScene').value;render();});
 $('deviceUIToggle').addEventListener('change',()=>render());$('guideToggle').addEventListener('change',()=>render());
 $('previewHour').addEventListener('input',()=>{const hour=Number($('previewHour').value);selectTime(timeAtHour(hour));$('previewHour').value=hour;$('previewHourLabel').textContent=`${String(hour).padStart(2,'0')}:00 · ${TIME_NAMES[time]}`;});
@@ -138,7 +146,7 @@ function renderBackgroundUI(updateAll=true) {
   $('downloadProject').lastChild.textContent=editingTrainer?'保存訓練家檔':'保存夥伴與背景';$('importProject').lastChild.textContent=editingTrainer?'開啟訓練家檔':'開啟作品檔';$('fpsInput').disabled=editingTrainer;$('deviceScene').disabled=editingTrainer;
   if(editingTrainer){$('frameBadge').textContent='TRAINER · 32 × 32';all('[data-frame-step]').forEach(b=>b.disabled=true);}
   $('animationPanel').hidden=mode!=='character';$('backgroundPanel').hidden=!editingBackground;
-  $('drawingModeHint').textContent=editingTrainer?'正在畫自己 · 一張造型就能完成丟球出場動畫。':editingBackground?`正在畫${TIME_NAMES[time]}背景 · 64 × 64 像素，在「夥伴登場」查看角色與場景。`:'正在畫角色 · 透明的地方會透出背景。';
+  $('drawingModeHint').textContent=editingTrainer?'正在畫自己 · 一張造型，自動帶入陪伴動作。':editingBackground?`正在畫${TIME_NAMES[time]}背景 · 64 × 64 像素，在「夥伴登場」查看角色與場景。`:'正在畫角色 · 透明的地方會透出背景。';
   $('coordinate').textContent=`${drawing().width} × ${drawing().height} 像素`;
   $('dpadCaption').textContent=editingBackground?'切換時段':'切換畫格';
   $('dpad').setAttribute('aria-label',editingBackground?'切換背景時段':'切換動畫畫格');
@@ -178,7 +186,7 @@ $('resetBackground').addEventListener('click',async()=>{
   if(mode==='background'&&await ask(`載入${TIME_NAMES[time]}範例？`,'會替換目前這張背景，仍可按復原找回。','載入範例'))action(()=>{drawing().pixels=backgroundTemplate(time);});
 });
 function syncPlayButtons() {
-  if(mode==='trainer'){$('playLabel').textContent=introTimer?'停止預覽':'出場預覽';$('playAnimation').setAttribute('aria-pressed',String(!!introTimer));$('consoleA').setAttribute('aria-pressed',String(!!introTimer));$('animationHint').textContent='畫一張自己的造型，遊戲會帶動丟球、夥伴登場。';$('consoleA').setAttribute('aria-label','A：訓練家出場預覽');return;}
+  if(mode==='trainer'){$('playLabel').textContent=introTimer?'停止預覽':'播放陪伴動畫';$('playIcon').setAttribute('href',introTimer?'#i-pause':'#i-play');$('playAnimation').setAttribute('aria-pressed',String(!!introTimer));$('consoleA').setAttribute('aria-pressed',String(!!introTimer));$('animationHint').textContent='選一個情境，再按播放；原本畫的造型會自動動起來，不用重畫。';$('consoleA').setAttribute('aria-label','A：訓練家陪伴預覽');return;}
   $('playAnimation').setAttribute('aria-pressed',String(player.running));$('consoleA').setAttribute('aria-pressed',String(player.running));
   $('playLabel').textContent=player.running?'暫停動畫':'播放動畫';$('playIcon').setAttribute('href',player.running?'#i-pause':'#i-play');
   $('consoleA').setAttribute('aria-label',player.running?'A：暫停動畫':'A：播放動畫');
@@ -188,7 +196,7 @@ function syncPlayButtons() {
   if($('animationHint').textContent!==hint)$('animationHint').textContent=hint;
 }
 function stopPlayback() {if(introTimer){clearInterval(introTimer);introTimer=null;}player.stop();syncPlayButtons();renderPreview();}
-function togglePlayback() {finishStroke();if(mode==='trainer'){if(introTimer){stopPlayback();return;}introStarted=performance.now();introTimer=setInterval(()=>{renderPreview();if(performance.now()-introStarted>=2800){clearInterval(introTimer);introTimer=null;syncPlayButtons();}},33);syncPlayButtons();renderPreview();return;}if(project.frames.length<2){toast(mode==='background'?'先切回「角色動畫」，複製出第 2 格並改一點動作，就能播放。':'還需要第 2 格：先按「複製此格」，再改一點表情或動作。');return;}if(player.running)stopPlayback();else if(player.start({...project,fps:$('previewMode').value==='device'?Math.min(project.fps,DEVICE.maxFps):project.fps}))syncPlayButtons();}
+function togglePlayback() {finishStroke();if(mode==='trainer'){if(introTimer){stopPlayback();return;}introStarted=performance.now();introTimer=setInterval(()=>{renderPreview();if($('trainerScene').value==='intro'&&performance.now()-introStarted>=2800){clearInterval(introTimer);introTimer=null;syncPlayButtons();}},33);syncPlayButtons();renderPreview();return;}if(project.frames.length<2){toast(mode==='background'?'先切回「角色動畫」，複製出第 2 格並改一點動作，就能播放。':'還需要第 2 格：先按「複製此格」，再改一點表情或動作。');return;}if(player.running)stopPlayback();else if(player.start({...project,fps:$('previewMode').value==='device'?Math.min(project.fps,DEVICE.maxFps):project.fps}))syncPlayButtons();}
 function selectFrame(index) {if(index<0||index>=project.frames.length)return;finishStroke();stopPlayback();project.activeFrame=index;dirty=true;persist();keyboardCursor=null;render();}
 function finishStroke() {
   if(pointer===null)return;

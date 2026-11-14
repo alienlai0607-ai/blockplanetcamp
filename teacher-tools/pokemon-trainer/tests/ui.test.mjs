@@ -60,6 +60,13 @@ for(const legacyVersion of [1,2])test(`editor, animation and background flow wit
     assert.deepEqual(JSON.parse(window.localStorage.getItem(STORAGE_KEY)).projects[0].frames,JSON.parse(originalCollection).projects[0].frames);
     $('downloadProject').click();const identityExport=JSON.parse(await downloadBlobs.at(-1).text());assert.equal(identityExport.name,'外星人');assert.equal(identityExport.pixels.length,1024);assert(downloads.at(-1).endsWith('.trainer.json'));downloads.length=0;downloadBlobs.length=0;
     $('consoleA').click();assert.equal($('playAnimation').getAttribute('aria-pressed'),'true');$('consoleA').click();assert.equal($('playAnimation').getAttribute('aria-pressed'),'false');
+    for(const [scene,label] of [['idle','一起生活'],['play','一起玩耍'],['bath','一起洗澡'],['walk','一起冒險'],['intro','丟球出場']]){
+      $('trainerScene').value=scene;$('trainerScene').dispatchEvent(new window.Event('change'));
+      assert.equal($('playAnimation').getAttribute('aria-pressed'),'false');
+      $('consoleA').click();assert.equal($('playAnimation').getAttribute('aria-pressed'),'true');assert.match($('playbackStatus').textContent,new RegExp(label));
+    }
+    $('trainerScene').value='idle';$('trainerScene').dispatchEvent(new window.Event('change'));save();
+    assert.deepEqual(JSON.parse(window.localStorage.getItem(STORAGE_KEY)).projects[0].frames,JSON.parse(originalCollection).projects[0].frames);
     document.querySelector('[data-mode=character]').click();
     assert.equal(document.querySelectorAll('.color-swatch').length,16);
     assert.equal(collection().projects.length,1);

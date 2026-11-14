@@ -1,52 +1,53 @@
 {
   "status": "compiled_host_tested_pending_device_check",
   "board": "stopwatch-c152",
-  "version": "1.18-SWdev16-boot",
-  "based_on": "1.18-SWdev15-trainer",
+  "version": "1.18-SWdev17-together",
   "flashed": false,
   "hardware_tested": false,
-  "checked_at": "2026-11-13T12:53:14.841094+00:00",
+  "published": false,
   "partition_unchanged": true,
   "cross_board_radio_tested": false,
+  "checked_at": "2026-11-14T04:32:43.738297+00:00",
   "changes": [
-    "Nonblocking 3.8-second startup: current trainer, ball throw, flash, selected companion / egg reveal, home transition",
-    "Front-facing 16x16 / seven-color fallback; custom trainer unchanged",
-    "Separate clock/battery row from home Pok\u00e9mon name and status; preserve room for the portrait",
-    "Existing saves, touch fixes, USB, shutdown and protocol 2 retained"
+    "Larger side-by-side trainer and partner with a 12-pixel visible-art gap",
+    "Idle, walking, cheering, bathing and feeding motions use the original child artwork",
+    "Home, care, exploration, ball game and results include the trainer",
+    "Reserve animation headroom for compact custom trainer drawings",
+    "Readable website home title and status over night backgrounds"
   ],
-  "regressions": {
-    "link": "749 assertions + 160 completed lossy, duplicate, reordered battles; profile transfer missing chunks, blocked confirmation, distinct identities",
-    "artwork": "Browser to both actual C++ receivers; old-to-new power-loss storage; exact JS/C++/Python format agreement",
-    "ui": "Both board renderers: original 151 battle/roster layouts plus boot keyframes, 151 partners, egg, header spacing; zero clipped text pixels",
-    "status": "264 clock / battery / charging / USB / night combinations fit round screen",
-    "shutdown": "Actual functions: cancel, failed saves, save-before-power, USB standby, ignored touch, physical restart and USB removal",
-    "website": "Prior 84 tests passed; final packaged release checks recorded separately",
-    "boot": "Actual functions: 3.8-second completion, one-shot cues, rollover, cancellation, stalled frames, invalid-save bypass; 151 partner renders + egg, roster unchanged",
-    "touch": "Production event handler blocks a gesture begun during the intro from activating home after it ends"
-  },
+  "checks": [
+    "87 website tests passed",
+    "Scene selection and identity persistence tests passed",
+    "JS/C++ motion parity and actual render bounds with ASan/UBSan passed",
+    "Boot and software shutdown tests passed",
+    "151 species and 481 relevant sprite actions fit",
+    "Desktop 1280px and mobile 390px browser UI checks passed",
+    "Compact custom-art motion headroom regression passed"
+  ],
   "remaining_checks": [
-    "Physical startup visuals, sound and timing on both boards",
-    "Physical USB upload, cross-board battle and power-off/wake"
+    "Physical animation, USB installation and cross-board battle"
   ],
-  "touch_fix_retained": false,
+  "verification_scope": "Pre-publication build/test snapshot; live deployment evidence is recorded separately in together_publication.json.",
   "build": {
     "target": "M5Stack StopWatch C152",
     "status": "compiled",
     "fqbn": "esp32:esp32:esp32s3:CDCOnBoot=cdc,FlashSize=16M,PSRAM=opi,PartitionScheme=app3M_fat9M_16MB",
     "flashed": false,
     "hardware_tested": false,
-    "started_at": "2026-11-13T12:51:24.518815+00:00",
+    "started_at": "2026-11-14T04:32:13Z",
+    "build_log_path": "/var/folders/q4/tkb85v5x4y78w5nlcpb75y8w0000gn/T/tamapoke-local-build-n8ouievl/compile.log",
+    "elapsed_seconds": 530.0,
+    "compiled_objects": 425,
     "exit_code": 0,
-    "elapsed_seconds": 80.4,
     "summary": [
-      "Sketch uses 2180867 bytes (69%) of program storage space. Maximum is 3145728 bytes.",
+      "Sketch uses 2181611 bytes (69%) of program storage space. Maximum is 3145728 bytes.",
       "Global variables use 73404 bytes (22%) of dynamic memory, leaving 254276 bytes for local variables. Maximum is 327680 bytes."
     ],
     "binaries": [
       {
         "file": "TamaPoke.ino.bin",
-        "bytes": 2181104,
-        "sha256": "489ba6e95efc2b1637c5beb80a844a172c9682e0632c74ed173f4594de977106"
+        "bytes": 2181856,
+        "sha256": "fe07e6202b0f5f03e361d26f1e5a193ea1214fabdf663dab2e550e64025217d4"
       },
       {
         "file": "TamaPoke.ino.bootloader.bin",
@@ -56,7 +57,7 @@
       {
         "file": "TamaPoke.ino.merged.bin",
         "bytes": 16777216,
-        "sha256": "25cb5b78edb32aa7b0884d9852966ea8a364ff36d2349caa43377ba216bc3ba7"
+        "sha256": "7af307671f47a8c635e55d6f86b61775b9f06ba42377ece56c413048e8755725"
       },
       {
         "file": "TamaPoke.ino.partitions.bin",
@@ -65,10 +66,10 @@
       }
     ]
   },
-  "source_files_verified": 69,
+  "source_files_verified": 70,
   "source_sha256": {
     "LICENSE": "c92bedde60ca87f27221971af47d517c017cc31a62cc952e6f83ea664dc31ac5",
-    "TamaPoke.ino": "09085985e78671c1a3814d95a66ca936eeb132a680209d5e09b45892669f6ccb",
+    "TamaPoke.ino": "6109c554b6a5c6b5ce78955a4461de08129735e1ccbb74b6f57715858b3ecc23",
     "activity_steps.h": "294c7f0ad6deae54203e52b980ded421a1077581e69091239dd9eb233e7bd4af",
     "asset_data.cpp": "5cf2e7cb0d8e09406ca0df257fbc4278050cc3923402fe4b65c3a550b55f0604",
     "asset_data.h": "4a5dcbc3a40365e8762dc93db4755a5545ed0d24cecf08f5b46e428db94451a8",
@@ -91,7 +92,7 @@
     "dex.h": "7ed2d4720f83b6e1e2bbe5c45eff48dd13a64af9ffb8e48e149b6b9cf48e187b",
     "dex_zh_tw.h": "b83b74f8219cbc1a498d9eaa73bf550dfd9e82b05715dc959de1d05aa9457a6d",
     "exploration.h": "8904b0befe5bdd9c84f4c6e0122a08c57f3b7f4c79782278bf4b49072961c423",
-    "exploration_ui.h": "b21517b1be1863148ec4f2e8867b578fc1c1ce586be14d4faf1e92fd59fdf10a",
+    "exploration_ui.h": "a2b0ddf85ed54a6d07d8b375ec3c3b04f7d956d2eb1652a86ae4e59e83ef0ed9",
     "flash_assets.cpp": "b5e927f32c7542612266f8f1aa741066cf2e46232d7cfde81381a4ea298bd1fd",
     "flash_assets.h": "559bcca547411cf6cd3160ae43349cb8b5503bd219a9f5b8e4d42c89144313f9",
     "i18n.cpp": "f10bb05615d3753859d1605d24d3773ea3f59a113ade4f82293deab2a9b88064",
@@ -129,6 +130,7 @@
     "stopwatch_touch.h": "75d3779d3271476b214cfbf881ca3e9fa0efa8576acaf35103d67fac532abbbc",
     "trainer_assets.h": "e364157d2dc6092da39552697bf81f4cbc347e7ac7874bd8a38c1ba6ffe935ad",
     "trainer_intro.h": "066b7a8180e2f5ad902e54f427916a2bd08bbe40267775a4ee6958b690750a08",
+    "trainer_motion.h": "cfd618a335d10edd000ef8663f474406d6ca2689292aada2e752a301dac1a6cc",
     "trainer_profile.h": "6c87d2d8b98af221c5ce51d0fe1324b2d156f5b9d22ec227c5e5e0efe77a29a7",
     "trainer_scene.cpp": "4bf10d716af1cd6fb6baa34c52735443550aa045f13558ddfd2957b04013c735",
     "trainer_scene.h": "e4f883675a5004bc54091e51d01407e5d552d064f8da8b7774ad299430f3f4bc",

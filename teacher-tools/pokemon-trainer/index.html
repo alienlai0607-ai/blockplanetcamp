@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="theme-color" content="#26354a"><meta name="description" content="一格一格畫出想像，創造你的原創寶可夢。寶可夢訓練家計劃的像素繪圖工具，讓孩子自由畫、存作品、分享圖片。">
-  <title>寶可夢訓練家計劃 · 像素夥伴製造機</title><link rel="icon" href="./favicon.svg" type="image/svg+xml"><link rel="stylesheet" href="./style.css?v=workbench2-20261112-usb">
+  <title>寶可夢訓練家計劃 · 像素夥伴製造機</title><link rel="icon" href="./favicon.svg" type="image/svg+xml"><link rel="stylesheet" href="./style.css?v=20261114-together2">
 </head>
 <body>
 <svg class="icon-defs" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><defs>
@@ -58,7 +58,8 @@
       <div class="drawing-modes" role="group" aria-label="選擇創作內容"><button data-mode="trainer" aria-pressed="false"><svg><use href="#i-pencil"/></svg>我的訓練家</button><button data-mode="character" class="active" aria-pressed="true"><svg><use href="#i-pencil"/></svg>角色動畫</button><button data-mode="background" aria-pressed="false"><svg><use href="#i-grid"/></svg>背景製造</button></div>
       <p class="drawing-mode-hint" id="drawingModeHint">正在畫角色 · 透明的地方會透出背景。</p>
       <section id="trainerPanel" class="trainer-panel" aria-label="我的訓練家身分卡" hidden>
-       <strong>先畫自己，再和夥伴一起冒險。</strong><p>上方填入名字（最多 8 字），在下方畫出你的樣子。戰鬥時會丟球登場，連線配對時朋友也能看見你！</p>
+       <strong>先畫自己，再和夥伴一起冒險。</strong><p>上方填入名字（最多 8 字），畫一張自己的樣子，就能和夥伴一起生活、玩耍、洗澡與冒險！</p>
+       <div class="together-controls"><label for="trainerScene">看看我們一起…</label><select id="trainerScene"><option value="idle">一起生活</option><option value="play">一起玩耍</option><option value="bath">一起洗澡</option><option value="walk">一起冒險</option><option value="intro">丟球出場</option></select><p>按右側播放鍵，試試自己的造型動起來。</p></div>
        <button id="trainerExample" class="button secondary">載入正面範例</button><p>範例用大色塊畫出正面造型，帽子、眼睛和衣服都可以自己改。</p>
        <div class="trainer-actions" hidden><button class="button secondary" id="saveTrainer">保存訓練家檔</button><button class="button secondary" id="openTrainer">開啟訓練家檔</button></div><input id="trainerFile" type="file" accept=".json,application/json" hidden>
        <p>一個訓練家搭配所有夥伴；切換作品不會改變你的身分。連線雙方都需要更新遊戲系統。</p>
@@ -83,7 +84,7 @@
 
       <div class="preview-stage custom-scene device-mode" id="previewStage"><canvas id="previewBackground" width="64" height="64" aria-label="白天自繪背景"></canvas><canvas id="previewCanvas" width="32" height="32" aria-label="寶可夢動畫預覽"></canvas><canvas id="deviceCanvas" width="466" height="466" aria-label="466 × 466 圓形螢幕模擬"></canvas><svg id="deviceUI" class="device-ui" viewBox="0 0 466 466" aria-hidden="true">
        <g id="explorationOverlay"><g fill="#f1f0db"><rect x="175" y="56" width="116" height="24" rx="10"/><rect x="95" y="84" width="276" height="48" rx="12"/><rect x="0" y="330" width="466" height="136"/></g><g fill="#214d40" text-anchor="middle"><text id="deviceTimeLabel" x="233" y="74" font-size="20">白天</text><text x="233" y="118" font-size="30">探索中</text><text x="233" y="349" font-size="18">今日步數　123 步</text><text x="233" y="370" font-size="16">走走看看，會遇見誰呢？</text></g><rect x="104" y="378" width="124" height="48" rx="12" fill="#f2cf67"/><rect x="238" y="378" width="124" height="48" rx="12" fill="#bdd584"/><g fill="#214d40" text-anchor="middle" font-size="27"><text x="166" y="412">暫停</text><text x="300" y="412">返回</text></g></g>
-       <g id="homeOverlay" hidden><g fill="#214d40" text-anchor="middle"><text x="233" y="92" font-size="27">夥伴名稱 Lv.5</text><text x="233" y="123" font-size="18">今天也很有精神！</text></g><g fill="#f2cf67"><rect x="90" y="264" width="92" height="46" rx="10"/><rect x="188" y="264" width="92" height="46" rx="10"/><rect x="286" y="264" width="92" height="46" rx="10"/></g><rect x="0" y="312" width="466" height="154" fill="#f1f0db"/><g fill="#214d40" font-size="22" text-anchor="middle"><text x="136" y="294">探索</text><text x="234" y="294">夥伴</text><text x="332" y="294">連線</text><text x="233" y="339">飽足 ▰▰▰　心情 ▰▰▰</text><text x="233" y="367">體力 ▰▰▰　清潔 ▰▰▰</text><text x="233" y="412">餵食　遊戲　燈光　洗澡</text></g></g>
+       <g id="homeOverlay" hidden><g fill="#f1f0db"><rect x="95" y="68" width="276" height="34" rx="10"/><rect x="122" y="104" width="222" height="28" rx="10"/></g><g fill="#214d40" text-anchor="middle"><text x="233" y="92" font-size="27">夥伴名稱 Lv.5</text><text x="233" y="123" font-size="18">今天也很有精神！</text></g><g fill="#f2cf67"><rect x="90" y="264" width="92" height="46" rx="10"/><rect x="188" y="264" width="92" height="46" rx="10"/><rect x="286" y="264" width="92" height="46" rx="10"/></g><rect x="0" y="312" width="466" height="154" fill="#f1f0db"/><g fill="#214d40" font-size="22" text-anchor="middle"><text x="136" y="294">探索</text><text x="234" y="294">夥伴</text><text x="332" y="294">連線</text><text x="233" y="339">飽足 ▰▰▰　心情 ▰▰▰</text><text x="233" y="367">體力 ▰▰▰　清潔 ▰▰▰</text><text x="233" y="412">餵食　遊戲　燈光　洗澡</text></g></g>
       </svg></div><p class="playback-status" id="playbackStatus">白天 · 預覽第 1 格</p>
       <div class="preview-name"><span class="mini-ball" aria-hidden="true"></span><div><h3 id="previewName">芽芽（練習）</h3><p id="previewStats">32 × 32 · 1 格動畫</p></div></div>
       <div class="playback-panel"><button class="button play-button full" id="playAnimation" aria-pressed="false"><svg><use id="playIcon" href="#i-play"/></svg><span id="playLabel">播放動畫</span></button><p id="animationHint" class="playback-hint" role="status"></p><div class="speed-heading"><label for="fpsInput">動畫速度</label><output id="fpsValue" for="fpsInput">4 格 / 秒</output></div><input id="fpsInput" type="range" min="1" max="12" value="4" step="1"><div class="speed-labels"><span>慢慢動</span><span>活力滿滿</span></div></div>
@@ -145,5 +146,5 @@
  <details class="firmware-help"><summary>USB 連線詳細記錄</summary><pre id="firmwareLog" style="white-space:pre-wrap;overflow-wrap:anywhere;font-size:12px">尚未連接。</pre></details>
 </dialog>
 <noscript><div class="noscript">請開啟瀏覽器的 JavaScript，才能使用像素繪圖工具。</div></noscript>
-<script type="module" src="./app.js?v=20261113-boot1"></script>
+<script type="module" src="./app.js?v=20261114-together2"></script>
 </body></html>
