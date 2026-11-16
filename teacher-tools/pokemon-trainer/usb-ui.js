@@ -1,5 +1,5 @@
 import {boardProfile} from './boards.js?v=1';
-import {ArtworkConnection} from './usb.js?v=7';
+import {ArtworkConnection} from './usb.js?v=8';
 import {FirmwareInstaller,latestBackup} from './firmware.js?v=4';
 
 export function mountDevicePanel({getArtwork,download,toast}){
@@ -9,7 +9,7 @@ export function mountDevicePanel({getArtwork,download,toast}){
   try{const requested=new URLSearchParams(window.location.search).get('board');if(requested)$('firmwareBoard').value=boardProfile(requested).id;}catch{}
 
   const selectedBoard=()=>boardProfile($('firmwareBoard').value);
-  function showBoard(){const board=selectedBoard();$('boardConfirmation').textContent=`我確認手上的設備是 ${board.name}。`;$('firmwareVersion').textContent=`${board.name} 專用 · 連線友誼賽測試版，尚待雙機驗證`;$('boardDownloadHelp').textContent=board.help;$('firmwareSource').href=`./firmware/${board.directory}/source.zip`;$('firmwareCredits').href=`./firmware/${board.directory}/TamaPoke-CREDITS.md`;}
+  function showBoard(){const board=selectedBoard();$('boardConfirmation').textContent=`我確認手上的設備是 ${board.name}。`;$('firmwareVersion').textContent=`${board.name} 專用 · 自繪夥伴與食物版 · 雙方連線都需更新`;$('boardDownloadHelp').textContent=board.help;$('firmwareSource').href=`./firmware/${board.directory}/source.zip`;$('firmwareCredits').href=`./firmware/${board.directory}/TamaPoke-CREDITS.md`;}
   showBoard();
   $('firmwareBoard').addEventListener('change',()=>{if(firmwareBusy||installer?.ready)return;$('confirmStopWatch').checked=false;backup=null;downloaded=false;$('confirmBackup').checked=false;$('confirmErase').checked=false;$('firmwareProgress').hidden=true;firmwareStatus('請確認板型，連接後會先備份與校驗。');showBoard();flashControls();});
   function diagnostic(message){diagnosticLines.push(`${new Date().toISOString()} ${String(message).slice(0,600)}`);diagnosticLines=diagnosticLines.slice(-120);$('firmwareLog').textContent=diagnosticLines.join('\n');$('firmwareDownloadLog').disabled=firmwareBusy||!diagnosticLines.length;}
@@ -44,7 +44,7 @@ export function mountDevicePanel({getArtwork,download,toast}){
       const port=await navigator.serial.requestPort();
       candidate=new ArtworkConnection(port,{onDisconnect:()=>{connection=null;info=null;controls();status('設備已離線，重新接上後可再連接。');}});
       info=await candidate.open();connection=candidate;
-      status(info.storage==='blocked'?storageHelp(info):`已連接 ${boardProfile(info.board).shortName} · ${info.fw}${info.size?' · 已有自繪背景':''}`,info.storage==='blocked');
+      status(info.storage==='blocked'?storageHelp(info):`已連接 ${boardProfile(info.board).shortName} · ${info.fw}${info.size?' · 已有自繪作品':''}`,info.storage==='blocked');
     }catch(error){if(candidate)await candidate.close();connection=null;info=null;status(error.name==='NotFoundError'?'已取消選擇設備。':error.message,true);}
     finally{busy=false;controls();}
   });
@@ -59,7 +59,7 @@ export function mountDevicePanel({getArtwork,download,toast}){
         if(phase==='sending')status(`正在傳送作品… ${Math.floor(done/total*100)}%`);
         if(phase==='committing'){$('usbProgress').removeAttribute('value');$('usbCancel').disabled=true;status('正在儲存與校驗，請保持連線。');}
       }});
-      status('作品已寫入並校驗成功！早、中、晚背景已套用，遊戲進度保留。');toast('新背景已放進遊戲機！');
+      status('作品已寫入並校驗成功！請在遊戲機按「夥伴 → 自畫上場」。食物、訓練家與背景已套用，原有進度保留。');toast('夥伴和食物已放進遊戲機！');
     }catch(error){$('usbProgress').hidden=true;if(error.code==='storage_blocked'){if(info)info.storage='blocked';status(storageHelp(info),true);}else status(error.message,true);}
     finally{busy=false;controller=null;controls();}
   });

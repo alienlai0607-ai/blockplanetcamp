@@ -1,0 +1,41 @@
+name: TamaPoke custom companion build
+on:
+  push:
+    branches: [codex/tamapoke-custom-food]
+    paths: ['.tama-build/**', 'teacher-tools/pokemon-trainer/**', '.github/workflows/tamapoke-custom.yml']
+permissions:
+  contents: write
+concurrency:
+  group: tamapoke-custom-build
+  cancel-in-progress: true
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+      - name: Install pinned Arduino CLI and ESP32 libraries
+        shell: bash
+        run: |
+          curl --fail --location --retry 2 https://github.com/arduino/arduino-cli/releases/download/v1.3.1/arduino-cli_1.3.1_Linux_64bit.tar.gz -o /tmp/arduino-cli.tar.gz
+          echo '376428d7d45be640c00812a71612e1742edc2f5f9ee3742a2d6da7870e079588  /tmp/arduino-cli.tar.gz' | sha256sum --check
+          mkdir -p "$RUNNER_TEMP/tamapoke-bin"
+          tar -xzf /tmp/arduino-cli.tar.gz -C "$RUNNER_TEMP/tamapoke-bin" arduino-cli
+          echo "$RUNNER_TEMP/tamapoke-bin" >> "$GITHUB_PATH"
+          "$RUNNER_TEMP/tamapoke-bin/arduino-cli" core update-index --additional-urls https://espressif.github.io/arduino-esp32/package_esp32_index.json
+          "$RUNNER_TEMP/tamapoke-bin/arduino-cli" core install esp32:esp32@3.3.10 --additional-urls https://espressif.github.io/arduino-esp32/package_esp32_index.json
+          "$RUNNER_TEMP/tamapoke-bin/arduino-cli" lib install 'U8g2@2.36.19' 'GFX Library for Arduino@1.6.9' 'XPowersLib@0.3.3' 'SensorLib@0.5.1'
+      - name: Compile both boards and test packages
+        run: |
+          python3 -m zipfile -e teacher-tools/pokemon-trainer/firmware/stopwatch/source.zip .tama-build
+          python3 -m zipfile -e teacher-tools/pokemon-trainer/firmware/waveshare-175g/source.zip .tama-build
+          python3 -m zipfile -e .tama-build/input.zip .tama-build
+          python3 .tama-build/build.py
+      - name: Save verified binaries on build branch
+        shell: bash
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add teacher-tools/pokemon-trainer/firmware
+          git commit -m 'Build and verify custom companion and food firmware [skip ci]'
+          git push origin HEAD:codex/tamapoke-custom-food

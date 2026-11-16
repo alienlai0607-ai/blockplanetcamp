@@ -4,6 +4,8 @@
 #include <esp_partition.h>
 #include <esp_system.h>
 
+extern bool trainerArtworkBusy();
+extern bool trainerHasCustomSlot();
 namespace {
 class PartitionFlash:public TrainerStore::Flash {
  public:
@@ -29,7 +31,7 @@ bool number(const char*s,uint32_t&value,int base=10){
 bool tokenOK(const char*s){uint32_t ignored;return s&&strlen(s)==8&&number(s,ignored,16);}
 void reply(const char*token,const char*kind,const char*message){Serial.printf("TP %s %s %s\n",token,kind,message);}
 void info(const char*token,const char*version){
-  Serial.printf("TP %s INFO protocol=1 board=waveshare-175g fw=%s max=65536 chunk=256 storage=%s size=%lu crc=%08lx generation=%lu capabilities=backgrounds,trainer-v1\n",token,version,
+  Serial.printf("TP %s INFO protocol=1 board=waveshare-175g fw=%s max=65536 chunk=256 storage=%s size=%lu crc=%08lx generation=%lu capabilities=backgrounds,trainer-v1,companion-v1,food-v1\n",token,version,
     partitionOK&&storageLoaded?store.state():"blocked",(unsigned long)store.active.size,(unsigned long)store.active.crc,(unsigned long)store.active.sequence);
 }
 }
@@ -80,6 +82,8 @@ bool trainerTransferCommand(const String &line,const char *version){
     TrainerAssets::Package p;
     if(received!=expected){reply(token,"ERR","incomplete");return true;}
     if(!p.load(incoming,expected)||TrainerAssets::u32(incoming+12)!=expectedCRC){reply(token,"ERR","invalid_package");abortTransfer();return true;}
+    if(trainerArtworkBusy()){reply(token,"ERR","game_busy");abortTransfer();return true;}
+    if(trainerHasCustomSlot()&&!p.companion){reply(token,"ERR","companion_required");abortTransfer();return true;}
     auto *scene=trainerScenePrepare(incoming,expected);
     if(!scene){reply(token,"ERR","memory");abortTransfer();return true;}
     if(!store.commit(incoming,expected)){free(scene);reply(token,"ERR",store.available()?"storage_write":"storage_blocked");abortTransfer();return true;}

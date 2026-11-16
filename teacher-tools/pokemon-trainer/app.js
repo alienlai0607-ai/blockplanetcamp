@@ -1,9 +1,10 @@
+import {FOOD_NAMES,foodLayer,makeFoods} from './food.js?v=1';
 import {drawTogether,TOGETHER_SCENES} from './trainer-motion.js?v=1';
 import {drawStatusPreview} from './status-preview.js?v=1';
-import {PALETTE, STORAGE_KEY, MAX_PROJECTS, MAX_FRAMES, makeProject, nameOf, readCollection, importSprite, serialize, History, stroke, fill, resize, addFrame, deleteFrame, moveFrame, previousPixels, sheetPixels, TIMES, TIME_NAMES, BACKGROUND_SIZE, backgroundLayer, backgroundTemplate} from './model.js?v=3';
-import {DEVICE,SCENES,encodeDevice,decodeDevice,drawDevice,spritePlacement,deviceWarnings,timeAtHour,rgb565,color565,FALLBACK} from './device.js?v=5';
+import {PALETTE, STORAGE_KEY, MAX_PROJECTS, MAX_FRAMES, makeProject, nameOf, readCollection, importSprite, serialize, History, stroke, fill, resize, addFrame, deleteFrame, moveFrame, previousPixels, sheetPixels, TIMES, TIME_NAMES, BACKGROUND_SIZE, backgroundLayer, backgroundTemplate} from './model.js?v=4';
+import {DEVICE,SCENES,encodeDevice,decodeDevice,drawDevice,spritePlacement,deviceWarnings,timeAtHour,rgb565,color565,FALLBACK} from './device.js?v=6';
 import {AnimationPlayer} from './playback.js?v=4';
-import {mountDevicePanel} from './usb-ui.js?v=7';
+import {mountDevicePanel} from './usb-ui.js?v=8';
 
 import {TRAINER_KEY,makeTrainer,upgradeTrainerExample,readTrainer,serializeTrainer,trainerName,drawTrainerIntro} from './trainer.js?v=2';
 
@@ -21,8 +22,9 @@ let trainer=makeTrainer(),trainerSaved=false,trainerDamaged=false,trainerLegacyB
 try{const saved=localStorage.getItem(TRAINER_KEY);if(saved){trainer=readTrainer(saved);trainerSaved=true;if(upgradeTrainerExample(trainer))trainerLegacyBackup=saved;}}catch{trainerDamaged=true;}
 const trainerHistory=new History();let introTimer=null,introStarted=0;
 let mode=trainerSaved?'character':'trainer',time='day',histories={character:history,trainer:trainerHistory};if(mode==='trainer')history=trainerHistory;
-const drawing=()=>mode==='trainer'?trainer:mode==='character'?project:backgroundLayer(project,time);
-const historyKey=()=>mode==='trainer'?'trainer':mode==='character'?'character':time;
+let foodKind=0;
+const drawing=()=>mode==='food'?foodLayer(project,foodKind):mode==='trainer'?trainer:mode==='character'?project:backgroundLayer(project,time);
+const historyKey=()=>mode==='food'?'food'+foodKind:mode==='trainer'?'trainer':mode==='character'?'character':time;
 let tool='pencil', color=PALETTE[0], brush=1, grid=true, mirror=false;
 let pointer=null, last=null, saveTimer, toastTimer, dirty=!damagedStorage, keyboardCursor=null;
 let confirmResolve=null;
@@ -68,15 +70,22 @@ function render(updateAllFrames=true) {
   if(mirror){ctx.save();ctx.strokeStyle='#dc835b';ctx.setLineDash([6,6]);ctx.beginPath();ctx.moveTo(256,0);ctx.lineTo(256,512);ctx.stroke();ctx.restore();}
   if(keyboardCursor){ctx.strokeStyle='#dc835b';ctx.lineWidth=3;ctx.strokeRect(keyboardCursor[0]*cell+1.5,keyboardCursor[1]*cell+1.5,cell-3,cell-3);}
   refreshDevice(updateAllFrames);renderPreview();renderFrames(updateAllFrames);renderBackgroundUI(updateAllFrames);
-  $('previewName').textContent=mode==='trainer'?trainerName(trainer.name):nameOf(project.name);
-  $('previewStats').textContent=mode==='trainer'?'我的身分卡 · 32 × 32':`${project.width} × ${project.height} · ${project.frames.length} 格動畫`;
+  $('previewName').textContent=mode==='food'?FOOD_NAMES[foodKind]:mode==='trainer'?trainerName(trainer.name):nameOf(project.name);
+  $('previewStats').textContent=mode==='food'?'16 × 16 · 自繪食物':mode==='trainer'?'我的身分卡 · 32 × 32':`${project.width} × ${project.height} · ${project.frames.length} 格動畫`;
   $('canvasSize').value=String(target.width);$('canvasSize').disabled=mode!=='character';
-  $('canvasSizeLabel').textContent=mode==='background'?'背景畫布':'角色畫布';
+  $('canvasSizeLabel').textContent=mode==='food'?'食物畫布':mode==='background'?'背景畫布':'角色畫布';
   $('undo').disabled=!history.past.length;$('consoleB').disabled=!history.past.length;$('redo').disabled=!history.future.length;
   $('projectCount').textContent=collection.projects.length;
   $('projectNumber').textContent=String(collection.projects.indexOf(project)+1).padStart(3,'0');
 }
 function renderPreview() {
+  if(mode==='food'){
+    const c=$('deviceCanvas');c.width=466;c.height=466;const g=c.getContext('2d');g.imageSmoothingEnabled=false;g.fillStyle='#e9edcf';g.fillRect(0,0,466,466);
+    project.foods[foodKind].forEach((color,i)=>{if(color){g.fillStyle=color;g.fillRect(105+(i%16)*16,91+Math.floor(i/16)*16,16,16);}});
+    g.fillStyle='#27344b';g.font='bold 24px sans-serif';g.textAlign='center';g.fillText(FOOD_NAMES[foodKind],233,386);
+    $('previewName').textContent=FOOD_NAMES[foodKind];$('previewStats').textContent='16 × 16 · 自繪食物';$('playbackStatus').textContent='餵食時使用這張圖';return;
+  }
+
   if(mode==='trainer'){
     const scene=$('trainerScene').value,elapsed=introTimer?performance.now()-introStarted:0;
     if(scene==='intro')drawTrainerIntro($('deviceCanvas'),trainer,project,introTimer?elapsed:null);
@@ -92,7 +101,7 @@ function renderPreview() {
 }
 function refreshDevice(full=true){
   if(full||!deviceArt){
-    try{deviceBytes=encodeDevice(project,trainer);deviceArt=decodeDevice(deviceBytes);$('downloadDevice').disabled=false;
+    try{deviceBytes=encodeDevice(project,trainer,{companionBase:project.companionBase});deviceArt=decodeDevice(deviceBytes);$('downloadDevice').disabled=false;
       $('deviceBudget').textContent=`素材 ${(deviceBytes.length/1024).toFixed(1)} / 64 KiB · 解碼後 ${(deviceArt.decodedBytes/1024).toFixed(1)} KiB · ${deviceArt.fps} 格／秒`;
     }catch(error){deviceArt=null;deviceBytes=null;$('downloadDevice').disabled=true;$('deviceBudget').textContent=error.message;}
   }else{
@@ -102,7 +111,7 @@ function refreshDevice(full=true){
   }
   $('deviceWarnings').replaceChildren(...deviceWarnings(project,deviceScene).map(message=>Object.assign(document.createElement('li'),{textContent:message})));
   $('explorationOverlay').toggleAttribute('hidden',deviceScene!=='exploration');$('homeOverlay').toggleAttribute('hidden',deviceScene!=='home');
-  $('deviceUI').toggleAttribute('hidden',mode==='trainer'||!$('deviceUIToggle').checked);
+  $('deviceUI').toggleAttribute('hidden',(mode==='trainer'||mode==='food')||!$('deviceUIToggle').checked);
   $('deviceGuides').toggleAttribute('hidden',mode!=='background'||!$('guideToggle').checked);
   $('guideRegions').replaceChildren(...SCENES[deviceScene].regions.map(([x,y,w,h])=>{const rect=document.createElementNS('http://www.w3.org/2000/svg','rect');for(const [k,v]of Object.entries({x,y,width:w,height:h}))rect.setAttribute(k,v);return rect;}));
   const p=spritePlacement(project,deviceScene);$('guideCharacter').toggleAttribute('hidden',!p);
@@ -136,17 +145,20 @@ function renderFrames(updateAll=true) {
   all('[data-frame-step]').forEach(b=>{const n=(mode==='character'?project.activeFrame:TIMES.indexOf(time))+Number(b.dataset.frameStep);b.disabled=n<0||n>=(mode==='character'?project.frames.length:TIMES.length);});
   $('onionToggle').disabled=project.activeFrame===0;
   $('fpsInput').value=project.fps;$('fpsValue').textContent=`${project.fps} 格 / 秒`;
-  $('downloadSheet').disabled=mode==='trainer'||project.frames.length<2;
+  $('downloadSheet').disabled=mode==='trainer'||mode==='food'||project.frames.length<2;
   syncPlayButtons();
 }
 function renderBackgroundUI(updateAll=true) {
-  const editingBackground=mode==='background',editingTrainer=mode==='trainer';
-  document.querySelector('.workspace').classList.toggle('trainer-mode',editingTrainer);$('trainerPanel').hidden=!editingTrainer;$('previewStage').classList.toggle('trainer-preview',editingTrainer);
+  const editingBackground=mode==='background',editingTrainer=mode==='trainer',editingFood=mode==='food';
+  $('foodPanel').hidden=!editingFood;$('nameInput').disabled=editingFood;
+  $('foodKind').value=String(foodKind);$('companionBase').value=String(project.companionBase??133);
+  if(editingFood){$('frameBadge').textContent=FOOD_NAMES[foodKind]+' · 16 × 16';all('[data-frame-step]').forEach(b=>b.disabled=true);}
+  document.querySelector('.workspace').classList.toggle('trainer-mode',editingTrainer);$('trainerPanel').hidden=!editingTrainer;$('previewStage').classList.toggle('trainer-preview',editingTrainer);$('previewStage').classList.toggle('device-mode',editingTrainer||editingFood||$('previewMode').value==='device');$('previewMode').disabled=editingTrainer||editingFood;
   $('nameInput').maxLength=editingTrainer?16:24;$('nameInput').placeholder=editingTrainer?'為自己取個名字（最多 8 字）':'為夥伴取個名字';document.querySelector('label[for=nameInput]').textContent=editingTrainer?'訓練家名字':'寶可夢名字';
-  $('downloadProject').lastChild.textContent=editingTrainer?'保存訓練家檔':'保存夥伴與背景';$('importProject').lastChild.textContent=editingTrainer?'開啟訓練家檔':'開啟作品檔';$('fpsInput').disabled=editingTrainer;$('deviceScene').disabled=editingTrainer;
+  $('downloadProject').lastChild.textContent=editingTrainer?'保存訓練家檔':'保存完整作品';$('importProject').lastChild.textContent=editingTrainer?'開啟訓練家檔':'開啟作品檔';$('fpsInput').disabled=editingTrainer||editingFood;$('deviceScene').disabled=editingTrainer||editingFood;
   if(editingTrainer){$('frameBadge').textContent='TRAINER · 32 × 32';all('[data-frame-step]').forEach(b=>b.disabled=true);}
   $('animationPanel').hidden=mode!=='character';$('backgroundPanel').hidden=!editingBackground;
-  $('drawingModeHint').textContent=editingTrainer?'正在畫自己 · 一張造型，自動帶入陪伴動作。':editingBackground?`正在畫${TIME_NAMES[time]}背景 · 64 × 64 像素，在「夥伴登場」查看角色與場景。`:'正在畫角色 · 透明的地方會透出背景。';
+  $('drawingModeHint').textContent=editingFood?'正在畫'+FOOD_NAMES[foodKind]+' · 16 × 16；會出現在餵食選單和吃飯動畫。':editingTrainer?'正在畫自己 · 一張造型，自動帶入陪伴動作。':editingBackground?`正在畫${TIME_NAMES[time]}背景 · 64 × 64 像素，在「夥伴登場」查看角色與場景。`:'正在畫角色 · 透明的地方會透出背景。';
   $('coordinate').textContent=`${drawing().width} × ${drawing().height} 像素`;
   $('dpadCaption').textContent=editingBackground?'切換時段':'切換畫格';
   $('dpad').setAttribute('aria-label',editingBackground?'切換背景時段':'切換動畫畫格');
@@ -164,12 +176,12 @@ function renderBackgroundUI(updateAll=true) {
   $('copyBackgroundLabel').textContent=`複製到${TIME_NAMES[time]}`;
   for(const option of $('copyBackgroundFrom').options)option.disabled=option.value===time;
   if($('copyBackgroundFrom').value===time)$('copyBackgroundFrom').value=TIMES.find(t=>t!==time);
-  const clearLabel=editingBackground?`清空${TIME_NAMES[time]}背景`:'清空目前畫格';
+  const clearLabel=editingFood?'清空'+FOOD_NAMES[foodKind]:editingBackground?`清空${TIME_NAMES[time]}背景`:'清空目前畫格';
   $('clear').title=clearLabel;$('clear').setAttribute('aria-label',clearLabel);
-  $('downloadPngLabel').textContent=editingBackground?'背景 PNG':'此格 PNG';
+  $('downloadPngLabel').textContent=editingFood?'食物 PNG':editingBackground?'背景 PNG':'此格 PNG';
 }
 function selectMode(next) {
-  if(!['trainer','character','background'].includes(next))return;
+  if(!['trainer','character','background','food'].includes(next))return;
   finishStroke();stopPlayback();mode=next;$('nameInput').value=mode==='trainer'?trainer.name:project.name;history=histories[historyKey()] ||= new History();keyboardCursor=null;render();
 }
 function selectTime(next) {
@@ -186,6 +198,8 @@ $('resetBackground').addEventListener('click',async()=>{
   if(mode==='background'&&await ask(`載入${TIME_NAMES[time]}範例？`,'會替換目前這張背景，仍可按復原找回。','載入範例'))action(()=>{drawing().pixels=backgroundTemplate(time);});
 });
 function syncPlayButtons() {
+  $('playAnimation').disabled=$('consoleA').disabled=mode==='food';
+  if(mode==='food'){$('playLabel').textContent='食物預覽';$('animationHint').textContent='食物會在遊戲機的餵食選單和吃飯動畫中出現。';return;}
   if(mode==='trainer'){$('playLabel').textContent=introTimer?'停止預覽':'播放陪伴動畫';$('playIcon').setAttribute('href',introTimer?'#i-pause':'#i-play');$('playAnimation').setAttribute('aria-pressed',String(!!introTimer));$('consoleA').setAttribute('aria-pressed',String(!!introTimer));$('animationHint').textContent='選一個情境，再按播放；原本畫的造型會自動動起來，不用重畫。';$('consoleA').setAttribute('aria-label','A：訓練家陪伴預覽');return;}
   $('playAnimation').setAttribute('aria-pressed',String(player.running));$('consoleA').setAttribute('aria-pressed',String(player.running));
   $('playLabel').textContent=player.running?'暫停動畫':'播放動畫';$('playIcon').setAttribute('href',player.running?'#i-pause':'#i-play');
@@ -196,7 +210,7 @@ function syncPlayButtons() {
   if($('animationHint').textContent!==hint)$('animationHint').textContent=hint;
 }
 function stopPlayback() {if(introTimer){clearInterval(introTimer);introTimer=null;}player.stop();syncPlayButtons();renderPreview();}
-function togglePlayback() {finishStroke();if(mode==='trainer'){if(introTimer){stopPlayback();return;}introStarted=performance.now();introTimer=setInterval(()=>{renderPreview();if($('trainerScene').value==='intro'&&performance.now()-introStarted>=2800){clearInterval(introTimer);introTimer=null;syncPlayButtons();}},33);syncPlayButtons();renderPreview();return;}if(project.frames.length<2){toast(mode==='background'?'先切回「角色動畫」，複製出第 2 格並改一點動作，就能播放。':'還需要第 2 格：先按「複製此格」，再改一點表情或動作。');return;}if(player.running)stopPlayback();else if(player.start({...project,fps:$('previewMode').value==='device'?Math.min(project.fps,DEVICE.maxFps):project.fps}))syncPlayButtons();}
+function togglePlayback() {if(mode==='food')return;finishStroke();if(mode==='trainer'){if(introTimer){stopPlayback();return;}introStarted=performance.now();introTimer=setInterval(()=>{renderPreview();if($('trainerScene').value==='intro'&&performance.now()-introStarted>=2800){clearInterval(introTimer);introTimer=null;syncPlayButtons();}},33);syncPlayButtons();renderPreview();return;}if(project.frames.length<2){toast(mode==='background'?'先切回「角色動畫」，複製出第 2 格並改一點動作，就能播放。':'還需要第 2 格：先按「複製此格」，再改一點表情或動作。');return;}if(player.running)stopPlayback();else if(player.start({...project,fps:$('previewMode').value==='device'?Math.min(project.fps,DEVICE.maxFps):project.fps}))syncPlayButtons();}
 function selectFrame(index) {if(index<0||index>=project.frames.length)return;finishStroke();stopPlayback();project.activeFrame=index;dirty=true;persist();keyboardCursor=null;render();}
 function finishStroke() {
   if(pointer===null)return;
@@ -249,7 +263,7 @@ for(const c of PALETTE) { const b=document.createElement('button');b.className='
 $('customColor').addEventListener('input',e=>selectColor(e.target.value));$('transparentColor').addEventListener('click',()=>selectColor(null));
 function toggle(id,value) { $(id).classList.toggle('active',value);$(id).setAttribute('aria-pressed',String(value));render(); }
 $('gridToggle').addEventListener('click',()=>toggle('gridToggle',grid=!grid));$('mirrorToggle').addEventListener('click',()=>toggle('mirrorToggle',mirror=!mirror));
-$('nameInput').addEventListener('input',e=>{if(mode==='trainer'){trainer.name=e.target.value;changed();$('previewName').textContent=trainerName(trainer.name);renderPreview();return;}project.name=e.target.value;changed();$('previewName').textContent=mode==='trainer'?trainerName(trainer.name):nameOf(project.name);});
+$('nameInput').addEventListener('input',e=>{if(mode==='trainer'){trainer.name=e.target.value;changed();$('previewName').textContent=trainerName(trainer.name);renderPreview();return;}project.name=e.target.value;changed();$('previewName').textContent=mode==='food'?FOOD_NAMES[foodKind]:mode==='trainer'?trainerName(trainer.name):nameOf(project.name);});
 $('nameInput').addEventListener('blur',()=>{if(mode==='trainer'){trainer.name=trainerName(trainer.name);$('nameInput').value=trainer.name;changed();render();return;}project.name=nameOf(project.name);$('nameInput').value=project.name;changed();});
 function ask(title,message,ok='確定') {
   finishStroke();stopPlayback();
@@ -301,10 +315,10 @@ $('openGallery').addEventListener('click',()=>{finishStroke();stopPlayback();per
 $('consoleSelect').addEventListener('click',()=>$('openGallery').click());$('consoleStart').addEventListener('click',newDialog);
 function filename() { return nameOf(project.name).replace(/[<>:"/\\|?*\u0000-\u001f]/g,'_'); }
 function download(blob,name) { const url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download=name;document.body.append(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),30000); }
-$('downloadProject').addEventListener('click',()=>{if(mode==='trainer'){$('saveTrainer').click();return;}finishStroke();download(new Blob([serialize(project)],{type:'application/json'}),filename()+'.tpsprite.json');toast('角色動畫與早、中、晚背景都已存入作品檔。');});
+$('downloadProject').addEventListener('click',()=>{if(mode==='trainer'){$('saveTrainer').click();return;}finishStroke();download(new Blob([serialize(project)],{type:'application/json'}),filename()+'.tpsprite.json');toast('角色動畫、四種食物與早中晚背景都已存入作品檔。');});
 $('downloadPng').addEventListener('click',()=>{
   finishStroke();const image=document.createElement('canvas');renderSprite(image,drawing(),Number($('exportScale').value));
-  const bg=mode==='background',name=filename()+(bg?`-${TIME_NAMES[time]}背景.png`:`-第${project.activeFrame+1}格.png`);image.toBlob(blob=>{if(blob){download(blob,name);toast(bg?'已下載目前時段的背景 PNG。':'已下載目前畫格的透明背景 PNG。');}else toast('圖片匯出失敗，請再試一次。');},'image/png');
+  const bg=mode==='background',name=filename()+(mode==='food'?`-${FOOD_NAMES[foodKind]}.png`:bg?`-${TIME_NAMES[time]}背景.png`:`-第${project.activeFrame+1}格.png`);image.toBlob(blob=>{if(blob){download(blob,name);toast(bg?'已下載目前時段的背景 PNG。':'已下載目前畫格的透明背景 PNG。');}else toast('圖片匯出失敗，請再試一次。');},'image/png');
 });
 $('downloadSheet').addEventListener('click',()=>{finishStroke();const image=document.createElement('canvas');renderSprite(image,sheetPixels(project),Number($('exportScale').value));const name=filename()+'-逐格圖集.png';image.toBlob(blob=>{if(blob){download(blob,name);toast('全部畫格已橫向排成一張 PNG 圖集。');}else toast('圖集匯出失敗，請再試一次。');},'image/png');});
 $('saveTrainer').addEventListener('click',()=>{finishStroke();download(new Blob([serializeTrainer(trainer)],{type:'application/json'}),trainerName(trainer.name).replace(/[<>:"/\\|?*]/g,'_')+'.trainer.json');toast('訓練家身分已保存；換電腦時開啟此檔即可。');});
@@ -332,6 +346,9 @@ document.addEventListener('keydown',e=>{
 window.addEventListener('pagehide',()=>{finishStroke();stopPlayback();persist();});
 document.addEventListener('visibilitychange',()=>{if(document.hidden){finishStroke();stopPlayback();persist();}});
 window.addEventListener('beforeunload',e=>{finishStroke();if(dirty&&!persist()){e.preventDefault();e.returnValue='';}});
+$('foodKind').addEventListener('change',e=>{finishStroke();foodKind=Number(e.target.value);history=histories[historyKey()] ||= new History();render();});
+$('resetFood').addEventListener('click',async()=>{if(await ask('載入這種食物的範例？','只會替換目前這格食物，可以復原。','載入範例'))action(()=>drawing().pixels=makeFoods()[foodKind]);});
+$('companionBase').addEventListener('change',e=>{project.companionBase=Number(e.target.value);changed();refreshDevice();});
 $('nameInput').value=mode==='trainer'?trainer.name:project.name;selectColor(color);render();
 mountDevicePanel({getArtwork:()=>{finishStroke();refreshDevice();return deviceBytes?.slice();},download,toast});
 if(storageError){saveStatus('未能讀取舊作品，請先下載備份',true);toast('瀏覽器儲存無法讀取。新作品仍可下載；原有資料會先保留。');}

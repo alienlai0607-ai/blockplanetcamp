@@ -1,3 +1,4 @@
+import {makeFoods,validateFoods} from './food.js?v=1';
 export const SIZES = [16, 32, 64];
 export const PALETTE = ['#214d40','#ffffff','#f5e9c9','#d5d7d1','#f393aa','#d54d63','#f39850','#f2cf67','#bdd584','#62a878','#3d7970','#72bfc2','#83b5df','#786fa9','#b397cc','#9d765a'];
 export const STORAGE_KEY = 'teampoke.trainer.v1';
@@ -53,7 +54,7 @@ export function validColor(value) { return value === null || (typeof value === '
 export function makeProject(name = '未命名夥伴', size = 32, sample = false) {
   if (!SIZES.includes(size)) throw new Error('畫布大小不支援');
   const now = new Date().toISOString();
-  return withFrames({id: crypto.randomUUID(), name: nameOf(name), width:size, height:size, frames:[sample ? sprout(size) : Array(size*size).fill(null)], activeFrame:0, fps:DEFAULT_FPS, backgroundSize:BACKGROUND_SIZE, backgrounds:makeBackgrounds(), createdAt:now, updatedAt:now});
+  return withFrames({foods:makeFoods(),companionBase:133,id: crypto.randomUUID(), name: nameOf(name), width:size, height:size, frames:[sample ? sprout(size) : Array(size*size).fill(null)], activeFrame:0, fps:DEFAULT_FPS, backgroundSize:BACKGROUND_SIZE, backgrounds:makeBackgrounds(), createdAt:now, updatedAt:now});
 }
 export function validateSprite(raw) {
   if (!raw || raw.format !== 'teampoke-sprite' || ![1,2,3].includes(raw.version)) throw new Error('這不是支援的作品檔，請選擇從本工具儲存的 JSON 檔。');
@@ -68,10 +69,11 @@ export function validateSprite(raw) {
     if(raw.backgroundSize!==BACKGROUND_SIZE || !raw.backgrounds || !TIMES.every(time=>Array.isArray(raw.backgrounds[time]) && raw.backgrounds[time].length===BACKGROUND_SIZE**2 && raw.backgrounds[time].every(validColor)))throw new Error('早晨、白天或夜晚的背景資料不完整。');
     backgrounds=Object.fromEntries(TIMES.map(time=>[time,raw.backgrounds[time].map(c=>c?.toLowerCase()??null)]));
   }
-  return {name:nameOf(raw.name), width:raw.width, height:raw.height, frames:frames.map(px=>px.map(c=>c?.toLowerCase()??null)), activeFrame:0, fps, backgroundSize:BACKGROUND_SIZE, backgrounds};
+  const companionBase=raw.companionBase??133;if(!Number.isInteger(companionBase)||companionBase<1||companionBase>151)throw Error("夥伴原型不正確。");
+  return {foods:validateFoods(raw.foods),companionBase,name:nameOf(raw.name), width:raw.width, height:raw.height, frames:frames.map(px=>px.map(c=>c?.toLowerCase()??null)), activeFrame:0, fps, backgroundSize:BACKGROUND_SIZE, backgrounds};
 }
 export function serialize(project) {
-  return JSON.stringify({format:'teampoke-sprite',version:3,name:nameOf(project.name),width:project.width,height:project.height,frames:project.frames,fps:project.fps,backgroundSize:BACKGROUND_SIZE,backgrounds:project.backgrounds});
+  return JSON.stringify({format:'teampoke-sprite',version:3,foods:project.foods,companionBase:project.companionBase??133,name:nameOf(project.name),width:project.width,height:project.height,frames:project.frames,fps:project.fps,backgroundSize:BACKGROUND_SIZE,backgrounds:project.backgrounds});
 }
 export function importSprite(text) {
   if (text.length > 524288) throw new Error('作品檔太大，請選擇小於 512 KB 的檔案。');
