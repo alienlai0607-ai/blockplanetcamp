@@ -2,6 +2,8 @@ from pathlib import Path
 import subprocess,json,hashlib,re,time,os
 root=Path.cwd(); website=root/'teacher-tools/pokemon-trainer'
 fqbn='esp32:esp32:esp32s3:CDCOnBoot=cdc,FlashSize=16M,PSRAM=opi,PartitionScheme=app3M_fat9M_16MB'
+subprocess.run(['npm','ci','--ignore-scripts'],cwd=website,check=True)
+subprocess.run(['node','--test','tests/ui.test.mjs','tests/usb-ui.test.mjs','tests/custom-food.test.mjs','tests/usb.test.mjs'],cwd=website,check=True)
 for folder,board,target in [('TamaPoke_StopWatch_dev','stopwatch-c152','M5Stack StopWatch C152'),('TamaPoke_Waveshare175G_dev','waveshare-175g','Waveshare ESP32-S3-Touch-AMOLED-1.75G')]:
  project=root/'.tama-build'/folder; source=project/'firmware/TamaPoke'; out=project/'firmware_bin';out.mkdir(exist_ok=True)
  verify=project/'verification';verify.mkdir(exist_ok=True)
@@ -45,5 +47,4 @@ for folder,board,target in [('TamaPoke_StopWatch_dev','stopwatch-c152','M5Stack 
   manifest['source']['sha256']=hashlib.sha256((public/'source.zip').read_bytes()).hexdigest();(public/'manifest.json').write_text(json.dumps(manifest,indent=2)+'\n')
   (public/'README.md').write_bytes((project/'README.md').read_bytes())
 
-subprocess.run(['npm','ci','--ignore-scripts'],cwd=website,check=True)
 subprocess.run(['npm','test'],cwd=website,check=True)
