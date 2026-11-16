@@ -28,7 +28,7 @@ for folder,board,target in [('TamaPoke_StopWatch_dev','stopwatch-c152','M5Stack 
   print('Compiling '+board,flush=True)
  start=time.time()
  if not reuse:
-  subprocess.run(['arduino-cli','compile','--fqbn',fqbn,'--jobs','2','--warnings','all','--build-property','compiler.c.elf.extra_flags=-Wl,--strip-debug','--build-path',str(root/'.tama-build/cache'/board),'--output-dir',str(out),str(source)],check=True)
+  subprocess.run(['arduino-cli','compile','--fqbn',fqbn,'--jobs','4','--warnings','all','--build-property','compiler.c.elf.extra_flags=-Wl,--strip-debug','--build-path',str(root/'.tama-build/cache'/board),'--output-dir',str(out),str(source)],check=True)
   sources={str(p.relative_to(source)):hashlib.sha256(p.read_bytes()).hexdigest() for p in sorted(source.rglob('*')) if p.is_file() and p.relative_to(source).parts[0]!='build'}
   status={'status':'compiled','target':target,'fqbn':fqbn,'flashed':False,'hardware_tested':False,'elapsed_seconds':round(time.time()-start),'binaries':[{'file':p.name,'bytes':p.stat().st_size,'sha256':hashlib.sha256(p.read_bytes()).hexdigest()} for p in sorted(out.glob('*.bin'))]}
   (verify/'build_status.json').write_text(json.dumps(status,indent=2));(verify/'built_source_sha256.json').write_text(json.dumps(sources,indent=2))
