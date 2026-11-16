@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="theme-color" content="#26354a"><meta name="description" content="一格一格畫出想像，創造你的原創寶可夢。寶可夢訓練家計劃的像素繪圖工具，讓孩子自由畫、存作品、分享圖片。">
-  <title>寶可夢訓練家計劃 · 像素夥伴製造機</title><link rel="icon" href="./favicon.svg" type="image/svg+xml"><link rel="stylesheet" href="./style.css?v=20261114-together2">
+  <title>寶可夢訓練家計劃 · 像素夥伴製造機</title><link rel="icon" href="./favicon.svg" type="image/svg+xml"><link rel="stylesheet" href="./style.css?v=20261116-custom-food1">
 </head>
 <body>
 <svg class="icon-defs" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><defs>
@@ -55,7 +55,7 @@
       <div class="tool-divider"></div><span class="tool-heading">筆尖</span><div class="brush-sizes" aria-label="筆尖大小"><button data-brush="1" class="active" aria-pressed="true" aria-label="1 格筆尖"><i style="--dot:4px"></i></button><button data-brush="2" aria-pressed="false" aria-label="2 格筆尖"><i style="--dot:8px"></i></button><button data-brush="4" aria-pressed="false" aria-label="4 格筆尖"><i style="--dot:12px"></i></button></div>
      </aside>
      <div class="drawing-column">
-      <div class="drawing-modes" role="group" aria-label="選擇創作內容"><button data-mode="trainer" aria-pressed="false"><svg><use href="#i-pencil"/></svg>我的訓練家</button><button data-mode="character" class="active" aria-pressed="true"><svg><use href="#i-pencil"/></svg>角色動畫</button><button data-mode="background" aria-pressed="false"><svg><use href="#i-grid"/></svg>背景製造</button></div>
+      <div class="drawing-modes" role="group" aria-label="選擇創作內容"><button data-mode="trainer" aria-pressed="false"><svg><use href="#i-pencil"/></svg>我的訓練家</button><button data-mode="character" class="active" aria-pressed="true"><svg><use href="#i-pencil"/></svg>角色動畫</button><button data-mode="background" aria-pressed="false"><svg><use href="#i-grid"/></svg>背景製造</button><button data-mode="food" aria-pressed="false"><svg><use href="#i-pencil"/></svg>食物製造</button></div>
       <p class="drawing-mode-hint" id="drawingModeHint">正在畫角色 · 透明的地方會透出背景。</p>
       <section id="trainerPanel" class="trainer-panel" aria-label="我的訓練家身分卡" hidden>
        <strong>先畫自己，再和夥伴一起冒險。</strong><p>上方填入名字（最多 8 字），畫一張自己的樣子，就能和夥伴一起生活、玩耍、洗澡與冒險！</p>
@@ -63,6 +63,11 @@
        <button id="trainerExample" class="button secondary">載入正面範例</button><p>範例用大色塊畫出正面造型，帽子、眼睛和衣服都可以自己改。</p>
        <div class="trainer-actions" hidden><button class="button secondary" id="saveTrainer">保存訓練家檔</button><button class="button secondary" id="openTrainer">開啟訓練家檔</button></div><input id="trainerFile" type="file" accept=".json,application/json" hidden>
        <p>一個訓練家搭配所有夥伴；切換作品不會改變你的身分。連線雙方都需要更新遊戲系統。</p>
+      </section>
+      <section id="foodPanel" class="trainer-panel" aria-label="自繪食物" hidden>
+       <strong>今天想餵夥伴吃什麼？</strong><p>把莓果畫成果汁、便當，或把糖果畫成小點心。外型由你決定，效果依食物種類。</p>
+       <label for="foodKind">選擇要畫的食物</label><select id="foodKind"><option value="0">紅莓</option><option value="1">藍莓</option><option value="2">綠莓</option><option value="3">糖果</option></select>
+       <button id="resetFood" class="button secondary">載入這格範例</button><p>四張食物會和夥伴一起保存、一起傳進遊戲機。每張至少要有一格顏色。</p>
       </section>
       <section id="backgroundPanel" class="background-panel" aria-label="早中晚背景編輯" hidden>
        <div class="time-cards" role="group" aria-label="選擇要畫的背景">
@@ -92,10 +97,12 @@
      </aside>
     </div>
     <div class="workbench-footer" aria-label="保存與傳送作品">
-      <section class="export-panel" aria-labelledby="saveTitle"><header class="station-heading"><span class="station-number">02</span><div><span class="eyebrow">SAVE YOUR WORLD</span><h2 id="saveTitle">保存我的作品</h2></div></header><p class="station-intro">把今天的創作收好，下次繼續冒險。</p><div class="download-size"><label for="exportScale">PNG 尺寸</label><select id="exportScale"><option value="8">放大 8 倍</option><option value="1">原始像素尺寸</option></select></div><button class="button primary full" id="downloadProject"><svg><use href="#i-save"/></svg>保存夥伴與背景</button><p class="export-note">角色動畫＋早、中、晚背景；訓練家可另外保存身分檔</p><div class="export-images"><button class="button secondary full" id="downloadPng"><svg><use href="#i-download"/></svg><span id="downloadPngLabel">此格 PNG</span></button><button class="button secondary full" id="downloadSheet"><svg><use href="#i-film"/></svg>逐格圖集</button></div><p class="export-note">圖集將全部畫格排成一張靜態 PNG</p><details class="advanced-export"><summary>素材檔與上機檢查</summary><div class="device-export"><button class="button secondary full" id="downloadDevice"><svg><use href="#i-download"/></svg>下載實機素材包</button><p id="deviceBudget" class="export-note" role="status"></p><details><summary>上機前檢查</summary><ul id="deviceWarnings"></ul><p>預覽的時間與 85% 電量是示意值；實機會讀取自己的時鐘與電池。主畫面點時間可調整時鐘。這是版面與色彩模擬，還不代表已在實機測試。64 KiB 是單件素材上限。素材可透過下方 USB 連線傳到新版遊戲。目前會套用訓練家身分與早、中、晚背景；角色動畫會一併保存，成為可培養夥伴的功能尚待加入。</p></details></div></details><button class="text-button import-button" id="importProject"><svg><use href="#i-upload"/></svg>開啟作品檔</button><input type="file" id="importFile" accept=".json,.tpsprite,application/json" hidden></section>
+      <section class="export-panel" aria-labelledby="saveTitle"><header class="station-heading"><span class="station-number">02</span><div><span class="eyebrow">SAVE YOUR WORLD</span><h2 id="saveTitle">保存我的作品</h2></div></header><p class="station-intro">把今天的創作收好，下次繼續冒險。</p><div class="download-size"><label for="exportScale">PNG 尺寸</label><select id="exportScale"><option value="8">放大 8 倍</option><option value="1">原始像素尺寸</option></select></div><button class="button primary full" id="downloadProject"><svg><use href="#i-save"/></svg>保存夥伴與背景</button><p class="export-note">角色動畫＋四種食物＋早中晚背景；訓練家可另外保存</p><div class="export-images"><button class="button secondary full" id="downloadPng"><svg><use href="#i-download"/></svg><span id="downloadPngLabel">此格 PNG</span></button><button class="button secondary full" id="downloadSheet"><svg><use href="#i-film"/></svg>逐格圖集</button></div><p class="export-note">圖集將全部畫格排成一張靜態 PNG</p><details class="advanced-export"><summary>素材檔與上機檢查</summary><div class="device-export"><button class="button secondary full" id="downloadDevice"><svg><use href="#i-download"/></svg>下載實機素材包</button><p id="deviceBudget" class="export-note" role="status"></p><details><summary>上機前檢查</summary><ul id="deviceWarnings"></ul><p>預覽的時間與 85% 電量是示意值；實機會讀取自己的時鐘與電池。主畫面點時間可調整時鐘。這是版面與色彩模擬，還不代表已在實機測試。64 KiB 是單件素材上限。素材可透過下方 USB 連線傳到新版遊戲。新版可使用自繪夥伴、訓練家、四種食物與早中晚背景。傳送後，在遊戲機按「夥伴 → 自畫上場」。</p></details></div></details><button class="text-button import-button" id="importProject"><svg><use href="#i-upload"/></svg>開啟作品檔</button><input type="file" id="importFile" accept=".json,.tpsprite,application/json" hidden></section>
       <section class="usb-panel" aria-labelledby="usbTitle">
        <header class="station-heading"><span class="station-number">03</span><div><span class="eyebrow">PLAY IN YOUR WORLD</span><h2 id="usbTitle">放進我的遊戲機</h2></div></header>
-       <p class="usb-intro">畫好 → 插上 USB → 連接 → 傳送</p>
+       <p class="usb-intro">畫好夥伴和食物 → 插上 USB → 傳送 → 在遊戲機選「自畫上場」</p>
+       <label class="field-label" for="companionBase">夥伴的能力原型</label><select class="field-input" id="companionBase"><option value="1">妙蛙種子 · 草／毒</option><option value="4">小火龍 · 火</option><option value="7">傑尼龜 · 水</option><option value="25">皮卡丘 · 電</option><option value="133" selected>伊布 · 一般</option><option value="147">迷你龍 · 龍</option></select>
+       <p class="export-note">使用原型的屬性與招式，自繪夥伴從 Lv.1 開始養成。每台保存 1 隻；再次傳送會更新名字與造型，保留等級、親密度與原型。機上名字取前 8 字。</p>
        <p id="usbStatus" class="usb-status" role="status" aria-live="polite">支援 StopWatch 與微雪 1.75G。接上 USB 後按下方連接。</p>
        <progress id="usbProgress" max="1" value="0" aria-label="作品傳輸進度" hidden></progress>
        <button id="usbConnect" class="button secondary full">連接遊戲機</button>
@@ -146,5 +153,5 @@
  <details class="firmware-help"><summary>USB 連線詳細記錄</summary><pre id="firmwareLog" style="white-space:pre-wrap;overflow-wrap:anywhere;font-size:12px">尚未連接。</pre></details>
 </dialog>
 <noscript><div class="noscript">請開啟瀏覽器的 JavaScript，才能使用像素繪圖工具。</div></noscript>
-<script type="module" src="./app.js?v=20261114-together2"></script>
+<script type="module" src="./app.js?v=20261116-custom-food1"></script>
 </body></html>

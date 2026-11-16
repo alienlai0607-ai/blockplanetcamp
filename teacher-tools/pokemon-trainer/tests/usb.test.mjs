@@ -50,7 +50,8 @@ int esp_partition_erase_range(const esp_partition_t*,size_t,size_t);
 #include <iostream>
 #include <cstring>
 #include <cassert>
-uint32_t clockMs=0;bool allocationFails=false;SerialStub Serial;
+uint32_t clockMs=0;bool allocationFails=false;SerialStub Serial;bool artworkBusy=false,customSlot=false;
+bool trainerArtworkBusy(){return artworkBusy;}bool trainerHasCustomSlot(){return customSlot;}
 std::vector<uint8_t> flash(0x9e0000,255);const esp_partition_t partition={0x610000,0x9e0000,false};
 const esp_partition_t*esp_partition_find_first(int,int,const char*){return &partition;}
 int esp_partition_read(const esp_partition_t*,size_t o,void*p,size_t n){assert(o+n<=flash.size());memcpy(p,flash.data()+o,n);return 0;}
@@ -58,6 +59,9 @@ int esp_partition_write(const esp_partition_t*,size_t o,const void*p,size_t n){a
 int esp_partition_erase_range(const esp_partition_t*,size_t o,size_t n){assert(o>=0x1000&&o+n<=0x23000);memset(flash.data()+o,255,n);return 0;}
 int main(){trainerSceneBegin();trainerTransferBegin();std::string line;while(std::getline(std::cin,line)){
  if(line.find("TESTREBOOT")!=std::string::npos){clockMs+=30001;trainerTransferTick(clockMs);trainerSceneBegin();trainerTransferBegin();std::cout<<line.substr(0,11)<<" RESET ok"<<std::endl;}
+ else if(line.find("TESTBUSY")!=std::string::npos){artworkBusy=true;std::cout<<line.substr(0,11)<<" TEST ok"<<std::endl;}
+ else if(line.find("TESTIDLE")!=std::string::npos){artworkBusy=false;std::cout<<line.substr(0,11)<<" TEST ok"<<std::endl;}
+ else if(line.find("TESTSLOT")!=std::string::npos){customSlot=true;std::cout<<line.substr(0,11)<<" TEST ok"<<std::endl;}
  else if(line.find("TESTMEMFAIL")!=std::string::npos){allocationFails=true;std::cout<<line.substr(0,11)<<" TEST ok"<<std::endl;}
  else if(line.find("TESTMEMOK")!=std::string::npos){allocationFails=false;std::cout<<line.substr(0,11)<<" TEST ok"<<std::endl;}
  else {trainerTransferTick(clockMs);trainerTransferCommand(String(line.c_str()),"${firmwareVersion}");}
@@ -85,6 +89,11 @@ int main(){trainerSceneBegin();trainerTransferBegin();std::string line;while(std
   const final=await client.upload(second);assert.equal(final.generation,2);assert.notEqual(final.crc,result.crc);
   await client.request('COMMIT',(kind,body)=>kind==='STORED'&&body.endsWith(final.crc));assert.equal((await client.info()).generation,2);
   await client.request('TESTREBOOT',kind=>kind==='RESET');assert.equal((await client.info()).crc,final.crc);
+  const playable=encodeDevice(p,makeTrainer(),{companionBase:25});
+  await client.request('TESTBUSY',kind=>kind==='TEST');await assert.rejects(client.upload(playable),{code:'game_busy'});assert.equal((await client.info()).generation,2);
+  await client.request('TESTIDLE',kind=>kind==='TEST');const custom=await client.upload(playable);assert.equal(custom.generation,3);
+  await client.request('TESTSLOT',kind=>kind==='TEST');await assert.rejects(client.upload(second),{code:'companion_required'});assert.equal((await client.info()).generation,3);
+  await client.request('TESTREBOOT',kind=>kind==='RESET');assert.equal((await client.info()).crc,custom.crc);
   await client.close();assert.equal(client.closed,true);await assert.rejects(client.info(),{code:'disconnected'});assert.equal(errors,'');
  }catch(error){error.message+=` [${diagnostic}]`;throw error;}finally{await client?.close();child?.kill();await rm(dir,{recursive:true,force:true});}
 });

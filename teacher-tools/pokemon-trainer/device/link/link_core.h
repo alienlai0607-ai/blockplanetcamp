@@ -2,12 +2,13 @@
 #include <stdint.h>
 #include <stddef.h>
 #include <string.h>
+#include <new>
 #include "battle_core.h"
 #include "trainer_profile.h"
 
 // Same wire format and battle rules on both boards. No persistent game data is written.
 namespace LinkGame {
-constexpr uint32_t RULES = 0x324C5031; // bump whenever battle rules or wire semantics change
+constexpr uint32_t RULES = 0x334C5031; // bump whenever battle rules or wire semantics change
 constexpr unsigned WIRE_BYTES=240, FRIEND_LEVEL=50;
 constexpr uint32_t RETRY_MS=400, PAUSE_MS=3000, TIMEOUT_MS=20000;
 enum Type:uint8_t { Advertise=1, Join, Offer, Confirm, Start, StartAck, Move, Turn, TurnAck, Heartbeat, Quit, ProfileData, ProfileAck };
@@ -23,14 +24,14 @@ inline void put32(uint8_t*p,uint32_t n){for(int i=0;i<4;i++)p[i]=uint8_t(n>>(i*8
 inline uint32_t get32(const uint8_t*p){uint32_t n=0;for(int i=0;i<4;i++)n|=uint32_t(p[i])<<(i*8);return n;}
 inline uint32_t crc(const uint8_t*p,size_t n){uint32_t c=~0u;while(n--){c^=*p++;for(int i=0;i<8;i++)c=(c>>1)^((c&1)?0xedb88320u:0);}return ~c;}
 inline void encode(const Packet&p,uint8_t*out){
-  memset(out,0,WIRE_BYTES);put32(out,0x314c5054);out[4]=2;out[5]=p.type;out[6]=p.flags;out[7]=WIRE_BYTES;
+  memset(out,0,WIRE_BYTES);put32(out,0x314c5054);out[4]=3;out[5]=p.type;out[6]=p.flags;out[7]=WIRE_BYTES;
   put32(out+8,RULES);put32(out+12,p.session);put32(out+16,p.session>>32);put32(out+20,p.guest);put32(out+24,p.guest>>32);
   put32(out+28,p.seed);put32(out+32,p.round);put32(out+36,p.hash);put32(out+40,p.before);
   for(int i=0;i<2;i++){out[44+i*2]=p.species[i];out[45+i*2]=p.species[i]>>8;out[48+i*2]=p.moves[i];out[49+i*2]=p.moves[i]>>8;}
   put32(out+52,p.profileHash);memcpy(out+60,p.data,176);put32(out+236,crc(out,236));
 }
 inline bool decode(const uint8_t*in,size_t n,Packet&p){
-  if(n!=WIRE_BYTES||get32(in)!=0x314c5054||in[4]!=2||in[5]<Advertise||in[5]>ProfileAck||in[6]>3||in[7]!=WIRE_BYTES||get32(in+8)!=RULES||get32(in+236)!=crc(in,236))return false;
+  if(n!=WIRE_BYTES||get32(in)!=0x314c5054||in[4]!=3||in[5]<Advertise||in[5]>ProfileAck||in[6]>3||in[7]!=WIRE_BYTES||get32(in+8)!=RULES||get32(in+236)!=crc(in,236))return false;
   for(int i=56;i<60;i++)if(in[i])return false;
   if(in[5]!=ProfileData)for(unsigned i=60;i<236;i++)if(in[i])return false;
   p={};p.profileHash=get32(in+52);memcpy(p.data,in+60,176);p.type=Type(in[5]);p.flags=in[6];p.session=uint64_t(get32(in+12))|(uint64_t(get32(in+16))<<32);p.guest=uint64_t(get32(in+20))|(uint64_t(get32(in+24))<<32);
@@ -56,15 +57,18 @@ struct Session {
   uint16_t ownSpecies=0,species[2]={},choice=0,remoteChoice=0;
   uint64_t session=0,guest=0;uint32_t seed=0,lastSeen=0,lastTx=0,serial=0;
   uint8_t peer[6]={};Room rooms[4];BattleGame::Engine engine;Packet lastTurn;
-  static constexpr unsigned CHUNK=176,CHUNKS=(TrainerProfile::BYTES+CHUNK-1)/CHUNK;
+  static constexpr unsigned CHUNK=176,PROFILE_BYTES=TrainerProfile::BYTES*2,CHUNKS=(PROFILE_BYTES+CHUNK-1)/CHUNK;
   static constexpr uint32_t ALL_CHUNKS=(1u<<CHUNKS)-1;
-  const uint8_t*localProfile=TrainerProfile::fallback();
-  uint32_t localHash=crc(TrainerProfile::fallback(),TrainerProfile::BYTES),peerHash=0,rxMask=0,txMask=0,lastProfileTx=0;
-  unsigned nextChunk=0;bool peerReady=false;uint8_t peerProfile[TrainerProfile::BYTES]={};
+  const uint8_t*localProfile=TrainerProfile::fallback();const uint8_t*localCustom=nullptr;
+  static uint32_t identityHash(const uint8_t*p,const uint8_t*art){uint32_t c=~0u;for(unsigned i=0;i<PROFILE_BYTES;i++){c^=i<TrainerProfile::BYTES?p[i]:art?art[i-TrainerProfile::BYTES]:0;for(int b=0;b<8;b++)c=(c>>1)^((c&1)?0xedb88320u:0);}return ~c;}
+  bool peerCustom()const{return peerReady&&peerProfile[TrainerProfile::BYTES]!=0;}
+  bool setCompanion(const uint8_t*p){if(phase!=Closed||(p&&!TrainerProfile::valid(p)))return false;localCustom=p;localHash=identityHash(localProfile,p);return true;}
+  uint32_t localHash=identityHash(TrainerProfile::fallback(),nullptr),peerHash=0,rxMask=0,txMask=0,lastProfileTx=0;
+  unsigned nextChunk=0;bool peerReady=false;uint8_t peerProfile[PROFILE_BYTES]={};
   bool profilesReady()const{return peerReady&&txMask==ALL_CHUNKS;}
-  bool setProfile(const uint8_t*p){if(phase!=Closed||!TrainerProfile::valid(p))return false;localProfile=p;localHash=crc(p,TrainerProfile::BYTES);return true;}
+  bool setProfile(const uint8_t*p){if(phase!=Closed||!TrainerProfile::valid(p))return false;localProfile=p;localHash=identityHash(p,localCustom);return true;}
   Send output=nullptr;void* context=nullptr;
-  void reset(Send send,void*ctx){const uint8_t*keep=localProfile;*this=Session();localProfile=keep;localHash=crc(keep,TrainerProfile::BYTES);output=send;context=ctx;}
+  void reset(Send send,void*ctx){const uint8_t*keep=localProfile,*art=localCustom;this->~Session();new(this) Session();localProfile=keep;localCustom=art;localHash=identityHash(keep,art);output=send;context=ctx;}
   bool connected()const{return phase==Pairing||phase==Starting||phase==Battle;}
   bool paused(uint32_t now)const{return connected()&&uint32_t(now-lastSeen)>PAUSE_MS;}
   unsigned side()const{return host?0:1;}
@@ -99,12 +103,12 @@ struct Session {
     if(!connected()||!sameMac(from,peer)||p.session!=session||p.guest!=guest||p.seed!=seed||p.species[0]!=species[0]||p.species[1]!=species[1]||p.profileHash!=peerHash)return;
     if(p.type==ProfileAck){if(p.hash==localHash&&!(p.before&~ALL_CHUNKS)){txMask|=p.before;lastSeen=now;}return;}
     if(p.type==ProfileData){
-      if(p.hash!=peerHash||p.before!=TrainerProfile::BYTES||p.round>=CHUNKS)return;
-      unsigned offset=p.round*CHUNK,n=TrainerProfile::BYTES-offset;if(n>CHUNK)n=CHUNK;
+      if(p.hash!=peerHash||p.before!=PROFILE_BYTES||p.round>=CHUNKS)return;
+      unsigned offset=p.round*CHUNK,n=PROFILE_BYTES-offset;if(n>CHUNK)n=CHUNK;
       if(p.moves[0]!=n||p.moves[1])return;for(unsigned i=n;i<CHUNK;i++)if(p.data[i])return;
       if((rxMask&(1u<<p.round))&&memcmp(peerProfile+offset,p.data,n)){fail(Desync);return;}
       memcpy(peerProfile+offset,p.data,n);rxMask|=1u<<p.round;
-      if(rxMask==ALL_CHUNKS){if(crc(peerProfile,TrainerProfile::BYTES)!=peerHash||!TrainerProfile::valid(peerProfile)){fail(Desync);return;}peerReady=true;}
+      if(rxMask==ALL_CHUNKS){bool empty=true;for(unsigned i=TrainerProfile::BYTES;i<PROFILE_BYTES;i++)empty&=peerProfile[i]==0;if(crc(peerProfile,PROFILE_BYTES)!=peerHash||!TrainerProfile::valid(peerProfile)||(!empty&&!TrainerProfile::valid(peerProfile+TrainerProfile::BYTES))){fail(Desync);return;}peerReady=true;}
       lastSeen=now;auto ack=packet(ProfileAck);ack.hash=peerHash;ack.before=rxMask;emit(ack);return;
     }
     if(p.type==Quit){lastSeen=now;fail(OtherLeft);return;}
@@ -145,7 +149,7 @@ struct Session {
     if(connected()&&uint32_t(now-lastSeen)>TIMEOUT_MS){fail(Timeout);return;}
     if(connected()&&txMask!=ALL_CHUNKS&&uint32_t(now-lastProfileTx)>=80){
       lastProfileTx=now;for(unsigned k=0;k<CHUNKS;k++){unsigned i=(nextChunk+k)%CHUNKS;if(txMask&(1u<<i))continue;
-        auto p=packet(ProfileData);p.hash=localHash;p.before=TrainerProfile::BYTES;p.round=i;unsigned offset=i*CHUNK,n=TrainerProfile::BYTES-offset;if(n>CHUNK)n=CHUNK;p.moves[0]=n;p.moves[1]=0;memcpy(p.data,localProfile+offset,n);emit(p);nextChunk=(i+1)%CHUNKS;break;}
+        auto p=packet(ProfileData);p.hash=localHash;p.before=PROFILE_BYTES;p.round=i;unsigned offset=i*CHUNK,n=PROFILE_BYTES-offset;if(n>CHUNK)n=CHUNK;p.moves[0]=n;p.moves[1]=0;for(unsigned j=0;j<n;j++){unsigned at=offset+j;p.data[j]=at<TrainerProfile::BYTES?localProfile[at]:localCustom?localCustom[at-TrainerProfile::BYTES]:0;}emit(p);nextChunk=(i+1)%CHUNKS;break;}
     }
     if(uint32_t(now-lastTx)<RETRY_MS)return;lastTx=now;
     if(phase==Waiting){auto p=packet(Advertise);p.guest=0;emit(p,true);}
