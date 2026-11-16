@@ -166,6 +166,20 @@ for(const legacyVersion of [1,2])test(`editor, animation and background flow wit
     $('confirmCancel').click();await Promise.resolve();assert.equal($('canvasSize').value,'32');
     $('exportScale').value='1';$('downloadPng').click();assert.equal(pngCanvas.width,32);assert(downloads[0].endsWith('.png'));
     $('downloadProject').click();assert(downloads[1].endsWith('.tpsprite.json'));
+    // Food keeps independent undo stacks and appears even after artwork-only preview.
+    const petBeforeFood=structuredClone(collection().projects[0].frames);
+    document.querySelector('[data-mode=food]').click();
+    assert(!$('foodPanel').hidden);assert.equal($('canvasSize').value,'16');assert($('previewStage').classList.contains('device-mode'));assert($('previewMode').disabled);assert($('playAnimation').disabled);assert($('nameInput').disabled);
+    document.querySelector('[data-tool=pencil]').click();document.querySelector('[data-color="#ffffff"]').click();dot();
+    assert.equal(collection().projects[0].foods[0][0],'#ffffff');
+    $('foodKind').value='1';$('foodKind').dispatchEvent(new window.Event('change'));assert($('undo').disabled);dot();
+    $('undo').click();save();assert.equal(collection().projects[0].foods[1][0],null);assert.equal(collection().projects[0].foods[0][0],'#ffffff');
+    $('foodKind').value='0';$('foodKind').dispatchEvent(new window.Event('change'));$('undo').click();save();assert.equal(collection().projects[0].foods[0][0],null);
+    $('redo').click();save();assert.equal(collection().projects[0].foods[0][0],'#ffffff');assert.deepEqual(collection().projects[0].frames,petBeforeFood);
+    $('downloadPng').click();assert.equal(pngCanvas.width,16);assert.match(downloads.at(-1),/紅莓/);
+    $('downloadProject').click();assert.equal(JSON.parse(await downloadBlobs.at(-1).text()).foods[0][0],'#ffffff');
+    document.querySelector('[data-mode=character]').click();assert(!$('previewMode').disabled);assert(!$('playAnimation').disabled);assert(!$('previewStage').classList.contains('device-mode'));
+    $('companionBase').value='25';$('companionBase').dispatchEvent(new window.Event('change'));save();assert.equal(collection().projects[0].companionBase,25);
     // The stored collection retains its active selection and every sibling.
     const secondWindow=new Window({url:window.location.href});
     const saved=window.localStorage.getItem(STORAGE_KEY);secondWindow.localStorage.setItem(STORAGE_KEY,saved);

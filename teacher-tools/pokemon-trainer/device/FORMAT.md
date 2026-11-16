@@ -1,3 +1,13 @@
+# TPD1 v4 — custom companion and food (SWdev18 / WSdev10)
+
+The 192-byte header has ten section slots, version 4, section count frames + 6. After the v2 trainer section comes kind 5 / raw / 256-byte TPC1 metadata, then kind 6 / raw / 2,192-byte TPF1 foods; both use index 0, mask flag 0 and mask length 0. Version 3 is also accepted (176-byte header, nine slots, metadata without food). All prior CRC, offset, size and padding checks remain. Worst-case v4 is 64,464 bytes, within the existing 64 KiB limit.
+
+TPC1: magic at 0, version 1 at 4, zero at 5, base species 1–151 at 6, zero at 7; the UTF-8 name fields at 8–63 follow TPR1, with a 96×16 name raster at 64–255. Character pixel sections supply the custom animation. Blank animations are rejected before scene publication. TPF1: magic at 0, version 1 at 4, width 16 at 5, count 4 at 6, zeros through 15; four records each contain 512 bytes RGB565 and a 32-byte LSB-first opacity mask. Each food must have a visible pixel. Food changes artwork only.
+
+HELLO advertises `companion-v1,food-v1`. Web uploads require these capabilities before BEGIN. COMMIT rejects `game_busy` during battle/link/introduction and `companion_required` if a legacy package would remove artwork still bound to a roster slot. The existing two-slot store owns the entire asset package; it does not mutate NVS. The explicit device action creates/selects a custom roster slot after artwork is committed. Roster v3 uses reserved byte 0 for one-based custom index and byte 1 remains zero; checksum-validated v2 records migrate without losing pets or progress. Updating artwork retains the selected slot's original ability prototype and growth. Link protocol 3 includes one trainer card plus an optional custom companion card (2 × 2,432 bytes); both peers must update.
+
+The sections below describe the earlier formats, which remain accepted when no active custom binding would be removed.
+
 # TPD1 v2 — trainer identity extension (SWdev15 / WSdev7)
 
 Version 2 retains the v1 layout below except: version at offset 4 is 2, header length is 160, there are eight section-entry slots, section count is frames + 4, and the final section is kind 4 (trainer), index 0, raw encoding 0, mask flag 0, color length 2,432, mask length 0. Decoded-length accounting includes those 2,432 bytes. Worst-case four 64×64 character frames plus backgrounds and trainer occupy 61,984 bytes, still within 64 KiB. Profile 1 is shared by the supported StopWatch and Waveshare round 466×466 displays; it does not authorize cross-board firmware installation.

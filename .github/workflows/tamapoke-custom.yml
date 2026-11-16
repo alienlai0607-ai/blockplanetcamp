@@ -31,11 +31,14 @@ jobs:
           python3 -m zipfile -e teacher-tools/pokemon-trainer/firmware/waveshare-175g/source.zip .tama-build
           python3 -m zipfile -e .tama-build/input.zip .tama-build
           python3 .tama-build/build.py
-      - name: Save verified binaries on build branch
+      - name: Preserve compiled binaries on build branch
+        if: always()
         shell: bash
         run: |
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
           git add teacher-tools/pokemon-trainer/firmware
-          git commit -m 'Build and verify custom companion and food firmware [skip ci]'
-          git push origin HEAD:codex/tamapoke-custom-food
+          if ! git diff --cached --quiet; then
+            git commit -m 'Preserve compiled TamaPoke firmware for verification [skip ci]'
+            git push origin HEAD:codex/tamapoke-custom-food
+          fi

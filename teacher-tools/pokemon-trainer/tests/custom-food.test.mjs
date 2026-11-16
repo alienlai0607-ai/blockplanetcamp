@@ -29,3 +29,15 @@ test('blank or corrupted food and blank companions are rejected before transmiss
 test('CRC-valid invalid species and metadata padding are rejected',()=>{
  const p=makeProject('Test',16,true),b=encodeDevice(p,makeTrainer(),{}),v=new DataView(b.buffer);const meta=v.getUint32(32+(p.frames.length+4)*16+4,true);b[meta+6]=152;v.setUint32(12,crc32(b),true);assert.throws(()=>decodeDevice(b));
 });
+test('Python source installer accepts the same v4 package and refuses invalid food before writing',async()=>{
+ const {mkdtemp,writeFile,readFile,rm,mkdir}=await import('node:fs/promises');
+ const {tmpdir}=await import('node:os');const {join}=await import('node:path');const {execFileSync}=await import('node:child_process');
+ const dir=await mkdtemp(join(tmpdir(),'custom-food-contract-'));
+ try{
+  const p=makeProject('自畫夥伴',32,true);p.foods[2][0]='#000000';const bytes=encodeDevice(p,makeTrainer(),{companionBase:7}),path=join(dir,'art.tpdevice'),sketch=join(dir,'TamaPoke');await writeFile(path,bytes);await mkdir(sketch);
+  for(const f of ['TamaPoke.ino','trainer_scene.cpp','custom_scene_data.cpp'])await writeFile(join(sketch,f),'original');
+  const installer=new URL('../device/prepare_scene.py',import.meta.url).pathname,args=[installer,path,'--firmware',sketch,'--install'];execFileSync('python3',args,{timeout:10000});const installed=await readFile(join(sketch,'custom_scene_data.cpp'),'utf8');assert(installed.includes('0x54,0x50,0x44,0x31'));
+  const bad=bytes.slice();const v=new DataView(bad.buffer);const food=v.getUint32(32+(p.frames.length+5)*16+4,true);bad[food+7]=1;v.setUint32(12,crc32(bad),true);await writeFile(path,bad);
+  assert.throws(()=>execFileSync('python3',args,{timeout:10000,stdio:'pipe'}));assert.equal(await readFile(join(sketch,'custom_scene_data.cpp'),'utf8'),installed);
+ }finally{await rm(dir,{recursive:true,force:true});}
+});
