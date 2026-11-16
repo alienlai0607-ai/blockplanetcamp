@@ -11,7 +11,7 @@ for folder,board,target in [('TamaPoke_StopWatch_dev','stopwatch-c152','M5Stack 
  subprocess.run(['python3',str(project/'tests/check_together.py')],check=True)
  subprocess.run(['python3',str(project/'tests/check_boot_intro.py')],check=True)
  subprocess.run(['python3',str(project/'tests/check_shutdown.py')],check=True)
- subprocess.run(['c++','-std=c++17','-O1','-fsanitize=address,undefined',str(project/'tests/link_tests.cpp'),'-o',str(project/'link-tests')],check=True)
+ subprocess.run(['c++','-std=c++17','-O1','-fsanitize=address,undefined','-I'+str(source),str(project/'tests/link_tests.cpp'),'-o',str(project/'link-tests')],check=True)
  subprocess.run([str(project/'link-tests')],check=True)
  actual={str(p.relative_to(source)):hashlib.sha256(p.read_bytes()).hexdigest() for p in sorted(source.rglob('*')) if p.is_file() and p.relative_to(source).parts[0]!='build'}
  expected_path=verify/'built_source_sha256.json'
