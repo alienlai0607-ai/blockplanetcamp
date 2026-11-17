@@ -1,6 +1,7 @@
 import {makeFoods,validateFoods} from './food.js?v=1';
+import {xiaobu} from './mascot.js?v=20261117-1';
 export const SIZES = [16, 32, 64];
-export const PALETTE = ['#214d40','#ffffff','#f5e9c9','#d5d7d1','#f393aa','#d54d63','#f39850','#f2cf67','#bdd584','#62a878','#3d7970','#72bfc2','#83b5df','#786fa9','#b397cc','#9d765a'];
+export const PALETTE = ['#214d40','#ffffff','#fff1c9','#c7d7e5','#ff8fbc','#f24c64','#ff9a45','#ffda4b','#a9dc66','#48bd8d','#258b91','#69d9dc','#58b5f2','#6975d8','#b694ee','#a87955'];
 export const STORAGE_KEY = 'teampoke.trainer.v1';
 export const MAX_PROJECTS = 40;
 export const MAX_FRAMES = 4;
@@ -54,7 +55,7 @@ export function validColor(value) { return value === null || (typeof value === '
 export function makeProject(name = '未命名夥伴', size = 32, sample = false) {
   if (!SIZES.includes(size)) throw new Error('畫布大小不支援');
   const now = new Date().toISOString();
-  return withFrames({foods:makeFoods(),companionBase:133,id: crypto.randomUUID(), name: nameOf(name), width:size, height:size, frames:[sample ? sprout(size) : Array(size*size).fill(null)], activeFrame:0, fps:DEFAULT_FPS, backgroundSize:BACKGROUND_SIZE, backgrounds:makeBackgrounds(), createdAt:now, updatedAt:now});
+  return withFrames({foods:makeFoods(),companionBase:133,id: crypto.randomUUID(), name: nameOf(name), width:size, height:size, frames:[sample==='xiaobu' ? xiaobu(size) : sample ? sprout(size) : Array(size*size).fill(null)], activeFrame:0, fps:DEFAULT_FPS, backgroundSize:BACKGROUND_SIZE, backgrounds:makeBackgrounds(), createdAt:now, updatedAt:now});
 }
 export function validateSprite(raw) {
   if (!raw || raw.format !== 'teampoke-sprite' || ![1,2,3].includes(raw.version)) throw new Error('這不是支援的作品檔，請選擇從本工具儲存的 JSON 檔。');

@@ -1,5 +1,5 @@
 // Keep the integer poses identical to device/trainer_motion.h.
-export const TOGETHER_SCENES = {idle:'一起生活',play:'一起玩耍',bath:'一起洗澡',walk:'一起冒險'};
+export const TOGETHER_SCENES = {idle:'一起生活',play:'一起玩耍',bath:'一起洗澡',walk:'一起冒險',feed:'一起吃點心'};
 export function trainerOffset(action, elapsed) {
   const now = Math.max(0, Math.floor(elapsed)) >>> 0, step = Math.floor(now / 160) % 4;
   const sway = [0, 1, 0, -1], hop = [0, -1, -2, -1];
@@ -38,7 +38,14 @@ export function drawTogether(canvas, trainer, partner, scene='idle', elapsed=0, 
     const bounce=scene==='play'||scene==='walk'?trainerOffset(scene,elapsed+160).y*2:0;
     draw(partner.frames[frame],partner.width,left+tw+12-pk.left*ps,ground-pk.bottom*ps+bounce,ps);
   }
-  if(scene==='bath'){
+  if(scene==='feed'){
+    const food=partner.foods?.[0];
+    if(food){
+      const bite=Math.floor(elapsed/500)%3;
+      const x=left+tw+12+Math.floor(pw/2)-16,y=ground-36-bite*3;
+      food.forEach((color,i)=>{if(color){c.fillStyle=color;c.fillRect(x+(i%16)*2,y+Math.floor(i/16)*2,2,2);}});
+    }
+  } else if(scene==='bath'){
     for(let i=0;i<12;i++){
       const x=(i<6?left+tw/2-28:left+tw+12+pw/2-28)+(i%6)*11+(Math.floor(elapsed/160+i)%3)*2;
       const y=290-(i*13+Math.floor(elapsed/50))%65;
