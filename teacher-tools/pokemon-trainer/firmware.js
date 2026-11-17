@@ -1,4 +1,4 @@
-import {boardProfile,existingBoard} from './boards.js?v=1';
+import {boardProfile,existingBoard} from './boards.js?v=2';
 import SparkMD5 from './vendor/spark-md5-3.0.2.js';
 import {installFlashReadFix} from './esp-flash-read.js?v=3';
 

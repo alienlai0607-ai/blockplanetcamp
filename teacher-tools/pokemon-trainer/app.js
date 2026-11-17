@@ -5,7 +5,7 @@ import {drawStatusPreview} from './status-preview.js?v=1';
 import {PALETTE, STORAGE_KEY, MAX_PROJECTS, MAX_FRAMES, makeProject, nameOf, readCollection, importSprite, serialize, History, stroke, fill, resize, addFrame, deleteFrame, moveFrame, previousPixels, sheetPixels, TIMES, TIME_NAMES, BACKGROUND_SIZE, backgroundLayer, backgroundTemplate} from './model.js?v=7';
 import {DEVICE,SCENES,encodeDevice,decodeDevice,drawDevice,spritePlacement,deviceWarnings,timeAtHour,rgb565,color565,FALLBACK} from './device.js?v=6';
 import {AnimationPlayer} from './playback.js?v=4';
-import {mountDevicePanel} from './usb-ui.js?v=8';
+import {mountDevicePanel} from './usb-ui.js?v=9';
 
 import {TRAINER_KEY,makeTrainer,upgradeTrainerExample,readTrainer,serializeTrainer,trainerName,drawTrainerIntro} from './trainer.js?v=2';
 

@@ -1,6 +1,6 @@
-import {boardProfile} from './boards.js?v=1';
-import {ArtworkConnection} from './usb.js?v=8';
-import {FirmwareInstaller,latestBackup} from './firmware.js?v=4';
+import {boardProfile} from './boards.js?v=2';
+import {ArtworkConnection} from './usb.js?v=9';
+import {FirmwareInstaller,latestBackup} from './firmware.js?v=5';
 
 export function mountDevicePanel({getArtwork,download,toast}){
   const $=id=>document.getElementById(id),supported=globalThis.isSecureContext&&!!navigator.serial;

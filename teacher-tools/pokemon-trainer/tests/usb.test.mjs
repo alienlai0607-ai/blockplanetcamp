@@ -18,7 +18,7 @@ for(const board of ['stopwatch-c152','waveshare-175g'])test(`browser talks to th
  const dir=await mkdtemp(join(tmpdir(),'trainer-usb-'));let child,client,diagnostic="";
  try{
   const device=new URL('../device/',import.meta.url).pathname;
-  const firmwareVersion=board==='waveshare-175g'?'1.18-WSdev1-175g':'1.18-SWdev11-webusb';
+  const firmwareVersion=board==='waveshare-175g'?'1.18-WSdev17-gpsretry':'1.18-SWdev11-webusb';
   const receiver=join(device,board==='waveshare-175g'?'waveshare/trainer_transfer.cpp':'trainer_transfer.cpp');
   await writeFile(join(dir,'Arduino.h'),`#pragma once
 #include <string>
@@ -112,6 +112,13 @@ test('artwork handshake identifies the matching firmware family for each board',
  assert.equal(parseInfo(line).board,'waveshare-175g');
  assert.throws(()=>parseInfo(line.replace('1.18-WSdev1-175g','1.18-SWdev12-artstore')));
  assert.throws(()=>parseInfo(line.replace('waveshare-175g','waveshare-175c')));
+});
+
+test('Waveshare GPS releases retain full protocol, storage and capability validation',()=>{
+ const line='protocol=1 board=waveshare-175g fw=1.18-WSdev17-gpsretry max=65536 chunk=256 storage=ready size=0 crc=00000000 generation=0 capabilities=backgrounds,trainer-v1,companion-v1,food-v1';
+ assert.equal(parseInfo(line).fw,'1.18-WSdev17-gpsretry');
+ assert.equal(parseInfo(line.replace('gpsretry','175g')).board,'waveshare-175g');
+ for(const [a,b] of [['board=waveshare-175g','board=stopwatch-c152'],['1.18-WSdev17-gpsretry','1.18-SWdev17-gpsretry'],['protocol=1','protocol=2'],['storage=ready','storage=unknown'],['max=65536','max=131072'],['chunk=256','chunk=512'],['backgrounds,trainer-v1,companion-v1,food-v1','trainer-v1,companion-v1,food-v1']])assert.throws(()=>parseInfo(line.replace(a,b)));
 });
 
 test('old firmware is refused before BEGIN when a trainer identity is attached',async()=>{

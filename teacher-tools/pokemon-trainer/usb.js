@@ -1,4 +1,4 @@
-import {BOARDS} from './boards.js?v=1';
+import {BOARDS} from './boards.js?v=2';
 import {decodeDevice} from './device.js?v=6';
 
 export class DeviceError extends Error {constructor(code,message){super(message);this.code=code;}}
