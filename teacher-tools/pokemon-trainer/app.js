@@ -1,7 +1,7 @@
 import {FOOD_NAMES,foodLayer,makeFoods} from './food.js?v=1';
 import {drawTogether,TOGETHER_SCENES} from './trainer-motion.js?v=1';
 import {drawStatusPreview} from './status-preview.js?v=1';
-import {PALETTE, STORAGE_KEY, MAX_PROJECTS, MAX_FRAMES, makeProject, nameOf, readCollection, importSprite, serialize, History, stroke, fill, resize, addFrame, deleteFrame, moveFrame, previousPixels, sheetPixels, TIMES, TIME_NAMES, BACKGROUND_SIZE, backgroundLayer, backgroundTemplate} from './model.js?v=4';
+import {PALETTE, STORAGE_KEY, MAX_PROJECTS, MAX_FRAMES, makeProject, nameOf, readCollection, importSprite, serialize, History, stroke, fill, resize, addFrame, deleteFrame, moveFrame, previousPixels, sheetPixels, TIMES, TIME_NAMES, BACKGROUND_SIZE, backgroundLayer, backgroundTemplate} from './model.js?v=5';
 import {DEVICE,SCENES,encodeDevice,decodeDevice,drawDevice,spritePlacement,deviceWarnings,timeAtHour,rgb565,color565,FALLBACK} from './device.js?v=6';
 import {AnimationPlayer} from './playback.js?v=4';
 import {mountDevicePanel} from './usb-ui.js?v=8';
@@ -60,11 +60,11 @@ function render(updateAllFrames=true) {
   ctx.clearRect(0,0,canvas.width,canvas.height);ctx.imageSmoothingEnabled=false;
   for(let y=0;y<target.height;y++)for(let x=0;x<target.width;x++) {
     const i=y*target.width+x;
-    ctx.fillStyle=target.pixels[i] || ((x+y)%2?'#e1e8c9':'#f0f2dc');ctx.fillRect(x*cell,y*cell,cell,cell);
+    ctx.fillStyle=target.pixels[i] || ((x+y)%2?'#edf4fa':'#ffffff');ctx.fillRect(x*cell,y*cell,cell,cell);
     if(!target.pixels[i]&&previous?.[i]){ctx.save();ctx.globalAlpha=.24;ctx.fillStyle=previous[i];ctx.fillRect(x*cell,y*cell,cell,cell);ctx.restore();}
   }
   if(grid) {
-    ctx.beginPath();ctx.strokeStyle='#214d4022';ctx.lineWidth=1;
+    ctx.beginPath();ctx.strokeStyle='#325b7922';ctx.lineWidth=1;
     for(let i=1;i<target.width;i++){const n=i*cell+.5;ctx.moveTo(n,0);ctx.lineTo(n,512);ctx.moveTo(0,n);ctx.lineTo(512,n);}ctx.stroke();
   }
   if(mirror){ctx.save();ctx.strokeStyle='#dc835b';ctx.setLineDash([6,6]);ctx.beginPath();ctx.moveTo(256,0);ctx.lineTo(256,512);ctx.stroke();ctx.restore();}
@@ -158,7 +158,7 @@ function renderBackgroundUI(updateAll=true) {
   $('downloadProject').lastChild.textContent=editingTrainer?'保存訓練家檔':'保存完整作品';$('importProject').lastChild.textContent=editingTrainer?'開啟訓練家檔':'開啟作品檔';$('fpsInput').disabled=editingTrainer||editingFood;$('deviceScene').disabled=editingTrainer||editingFood;
   if(editingTrainer){$('frameBadge').textContent='TRAINER · 32 × 32';all('[data-frame-step]').forEach(b=>b.disabled=true);}
   $('animationPanel').hidden=mode!=='character';$('backgroundPanel').hidden=!editingBackground;
-  $('drawingModeHint').textContent=editingFood?'正在畫'+FOOD_NAMES[foodKind]+' · 16 × 16；會出現在餵食選單和吃飯動畫。':editingTrainer?'正在畫自己 · 一張造型，自動帶入陪伴動作。':editingBackground?`正在畫${TIME_NAMES[time]}背景 · 64 × 64 像素，在「夥伴登場」查看角色與場景。`:'正在畫角色 · 透明的地方會透出背景。';
+  $('drawingModeHint').textContent=editingFood?'正在畫'+FOOD_NAMES[foodKind]+' · 16 × 16；會出現在餵食選單和吃飯動畫。':editingTrainer?'正在畫自己 · 一張造型，自動帶入陪伴動作。':editingBackground?`正在畫${TIME_NAMES[time]}背景 · 64 × 64 像素，在「冒險小視窗」查看角色與場景。`:'正在畫角色 · 透明的地方會透出背景。';
   $('coordinate').textContent=`${drawing().width} × ${drawing().height} 像素`;
   $('dpadCaption').textContent=editingBackground?'切換時段':'切換畫格';
   $('dpad').setAttribute('aria-label',editingBackground?'切換背景時段':'切換動畫畫格');
@@ -206,11 +206,11 @@ function syncPlayButtons() {
   $('consoleA').setAttribute('aria-label',player.running?'A：暫停動畫':'A：播放動畫');
   $('playAnimation').disabled=$('consoleA').disabled=false;
   const identical=project.frames.length>1&&project.frames.every(frame=>frame.every((pixel,i)=>pixel===project.frames[0][i]));
-  const hint=project.frames.length<2?(mode==='background'?'角色目前只有 1 格。切回「角色動畫」，複製此格並改一點動作，就能搭配背景播放。':'目前只有 1 格。按「複製此格」，改一點動作後就能播放。'):identical?'每格圖案目前相同，播放時會像靜止；修改其中一格就能看見動作。':'動畫會在上方「夥伴登場」預覽中播放。';
+  const hint=project.frames.length<2?(mode==='background'?'角色目前只有 1 格。切回「畫夥伴」，複製此格並改一點動作，就能搭配背景播放。':'目前只有 1 格。按「複製此格」，改一點動作後就能播放。'):identical?'每格圖案目前相同，播放時會像靜止；修改其中一格就能看見動作。':'動畫會在上方「冒險小視窗」預覽中播放。';
   if($('animationHint').textContent!==hint)$('animationHint').textContent=hint;
 }
 function stopPlayback() {if(introTimer){clearInterval(introTimer);introTimer=null;}player.stop();syncPlayButtons();renderPreview();}
-function togglePlayback() {if(mode==='food')return;finishStroke();if(mode==='trainer'){if(introTimer){stopPlayback();return;}introStarted=performance.now();introTimer=setInterval(()=>{renderPreview();if($('trainerScene').value==='intro'&&performance.now()-introStarted>=2800){clearInterval(introTimer);introTimer=null;syncPlayButtons();}},33);syncPlayButtons();renderPreview();return;}if(project.frames.length<2){toast(mode==='background'?'先切回「角色動畫」，複製出第 2 格並改一點動作，就能播放。':'還需要第 2 格：先按「複製此格」，再改一點表情或動作。');return;}if(player.running)stopPlayback();else if(player.start({...project,fps:$('previewMode').value==='device'?Math.min(project.fps,DEVICE.maxFps):project.fps}))syncPlayButtons();}
+function togglePlayback() {if(mode==='food')return;finishStroke();if(mode==='trainer'){if(introTimer){stopPlayback();return;}introStarted=performance.now();introTimer=setInterval(()=>{renderPreview();if($('trainerScene').value==='intro'&&performance.now()-introStarted>=2800){clearInterval(introTimer);introTimer=null;syncPlayButtons();}},33);syncPlayButtons();renderPreview();return;}if(project.frames.length<2){toast(mode==='background'?'先切回「畫夥伴」，複製出第 2 格並改一點動作，就能播放。':'還需要第 2 格：先按「複製此格」，再改一點表情或動作。');return;}if(player.running)stopPlayback();else if(player.start({...project,fps:$('previewMode').value==='device'?Math.min(project.fps,DEVICE.maxFps):project.fps}))syncPlayButtons();}
 function selectFrame(index) {if(index<0||index>=project.frames.length)return;finishStroke();stopPlayback();project.activeFrame=index;dirty=true;persist();keyboardCursor=null;render();}
 function finishStroke() {
   if(pointer===null)return;
