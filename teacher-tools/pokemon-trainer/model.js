@@ -1,6 +1,6 @@
 import {makeFoods,validateFoods} from './food.js?v=1';
 export const SIZES = [16, 32, 64];
-export const PALETTE = ['#214d40','#ffffff','#fff1c9','#c7d7e5','#ff8fbc','#f24c64','#ff9a45','#ffda4b','#a9dc66','#48bd8d','#258b91','#69d9dc','#58b5f2','#6975d8','#b694ee','#a87955'];
+export const PALETTE = ['#214d40','#ffffff','#f5e9c9','#d5d7d1','#f393aa','#d54d63','#f39850','#f2cf67','#bdd584','#62a878','#3d7970','#72bfc2','#83b5df','#786fa9','#b397cc','#9d765a'];
 export const STORAGE_KEY = 'teampoke.trainer.v1';
 export const MAX_PROJECTS = 40;
 export const MAX_FRAMES = 4;
