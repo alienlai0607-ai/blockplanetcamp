@@ -1,5 +1,5 @@
 import {makeFoods,validateFoods} from './food.js?v=1';
-import {xiaobu} from './mascot.js?v=20261117-1';
+import {xiaobu} from './mascot.js?v=20261117-2';
 export const SIZES = [16, 32, 64];
 export const PALETTE = ['#214d40','#ffffff','#fff1c9','#c7d7e5','#ff8fbc','#f24c64','#ff9a45','#ffda4b','#a9dc66','#48bd8d','#258b91','#69d9dc','#58b5f2','#6975d8','#b694ee','#a87955'];
 export const STORAGE_KEY = 'teampoke.trainer.v1';

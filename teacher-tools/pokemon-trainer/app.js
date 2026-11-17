@@ -1,7 +1,8 @@
 import {FOOD_NAMES,foodLayer,makeFoods} from './food.js?v=1';
+import {simplifyXiaobuExample} from './mascot.js?v=20261117-2';
 import {drawTogether,TOGETHER_SCENES} from './trainer-motion.js?v=2';
 import {drawStatusPreview} from './status-preview.js?v=1';
-import {PALETTE, STORAGE_KEY, MAX_PROJECTS, MAX_FRAMES, makeProject, nameOf, readCollection, importSprite, serialize, History, stroke, fill, resize, addFrame, deleteFrame, moveFrame, previousPixels, sheetPixels, TIMES, TIME_NAMES, BACKGROUND_SIZE, backgroundLayer, backgroundTemplate} from './model.js?v=6';
+import {PALETTE, STORAGE_KEY, MAX_PROJECTS, MAX_FRAMES, makeProject, nameOf, readCollection, importSprite, serialize, History, stroke, fill, resize, addFrame, deleteFrame, moveFrame, previousPixels, sheetPixels, TIMES, TIME_NAMES, BACKGROUND_SIZE, backgroundLayer, backgroundTemplate} from './model.js?v=7';
 import {DEVICE,SCENES,encodeDevice,decodeDevice,drawDevice,spritePlacement,deviceWarnings,timeAtHour,rgb565,color565,FALLBACK} from './device.js?v=6';
 import {AnimationPlayer} from './playback.js?v=4';
 import {mountDevicePanel} from './usb-ui.js?v=8';
@@ -11,12 +12,14 @@ import {TRAINER_KEY,makeTrainer,upgradeTrainerExample,readTrainer,serializeTrain
 const $ = id => document.getElementById(id);
 const all = selector => [...document.querySelectorAll(selector)];
 const canvas = $('drawingCanvas'), ctx = canvas.getContext('2d');
-let collection, storageError=false, damagedStorage=false, legacyBackup=0;
+let collection, storageError=false, damagedStorage=false, legacyBackup=0,exampleBackup=null;
 try {
   const saved=localStorage.getItem(STORAGE_KEY);
-  if(saved) { collection=readCollection(saved);legacyBackup=JSON.parse(saved).version<3?JSON.parse(saved).version:0; }
+  if(saved) { collection=readCollection(saved);legacyBackup=JSON.parse(saved).version<3?JSON.parse(saved).version:0;
+    for(const p of collection.projects)if(simplifyXiaobuExample(p))exampleBackup=saved;
+  }
 } catch { storageError=true;damagedStorage=true; }
-if(!collection) { const p=makeProject('小布（練習）',64,'xiaobu'); collection={version:3,activeId:p.id,projects:[p]}; }
+if(!collection) { const p=makeProject('小布（範例）',32,'xiaobu'); collection={version:3,activeId:p.id,projects:[p]}; }
 let project=collection.projects.find(p=>p.id===collection.activeId), history=new History();
 let trainer=makeTrainer(),trainerSaved=false,trainerDamaged=false,trainerLegacyBackup=null;
 try{const saved=localStorage.getItem(TRAINER_KEY);if(saved){trainer=readTrainer(saved);trainerSaved=true;if(upgradeTrainerExample(trainer))trainerLegacyBackup=saved;}}catch{trainerDamaged=true;}
@@ -39,6 +42,7 @@ function persist() {
   clearTimeout(saveTimer);
   if(!dirty) return !storageError;
   try {
+    if(exampleBackup){const key=STORAGE_KEY+'.xiaobu64-backup';if(!localStorage.getItem(key))localStorage.setItem(key,exampleBackup);exampleBackup=null;}
     if(legacyBackup){const old=localStorage.getItem(STORAGE_KEY),key=STORAGE_KEY+`.v${legacyBackup}-backup`;if(old&&!localStorage.getItem(key))localStorage.setItem(key,old);legacyBackup=0;}
     // Preserve an unreadable previous collection before writing new work.
     if(damagedStorage) { const old=localStorage.getItem(STORAGE_KEY);if(old)localStorage.setItem(STORAGE_KEY+'.recovery',old);damagedStorage=false; }
@@ -292,15 +296,15 @@ $('newProject').addEventListener('click',newDialog);$('galleryNew').addEventList
 $('mascotExample').addEventListener('click',()=>{
   if(!canAdd())return;
   finishStroke();stopPlayback();persist();
-  const p=makeProject('小布（練習）',64,'xiaobu');
+  const p=makeProject('小布（範例）',32,'xiaobu');
   collection.projects.push(p);selectProject(p);
   toast('小布範例已加入！可以直接改畫，原本的作品也在「我的作品」。');
 });
-$('newForm').addEventListener('change',e=>{if(e.target.name==='start'&&e.target.value==='xiaobu')$('newSize').value='64';});
+$('newForm').addEventListener('change',e=>{if(e.target.name==='start'&&e.target.value==='xiaobu')$('newSize').value='32';});
 $('newForm').addEventListener('submit',e=>{
   e.preventDefault();if(!canAdd())return;
   const start=new FormData(e.target).get('start');
-  const p=makeProject($('newName').value.trim()||(start==='xiaobu'?'小布（練習）':''),Number($('newSize').value),start==='xiaobu'?'xiaobu':start==='sprout');
+  const p=makeProject($('newName').value.trim()||(start==='xiaobu'?'小布（範例）':''),Number($('newSize').value),start==='xiaobu'?'xiaobu':start==='sprout');
   collection.projects.push(p);selectProject(p);$('newDialog').close();$('newForm').reset();toast('新夥伴準備好了，開始畫吧！');
 });
 function smallButton(label,icon,handler) { const b=document.createElement('button');b.className='icon-button';b.title=label;b.setAttribute('aria-label',label);const svg=document.createElementNS('http://www.w3.org/2000/svg','svg'),use=document.createElementNS(svg.namespaceURI,'use');use.setAttribute('href','#i-'+icon);svg.append(use);b.append(svg);b.addEventListener('click',handler);return b; }

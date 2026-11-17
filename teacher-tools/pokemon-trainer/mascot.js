@@ -67,7 +67,15 @@ const rows=[
   "0000000000000000000000000000000000000000000000000000000000000000",
   "0000000000000000000000000000000000000000000000000000000000000000"
 ];
-export function xiaobu(size=64){
+export function xiaobu(size=32){
  if(![16,32,64].includes(size))throw new Error('畫布大小不支援');
  return Array.from({length:size*size},(_,i)=>colors[Number(rows[Math.floor(Math.floor(i/size)*64/size)][Math.floor((i%size)*64/size)])]);
+}
+// Update only the untouched example; every customized pixel/frame remains intact.
+export function simplifyXiaobuExample(project){
+ if(project.width!==64||project.height!==64||project.frames.length!==1||!['小布（練習）','小布（範例）'].includes(project.name))return false;
+ const original=xiaobu(64);
+ if(!project.frames[0].every((color,i)=>color===original[i]))return false;
+ project.width=project.height=32;project.frames=[xiaobu()];project.activeFrame=0;
+ project.name='小布（範例）';return true;
 }

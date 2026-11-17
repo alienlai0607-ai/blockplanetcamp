@@ -4,6 +4,19 @@ import {makeProject,serialize,importSprite} from '../model.js';
 import {makeTrainer} from '../trainer.js';
 import {encodeDevice,decodeDevice,spritePlacement,SCENES,rgb565,color565} from '../device.js';
 import {drawTogether,TOGETHER_SCENES} from '../trainer-motion.js';
+import {xiaobu,simplifyXiaobuExample} from '../mascot.js';
+
+test('32px default replaces only untouched old examples and preserves saved custom work',()=>{
+ assert.equal(xiaobu().length,1024);
+ const old=makeProject('小布（練習）',64,'xiaobu'),id=old.id,backgrounds=old.backgrounds;
+ assert.equal(simplifyXiaobuExample(old),true);
+ assert.equal(old.width,32);assert.equal(old.id,id);assert.equal(old.backgrounds,backgrounds);
+ assert.equal(simplifyXiaobuExample(old),false);
+ for(const change of [p=>p.frames[0][0]='#123456',p=>p.frames.push(p.pixels.slice()),p=>p.name='我的小布']){
+  const custom=makeProject('小布（練習）',64,'xiaobu');change(custom);
+  const saved=serialize(custom);assert.equal(simplifyXiaobuExample(custom),false);assert.equal(serialize(custom),saved);
+ }
+});
 
 test('小布 keeps transparency through editable saves and device export',()=>{
  for(const size of [16,32,64]){
