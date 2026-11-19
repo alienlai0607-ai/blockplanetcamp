@@ -1,1 +1,11 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 40 40"><rect width="40" height="40" rx="11" fill="#214d40"/><path d="M12 15h16v15H12zM9 19h22v8H9zM16 10h7v7h-7zM22 7h6v6h-6z" fill="#d5ed97"/><path d="M15 20h3v4h-3zM23 20h3v4h-3z" fill="#214d40"/><path d="M18 26h5v2h-5z" fill="#f49b71"/></svg>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="64" height="64">
+  <title>BlockPoke 星球探險球</title>
+  <g transform="rotate(-23 32 32)" stroke="#172f50" stroke-linejoin="round">
+    <ellipse cx="32" cy="32" rx="31" ry="8" fill="#ffcf52" stroke-width="2.8"/>
+    <circle cx="32" cy="32" r="23" fill="#fff6dc"/>
+    <path d="M9 32a23 23 0 0 1 46 0Z" fill="#f35256" stroke="none"/>
+    <circle cx="32" cy="32" r="23" fill="none" stroke-width="3.8"/>
+    <path d="M1 32c6 3 17 3 31 3s25 0 31-3c-1 7-15 11-31 11S2 39 1 32Z" fill="#ffc94c" stroke-width="2.8"/>
+    <circle cx="32" cy="38" r="7.2" fill="#fff9e9" stroke-width="3.6"/>
+  </g>
+</svg>
