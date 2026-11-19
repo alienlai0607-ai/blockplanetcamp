@@ -242,8 +242,8 @@ window.CAMP_DATA = {
     },
     {
       "id": "blockpoke",
-      "poster": "assets/blockpoke-01.webp",
-      "posterMobile": "assets/blockpoke-01-mobile.webp",
+      "poster": "assets/blockpoke-01-campus.webp",
+      "posterMobile": "assets/blockpoke-01-campus-mobile.webp",
       "posterWidth": 1600,
       "posterHeight": 1600,
       "name": "寶可夢實境探險營【BlockPoke GO!!!】",
@@ -328,9 +328,9 @@ window.CAMP_DATA = {
       "status": "registration-copy-updating",
       "gallery": [
         {
-          "src": "assets/blockpoke-01.webp",
-          "mobile": "assets/blockpoke-01-mobile.webp",
-          "thumb": "assets/blockpoke-01-thumb.webp",
+          "src": "assets/blockpoke-01-campus.webp",
+          "mobile": "assets/blockpoke-01-campus-mobile.webp",
+          "thumb": "assets/blockpoke-01-campus-thumb.webp",
           "label": "認識 BlockPoke",
           "caption": "帶上掌上夥伴 BlockPoke，準備展開五天的實境探險。"
         },
