@@ -1,14 +1,14 @@
-import {gameCartridge} from './cartridge-art.js';
+import {gameCartridge} from './cartridge-art.js?v=round';
 import {sendCartridge} from './cartridge-usb.js';
 import {ArtworkConnection} from '../usb.js?v=9';
 import {heroSource,heroAppearance,portableGame} from './companion.js';
 import {prepareTouch} from './touch.js';
-import {painter,sampleDrawing} from './painter.js';
+import {painter,sampleDrawing} from './painter.js?v=round';
 import {prepareRoles,roleCategory,categories} from './roles.js';
 import {createEditor} from './blocks.js';
 import {Game} from './engine.js';
 import {action,actions,controls,events,example,featuredGames,guards,hints,kinds,names,origins,props,skins,symbols,themes} from './projects.js';
-import {draw,loadArt,pixelArt,point,images,sceneSample} from './view.js';
+import {draw,loadArt,pixelArt,point,images,sceneSample} from './view.js?v=round';
 import {validate} from './validate.js';
 import {readCollection,STORAGE_KEY} from '../model.js';
 const studio=window.parent.document;

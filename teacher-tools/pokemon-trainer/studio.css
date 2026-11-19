@@ -110,3 +110,30 @@ body{background-color:#eaf8ff;background-image:radial-gradient(circle at 1px 1px
   image-rendering:pixelated;
 }
 @media(max-width:760px){.drawing-modes .mode-art{width:24px;height:24px}}
+
+/* The game uses the same circular aperture in the editor and the enlarged player. */
+.game-open .pokeball-console {
+  aspect-ratio: 1;
+  padding: 0;
+  border-radius: 50%;
+  background: linear-gradient(#ff6570 0%, #ed4759 49.8%, #e6edf3 50%, #fff 100%);
+}
+.game-open .pokeball-console > :is(.console-topline, .console-bottomline) {
+  display: none;
+}
+.game-open .pokeball-console #previewStage {
+  position: absolute;
+  inset: 3.5%;
+  width: auto;
+  height: auto;
+  max-width: none;
+  margin: 0;
+  border: 2px solid #254761;
+  border-radius: 50%;
+  overflow: hidden;
+}
+.game-open #arcade-screen {
+  border-radius: 50%;
+  clip-path: circle(50%);
+  background: transparent;
+}

@@ -59,16 +59,19 @@ function character(c,g,custom){
 }
 export function draw(canvas,g,mode,custom){
   const c=canvas.getContext('2d');c.imageSmoothingEnabled=false;
+  c.clearRect(0,0,200,200);
+  c.save();
+  c.beginPath();c.arc(100,100,100,0,2*Math.PI);c.clip();
   scenery(c,g,custom?.background);
-  c.save();c.translate(20,40);c.beginPath();c.rect(0,0,W,H);c.clip();
-  const left=Math.max(0,Math.floor(g.camX/16)),top=Math.max(0,Math.floor(g.camY/16));
-  for(let row=top;row<top+9;row++)for(let col=left;col<left+11;col++){
+  c.save();c.translate(20,40);
+  const left=Math.max(0,Math.floor((g.camX-20)/16)),top=Math.max(0,Math.floor((g.camY-40)/16));
+  for(let row=top;row<top+14;row++)for(let col=left;col<left+14;col++){
     const t=g.map[row]?.[col];if(t!=='#'&&t!=='=')continue;
     stamp(c,t==='='?'brick':g.p.theme==='meadow'?'groundCat':'groundHero',col*16+8-g.camX,row*16+8-g.camY,16,16);
   }
   for(const o of g.entities){
     const x=o.x-g.camX,y=o.y-g.camY;
-    if(o.kind==='pass'||x<-20||x>W+20||y<-45||y>H+45)continue;
+    if(o.kind==='pass'||x<-40||x>W+40||y<-45||y>H+45)continue;
     const look=custom?.roles?.get(o.role);
     if(look){
       const frame=look.frames[Math.floor(g.time*look.fps)%look.frames.length];
@@ -82,6 +85,10 @@ export function draw(canvas,g,mode,custom){
     else stamp(c,o.art,x,y,o.kind==='bullet'?6:16,o.kind==='bullet'?8:16);
   }
   character(c,g,custom?.poses?.get(g.player.pose)||(custom?.frames?custom:null));c.restore();
+  drawHud(c,g,mode);
+  c.restore();
+}
+function drawHud(c,g,mode){
   if(g.p.theme==='beach'){
     c.fillStyle='#142849';c.fillRect(77,15,46,14);stamp(c,'bottle',85,22,10,12);
     c.fillStyle='white';c.textAlign='center';c.font='bold 10px monospace';c.fillText('× '+String(g.score).padStart(2,'0'),104,25);

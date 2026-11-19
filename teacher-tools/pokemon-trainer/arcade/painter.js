@@ -1,5 +1,5 @@
 import {PALETTE,fill,stroke} from '../model.js';
-import {pixelArt} from './view.js';
+import {pixelArt} from './view.js?v=round';
 import {categories} from './roles.js';
 
 export function sampleDrawing(image,size){

@@ -1,5 +1,5 @@
 import {heroAppearance} from './companion.js';
-import {images,sceneSample,pixelArt} from './view.js';
+import {images,sceneSample,pixelArt} from './view.js?v=round';
 import {encodeCartridge} from './cartridge.js';
 const transparent=65536;
 function pixels(canvas,w,h){
