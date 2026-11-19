@@ -4,7 +4,7 @@
   <meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="theme-color" content="#e5f7ff"><meta name="description" content="一格一格畫出想像，創造你的原創寶可夢。寶可夢訓練家計劃的像素繪圖工具，讓孩子自由畫、存作品、分享圖片。">
   <title>我的寶可夢研究所 · 布拉克星球</title><link rel="icon" href="./favicon.svg" type="image/svg+xml"><link rel="stylesheet" href="./style.css?v=20261116-custom-food1">
-<link rel="stylesheet" href="./studio.css?v=20261117-3">
+<link rel="stylesheet" href="./studio.css?v=20261118-tab-art">
 </head>
 <body>
 <svg class="icon-defs" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><defs>
@@ -32,25 +32,31 @@
 <symbol id="i-right" viewBox="0 0 24 24"><path d="M9 5h4v4h4v6h-4v4H9M17 12H3"/></symbol>
 <symbol id="i-film" viewBox="0 0 24 24"><path d="M3 3h18v18H3zM3 7h18M3 17h18M8 3v4m8-4v4M8 17v4m8-4v4"/></symbol>
 </defs></svg>
-<header class="site-header">
- <a class="brand" href="./"><span class="pixel-ball" aria-hidden="true"></span><span>布拉克星球<small>寶可夢訓練家計劃</small></span></a>
- <div class="header-note"><span class="sparkle" aria-hidden="true">✦</span> 小小創作，大大冒險！</div>
- <a class="back-link" href="/camp2027/">← 老師系統</a>
+<header class="studio-header">
+ <div class="studio-heading">
+  <a class="studio-brand" href="./" aria-label="BlockPoke 首頁"><span class="pixel-ball" aria-hidden="true"></span><span>BlockPoke</span></a>
+  <h1>我的寶可夢<span>研究所</span></h1>
+ </div>
+ <div class="studio-commands">
+  <button class="button secondary" id="openGallery"><svg><use href="#i-folder"/></svg>我的作品 <span id="projectCount" class="count">1</span></button>
+  <button class="button secondary" id="newProject"><svg><use href="#i-plus"/></svg><span id="newLabel">新夥伴</span></button>
+  <button class="button primary" id="openTransfer"><svg><use href="#i-save"/></svg><span>保存 / 傳送</span></button>
+ </div>
+ <div class="studio-meta"><span id="saveStatus" class="save-status" role="status">正在準備畫布</span><a class="back-link" href="/camp2027/">老師系統</a></div>
 </header>
 <main class="page">
  <section class="machine" aria-label="像素夥伴製造機">
   <span class="shell-screw screw-tl" aria-hidden="true"></span><span class="shell-screw screw-tr" aria-hidden="true"></span>
-  <header class="machine-header">
-   <div class="machine-title"><span class="model-label">WELCOME, TRAINER! <b>創作基地</b></span><h1>我的寶可夢<span>研究所</span><i aria-hidden="true">✦</i></h1><p>畫出自己和夥伴，一起出發冒險吧！</p></div>
-   <div class="machine-actions"><div class="power-line"><span id="saveStatus" class="save-status" role="status">正在準備畫布</span></div><div class="top-actions"><button class="button secondary" id="openGallery"><svg><use href="#i-folder"/></svg>我的作品 <span id="projectCount" class="count">1</span></button><button class="button secondary" id="newProject"><svg><use href="#i-plus"/></svg>新夥伴</button><button class="button primary" id="openTransfer"><svg><use href="#i-save"/></svg><span>保存 / 傳送</span></button></div></div>
-  </header>
   <div class="screen-bezel">
    <div class="bezel-label" aria-hidden="true"><span></span>DOT MATRIX · PIXEL CREATION SYSTEM<span></span></div>
    <section class="workspace" aria-label="角色動畫與背景編輯器">
-      <div class="drawing-modes" role="group" aria-label="選擇創作內容"><button data-mode="trainer" aria-pressed="false"><span class="mode-emoji" aria-hidden="true">🧢</span><span>畫自己</span></button><button data-mode="character" class="active" aria-pressed="true"><span class="mini-ball" aria-hidden="true"></span><span>畫夥伴</span></button><button data-mode="background" aria-pressed="false"><span class="mode-emoji" aria-hidden="true">🌿</span><span>畫世界</span></button><button data-mode="food" aria-pressed="false"><span class="mode-emoji" aria-hidden="true">🍓</span><span>畫點心</span></button></div>
+      <div class="drawing-modes" role="group" aria-label="選擇創作內容"><button data-mode="trainer" aria-pressed="false"><img class="mode-art" src="./assets/modes/trainer.png" width="24" height="24" alt=""><span>畫自己</span></button><button data-mode="character" class="active" aria-pressed="true"><img class="mode-art" src="./assets/modes/partner.png" width="24" height="24" alt=""><span>畫夥伴</span></button><button data-mode="background" aria-pressed="false"><img class="mode-art" src="./assets/modes/world.png" width="24" height="24" alt=""><span>畫世界</span></button><button data-mode="food" aria-pressed="false"><img class="mode-art" src="./assets/modes/food.png" width="24" height="24" alt=""><span>畫點心</span></button><button data-mode="arcade" aria-pressed="false"><img class="mode-art" src="./assets/modes/arcade.png" width="24" height="24" alt=""><span>遊戲程式設計</span></button></div>
+
 <div class="mobile-view-tabs" role="group" aria-label="工作區切換"><button data-view="edit" aria-pressed="true">✎ 畫畫</button><button data-view="preview" aria-pressed="false">◉ 看看效果</button></div>
     <div class="project-strip"><div class="project-name"><span class="number-tag">NO.<span id="projectNumber">001</span></span><label for="nameInput" class="sr-only">寶可夢名字</label><input id="nameInput" maxlength="24" placeholder="為夥伴取個名字" autocomplete="off"><svg class="name-pencil"><use href="#i-pencil"/></svg></div><div class="size-control"><label for="canvasSize" id="canvasSizeLabel">角色畫布</label><select id="canvasSize"><option value="16">16 × 16</option><option value="32" selected>32 × 32</option><option value="64">64 × 64</option></select></div></div>
+    <section id="arcadeShelf" class="arcade-only" aria-label="五款範例遊戲"><h2>範例遊戲</h2><div id="arcade-shelf" role="group" aria-label="選擇範例遊戲"></div></section>
     <div class="editor-layout">
+     <iframe id="arcadePanel" title="遊戲程式設計編輯器" hidden></iframe>
 <aside class="creative-dock" aria-label="畫筆與調色盤"><h2 class="dock-title"><span aria-hidden="true">✎</span> 創作背包</h2>     <aside class="tools" aria-label="繪圖工具"><span class="tool-heading">繪圖工具</span>
       <button class="tool active" data-tool="pencil" aria-pressed="true" title="畫筆 (B)"><svg><use href="#i-pencil"/></svg><span>畫筆</span><kbd>B</kbd></button>
       <button class="tool" data-tool="eraser" aria-pressed="false" title="橡皮擦 (E)"><svg><use href="#i-eraser"/></svg><span>橡皮擦</span><kbd>E</kbd></button>
@@ -90,15 +96,25 @@
      <aside class="preview-column" aria-label="作品與動畫預覽">
       <div class="preview-header"><h2>冒險小視窗</h2><span class="live-tag"><i></i> 即時預覽</span></div><div class="pokeball-console"><div class="console-topline"><span>POCKET WORLD</span><span class="console-lights" aria-hidden="true">● ● ●</span></div>
 
-      <div class="preview-stage custom-scene device-mode" id="previewStage"><canvas id="previewBackground" width="64" height="64" aria-label="白天自繪背景"></canvas><canvas id="previewCanvas" width="32" height="32" aria-label="寶可夢動畫預覽"></canvas><canvas id="deviceCanvas" width="466" height="466" aria-label="466 × 466 圓形螢幕模擬"></canvas><svg id="deviceUI" class="device-ui" viewBox="0 0 466 466" aria-hidden="true">
+      <div class="preview-stage custom-scene device-mode" id="previewStage"><div id="arcade-screen" class="arcade-only" tabindex="0" role="application" aria-label="遊戲圓形觸控螢幕"><canvas id="arcade-game" width="200" height="200"></canvas></div><canvas id="previewBackground" width="64" height="64" aria-label="白天自繪背景"></canvas><canvas id="previewCanvas" width="32" height="32" aria-label="寶可夢動畫預覽"></canvas><canvas id="deviceCanvas" width="466" height="466" aria-label="466 × 466 圓形螢幕模擬"></canvas><svg id="deviceUI" class="device-ui" viewBox="0 0 466 466" aria-hidden="true">
        <g id="explorationOverlay"><g fill="#f1f0db"><rect x="175" y="56" width="116" height="24" rx="10"/><rect x="95" y="84" width="276" height="48" rx="12"/><rect x="0" y="330" width="466" height="136"/></g><g fill="#214d40" text-anchor="middle"><text id="deviceTimeLabel" x="233" y="74" font-size="20">白天</text><text x="233" y="118" font-size="30">探索中</text><text x="233" y="349" font-size="18">今日步數　123 步</text><text x="233" y="370" font-size="16">走走看看，會遇見誰呢？</text></g><rect x="104" y="378" width="124" height="48" rx="12" fill="#f2cf67"/><rect x="238" y="378" width="124" height="48" rx="12" fill="#bdd584"/><g fill="#214d40" text-anchor="middle" font-size="27"><text x="166" y="412">暫停</text><text x="300" y="412">返回</text></g></g>
        <g id="homeOverlay" hidden><g fill="#f1f0db"><rect x="95" y="68" width="276" height="34" rx="10"/><rect x="122" y="104" width="222" height="28" rx="10"/></g><g fill="#214d40" text-anchor="middle"><text x="233" y="92" font-size="27">夥伴名稱 Lv.5</text><text x="233" y="123" font-size="18">今天也很有精神！</text></g><g fill="#f2cf67"><rect x="90" y="264" width="92" height="46" rx="10"/><rect x="188" y="264" width="92" height="46" rx="10"/><rect x="286" y="264" width="92" height="46" rx="10"/></g><rect x="0" y="312" width="466" height="154" fill="#f1f0db"/><g fill="#214d40" font-size="22" text-anchor="middle"><text x="136" y="294">探索</text><text x="234" y="294">夥伴</text><text x="332" y="294">連線</text><text x="233" y="339">飽足 ▰▰▰　心情 ▰▰▰</text><text x="233" y="367">體力 ▰▰▰　清潔 ▰▰▰</text><text x="233" y="412">餵食　遊戲　燈光　洗澡</text></g></g>
-      </svg></div><div class="console-bottomline"><span class="console-grille" aria-hidden="true"></span><button id="ballPreview" class="ball-key" aria-label="播放或暫停夥伴動畫"><span></span></button><span class="console-grille" aria-hidden="true"></span></div></div><p class="playback-status" id="playbackStatus">白天 · 預覽第 1 格</p>
+      </svg></div><div class="console-bottomline"><span class="console-grille" aria-hidden="true"></span><button id="ballPreview" class="ball-key" aria-label="播放或暫停夥伴動畫"><span></span></button><span class="console-grille" aria-hidden="true"></span></div></div>
+      <section id="arcadeTools" class="arcade-only" aria-label="試玩與角色素材">
+       <div id="arcadeTransport"><button class="button primary" id="arcade-play" disabled>▶ 執行</button><button class="button secondary" id="arcade-expand" disabled>放大試玩</button><button class="button secondary" id="arcade-restart" disabled>重新開始</button></div>
+       <p id="arcade-status" role="status">載入遊戲中</p><p id="arcade-hint"></p>
+       <label class="arcade-hero">遊戲主角 <span id="arcade-heroMenu"></span></label><small id="arcade-heroHint"></small>
+       <section id="arcadeMaterials" aria-label="角色與物件素材"><h3>素材 <small>角色／物件</small></h3>
+       <div class="asset-actions"><button class="button compact" id="arcade-addRole">＋ 畫角色</button><button class="button compact" id="arcade-paintScene">畫場景</button><button class="button compact" id="arcade-settingsBtn">設定</button></div><div id="arcade-assets" tabindex="0" aria-label="素材清單，可上下捲動"></div></section>
+      </section>
+      <dialog id="arcadeTheater" aria-labelledby="theaterTitle"><header><h2 id="theaterTitle">放大試玩</h2><button class="button compact" id="closeTheater">返回編輯</button></header></dialog>
+      <p class="playback-status" id="playbackStatus">白天 · 預覽第 1 格</p>
       <p class="device-connection" id="deviceConnection">○ 實機未連接 · 目前為作品預覽</p><div class="preview-name"><span class="mini-ball" aria-hidden="true"></span><div><h3 id="previewName">小布（範例）</h3><p id="previewStats">32 × 32 · 1 格動畫</p></div></div>
       <div class="playback-panel"><button class="button play-button full" id="playAnimation" aria-pressed="false"><svg><use id="playIcon" href="#i-play"/></svg><span id="playLabel">播放動畫</span></button><p id="animationHint" class="playback-hint" role="status"></p><div class="speed-heading"><label for="fpsInput">動畫速度</label><output id="fpsValue" for="fpsInput">4 格 / 秒</output></div><input id="fpsInput" type="range" min="1" max="12" value="4" step="1"><div class="speed-labels"><span>慢慢動</span><span>活力滿滿</span></div></div>
       <details class="preview-options"><summary>預覽設定 · 時段與實機畫面</summary><div class="device-controls"><label for="previewMode">預覽方式</label><select id="previewMode"><option value="device">466 × 466 圓形實機</option value="art">完整畫布</option></select><label for="deviceScene">使用畫面</label><select id="deviceScene"><option value="exploration">探索畫面</option><option value="home">主畫面</option></select><label class="device-ui-toggle"><input id="deviceUIToggle" type="checkbox" checked>顯示介面遮擋</label></div><div class="background-row time-preview"><span>預覽時段</span><div class="time-buttons" role="group" aria-label="切換預覽背景"><button data-time="morning" aria-pressed="false">早晨</button><button data-time="day" class="active" aria-pressed="true">白天</button><button data-time="night" aria-pressed="false">夜晚</button></div><div class="device-clock"><label for="previewHour">試試一天的變化</label><input id="previewHour" type="range" min="0" max="23" value="12"><output id="previewHourLabel" for="previewHour">白天 10:00–17:59</output></div></div></details>
      </aside>
     </div>
+    <div id="arcadeDialogs"></div>
     <div class="game-message" hidden><span aria-hidden="true">▶</span><p><strong>我的訓練家</strong> 畫自己 → <strong>角色動畫</strong> 畫夥伴 → <strong>背景製造</strong> 畫世界 → <strong>食物製造</strong> 畫點心 → 傳送到遊戲機！</p></div>
    </section>
   </div>
@@ -157,6 +173,6 @@
  <details class="firmware-help"><summary>USB 連線詳細記錄</summary><pre id="firmwareLog" style="white-space:pre-wrap;overflow-wrap:anywhere;font-size:12px">尚未連接。</pre></details>
 </dialog>
 <noscript><div class="noscript">請開啟瀏覽器的 JavaScript，才能使用像素繪圖工具。</div></noscript>
-<script type="module" src="./app.js?v=20261117-usb-gps"></script>
-<script type="module" src="./studio.js?v=20261117-1"></script>
+<script type="module" src="./app.js?v=20261118-studio-header"></script>
+<script type="module" src="./studio.js?v=20261118-console"></script>
 </body></html>

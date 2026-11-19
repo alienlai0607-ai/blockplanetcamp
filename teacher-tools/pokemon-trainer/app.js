@@ -25,6 +25,7 @@ let trainer=makeTrainer(),trainerSaved=false,trainerDamaged=false,trainerLegacyB
 try{const saved=localStorage.getItem(TRAINER_KEY);if(saved){trainer=readTrainer(saved);trainerSaved=true;if(upgradeTrainerExample(trainer))trainerLegacyBackup=saved;}}catch{trainerDamaged=true;}
 const trainerHistory=new History();let introTimer=null,introStarted=0;
 let mode='character',time='day',histories={character:history,trainer:trainerHistory};
+let arcadeOpen=false;
 let foodKind=0;
 const drawing=()=>mode==='food'?foodLayer(project,foodKind):mode==='trainer'?trainer:mode==='character'?project:backgroundLayer(project,time);
 const historyKey=()=>mode==='food'?'food'+foodKind:mode==='trainer'?'trainer':mode==='character'?'character':time;
@@ -167,7 +168,7 @@ function renderBackgroundUI(updateAll=true) {
   $('dpadCaption').textContent=editingBackground?'切換時段':'切換畫格';
   $('dpad').setAttribute('aria-label',editingBackground?'切換背景時段':'切換動畫畫格');
   all('[data-frame-step]').forEach(b=>b.setAttribute('aria-label',(Number(b.dataset.frameStep)<0?'上一個':'下一個')+(editingBackground?'時段':'畫格')));
-  all('[data-mode]').forEach(b=>{const on=b.dataset.mode===mode;b.classList.toggle('active',on);b.setAttribute('aria-pressed',String(on));});
+  all('[data-mode]').forEach(b=>{const on=b.dataset.mode===(arcadeOpen?'arcade':mode);b.classList.toggle('active',on);b.setAttribute('aria-pressed',String(on));});
   all('[data-time]').forEach(b=>{
     const on=b.dataset.time===time;b.classList.toggle('active',on);b.setAttribute('aria-pressed',String(on));
     const thumb=b.querySelector('canvas');if(thumb&&(updateAll||(editingBackground&&on)))renderSprite(thumb,backgroundLayer(project,b.dataset.time));
@@ -185,7 +186,25 @@ function renderBackgroundUI(updateAll=true) {
   $('downloadPngLabel').textContent=editingFood?'食物 PNG':editingBackground?'背景 PNG':'此格 PNG';
 }
 function selectMode(next) {
-  if(!['trainer','character','background','food'].includes(next))return;
+  if(!['trainer','character','background','food','arcade'].includes(next))return;
+  const frame=$('arcadePanel');
+  if(arcadeOpen&&next!=='arcade')frame.contentWindow.arcadeCommand?.('hide');
+  arcadeOpen=next==='arcade';
+  document.body.classList.toggle('game-open',arcadeOpen);
+  frame.hidden=!arcadeOpen;
+  document.querySelector('[data-view="edit"]').textContent=arcadeOpen?'✎ 寫程式':'✎ 畫畫';
+  document.querySelector('[data-view="preview"]').textContent=arcadeOpen?'◉ 試玩':'◉ 看看效果';
+  $('ballPreview').setAttribute('aria-label',arcadeOpen?'執行或暫停遊戲':'播放或暫停夥伴動畫');
+  $('ballPreview').disabled=arcadeOpen?$('arcade-play').disabled:$('playAnimation').disabled;
+  $('newLabel').textContent=arcadeOpen?'新遊戲':'新夥伴';
+  const url=new URL(window.location.href);url.searchParams.set('mode',next);window.history.replaceState(null,'',url);
+  if(arcadeOpen){
+    finishStroke();stopPlayback();persist();
+    all('[data-mode]').forEach(b=>{const on=b.dataset.mode==='arcade';b.classList.toggle('active',on);b.setAttribute('aria-pressed',String(on));});
+    if(!frame.hasAttribute('src'))frame.src='./arcade/';
+    else requestAnimationFrame(()=>frame.contentWindow.arcadeCommand?.('show'));
+    return;
+  }
   finishStroke();stopPlayback();mode=next;$('nameInput').value=mode==='trainer'?trainer.name:project.name;history=histories[historyKey()] ||= new History();keyboardCursor=null;render();
 }
 function selectTime(next) {
@@ -345,6 +364,7 @@ $('importFile').addEventListener('change',async e=>{
   catch(error){toast(error.message||'無法開啟這個作品檔。');}finally{e.target.value='';}
 });
 document.addEventListener('keydown',e=>{
+  if(arcadeOpen)return;
   if(document.querySelector('dialog[open]')||/INPUT|TEXTAREA|SELECT/.test(document.activeElement?.tagName))return;
   const key=e.key.toLowerCase();
   if((e.ctrlKey||e.metaKey)&&key==='z'){e.preventDefault();e.shiftKey?redo():undo();return;}
@@ -366,3 +386,19 @@ $('nameInput').value=mode==='trainer'?trainer.name:project.name;selectColor(colo
 mountDevicePanel({getArtwork:()=>{finishStroke();refreshDevice();return deviceBytes?.slice();},download,toast});
 if(storageError){saveStatus('未能讀取舊作品，請先下載備份',true);toast('瀏覽器儲存無法讀取。新作品仍可下載；原有資料會先保留。');}
 else{if(!dirty)saveStatus('已儲存在此瀏覽器');else persist();}
+for(const [id,command] of [['openGallery','works'],['newProject','new'],['openTransfer','save']]){
+  $(id).addEventListener('click',event=>{
+    if(!arcadeOpen)return;
+    event.stopImmediatePropagation();
+    const run=$('arcadePanel').contentWindow.arcadeCommand;
+    if(run)run(command);else toast('遊戲程式設計載入中，請稍候。');
+  },true);
+}
+window.getArcadeGallery=()=>collection.projects.map(p=>({
+  name:p.name,size:p.width,frames:p.frames,fps:p.fps,backgrounds:p.backgrounds
+}));
+window.getArcadeCompanion=()=>({
+  name:project.name,size:project.width,fps:project.fps,frames:project.frames.map(frame=>frame.slice()),background:project.backgrounds.day.slice()
+});
+const linkedMode = new URLSearchParams(window.location.search).get('mode');
+if (linkedMode) selectMode(linkedMode);

@@ -1,0 +1,32 @@
+<!doctype html>
+<html lang="zh-Hant"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="theme-color" content="#edf7ff"><title>遊戲程式設計 · 我的寶可夢研究所</title><link rel="icon" href="../favicon.svg"><link rel="stylesheet" href="lab.css?v=right-toolbox">
+<script>if(window===window.parent)location.replace('../?mode=arcade');</script>
+<script defer src="./vendor/blockly/blockly_compressed.js"></script><script defer src="./vendor/blockly/zh-hant.js"></script></head>
+<body aria-busy="true">
+<svg class="defs" xmlns="http://www.w3.org/2000/svg"><defs>
+<symbol id="folder" viewBox="0 0 24 24"><path d="M3 18V6a2 2 0 0 1 2-2h4l3 3h7a2 2 0 0 1 2 2v1M3 18l2-8h17l-2 10H4z"/></symbol>
+<symbol id="send" viewBox="0 0 24 24"><path d="M22 2 2 10l8 3 4 9 8-20ZM10 13 22 2"/></symbol>
+<symbol id="pad" viewBox="0 0 24 24"><path d="M6 5h12c3 0 4 3 4 7s-1 7-3 7l-4-3H9l-4 3c-2 0-3-3-3-7s1-7 4-7Z"/><path d="M7 8v6m-3-3h6m5-2h.1m3 3h.1"/></symbol>
+<symbol id="tools" viewBox="0 0 24 24"><rect x="2" y="7" width="20" height="14" rx="3"/><path d="M8 7V4h8v3M2 12h20m-11-1v3h2v-3"/></symbol>
+<symbol id="puzzle" viewBox="0 0 24 24"><path d="M3 9h5a3 3 0 1 1 4 0h5v4a3 3 0 1 1 0 5v4h-6a3 3 0 1 0-5 0H3Z"/></symbol>
+<symbol id="pic" viewBox="0 0 24 24"><rect x="2" y="3" width="20" height="17" rx="2"/><circle cx="8" cy="8" r="1"/><path d="m3 17 6-6 4 4 3-3 6 6"/></symbol>
+</defs></svg>
+
+<main>
+<section class="editor panel"><div class="editor-head"><div class="workspace-bar"><h2><svg><use href="#puzzle"/></svg>遊戲程式設計</h2><label>專案 <select id="library"></select></label>
+<div class="edit-actions"><span class="pill"><button id="undo" title="復原" aria-label="復原">↶</button><button id="redo" title="重做" aria-label="重做">↷</button></span><span class="pill"><button id="zoomOut" aria-label="縮小">−</button><output id="zoomLabel">100%</output><button id="zoomIn" aria-label="放大">＋</button></span></div></div><h2 class="tool-title"><svg><use href="#tools"/></svg>積木工具箱</h2></div>
+<div id="blocks" aria-label="拖曳與拼接程式積木"></div><p id="saved" role="status"></p></section>
+</main>
+<dialog id="roleDialog" aria-labelledby="roleTitle">
+  <div class="dialog-head"><h2 id="roleTitle">畫角色</h2><button data-close aria-label="取消並關閉">×</button></div>
+  <div class="paint-tabs"><button id="paintTab">編輯器</button><button id="sampleTab">範例素材</button><button id="resourceTab">我的資源</button></div>
+  <section id="paintArea"><div class="paint-stage"><canvas id="pixelCanvas" aria-label="像素畫布"></canvas></div>
+  <div class="paint-tools"><div id="brushTools"></div><div id="swatches"></div><label>選色 <input type="color" id="ink"></label><button id="undoPaint">復原筆畫</button><button id="blankPaint">空白畫布</button><label id="frameLabel">動畫格 <select id="frameIndex"></select></label></div></section>
+  <div id="artGallery" hidden></div>
+  <form id="roleForm"><div class="paint-bind"><label>變數名稱<input id="roleName" maxlength="20" placeholder="例如：星星"></label><label>類別<select id="roleKind"></select></label></div>
+  <label id="placeLabel"><input type="checkbox" id="placeRole" checked>遊戲啟動時建立這個角色</label><label id="poseLabel">造型名稱<input id="poseName" maxlength="20"></label><p id="roleError" role="alert"></p><button class="yellow" type="submit" id="applyPaint">套用到遊戲</button></form>
+</dialog>
+<dialog id="gallery"><div class="dialog-head"><h2>我的作品</h2><button data-close aria-label="關閉">×</button></div><div class="dialog-actions"><button id="new" class="yellow">＋ 空白作品</button><button id="copy">複製目前作品</button><label class="button">匯入作品<input id="import" type="file" accept=".json,application/json" hidden></label></div><h3>已儲存作品</h3><div id="myWorks"></div></dialog>
+<dialog id="fileBox"><div class="dialog-head"><h2>保存／傳送</h2><button data-close aria-label="關閉">×</button></div><p>將程式、素材和關卡存成作品檔，就能在另一台電腦匯入繼續編輯。</p><button id="saveFile" class="yellow">下載遊戲作品</button><hr><h3>微雪 1.75G</h3><p>將目前的小遊戲存進掌機。需要 WSdev21 遊戲韌體，每台可保存一款自製小遊戲。</p><button type="button" id="sendGame" class="yellow">傳送目前遊戲到微雪</button><p id="gameTransferStatus" role="status"></p></dialog>
+<dialog id="config"><div class="dialog-head"><h2>遊戲設定</h2><button data-close aria-label="關閉">×</button></div><div class="dialog-actions"><button data-tab="scene" aria-pressed="true">角色與場景</button><button data-tab="map" aria-pressed="false">關卡地圖</button></div><div id="scene"><div id="settings"></div></div><div id="map" hidden><button id="addLevel">＋ 加入關卡</button><div id="mapTools"></div></div></dialog>
+<script type="module" src="lab.js?v=console"></script></body></html>

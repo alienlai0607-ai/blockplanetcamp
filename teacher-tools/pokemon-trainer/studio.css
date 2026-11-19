@@ -18,3 +18,95 @@ body{background-color:#eaf8ff;background-image:radial-gradient(circle at 1px 1px
 
 .mascot-example{gap:4px;white-space:nowrap}.mascot-example img,.mascot-start img{image-rendering:pixelated}.mascot-start{align-items:center}.mascot-start img{flex:none}.canvas-options{gap:4px}
 @media(max-width:760px){.mascot-example img{width:18px;height:18px}.canvas-toolbar{gap:3px}.canvas-toolbar .history-buttons,.canvas-toolbar .canvas-options{gap:3px}}
+
+.workspace .drawing-modes{grid-template-columns:repeat(5,minmax(0,1fr))}
+
+.arcade-only{display:none}
+.game-open :is(.project-strip,.creative-dock,.drawing-column,.game-message,#projectCount,.power-line){display:none!important}
+.game-open .preview-column>:not(.preview-header,.pokeball-console,#arcadeTools,#arcadeTheater){display:none!important}
+.game-open .preview-header,.game-open .pokeball-console,.game-open #arcadeTools{flex-shrink:0}
+.game-open #previewStage>*:not(#arcade-screen){display:none!important}
+.game-open #arcade-screen{display:block;position:absolute;inset:0;cursor:crosshair;touch-action:none;background:#17334c}
+#previewStage #arcade-game{display:block;position:static;width:100%;height:100%;transform:none;object-fit:fill;image-rendering:pixelated}
+#arcadePanel{display:block;width:100%;grid-column:1/3;height:clamp(600px,76dvh,1040px);border:0;background:#fff}
+.game-open #arcadeTools{display:block;flex:1 1 auto;min-height:0;overflow-y:auto;padding:14px 2px 0;overscroll-behavior-y:contain}
+.game-open .preview-column{min-width:0;min-height:0;max-height:clamp(600px,76dvh,1040px);overflow:hidden}
+#arcadeTransport,.asset-actions{display:flex;flex-wrap:wrap;align-items:center;gap:7px}
+#arcadeTransport .button{min-height:34px;font-size:12px;padding:5px 8px}
+#arcade-status{font-size:12px;font-weight:700;margin:12px 0 3px}
+#arcade-hint,#arcade-heroHint{font-size:12px;line-height:1.5;color:#4a6980;margin:0}
+.arcade-hero{display:flex;gap:6px;align-items:center;font-size:12px;font-weight:700;margin-top:14px}
+#arcade-heroMenu{min-width:0}.arcade-hero select{max-width:100%}
+#arcadeMaterials{margin-top:22px;padding-top:14px;border-top:1px solid var(--line)}
+#arcadeMaterials h3{margin:0 0 8px;font-size:14px}#arcadeMaterials h3 small{font-size:11px;font-weight:500;color:#567287}
+#arcade-assets{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));max-height:245px;overflow-y:auto;gap:6px;padding:4px 3px;margin-top:7px}
+#arcade-assets button{display:grid;min-width:0;place-items:center;gap:2px;border:1px solid #c5dbea;border-radius:9px;background:white;color:var(--ink);font-weight:700;font-size:12px;padding:6px;overflow-wrap:anywhere}
+#arcade-assets small{font-size:10px;color:#536d82}#arcade-assets canvas{width:35px;height:35px;image-rendering:pixelated}
+#arcadeTheater[open]{display:flex;flex-direction:column;align-items:center;gap:13px;width:max-content;max-width:96vw;max-height:96dvh;padding:16px 22px;border:2px solid var(--ink);border-radius:20px;overflow:auto;background:#f2faff}
+#arcadeTheater::backdrop{background:#102d44b8}
+#arcadeTheater header{display:flex;justify-content:space-between;align-items:center;gap:14px;width:100%}
+#arcadeTheater h2{margin:0;font-size:16px}#arcadeTheater .pokeball-console{width:min(78vw,calc(90dvh - 172px),680px);max-width:none;align-self:center}
+#arcadeTheater #arcade-expand{display:none}
+@media(max-width:760px){
+  .workspace .drawing-modes button{flex-direction:column;gap:4px;padding:6px 2px}.workspace .drawing-modes{padding:5px 2px}
+  #arcadePanel{height:clamp(460px,72svh,740px)}
+  .game-open .workspace.view-preview #arcadePanel{display:none}
+  .game-open .workspace.view-preview .preview-column{max-height:75svh}
+  .game-open #arcadeTools{width:min(100%,360px);align-self:center}
+  #arcadeTheater .pokeball-console{width:min(84vw,calc(90dvh - 160px))}
+}
+
+.game-open #arcadeShelf{display:flex;align-items:center;gap:14px;min-height:51px;padding:6px 16px;border-bottom:1px solid var(--line);background:#f8fcff}
+#arcadeShelf h2{margin:0;font-size:13px;white-space:nowrap}
+#arcade-shelf{flex:1;min-width:0;display:flex;gap:6px;overflow-x:auto}
+#arcade-shelf button{flex:1;display:flex;align-items:center;justify-content:center;gap:6px;padding:3px 7px;min-height:34px;border:1px solid #bdd5e5;border-radius:9px;background:white;color:var(--ink);font-weight:700;white-space:nowrap}
+#arcade-shelf button[aria-pressed=true]{background:#fff1ad;border-color:#dcad35}
+#arcade-shelf img{width:25px;height:23px;object-fit:contain;image-rendering:pixelated}
+@media(max-width:760px){.game-open #arcadeShelf{padding:5px 8px;gap:4px}#arcadeShelf h2{display:none}#arcade-shelf button{flex-direction:column;gap:1px;padding:4px;font-size:10px}#arcade-shelf img{height:17px}}
+
+@media(min-width:761px){
+  .game-open .workspace .editor-layout{grid-template-columns:minmax(0,1fr) clamp(275px,25.5vw,350px)}
+  .game-open #arcadePanel{grid-column:1}
+  .game-open .preview-header h2{font-size:15px}
+  .game-open #arcadeTransport .button{min-height:37px;font-size:13px}
+}
+@media(max-width:760px){.game-open .preview-column>.pokeball-console{width:min(100%,330px)}}
+
+/* The same compact toolbar serves drawing and game programming. */
+.studio-header {
+  width:100%; max-width:1380px; margin:0 auto; padding:16px 32px 14px;
+  display:flex; align-items:center; gap:clamp(16px,2vw,30px); flex-wrap:wrap;
+}
+.studio-heading,.studio-brand,.studio-commands,.studio-meta {display:flex; align-items:center}
+.studio-heading {gap:14px}
+.studio-brand {gap:8px; text-decoration:none; color:var(--ink); font:800 17px/1.2 system-ui,sans-serif}
+.studio-heading h1 {margin:0; padding-left:14px; border-left:1px solid #abc5d4; font-size:clamp(19px,2vw,29px); line-height:1.25; letter-spacing:.02em}
+.studio-heading h1 span {color:#df4859}
+.studio-commands {gap:7px}
+.studio-commands .button {min-height:38px; white-space:nowrap; padding:6px 12px; border-radius:10px; box-shadow:0 2px 0 var(--ink)}
+.studio-meta {gap:10px; margin-left:auto}
+.studio-meta .back-link {padding:5px 0; font-size:12px}
+.game-open .studio-meta .save-status {display:none}
+@media(max-width:1050px){.studio-header{padding-inline:18px}.studio-meta{flex-wrap:wrap;justify-content:flex-end}}
+@media(max-width:760px){
+  .studio-header {display:grid;grid-template-columns:minmax(0,1fr) auto;gap:10px 8px;padding:12px 10px}
+  .studio-heading {gap:8px}
+  .studio-brand {font-size:14px;gap:5px}
+  .studio-heading h1 {padding-left:8px;font-size:clamp(16px,3.8vw,22px)}
+  .studio-meta {grid-area:1/2;display:grid;text-align:right;gap:2px}
+  .studio-meta .save-status {max-width:9em;font-size:9px}
+  .studio-meta .back-link {font-size:11px}
+  .studio-commands {grid-column:1/-1;display:grid;grid-template-columns:repeat(3,minmax(0,1fr))}
+  .studio-commands .button {min-width:0;min-height:38px;font-size:12px;padding:5px 3px;gap:4px}
+  .studio-commands #openTransfer {grid-column:auto}
+}
+@media(max-width:375px){.studio-brand>span:last-child{display:none}}
+
+.drawing-modes .mode-art {
+  display:block;
+  flex:none;
+  width:28px;
+  height:28px;
+  image-rendering:pixelated;
+}
+@media(max-width:760px){.drawing-modes .mode-art{width:24px;height:24px}}
