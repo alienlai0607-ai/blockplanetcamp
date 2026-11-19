@@ -67,15 +67,42 @@ const rows=[
   "0000000000000000000000000000000000000000000000000000000000000000",
   "0000000000000000000000000000000000000000000000000000000000000000"
 ];
-export function xiaobu(size=32){
+function legacyXiaobu(size=32){
  if(![16,32,64].includes(size))throw new Error('畫布大小不支援');
  return Array.from({length:size*size},(_,i)=>colors[Number(rows[Math.floor(Math.floor(i/size)*64/size)][Math.floor((i%size)*64/size)])]);
 }
-// Update only the untouched example; every customized pixel/frame remains intact.
+// Native-size silhouettes keep the cap, smile and little paws legible on the device.
+const ink = {'.':null, o:'#502c36', r:'#ff3035', d:'#be2845', h:'#ff9380',
+ y:'#ffdf48', s:'#f2a83c', l:'#fff28c', w:'#ffffff', p:'#ff9888', m:'#973d46'};
+const sprite32 = [
+'................','................','...oo......ooooo','..oroooo.oorrrrr',
+'..orhhroorrrhhrr','..odrrorrrrhhrrr','..odddorrrrrrrrr','...oodorrrrorrrr',
+'.....orrrroorrrr','.....odddoyodddd','.....ooooyyyoooo','......oyyyyyyyyy',
+'.....oyllyyyyyyy','....oyllyyyyyyyy','....olyyyyowoyyy','...olyyyyyoooyyy',
+'...olyyyyyoooyyy','...oyyppyyyyyyyo','...oyppppyyyyyom','...oyyppyyyyyyom',
+'...oyyyyyyyyyyyo','...osyyyyoyyyyyy','....oyyoylyoyyyy','....osyyolyoyyyy',
+'.....osyyoooyyyy','.....osyyyyyyyyy','......osyyyyyyyy','.......ossyyyyyy',
+'........oosssyyy','..........ooosss','.............ooo','................'
+];
+const sprite16 = [
+'........','..oo..oo','.orooorr','.odorrhr','..oorr rr',
+'...odydd','...oyyyy','..oyyowy','..oyyooy','.oypp yyo',
+'.oyyyyym','..oyoyyy','..osyoyy','...osyyy','....ooss','......oo'
+].map(row=>row.replaceAll(' ',''));
+export function xiaobu(size=32){
+ if(![16,32,64].includes(size))throw new Error('畫布大小不支援');
+ const halfRows=size===16?sprite16:sprite32;
+ const grid=halfRows.map(half=>half+[...half].reverse().join(''));
+ const scale=size/grid.length;
+ return Array.from({length:size*size},(_,i)=>ink[grid[Math.floor(Math.floor(i/size)/scale)][Math.floor(i%size/scale)]]);
+}
 export function simplifyXiaobuExample(project){
- if(project.width!==64||project.height!==64||project.frames.length!==1||!['小布（練習）','小布（範例）'].includes(project.name))return false;
- const original=xiaobu(64);
- if(!project.frames[0].every((color,i)=>color===original[i]))return false;
+ const size=project.width;
+ if(![32,64].includes(size)||size!==project.height||project.frames.length!==1||
+    !['小布（練習）','小布（範例）'].includes(project.name))return false;
+ const pixels=project.frames[0];
+ const matches=sample=>pixels.length===sample.length&&sample.every((color,i)=>color===pixels[i]);
+ if(!matches(legacyXiaobu(size))&&!(size===64&&matches(xiaobu(64))))return false;
  project.width=project.height=32;project.frames=[xiaobu()];project.activeFrame=0;
  project.name='小布（範例）';return true;
 }
