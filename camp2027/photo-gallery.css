@@ -19,3 +19,15 @@
  .real-gallery-side #realGalleryCampTitle{display:block;font-size:12px;letter-spacing:.04em;line-height:1.6;margin-bottom:8px}
  .real-gallery-heading{margin-bottom:20px}
 }
+
+/* Keep every camp selectable without a sparse final grid row. */
+@media(min-width:701px){.real-gallery-tabs{display:flex;flex-wrap:wrap;justify-content:center}.real-gallery-tabs button{flex:0 1 146px;padding:12px 10px;min-width:0;font-size:14px}}
+/* Put controls below the photo so corner logos remain visible. */
+.real-gallery-stage{aspect-ratio:auto}
+.real-gallery-stage>img{height:auto;aspect-ratio:4/3}
+.real-gallery-stage figcaption{position:static;padding:10px 14px;gap:12px}
+.real-gallery-thumbs img{object-fit:contain}
+
+@media(min-width:701px){.real-gallery-tabs button .real-tab-desktop{white-space:nowrap}}
+
+.real-gallery[data-active-camp="blockpoke"] .real-gallery-thumbs{grid-template-columns:repeat(3,minmax(0,1fr))}
