@@ -51,6 +51,8 @@ h1, h2, p { margin: 0; }
 .camp-heading { min-width: 0; }
 .camp-heading h2 { color: #683f2e; font-size: 22px; font-weight: 800; line-height: 1.45; white-space: nowrap; }
 .camp-subtitle { margin-top: 6px; color: var(--muted); font-size: 14px; line-height: 1.6; }
+.camp-benefit { margin-top: 9px; padding-left: 10px; border-left: 2px solid #c7a77a; color: #79512f; font-size: 13px; line-height: 1.7; }
+.camp-coupon-price { margin-top: 4px; color: var(--accent); font-size: 12px; font-weight: 650; }
 .camp-meta { color: var(--muted); font-size: 13px; }
 .camp-date { color: var(--ink); font-size: 16px; font-weight: 700; white-space: nowrap; }
 .camp-classroom { margin-top: 6px; }

@@ -2,6 +2,9 @@
 .chapter-blockpoke{background:#f4eedc;border-block:1px solid #decaa9}
 .blockpoke-new{display:inline-block;padding:3px 9px;margin-left:8px;border:1px solid #c4aa79;border-radius:5px;color:#77532f;font-size:12px;letter-spacing:.08em}
 .blockpoke-wordmark{display:inline-block;color:#8c4930;font-size:clamp(20px,2.2vw,30px);font-weight:800;letter-spacing:.025em;margin-bottom:6px}
+.blockpoke-gift{margin:22px 0;padding:13px 17px;border-left:3px solid #b58b56;background:#fbf5e6;color:#765031;line-height:1.7}
+.blockpoke-gift strong{display:block;font-size:18px}
+.blockpoke-gift span{display:block;font-size:15px}
 .blockpoke-gallery{margin:0}
 .blockpoke-gallery>a{display:block;overflow:hidden;border:1px solid #cbb58f;border-radius:16px;background:#fff9ed;box-shadow:0 7px 0 #d6c5a448}
 .blockpoke-gallery picture,.blockpoke-gallery img{display:block;width:100%;height:auto;aspect-ratio:1;object-fit:contain}
@@ -20,6 +23,11 @@
 .camp-form-notice{font-size:13px;color:#885d3b;line-height:1.7;max-width:23em}
 .registration-card:target{outline:2px solid #ac7047;outline-offset:4px;scroll-margin-top:100px}
 @media(max-width:700px){
+ #blockpoke .camp-copy>.blockpoke-gift{grid-row:5;margin:0}
+ #blockpoke>.camp-visual{grid-row:6}
+ #blockpoke .camp-copy>.camp-facts{grid-row:7}
+ #blockpoke .camp-copy>.camp-actions{grid-row:8}
+ #blockpoke .camp-copy>.camp-coupon-entry{grid-row:9}
  .culture-chapter .blockpoke-section{padding-block:42px}
  .blockpoke-gallery figcaption{font-size:14px;min-height:64px;padding-top:12px}
  .blockpoke-thumbs{gap:7px;margin-top:6px}

@@ -269,15 +269,18 @@ window.CAMP_DATA = {
         "yongkang"
       ],
       "classroomLabel": "永康東橋教室／北區教室",
-      "priceLabel": "早鳥 NT$8,700／人",
-      "priceNote": "原價 NT$9,900／人；早鳥截止 2026/12/15。有效 95 折優惠券價 NT$8,265，實際應繳金額請由官方 LINE 確認。第 1 天提供午餐；第 2–5 天走讀請每日自備 NT$300–500 餐點費，未含於營費。",
+      "priceLabel": "早鳥 NT$8,999／人",
+      "priceNote": "原價 NT$9,900／人；早鳥截止 2026/12/15。使用有效 95 折優惠券，優惠價 NT$8,500／人，實際應繳金額請由官方 LINE 確認。第 1 天提供午餐；第 2–5 天走讀請每日自備 NT$300–500 餐點費，未含於營費。",
+      "couponPriceLabel": "95 折券優惠價 NT$8,500／人",
+      "equipmentLabel": "報名即贈 BlockPoke，一起玩實體版『寶寶去哪兒』！帶著自己的掌上夥伴走讀城市、尋找線索，和隊友一起完成冒險任務。",
+      "registrationBenefit": "報名即贈 BlockPoke，一起玩實體版『寶寶去哪兒』！",
       "pricing": {
         "currency": "TWD",
         "original": 9900,
-        "earlyBird": 8700,
+        "earlyBird": 8999,
         "earlyBirdDeadline": "2026-12-15",
         "earlyBirdDeadlineLabel": "2026/12/15 截止",
-        "couponPrice": 8265,
+        "couponPrice": 8500,
         "sourceId": "blockpoke-confirmed-20261119"
       },
       "description": "把台南變成孩子的冒險地圖！創作自己的寶可夢、訓練家與專屬絕招，用積木程式設計遊戲，再帶著掌上夥伴 BlockPoke 走進真實世界。讀地圖、找線索、完成現地任務，和隊友一起挑戰八大道館。",
@@ -709,7 +712,7 @@ window.CAMP_DATA = {
         { question: "全期營費用是多少？", answer: "五燈獎全期營原價 NT$15,000／人，早鳥價 NT$13,000／人，早鳥截止 2026/11/30。有效 95 折優惠券價為 NT$12,350；優惠券於 10/20 晚上 7 點開放領取，實際應繳金額請由官方 LINE 確認後再付款。", sourceIds: ["full-term-form", "confirmed-prices-20261020"] },
         { question: "可以報名不只一個營隊嗎？", answer: "可以。先從 1/21–1/22 的兩日營選一個主題，再參加 1/25–1/29 的祥龍無人機派對、LEGO IDEAS 玩具設計總監或寶可夢實境探險營，五日營也請擇一。各特色營都與五燈獎冬令營全期營重疊，同一位孩子不能同時參加全期營與重疊的特色營。", sourceIds: ["full-term-form", "drone-poster", "game-lab-user-20261019", "aviation-user-brief", "lego-dates-20261019", "fragrance-user-20261019"] },
         { question: "想請假、取消或更換梯次，可以怎麼處理？", answer: "請透過 LINE 提供所報名的營隊、教室及希望調整的日期，由教室說明該方案的處理方式。付款前也可以先詢問相關規則。", sourceIds: [] },
-        { question: "特色營的日期與費用公布了嗎？", answer: "已公布。2027/1/21–1/22 兩日營的早鳥價為：Game Lab NT$5,400、飛行航空 NT$5,400、新春香氛 NT$4,800。2027/1/25–1/29 五日營的早鳥價為：祥龍無人機派對 NT$7,999、LEGO IDEAS NT$7,800。上述營隊皆為每位學員費用，早鳥截止 2026/11/30，每日 09:00–17:00 上課。新加入的寶可夢實境探險營早鳥價 NT$8,700，早鳥截止 2026/12/15，日期為 1/25–1/29，適合國小一至六年級，每日 09:00–17:00。同日期主題請擇一參加，完整費用請查看各營課程介紹。", sourceIds: ["confirmed-prices-20261020", "confirmed-form-details-20261020"] }
+        { question: "特色營的日期與費用公布了嗎？", answer: "已公布。2027/1/21–1/22 兩日營的早鳥價為：Game Lab NT$5,400、飛行航空 NT$5,400、新春香氛 NT$4,800。2027/1/25–1/29 五日營的早鳥價為：祥龍無人機派對 NT$7,999、LEGO IDEAS NT$7,800。上述營隊皆為每位學員費用，早鳥截止 2026/11/30，每日 09:00–17:00 上課。新加入的寶可夢實境探險營早鳥價 NT$8,999，早鳥截止 2026/12/15，日期為 1/25–1/29，適合國小一至六年級，每日 09:00–17:00。同日期主題請擇一參加，完整費用請查看各營課程介紹。", sourceIds: ["confirmed-prices-20261020", "confirmed-form-details-20261020"] }
       ]
     },
     {
@@ -723,7 +726,7 @@ window.CAMP_DATA = {
     }
   ],
   sources: [
-    { id: "blockpoke-confirmed-20261119", type: "user-confirmed", title: "寶可夢營隊費用、日期與教室", checkedOn: "2026-11-19", verification: "雙教室；1/25–1/29；原價9900，早鳥8700至12/15，95折8265。" },
+    { id: "blockpoke-confirmed-20261119", type: "user-confirmed", title: "寶可夢營隊費用、日期與教室", checkedOn: "2026-11-19", verification: "雙教室；1/25–1/29；原價9900，早鳥8999至12/15，有效95折券優惠價8500；報名即贈BlockPoke，實體版寶寶去哪兒為玩法概念。" },
     { id: "blockpoke-posters-20261119", type: "user-provided-poster", title: "四張寶可夢實境探險營宣傳圖", checkedOn: "2026-11-19" },
     { id: "blockpoke-form-20261119", type: "public-form", title: "寶可夢實境探險營報名表（編輯中）", url: "https://forms.gle/B4KyNXfgqLsHkTTX9", checkedOn: "2026-11-19", verification: "年級1–6；09:00–17:00；07:30開門、18:30接回；第2–5天自備餐點費。舊費用與五燈獎內容由使用者修改中，不採用。" },
     { id: "confirmed-prices-20261020", type: "user-confirmation", title: "六營確認費用與早鳥截止", checkedOn: "2026-10-20", verification: "依使用者確認的六營原價、早鳥價與優惠券價，早鳥截止均為2026/11/30。無人機優惠券價依明確確認固定為NT$7,600。公開費用資料不代表開啟優惠券發券或後台結算。" },
