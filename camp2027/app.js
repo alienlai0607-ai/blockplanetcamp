@@ -587,6 +587,7 @@
     const fullTermExtras = id === 'full-term' ? '<section class="course-journey" aria-labelledby="courseJourneyTitle"><h3 id="courseJourneyTitle">寒假的文化旅程</h3><ul class="period-list">' + data.itinerary.periods.map(p => '<li><small>' + esc(p.label) + '</small><h4>' + esc(p.title) + '</h4><p>' + esc(p.description) + '</p></li>').join('') + '</ul><p class="dialog-note">' + esc(data.itinerary.note) + '</p><div class="dialog-event"><h4>2/2 晚上，邀請爸媽來作客。</h4><p>' + esc(c.parentEvent.description) + '<br>' + esc(c.parentEvent.note) + '</p></div></section>' : '';
     const poster = c.poster ? '<figure class="dialog-poster"><a href="' + esc(c.poster) + '" ' + ext + ' aria-label="開啟' + esc(c.name) + '完整海報"><picture>' + (c.posterMobile ? '<source media="(max-width:700px)" type="image/avif" srcset="' + esc(c.posterMobile.replace(/\.webp$/, '.avif')) + '"><source media="(max-width:700px)" type="image/webp" srcset="' + esc(c.posterMobile) + '">' : '') + '<source type="image/avif" srcset="' + esc(c.poster.replace(/\.webp$/, '.avif')) + '"><img src="' + esc(c.poster) + '" alt="' + esc(c.name) + '完整課程海報" loading="eager" fetchpriority="high" decoding="async"></picture></a><figcaption>點開查看完整海報 <span aria-hidden="true">↗</span></figcaption></figure>' : '';
     const courseHeader = c.courseHeader ? '<picture class="course-header-art"><source media="(max-width:700px)" type="image/avif" srcset="' + esc(c.courseHeaderMobile.replace(/\.webp$/, '.avif')) + '"><source media="(max-width:700px)" type="image/webp" srcset="' + esc(c.courseHeaderMobile) + '"><source type="image/avif" srcset="' + esc(c.courseHeader.replace(/\.webp$/, '.avif')) + '"><img src="' + esc(c.courseHeader) + '" width="' + c.courseHeaderWidth + '" height="' + c.courseHeaderHeight + '" alt="Game Lab 新春故事與遊戲創作封面" loading="lazy" decoding="async"></picture>' : '';
+    const gallery = c.gallery ? '<section class="course-gallery" aria-label="營隊宣傳圖"><h3>把冒險帶進真實世界</h3>' + c.gallery.slice(1).map(photo => '<figure><a href="' + esc(photo.src) + '" target="_blank" rel="noopener"><img src="' + esc(photo.src) + '" srcset="' + esc(photo.mobile) + ' 720w, ' + esc(photo.src) + ' 1600w" sizes="(max-width:700px) 88vw, 600px" width="1600" height="1600" loading="lazy" decoding="async" alt="' + esc(photo.caption) + '"></a><figcaption>' + esc(photo.caption) + '</figcaption></figure>').join('') + '</section>' : '';
     const couponMessage = '有效優惠券可享早鳥價再打 95 折；領取狀態請查看優惠券頁。';
     const couponEntry = `<p class="dialog-coupon-pending">${couponMessage}<a href="coupon.html?campus=${selectedCampus}&camp=${c.id}">查看優惠券 ↗</a></p>`;
     const actions = '<div class="dialog-actions"><a href="' + esc(c.registration.url) + '" ' + ext + ' class="button">' + esc(c.registration.label) + ' <span aria-hidden="true">↗</span></a></div>';
@@ -595,7 +596,7 @@
     const equipmentNote = c.equipmentLabel ? '<p class="dialog-equipment-note">' + esc(c.equipmentLabel) + '</p>' : '';
     const registrationNotes = '<details class="dialog-registration-notes"><summary>報名與接送說明</summary><div>' + pickupNotes + '<p>' + esc(c.registration.note) + '</p><p>' + esc(data.campaign.relationship) + '</p></div></details>';
     const registration = '<section class="course-registration" aria-labelledby="courseRegistrationTitle"><h3 id="courseRegistrationTitle">日期與報名</h3>' + factsMarkup + actions + couponEntry + registrationNotes + '</section>';
-    $('#dialogContent').innerHTML = '<div class="dialog-inner course-journal' + (poster ? '' : ' course-journal--text') + '">' + poster + '<article class="dialog-course-main">' + courseHeader + '<header class="course-introduction"><p class="eyebrow">' + esc(c.daysLabel) + '</p><h2 id="dialogTitle">' + courseTitle + '</h2><p class="dialog-subtitle">' + esc(c.subtitle) + '</p><p class="dialog-description">' + esc(c.editorialIntroduction || c.description) + '</p></header>' + renderCourseJournal(c) + fullTermExtras + equipmentNote + registration + '</article></div>';
+    $('#dialogContent').innerHTML = '<div class="dialog-inner course-journal' + (poster ? '' : ' course-journal--text') + '">' + poster + '<article class="dialog-course-main">' + courseHeader + '<header class="course-introduction"><p class="eyebrow">' + esc(c.daysLabel) + '</p><h2 id="dialogTitle">' + courseTitle + '</h2><p class="dialog-subtitle">' + esc(c.subtitle) + '</p><p class="dialog-description">' + esc(c.editorialIntroduction || c.description) + '</p></header>' + renderCourseJournal(c) + gallery + fullTermExtras + equipmentNote + registration + '</article></div>';
     dialogIsOpen = true; syncScenePlayback();
     if (!campDialog.open) {
       pageOverflowBeforeDialog = document.body.style.overflow;
@@ -651,7 +652,7 @@
     }
     if (item.question === '可以報名不只一個營隊嗎？') answer = combinations;
     if (item.question === '特色營的日期與費用公布了嗎？') answer = `${campusName()}的${names(twoDay)}為 2027/1/21–1/22 兩日營；${names(fiveDay)}為 2027/1/25–1/29 五日營。${specialties.map(c => `${c.name}：${c.priceLabel}。`).join('')}早鳥截止日為 2026/11/30，完整費用與上課資訊可在各營隊的課程介紹及報名表查看。`;
-    if (item.question === '優惠券適用哪些營隊？') answer = `${campusName()}各營隊皆可使用有效 95 折券。六營共用，首波限量 35 張，2026/10/20 晚上 7 點開放領取；領券後須在 60 分鐘內完成報名。相同學員可追加日期不重疊的營隊，實際應繳金額由官方 LINE 核對。`;
+    if (item.question === '優惠券適用哪些營隊？') answer = `${campusName()}各營隊皆可使用有效 95 折券。適用營隊共用，首波限量 35 張，2026/10/20 晚上 7 點開放領取；領券後須在 60 分鐘內完成報名。相同學員可追加日期不重疊的營隊，實際應繳金額由官方 LINE 核對。`;
     if (item.question === '可以用在不只一個營隊嗎？') answer = `同一位學員可在日期不衝堂的適用營隊追加使用，仍須符合券面期限與報名規則。${combinations}領券與追加使用的開放狀態，請查看優惠券頁公告。`;
     if (item.question === '沒有積木設計或飛行經驗，可以參加嗎？') answer = `${campusName()}各營隊會依課程內容帶領孩子練習。歡迎告訴我們孩子的年級與經驗，確認適合的課程。`;
     return { ...item, answer };
@@ -660,13 +661,14 @@
     'full-term': ['五燈獎', '大聖鬧辦桌'],
     drone: ['祥龍', '無人機派對'],
     lego: ['LEGO IDEAS', '玩具設計總監'],
+    blockpoke: ['寶可夢', '實境探險營'],
     'game-lab': ['Game Lab', '遊戲設計師養成營'],
     aviation: ['「機」不可失', '飛行航空科學營'],
     fragrance: ['小小生活工藝師', '新春香氛科學營']
   };
   function choiceNameMarkup(camp) {
     const [main, subtitle] = compactChoiceNames[camp.id] || [camp.name, ''];
-    return `<span class="choice-camp-name"><span class="choice-name-wide" aria-hidden="true">${esc(camp.name)}</span><span class="choice-name-compact" aria-hidden="true"><span class="choice-name-main">${esc(main)}</span><span class="choice-name-subtitle">${esc(subtitle)}</span></span></span>`;
+    return `<span class="choice-camp-name"><span class="choice-name-wide" aria-hidden="true">${esc(camp.id === 'blockpoke' ? '寶可夢實境探險營' : camp.name)}</span><span class="choice-name-compact" aria-hidden="true"><span class="choice-name-main">${esc(main)}</span><span class="choice-name-subtitle">${esc(subtitle)}</span></span></span>`;
   }
   function renderCampChoices(camps) {
     const groups = [
@@ -689,14 +691,14 @@
   function applyCampus(id) {
     if (id !== 'all' && !data.classrooms.some(c => c.id === id)) return;
     selectedCampus = id;
-    $$('[data-registration-link]').forEach(link => { link.href = `register.html?campus=${id}`; });
+    $$('[data-registration-link]').forEach(link => { link.href = `register.html?campus=${id}${link.dataset.registrationCamp ? "#register-" + link.dataset.registrationCamp : ""}`; });
     $$('[data-coupon-link]').forEach(link => { link.href = `coupon.html?campus=${id}`; });
     const camps = availableCamps(), fiveDay = camps.filter(c => c.days === 5), twoDay = camps.filter(c => c.days === 2);
     $$('[data-campus]').forEach(button => button.setAttribute('aria-pressed', String(button.dataset.campus === id)));
     $('#campusSelectionStatus').textContent = id === 'all' ? '目前顯示全部教室的營隊' : `顯示${campusName()}的 ${camps.length} 種營隊`;
     $('.hero-location').innerHTML = esc(id === 'all' ? '台南北區・東橋' : id === 'yongkang' ? '永康東橋教室' : campusName()) + ' <span>各營隊獨立報名</span>';
     $('.hero-note').innerHTML = (id === 'yongkang' ? '玩文化、設計原創玩具、發明飛行器，' : id === 'north' ? '玩文化、設計遊戲、調出新春香氣，' : '玩文化、操控無人機、設計原創玩具，') + '<br>把寒假過成一場創作冒險。';
-    ['full-term', 'drone', 'lego'].forEach(campId => {
+    ['full-term', 'drone', 'lego', 'blockpoke'].forEach(campId => {
       const camp = campById(campId), section = $('#' + campId);
       setCampusVisibility(section.closest('.culture-chapter'), campusAllows(camp));
       $('.camp-facts', section).innerHTML = `<span>${esc(camp.dateLabel)}</span><span>${esc(campClassroom(camp))}</span>`;

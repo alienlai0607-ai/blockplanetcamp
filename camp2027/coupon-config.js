@@ -1,4 +1,4 @@
-/* Six camps share one 60-coupon pool; server enforces scheduled opening. */
+/* Seven camps share the existing coupon pool; server enforces scheduled opening. */
 window.CAMPAIGN_COUPON = Object.freeze({
   campaignId: '2027C',
   enabled: true,
@@ -13,9 +13,10 @@ window.CAMPAIGN_COUPON = Object.freeze({
   initialPoolSize: 35,
   discountLabel: '95 折',
   validMinutes: 60,
-  eligibleCamps: ['五燈獎・大聖鬧辦桌', '祥龍無人機派對', 'LEGO IDEAS 玩具設計總監', 'Game Lab｜遊戲設計師養成營', '「機」不可失｜飛行航空科學營', '小小生活工藝師｜新春香氛科學營'],
+  eligibleCamps: ['五燈獎・大聖鬧辦桌', '祥龍無人機派對', 'LEGO IDEAS 玩具設計總監', 'Game Lab｜遊戲設計師養成營', '「機」不可失｜飛行航空科學營', '小小生活工藝師｜新春香氛科學營', '寶可夢實境探險營【BlockPoke GO!!!】'],
   plannedEligibleCamps: [],
   registrationCamps: [
+    {id: 'blockpoke', classroomIds: ['north', 'yongkang'], name: '寶可夢實境探險營【BlockPoke GO!!!】', description: '5 日特色營・1/25–1/29・永康東橋／北區教室・雲端報名表', kind: 'form', sessionDates: ['2027-01-25','2027-01-26','2027-01-27','2027-01-28','2027-01-29'], url: 'https://docs.google.com/forms/d/e/1FAIpQLSerSzEosQm1uu_ZoJ5HNycorsY7rWpxjka0EW7R6aQZjKEvMA/viewform'},
     {id: 'full-term', classroomIds: ['north', 'yongkang'], name: '五燈獎・大聖鬧辦桌', description: '冬令營全期營・2027/1/21–2/2・東橋教室／北區教室・雲端報名表', kind: 'form', url: 'https://docs.google.com/forms/d/e/1FAIpQLSfqclQFsLtNujPctIfk_elu3umDNIWr1W6C1MSIs5wc3BIVFg/viewform'},
     {id: 'drone', classroomIds: ['north'], name: '祥龍無人機派對', description: '5 日特色營・1/25–1/29・北區教室・雲端報名表', kind: 'form', url: 'https://docs.google.com/forms/d/e/1FAIpQLSeEDR0yX9Q5__UJq0HIXpTm71_tHfoSa_dmJab6LX535jI94w/viewform'},
     {id: 'lego', classroomIds: ['north', 'yongkang'], name: 'LEGO IDEAS 玩具設計總監', description: '5 日特色營・1/25–1/29・東橋教室／北區教室・雲端報名表', kind: 'form', sessionDates: ['2027-01-25', '2027-01-26', '2027-01-27', '2027-01-28', '2027-01-29'], url: 'https://docs.google.com/forms/d/e/1FAIpQLSdH_h8GOVi9iSzJk2kjqdwXfRWkLC-gXRc_keDiIu4dk5XDKA/viewform'},

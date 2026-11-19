@@ -123,7 +123,7 @@
   function ticket(stub, action, state, extra = '') {
     return `<article class="ticket" data-state="${state}" aria-label="2027冬令營95折優惠券">
       <div class="ticket-face"><div class="ticket-topline"><span>布拉克星球・冬令營</span><span class="edition">2027</span></div>
-      <div class="offer"><div class="offer-copy"><p>營隊報名優惠</p><strong><span>95</span><i>折</i></strong><p class="offer-note">六個冬令營皆適用</p></div><img class="learners" src="assets/coupon-learners.webp" width="1536" height="1024" alt="小橘人學員帶著布袋戲偶、無人機與積木龍車"></div>
+      <div class="offer"><div class="offer-copy"><p>營隊報名優惠</p><strong><span>95</span><i>折</i></strong><p class="offer-note">七個冬令營皆適用</p></div><img class="learners" src="assets/coupon-learners.webp" width="1536" height="1024" alt="小橘人學員帶著布袋戲偶、無人機與積木龍車"></div>
       <div class="ticket-bottomline"><span>全期營・五日營・兩日營</span><span aria-hidden="true">✦</span></div></div>
       <div class="ticket-stub"><div class="stub-content" data-panel="${state}">${stub}</div></div>${action}</article>${extra}`;
   }
@@ -213,7 +213,7 @@
     currentCoupon = coupon; rememberedPhone = coupon.phone;
     render(ticket(`<span class="status status-success">已領取</span><p class="stub-label">你的優惠碼</p><output class="coupon-code" id="code-value" tabindex="-1">${escapeHtml(coupon.code)}</output><button class="copy-code" data-action="copy" type="button">複製優惠碼 ⧉</button><span class="stub-rule"></span><p class="stub-label">剩餘使用時間</p><p class="timer" id="countdown" role="timer" aria-label="優惠碼剩餘使用時間">--:--</p><p class="stub-note demo-note">以優惠碼原有效期限計時</p>`,
       `<div class="ticket-action"><div><b id="copy-heading">優惠券已準備好</b><p id="copy-status" role="status">先複製優惠碼，再前往報名。</p></div><button class="primary" data-action="register" type="button">選擇營隊・前往報名 →</button></div>`, 'claimed',
-      `<section class="next-steps" aria-labelledby="next-title"><h2 id="next-title">使用優惠碼請注意</h2><p>六個營隊皆適用。同一位學員可選一個 1/21–1/22 兩日營，再追加一個 1/25–1/29 五日營；每份報名都須在領券後 60 分鐘內送出。全期營與其他營隊日期重疊，請擇一報名。</p><div class="steps-row"><p><strong>表單貼上優惠碼</strong><span>填寫同一位學員，手機 ${escapeHtml(coupon.phone)}。</span></p><p><strong>60 分鐘內完成報名</strong><span>從領券成功起計時，請在倒數結束前送出表單。</span></p><p><strong>立即截圖傳官方 LINE</strong><span>送出後立即傳送報名截圖，由行政核對優惠與報名金額。</span></p></div>${link(line, '已送出報名？到 LINE 確認 ↗', 'inline-button', true)}${!persistentStorage ? '<p class="storage-warning" role="status">此瀏覽器無法保留優惠碼，請先複製或截圖並保留本頁。若關閉頁面後無法找回，請聯絡官方 LINE 協助。</p>' : ''}${coupon.codeStatus === 'used' ? '<p class="storage-warning">這張券已有報名紀錄；有效時間內，同一位學員僅可追加營期不重疊的適用營隊，請沿用原優惠碼；未知營期須先由教室核對。</p>' : ''}</section>`), 'claimed');
+      `<section class="next-steps" aria-labelledby="next-title"><h2 id="next-title">使用優惠碼請注意</h2><p>七個營隊皆適用。同一位學員可選一個 1/21–1/22 兩日營，再追加一個 1/25–1/29 五日營；每份報名都須在領券後 60 分鐘內送出。全期營與其他營隊日期重疊，請擇一報名。</p><div class="steps-row"><p><strong>表單貼上優惠碼</strong><span>填寫同一位學員，手機 ${escapeHtml(coupon.phone)}。</span></p><p><strong>60 分鐘內完成報名</strong><span>從領券成功起計時，請在倒數結束前送出表單。</span></p><p><strong>立即截圖傳官方 LINE</strong><span>送出後立即傳送報名截圖，由行政核對優惠與報名金額。</span></p></div>${link(line, '已送出報名？到 LINE 確認 ↗', 'inline-button', true)}${!persistentStorage ? '<p class="storage-warning" role="status">此瀏覽器無法保留優惠碼，請先複製或截圖並保留本頁。若關閉頁面後無法找回，請聯絡官方 LINE 協助。</p>' : ''}${coupon.codeStatus === 'used' ? '<p class="storage-warning">這張券已有報名紀錄；有效時間內，同一位學員僅可追加營期不重疊的適用營隊，請沿用原優惠碼；未知營期須先由教室核對。</p>' : ''}</section>`), 'claimed');
     document.getElementById('registration-code').textContent = coupon.code;
     setCopyStatus('先複製優惠碼，再前往報名。');
     if (startCountdown() && automatic) copyCode(true);

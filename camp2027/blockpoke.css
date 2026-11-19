@@ -1,0 +1,35 @@
+/* Keep the original campaign palette; posters retain their complete square composition. */
+.chapter-blockpoke{background:#f4eedc;border-block:1px solid #decaa9}
+.blockpoke-new{display:inline-block;padding:3px 9px;margin-left:8px;border:1px solid #c4aa79;border-radius:5px;color:#77532f;font-size:12px;letter-spacing:.08em}
+.blockpoke-wordmark{display:inline-block;color:#8c4930;font-size:clamp(20px,2.2vw,30px);font-weight:800;letter-spacing:.025em;margin-bottom:6px}
+.blockpoke-gallery{margin:0}
+.blockpoke-gallery>a{display:block;overflow:hidden;border:1px solid #cbb58f;border-radius:16px;background:#fff9ed;box-shadow:0 7px 0 #d6c5a448}
+.blockpoke-gallery picture,.blockpoke-gallery img{display:block;width:100%;height:auto;aspect-ratio:1;object-fit:contain}
+.blockpoke-gallery figcaption{font-size:16px;line-height:1.7;color:#715540;padding:14px 2px 4px;min-height:68px}
+.blockpoke-thumbs{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px;margin-top:12px}
+.blockpoke-thumbs button{min-width:0;padding:5px;background:#fff9ed;border:1px solid #cdbb9e;border-radius:8px;color:#715540;cursor:pointer}
+.blockpoke-thumbs img{display:block;width:100%;height:auto;aspect-ratio:1;object-fit:contain;border-radius:4px}
+.blockpoke-thumbs span{display:block;padding:6px 0 2px;font-size:12px;font-weight:700;line-height:1.5}
+.blockpoke-thumbs button[aria-pressed=true]{border-color:#955138;box-shadow:0 0 0 2px #955138;background:#f3e4c9}
+.blockpoke-thumbs button:focus-visible{outline:3px solid #955138;outline-offset:4px}
+.blockpoke-poster-note{margin:14px 0 0;font-size:12px;line-height:1.7;color:#826d56}
+.course-gallery{margin-top:36px}
+.course-gallery h3{font-size:24px;color:#734a32}
+.course-gallery figure{margin:24px 0}
+.course-gallery img{display:block;width:100%;height:auto;border-radius:8px}
+.course-gallery figcaption{font-size:15px;color:#796149;line-height:1.7;margin-top:10px}
+.camp-form-notice{font-size:13px;color:#885d3b;line-height:1.7;max-width:23em}
+.registration-card:target{outline:2px solid #ac7047;outline-offset:4px;scroll-margin-top:100px}
+@media(max-width:700px){
+ .culture-chapter .blockpoke-section{padding-block:42px}
+ .blockpoke-gallery figcaption{font-size:14px;min-height:64px;padding-top:12px}
+ .blockpoke-thumbs{gap:7px;margin-top:6px}
+ .blockpoke-thumbs span{font-size:10px;letter-spacing:0;white-space:nowrap}
+ .blockpoke-thumbs button{padding:4px}
+ .blockpoke-poster-note{font-size:11px}
+ .blockpoke-new{font-size:10px;margin-left:4px}
+}
+@media (max-width: 600px) {
+  .chapter-blockpoke h2 br { display: block; }
+  .chapter-blockpoke h2 { font-size: clamp(2rem, 9.6vw, 2.7rem); line-height: 1.18; }
+}

@@ -66,6 +66,7 @@
     const card = document.createElement('article');
     card.className = 'registration-card';
     card.dataset.campId = camp.id;
+    card.id = `register-${camp.id}`;
     card.setAttribute('aria-labelledby', `register-title-${camp.id}`);
 
     const heading = document.createElement('div');
@@ -78,6 +79,7 @@
     meta.className = 'camp-meta';
     meta.append(textElement('p', 'camp-date', camp.dateLabel), textElement('p', 'camp-classroom', classroomLabel(camp)));
     if (camp.pricing) meta.append(textElement('p', 'camp-price', camp.priceLabel));
+    if (camp.status === 'registration-copy-updating') meta.append(textElement('p', 'camp-form-notice', '報名表內容更新中，填寫前請確認日期與費用。'));
 
     const actions = document.createElement('div');
     actions.className = 'camp-actions';
@@ -135,4 +137,6 @@
   });
 
   render();
+  const target = document.getElementById(location.hash.slice(1));
+  if (target?.classList.contains('registration-card')) target.scrollIntoView({block:'center'});
 })();

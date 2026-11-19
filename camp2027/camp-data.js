@@ -241,6 +241,123 @@ window.CAMP_DATA = {
       status: "additional-details-upcoming"
     },
     {
+      "id": "blockpoke",
+      "poster": "assets/blockpoke-01.webp",
+      "posterMobile": "assets/blockpoke-01-mobile.webp",
+      "posterWidth": 1600,
+      "posterHeight": 1600,
+      "name": "寶可夢實境探險營【BlockPoke GO!!!】",
+      "shortName": "BlockPoke GO!!!",
+      "category": "特色主題營",
+      "subtitle": "創作冒險夥伴，定向走讀台南",
+      "days": 5,
+      "daysLabel": "5 日特色營",
+      "dates": [
+        "2027-01-25",
+        "2027-01-26",
+        "2027-01-27",
+        "2027-01-28",
+        "2027-01-29"
+      ],
+      "dateLabel": "2027/1/25–1/29",
+      "dateNote": "與其他五日營及全期營日期重疊，請擇一參加。",
+      "ageLabel": "國小一至六年級",
+      "timeLabel": "09:00–17:00",
+      "pickupLabel": "07:30 開門，18:30 前接回；逾時照顧每小時 NT$190，不足一小時以一小時計。",
+      "classroomIds": [
+        "north",
+        "yongkang"
+      ],
+      "classroomLabel": "永康東橋教室／北區教室",
+      "priceLabel": "早鳥 NT$8,700／人",
+      "priceNote": "原價 NT$9,900／人；早鳥截止 2026/12/15。有效 95 折優惠券價 NT$8,265，實際應繳金額請由官方 LINE 確認。第 1 天提供午餐；第 2–5 天走讀請每日自備 NT$300–500 餐點費，未含於營費。",
+      "pricing": {
+        "currency": "TWD",
+        "original": 9900,
+        "earlyBird": 8700,
+        "earlyBirdDeadline": "2026-12-15",
+        "earlyBirdDeadlineLabel": "2026/12/15 截止",
+        "couponPrice": 8265,
+        "sourceId": "blockpoke-confirmed-20261119"
+      },
+      "description": "把台南變成孩子的冒險地圖！創作自己的寶可夢、訓練家與專屬絕招，用積木程式設計遊戲，再帶著掌上夥伴 BlockPoke 走進真實世界。讀地圖、找線索、完成現地任務，和隊友一起挑戰八大道館。",
+      "editorialIntroduction": "「下一個任務點，會在哪裡？」\n\n這一次，孩子帶著自己創作的冒險夥伴，把地圖上的路線走成真實的探索。從教室裡的角色與程式設計，到城市裡的觀察、解謎與合作，讓每一個發現，都成為自己的冒險故事。",
+      "highlights": [
+        "創作角色與積木程式",
+        "讀圖辨向與路線規劃",
+        "城市走讀與團隊闖關"
+      ],
+      "activities": [
+        {
+          "title": "創作自己的冒險夥伴",
+          "description": "設計寶可夢、訓練家與專屬絕招，讓自己的創意成為掌上夥伴。"
+        },
+        {
+          "title": "用程式儲備冒險能量",
+          "description": "以積木程式設計關卡，思考遊戲規則與操作方式，為道館挑戰做好準備。"
+        },
+        {
+          "title": "學會讀圖，找到任務點",
+          "description": "認識地圖符號、圖例與比例尺，練習使用指北針，對照現場地標並規劃路線。"
+        },
+        {
+          "title": "走進台南，觀察與解謎",
+          "description": "走進古蹟、自然環境與海岸，從現地觀察中尋找歷史與環境的線索。"
+        },
+        {
+          "title": "完成屬性任務",
+          "description": "結合定向尋點與實際行動，進行環境觀察、垃圾撿拾等探索任務。"
+        },
+        {
+          "title": "分工導航，挑戰八大道館",
+          "description": "和隊友輪流讀圖、辨向、尋找線索與記錄，在老師帶領下收集團隊徽章。"
+        }
+      ],
+      "outcome": "帶上好奇心與自己的掌上夥伴，練習規劃、觀察、思考，也學會和隊友一起完成挑戰。",
+      "registration": {
+        "kind": "form",
+        "label": "前往報名表",
+        "url": "https://forms.gle/B4KyNXfgqLsHkTTX9",
+        "note": "報名表內容更新中；填寫前請確認已顯示寶可夢營隊的日期與費用，若有不同請先聯繫官方 LINE。"
+      },
+      "sourceIds": [
+        "blockpoke-confirmed-20261119",
+        "blockpoke-posters-20261119",
+        "blockpoke-form-20261119"
+      ],
+      "status": "registration-copy-updating",
+      "gallery": [
+        {
+          "src": "assets/blockpoke-01.webp",
+          "mobile": "assets/blockpoke-01-mobile.webp",
+          "thumb": "assets/blockpoke-01-thumb.webp",
+          "label": "認識 BlockPoke",
+          "caption": "帶上掌上夥伴 BlockPoke，準備展開五天的實境探險。"
+        },
+        {
+          "src": "assets/blockpoke-02.webp",
+          "mobile": "assets/blockpoke-02-mobile.webp",
+          "thumb": "assets/blockpoke-02-thumb.webp",
+          "label": "創作冒險夥伴",
+          "caption": "創作角色、編寫積木程式，讓自己的點子成為冒險的一部分。"
+        },
+        {
+          "src": "assets/blockpoke-03.webp",
+          "mobile": "assets/blockpoke-03-mobile.webp",
+          "thumb": "assets/blockpoke-03-thumb.webp",
+          "label": "定向尋點",
+          "caption": "對照地圖、辨認方向，在現場尋找線索與任務點。"
+        },
+        {
+          "src": "assets/blockpoke-04.webp",
+          "mobile": "assets/blockpoke-04-mobile.webp",
+          "thumb": "assets/blockpoke-04-thumb.webp",
+          "label": "城市任務",
+          "caption": "走進城市認識故事，與隊友一起完成八大道館挑戰。"
+        }
+      ]
+    },
+    {
       id: "game-lab",
       poster: "assets/game-lab-poster.webp",
       posterPreview: "assets/game-lab-poster-preview.webp",
@@ -555,7 +672,7 @@ window.CAMP_DATA = {
   comparison: {
     title: "找到適合孩子的寒假安排",
     introduction: "先看營期安排，再選孩子有興趣的主題。各營隊獨立報名。",
-    campIds: ["full-term", "drone", "lego", "game-lab", "aviation", "fragrance"],
+    campIds: ["full-term", "drone", "lego", "blockpoke", "game-lab", "aviation", "fragrance"],
     fields: [
       { key: "daysLabel", label: "營隊方案" },
       { key: "dateLabel", label: "課程日期" },
@@ -569,10 +686,10 @@ window.CAMP_DATA = {
   faqGroups: [
     {
       id: "choosing", label: "怎麼選營隊", items: [
-        { question: "全期營有包含其他特色營嗎？", answer: "沒有。冬令營全期營是「五燈獎・大聖鬧辦桌」的完整課程；LEGO IDEAS、祥龍無人機派對、Game Lab、飛行航空科學營與新春香氛科學營各有自己的課程與報名入口。", sourceIds: ["user-confirmed-scope", "fragrance-user-20261019"] },
+        { question: "全期營有包含其他特色營嗎？", answer: "沒有。冬令營全期營是「五燈獎・大聖鬧辦桌」的完整課程；LEGO IDEAS、祥龍無人機派對、寶可夢實境探險營、Game Lab、飛行航空科學營與新春香氛科學營各有自己的課程與報名入口。", sourceIds: ["user-confirmed-scope", "fragrance-user-20261019"] },
         { question: "冬令營全期營是哪幾天？", answer: "冬令營全期營為 2027/1/21–2/2，週末休息。請完整參與營期。", sourceIds: ["full-term-form", "user-confirmed-scope"] },
         { question: "2 日營有哪些主題？", answer: "2027/1/21–1/22 有三種主題：北區教室的 Game Lab 遊戲設計師養成營，從新春故事、腳本與像素角色出發，用 MakeCode Arcade 創作遊戲，練習說故事與分享；北區教室的小小生活工藝師，新春香氛科學營，製作驚喜沐浴球、香氛蠟燭與專屬禮盒；東橋教室的「機」不可失 飛行航空科學營，從造型、重心到反覆試飛，親手打造飛機。各主題同時開課，請擇一參加。", sourceIds: ["game-lab-storytelling-20261020", "aviation-user-brief", "fragrance-user-20261019"] },
-        { question: "適合幾年級的孩子？", answer: "五燈獎全期營、祥龍無人機派對與飛行航空科學營適合國小一年級至六年級；LEGO IDEAS 適合國小二年級以上；Game Lab 適合國小一年級以上；新春香氛科學營適合國小學童。", sourceIds: ["full-term-form", "confirmed-form-details-20261020", "fragrance-poster"] },
+        { question: "適合幾年級的孩子？", answer: "五燈獎全期營、祥龍無人機派對、寶可夢實境探險營與飛行航空科學營適合國小一年級至六年級；LEGO IDEAS 適合國小二年級以上；Game Lab 適合國小一年級以上；新春香氛科學營適合國小學童。", sourceIds: ["full-term-form", "confirmed-form-details-20261020", "fragrance-poster"] },
         { question: "沒有積木設計或飛行經驗，可以參加嗎？", answer: "飛行營包含飛行原理與基礎操控；玩具設計營會從文化發想開始，延伸至 3D 設計、圖解與包裝。歡迎告訴我們孩子的年級與經驗，由教室協助確認適合的課程。", sourceIds: ["drone-poster", "lego-poster"] }
       ]
     },
@@ -580,7 +697,7 @@ window.CAMP_DATA = {
       id: "daily-life", label: "上課與營隊生活", items: [
         { question: "全期營每天幾點上課？可以提早送到教室嗎？", answer: "全期營上課時間是 09:00–17:00，教室最早 07:30 開放，請於 18:30 前接回。各特色營也在每日 09:00–17:00 上課；LEGO IDEAS、飛行航空與新春香氛科學營最早 07:30 開門、18:30 前接回。無人機與 Game Lab 如需提早到班或個別接送安排，請事先聯繫老師。", sourceIds: ["full-term-form", "confirmed-form-details-20261020"] },
         { question: "全期營如果超過 18:30 才能接回，怎麼辦？", answer: "請提前告知老師。全期營如需超過 18:30 接回，延托安排與費用請先由教室確認。", sourceIds: ["full-term-form"] },
-        { question: "在哪裡上課？", answer: "冬令營全期營與 LEGO IDEAS 可選東橋教室或北區教室；祥龍無人機派對只在北區教室。兩日營的 Game Lab 與新春香氛科學營在北區教室，飛行航空科學營在東橋教室。東橋教室：台南市永康區東橋一路558號；北區教室：台南市北區中華北路二段113號。", sourceIds: ["full-term-form", "campus-period-20261019", "fragrance-user-20261019"] },
+        { question: "在哪裡上課？", answer: "冬令營全期營、LEGO IDEAS 與寶可夢實境探險營可選東橋教室或北區教室；祥龍無人機派對只在北區教室。兩日營的 Game Lab 與新春香氛科學營在北區教室，飛行航空科學營在東橋教室。東橋教室：台南市永康區東橋一路558號；北區教室：台南市北區中華北路二段113號。", sourceIds: ["full-term-form", "campus-period-20261019", "fragrance-user-20261019"] },
         { question: "全期營有戶外活動嗎？", answer: "有。第二週的主題安排包含大崎村落創意基地走讀，觀察村落中的藝術與生活。出發時間與當日準備事項請依教室通知。", sourceIds: ["full-term-form"] },
         { question: "午餐、午休和需要攜帶的物品怎麼安排？", answer: "Game Lab 需自備平板；LEGO IDEAS 需自備 Windows 或 Mac 電腦，課程使用 BrickLink Studio 2.0。如無法自備或不確定準備方式，請報名前聯繫老師。各營餐食、午休及其他攜帶物品，請透過官方 LINE 向教室確認。", sourceIds: ["confirmed-form-details-20261020"] },
         { question: "爸媽可以參加最後的辦桌嗎？", answer: "全期營最後一天 2/2（二）晚上將舉辦「孩子的尾牙」，開放家長報名參與成果展演與文化饗宴。家長出席與費用會另行統計，請留意後續表單通知。", sourceIds: ["full-term-form"] }
@@ -588,17 +705,17 @@ window.CAMP_DATA = {
     },
     {
       id: "registration", label: "報名與費用", items: [
-        { question: "全期營怎麼報名？", answer: "在「開始報名」頁選擇五燈獎全期營，點選「直接報名」即可進入 Google 表單。六個營隊的報名表皆已開放；送出後請立即截圖傳至官方 LINE，確認報名資料與應繳金額。", action: { label: "選擇營隊・開始報名", url: "register.html" }, sourceIds: ["full-term-form", "confirmed-form-details-20261020"] },
+        { question: "全期營怎麼報名？", answer: "在「開始報名」頁選擇五燈獎全期營，點選「直接報名」即可進入 Google 表單。各營隊的報名表入口皆已列於該頁；送出後請立即截圖傳至官方 LINE，確認報名資料與應繳金額。", action: { label: "選擇營隊・開始報名", url: "register.html" }, sourceIds: ["full-term-form", "confirmed-form-details-20261020"] },
         { question: "全期營費用是多少？", answer: "五燈獎全期營原價 NT$15,000／人，早鳥價 NT$13,000／人，早鳥截止 2026/11/30。有效 95 折優惠券價為 NT$12,350；優惠券於 10/20 晚上 7 點開放領取，實際應繳金額請由官方 LINE 確認後再付款。", sourceIds: ["full-term-form", "confirmed-prices-20261020"] },
-        { question: "可以報名不只一個營隊嗎？", answer: "可以。先從 1/21–1/22 的兩日營選一個主題，再參加 1/25–1/29 的祥龍無人機派對或 LEGO IDEAS 玩具設計總監，五日營也請擇一。各特色營都與五燈獎冬令營全期營重疊，同一位孩子不能同時參加全期營與重疊的特色營。", sourceIds: ["full-term-form", "drone-poster", "game-lab-user-20261019", "aviation-user-brief", "lego-dates-20261019", "fragrance-user-20261019"] },
+        { question: "可以報名不只一個營隊嗎？", answer: "可以。先從 1/21–1/22 的兩日營選一個主題，再參加 1/25–1/29 的祥龍無人機派對、LEGO IDEAS 玩具設計總監或寶可夢實境探險營，五日營也請擇一。各特色營都與五燈獎冬令營全期營重疊，同一位孩子不能同時參加全期營與重疊的特色營。", sourceIds: ["full-term-form", "drone-poster", "game-lab-user-20261019", "aviation-user-brief", "lego-dates-20261019", "fragrance-user-20261019"] },
         { question: "想請假、取消或更換梯次，可以怎麼處理？", answer: "請透過 LINE 提供所報名的營隊、教室及希望調整的日期，由教室說明該方案的處理方式。付款前也可以先詢問相關規則。", sourceIds: [] },
-        { question: "特色營的日期與費用公布了嗎？", answer: "已公布。2027/1/21–1/22 兩日營的早鳥價為：Game Lab NT$5,400、飛行航空 NT$5,400、新春香氛 NT$4,800。2027/1/25–1/29 五日營的早鳥價為：祥龍無人機派對 NT$7,999、LEGO IDEAS NT$7,800。皆為每位學員費用，早鳥截止 2026/11/30，每日 09:00–17:00 上課。同日期主題請擇一參加，完整費用請查看各營課程介紹。", sourceIds: ["confirmed-prices-20261020", "confirmed-form-details-20261020"] }
+        { question: "特色營的日期與費用公布了嗎？", answer: "已公布。2027/1/21–1/22 兩日營的早鳥價為：Game Lab NT$5,400、飛行航空 NT$5,400、新春香氛 NT$4,800。2027/1/25–1/29 五日營的早鳥價為：祥龍無人機派對 NT$7,999、LEGO IDEAS NT$7,800。上述營隊皆為每位學員費用，早鳥截止 2026/11/30，每日 09:00–17:00 上課。新加入的寶可夢實境探險營早鳥價 NT$8,700，早鳥截止 2026/12/15，日期為 1/25–1/29，適合國小一至六年級，每日 09:00–17:00。同日期主題請擇一參加，完整費用請查看各營課程介紹。", sourceIds: ["confirmed-prices-20261020", "confirmed-form-details-20261020"] }
       ]
     },
     {
       id: "coupon", label: "優惠券怎麼用", items: [
-        { question: "優惠券什麼時候開放？", answer: "95 折優惠券六營共用，首波限量 35 張，2026/10/20 晚上 7 點（台灣時間）開放領取。正式領取成功後開始計算 60 分鐘使用期限。", action: { label: "查看優惠券資訊", url: "coupon.html" }, sourceIds: ["coupon-winter-rules", "confirmed-prices-20261020"] },
-        { question: "優惠券適用哪些營隊？", answer: "六個營隊均已確認 95 折優惠券方案：五燈獎・大聖鬧辦桌、祥龍無人機派對、LEGO IDEAS、Game Lab、飛行航空與新春香氛科學營。報名表已開放，優惠券於 10/20 晚上 7 點開放領取，使用方式請看優惠券頁。", sourceIds: ["coupon-winter-rules", "confirmed-prices-20261020"] },
+        { question: "優惠券什麼時候開放？", answer: "95 折優惠券適用營隊共用，首波限量 35 張，2026/10/20 晚上 7 點（台灣時間）開放領取。正式領取成功後開始計算 60 分鐘使用期限。", action: { label: "查看優惠券資訊", url: "coupon.html" }, sourceIds: ["coupon-winter-rules", "confirmed-prices-20261020"] },
+        { question: "優惠券適用哪些營隊？", answer: "七個營隊均已確認 95 折優惠券方案：五燈獎・大聖鬧辦桌、祥龍無人機派對、LEGO IDEAS、Game Lab、飛行航空、新春香氛科學營與寶可夢實境探險營。報名表入口請見報名頁，優惠券於 10/20 晚上 7 點開放領取，使用方式請看優惠券頁。", sourceIds: ["coupon-winter-rules", "confirmed-prices-20261020"] },
         { question: "領到優惠券後，接著怎麼做？", answer: "正式開放後，領取優惠券並複製優惠碼，在報名表的「優惠碼」欄位貼上，於領券後 60 分鐘內完成送出，再立即截圖傳至官方 LINE 確認。一支手機限領一張，限同一位學員使用，報名請填相同手機。", sourceIds: ["coupon-winter-rules"] },
         { question: "可以用在不只一個營隊嗎？", answer: "正式開放後，同一位學員可在日期不衝堂的適用營隊追加使用，仍須符合券面期限與報名規則。可從 1/21–1/22 的兩日營擇一，再從 1/25–1/29 的五日營擇一；全期營與這些特色營重疊，不能同時報名。優惠券於 10/20 晚上 7 點開放領取。", sourceIds: ["coupon-winter-rules", "confirmed-form-details-20261020"] },
         { question: "95 折優惠券可以和其他優惠一起使用嗎？", answer: "正式開放後，早鳥期間可於適用營隊使用 95 折券，折扣不重複使用；各營優惠券價已列於課程介紹。請在報名表填入有效優惠碼，送出後立即截圖傳至官方 LINE，由教室核對優惠與應付金額，確認後再付款。優惠券於 10/20 晚上 7 點開放領取。", sourceIds: ["coupon-winter-rules", "confirmed-prices-20261020"] }
@@ -606,6 +723,9 @@ window.CAMP_DATA = {
     }
   ],
   sources: [
+    { id: "blockpoke-confirmed-20261119", type: "user-confirmed", title: "寶可夢營隊費用、日期與教室", checkedOn: "2026-11-19", verification: "雙教室；1/25–1/29；原價9900，早鳥8700至12/15，95折8265。" },
+    { id: "blockpoke-posters-20261119", type: "user-provided-poster", title: "四張寶可夢實境探險營宣傳圖", checkedOn: "2026-11-19" },
+    { id: "blockpoke-form-20261119", type: "public-form", title: "寶可夢實境探險營報名表（編輯中）", url: "https://forms.gle/B4KyNXfgqLsHkTTX9", checkedOn: "2026-11-19", verification: "年級1–6；09:00–17:00；07:30開門、18:30接回；第2–5天自備餐點費。舊費用與五燈獎內容由使用者修改中，不採用。" },
     { id: "confirmed-prices-20261020", type: "user-confirmation", title: "六營確認費用與早鳥截止", checkedOn: "2026-10-20", verification: "依使用者確認的六營原價、早鳥價與優惠券價，早鳥截止均為2026/11/30。無人機優惠券價依明確確認固定為NT$7,600。公開費用資料不代表開啟優惠券發券或後台結算。" },
     { id: "confirmed-form-details-20261020", type: "verified-form-copy", title: "六營報名表上課資訊及Game Lab五大主軸", checkedOn: "2026-10-20", verification: "依已核對的正式表單同步特色營年齡、每日09:00–17:00、已明載的接送與設備資訊；Game Lab需自備平板、國小一年級以上，接送時段未載不推定。五大主軸與贈機說明採game-lab-final-form.json。六營正式Google表單已開放，優惠券仍暫停領取。" },
     { id: "full-term-price-20261019", type: "user-confirmation", title: "各營隊費用待確認與優惠券呈現", checkedOn: "2026-10-19", verification: "使用者將另行提供各營隊正確費用；分享版不顯示金額與折後試算，只保留95折規則，費用確認後公布。" },
