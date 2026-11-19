@@ -12,7 +12,7 @@
   const requestedCampus = requestParams.get('campus');
   const selectedCamp = (config.registrationCamps || []).find(camp => camp.id === requestParams.get('camp')) || null;
   // Published registration forms do not imply coupon settlement support.
-  const backendCampIds = ['full-term', 'drone', 'lego', 'game-lab', 'aviation', 'fragrance'];
+  const backendCampIds = ['full-term', 'drone', 'lego', 'game-lab', 'aviation', 'fragrance', 'blockpoke'];
   const isSelectedCampPending = () => !!selectedCamp && !backendCampIds.includes(selectedCamp.id);
   const campus = ['north', 'yongkang'].includes(requestedCampus) ? requestedCampus : 'all';
   function withCampus(value) {
@@ -40,7 +40,7 @@
   };
   const link = (url, text, cls = 'inline-button', external = false) => `<a class="${cls}" href="${escapeHtml(safeUrl(url))}"${external ? ' target="_blank" rel="noopener"' : ''}>${text}</a>`;
   const isPostponed = () => config.enabled !== true || config.releaseStatus === 'postponed';
-  const campIds = ['full-term', 'drone', 'lego', 'game-lab', 'aviation', 'fragrance'];
+  const campIds = backendCampIds;
   const readyRegistrationCamps = (config.registrationCamps || []).filter(camp => backendCampIds.includes(camp.id) && camp.kind === 'form');
   const canActivate = () => !isPostponed() && config.enabled === true && config.rulesConfirmed === true && config.backendReady === true && config.pricingReady !== false &&
     config.campaignId === '2027C' && Number.isFinite(opening()?.getTime()) &&
