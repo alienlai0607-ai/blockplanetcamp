@@ -321,14 +321,14 @@ window.CAMP_DATA = {
         "kind": "form",
         "label": "前往報名表",
         "url": "https://forms.gle/B4KyNXfgqLsHkTTX9",
-        "note": "報名表內容更新中；填寫前請確認已顯示寶可夢營隊的日期與費用，若有不同請先聯繫官方 LINE。"
+        "note": "前往 Google 表單填寫報名資料。"
       },
       "sourceIds": [
         "blockpoke-confirmed-20261119",
         "blockpoke-posters-20261119",
         "blockpoke-form-20261119"
       ],
-      "status": "registration-copy-updating",
+      "status": "details-verified",
       "gallery": [
         {
           "src": "assets/blockpoke-01-campus.webp",
@@ -728,7 +728,7 @@ window.CAMP_DATA = {
   sources: [
     { id: "blockpoke-confirmed-20261119", type: "user-confirmed", title: "寶可夢營隊費用、日期與教室", checkedOn: "2026-11-19", verification: "雙教室；1/25–1/29；原價9900，早鳥8999至12/15，有效95折券優惠價8500；報名即贈BlockPoke，實體版寶寶去哪兒為玩法概念。" },
     { id: "blockpoke-posters-20261119", type: "user-provided-poster", title: "四張寶可夢實境探險營宣傳圖", checkedOn: "2026-11-19" },
-    { id: "blockpoke-form-20261119", type: "public-form", title: "寶可夢實境探險營報名表（編輯中）", url: "https://forms.gle/B4KyNXfgqLsHkTTX9", checkedOn: "2026-11-19", verification: "年級1–6；09:00–17:00；07:30開門、18:30接回；第2–5天自備餐點費。舊費用與五燈獎內容由使用者修改中，不採用。" },
+    { id: "blockpoke-form-20261119", type: "public-form", title: "寶可夢實境探險營報名表", url: "https://forms.gle/B4KyNXfgqLsHkTTX9", checkedOn: "2026-11-19", verification: "年級1–6；09:00–17:00；07:30開門、18:30接回；第2–5天自備餐點費。主辦單位已確認報名表更新完成。" },
     { id: "confirmed-prices-20261020", type: "user-confirmation", title: "六營確認費用與早鳥截止", checkedOn: "2026-10-20", verification: "依使用者確認的六營原價、早鳥價與優惠券價，早鳥截止均為2026/11/30。無人機優惠券價依明確確認固定為NT$7,600。公開費用資料不代表開啟優惠券發券或後台結算。" },
     { id: "confirmed-form-details-20261020", type: "verified-form-copy", title: "六營報名表上課資訊及Game Lab五大主軸", checkedOn: "2026-10-20", verification: "依已核對的正式表單同步特色營年齡、每日09:00–17:00、已明載的接送與設備資訊；Game Lab需自備平板、國小一年級以上，接送時段未載不推定。五大主軸與贈機說明採game-lab-final-form.json。六營正式Google表單已開放，優惠券仍暫停領取。" },
     { id: "full-term-price-20261019", type: "user-confirmation", title: "各營隊費用待確認與優惠券呈現", checkedOn: "2026-10-19", verification: "使用者將另行提供各營隊正確費用；分享版不顯示金額與折後試算，只保留95折規則，費用確認後公布。" },

@@ -81,7 +81,6 @@
     meta.append(textElement('p', 'camp-date', camp.dateLabel), textElement('p', 'camp-classroom', classroomLabel(camp)));
     if (camp.pricing) meta.append(textElement('p', 'camp-price', camp.priceLabel));
     if (camp.couponPriceLabel) meta.append(textElement('p', 'camp-coupon-price', camp.couponPriceLabel));
-    if (camp.status === 'registration-copy-updating') meta.append(textElement('p', 'camp-form-notice', '報名表內容更新中，填寫前請確認日期與費用。'));
 
     const actions = document.createElement('div');
     actions.className = 'camp-actions';
